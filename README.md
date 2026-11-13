@@ -34,8 +34,12 @@ node tools/build.js
 
 | 위치 | 내용 |
 |---|---|
-| `web3d/js/world.js` | 지형, 하늘, 빛, 소품 배치 |
+| `web3d/js/world.js` | 지형, 하늘, 빛, 소품 배치. 떨기나무 언덕(호렙 산줄기 끝)과 모세가 걷는 길 |
+| `web3d/js/flock.js` | 양 떼 40마리 (한 번에 그려 휴대폰에서도 가볍다) |
 | `web3d/js/models.js` | 세 아이, 모세, 양, 떨기나무, 타임머신 등 3D 모델 |
+| `web3d/js/content3d.js` | 부품 찾기 성경 물음, 압도 장면 자막, 시대 추리 문구 |
+| `web3d/js/fx.js` | 불꽃, 빛 번짐, 합성 소리(바람·불·양 울음·정적·조용한 음악) |
+| `web3d/assets/vision_bush.mp4` | 압도 장면 영상 (Blender로 미리 그린 것. 있으면 올려다보기 뒤에 재생, 없으면 건너뜀) |
 | `web3d/js/game.js` | 조작, 카메라, 진행, 화면 위 안내 |
 | `web3d/vendor/` | three.js r128 (MIT 라이선스) |
 
@@ -44,5 +48,14 @@ node tools/build.js
 ```bash
 node tools/build3d.js
 ```
+
+자동 점검: `node tools/test/walk3d.js <단계 0~2> <저장 폴더>` (자세한 것은 `tools/test/README.md`).
+휴대폰에서 장소 이름을 세 번 빠르게 누르거나 주소 끝에 `#fps`를 붙이면 초당 장면 수가 보인다.
+
+## 압도 장면 영상 (Blender)
+
+- `tools/blender/bush_vision.py`: 불붙은 떨기나무 장면(사실적인 덤불, 불, 바위, 모세). `--shots A,B,C,D`로 정지 화면을 뽑는다.
+- `tools/blender/vision_video.py`: 같은 장면을 층으로 나눠 그린 뒤 합쳐 30초 영상(`vision_bush.mp4`)을 만든다.
+- bpy 설치: `uv venv --python 3.13 venv && VIRTUAL_ENV=venv uv pip install bpy`
 
 사실적 3D 외주 제작의 비용 자료는 [docs/04_외주_시세조사.md](docs/04_외주_시세조사.md)에 있다.

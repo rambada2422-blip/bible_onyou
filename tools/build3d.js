@@ -24,7 +24,7 @@ fs.writeFileSync(path.join(root, 'web3d/js/glbdata.js'),
 
 const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fonts = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Jua&display=swap';
-const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/models.js', 'web3d/js/models_jordan.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/jordan.js', 'web3d/js/fx.js', 'web3d/js/game.js'];
+const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/models.js', 'web3d/js/models_jordan.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/flock.js', 'web3d/js/jordan.js', 'web3d/js/fx.js', 'web3d/js/game.js'];
 const page = [
   '<title>성경 탐험대 3D</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',
@@ -37,4 +37,9 @@ const page = [
 ].join('\n');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/preview3d.html'), page);
+/* 압도 장면 영상은 미리보기 옆 assets 폴더에 둔다 (한 파일에 넣기에는 크다) */
+for (const f of ['vision_bush.mp4']) {
+  const src = path.join(root, 'web3d/assets', f);
+  if (fs.existsSync(src)) { fs.mkdirSync(path.join(root, 'dist/assets'), { recursive: true }); fs.copyFileSync(src, path.join(root, 'dist/assets', f)); console.log('복사:', 'dist/assets/' + f); }
+}
 console.log('avatars.js 생성 · dist/preview3d.html', (Buffer.byteLength(page) / 1024).toFixed(0) + 'KB');

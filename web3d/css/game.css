@@ -120,3 +120,27 @@
 .evi img, .evi .ph { width: 100%; aspect-ratio: 1.25; border-radius: 10px; object-fit: cover; display: block; background: var(--paper-2); }
 .evi.ok { box-shadow: inset 0 0 0 3px var(--ok); background: var(--ok-bg); }
 .evi.rest { opacity: .55; }
+/* 부품 탐지기 물음 버튼 */
+.track3.ask { background: var(--brass, #F7B733); color: var(--ink-3); border: 0; cursor: pointer; animation: ask3 1.6s ease-in-out infinite; }
+.track3.ask i { background: var(--ink-3); color: var(--brass, #F7B733); }
+button.track3 { border: 0; font: inherit; font-family: var(--f-display); cursor: pointer; }
+@keyframes ask3 { 50% { transform: scale(1.05); } }
+@media (prefers-reduced-motion: reduce) { .track3.ask { animation: none; } }
+.note.found3 { flex-direction: row; align-items: center; gap: 10px; }
+.note.found3 svg { width: 26px; height: 26px; flex: none; color: #14432F; }
+.fps3 { position: absolute; left: 8px; bottom: 8px; z-index: 30; font: 12px/1 monospace; color: #fff; background: rgba(0,0,0,.55); padding: 4px 6px; border-radius: 6px; pointer-events: none; }
+.place { cursor: default; }
+/* 압도 장면 영상 */
+.vision3 { position: absolute; inset: 0; z-index: 25; background: #000; opacity: 0; transition: opacity .9s ease; }
+.vision3.on { opacity: 1; }
+.vision3 video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vcap3 { position: absolute; left: 18px; right: 18px; bottom: 11%; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; opacity: 0; transition: opacity 1.4s ease; pointer-events: none; }
+.vcap3.on { opacity: 1; }
+.vcap3 .t { font-family: var(--f-display); font-size: 19px; line-height: 1.55; color: #FFF8EA; text-shadow: 0 1px 10px rgba(0,0,0,.85), 0 0 2px rgba(0,0,0,.9); word-break: keep-all; }
+.vskip3 { position: absolute; top: 14px; right: 14px; font-family: var(--f-display); font-size: 14px; color: #FFF8EA; background: rgba(0,0,0,.45); border: 1px solid rgba(255,248,234,.35); border-radius: 999px; padding: 7px 14px; }
+@media (prefers-reduced-motion: reduce) { .vision3, .vcap3 { transition: none; } }
+.bibleq3 { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-family: var(--f-display); font-size: 13px; color: #6B4A12; background: #F6E7C3; border-radius: 999px; padding: 4px 11px 4px 8px; }
+.bibleq3 svg { width: 16px; height: 16px; }
+.note.story3 { background: #E3F1EE; color: #16433E; }
+.note.story3 span { display: flex; flex-direction: column; gap: 2px; }
+.note.story3 small { font-size: 12px; letter-spacing: .04em; color: #2F7C74; }

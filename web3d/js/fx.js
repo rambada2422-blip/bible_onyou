@@ -200,9 +200,12 @@ window.BO3D = window.BO3D || {};
     };
   }
 
-  /* ── 소리 (전부 합성) ── */
+  /* ── 소리 (전부 합성. 음원 파일을 쓰지 않는다: 대표 결정 2026-11-13) ──
+   * 효과음 묶음(sfx): 바람, 불, 불티 튀는 소리, 양 울음, 효과음
+   * 음악 묶음(music): 사건을 지켜볼 때의 낮은 화음, 압도 장면 뒤의 조용한 음악
+   * 압도 장면에서 하나님이 부르시는 순간에는 효과음 묶음 전체를 멎게 한다(지시서 6.2). 하나님의 음성은 소리로 만들지 않는다. */
   var audio = (function () {
-    var ctx = null, master, windG, fireG, crackleG, padG, muted = false, nextPop = 0;
+    var ctx = null, master, sfx, music, windG, fireG, crackleG, padG, bleatG, muted = false, nextPop = 0, nextBleat = 0, fireOverride = -1, flockNear = 0;
     function noiseBuf(sec) {
       var b = ctx.createBuffer(1, ctx.sampleRate * sec, ctx.sampleRate), d = b.getChannelData(0), last = 0;
       for (var i = 0; i < d.length; i++) { var wn = Math.random() * 2 - 1; last = (last + 0.02 * wn) / 1.02; d[i] = last * 3.2 + wn * 0.12; }
@@ -212,7 +215,7 @@ window.BO3D = window.BO3D || {};
       var s = ctx.createBufferSource(); s.buffer = buf; s.loop = true;
       var f = ctx.createBiquadFilter(); f.type = filterType; f.frequency.value = freq; f.Q.value = q || 0.7;
       var g = ctx.createGain(); g.gain.value = 0;
-      s.connect(f); f.connect(g); g.connect(master); s.start();
+      s.connect(f); f.connect(g); g.connect(sfx); s.start();
       return { gain: g, filter: f };
     }
     function start() {
@@ -220,33 +223,57 @@ window.BO3D = window.BO3D || {};
       try {
         var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
         ctx = new AC(); master = ctx.createGain(); master.gain.value = muted ? 0 : 0.9; master.connect(ctx.destination);
+        sfx = ctx.createGain(); sfx.gain.value = 1; sfx.connect(master);
+        music = ctx.createGain(); music.gain.value = 1; music.connect(master);
         var nb = noiseBuf(3);
         var wind = loop(nb, 'lowpass', 420, 0.5); windG = wind.gain; windG.gain.value = 0.16;
         var lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 0.09; lg.gain.value = 160; lfo.connect(lg); lg.connect(wind.filter.frequency); lfo.start();
         var fr = loop(nb, 'bandpass', 520, 0.6); fireG = fr.gain;
-        crackleG = ctx.createGain(); crackleG.gain.value = 0; crackleG.connect(master);
-        padG = ctx.createGain(); padG.gain.value = 0; padG.connect(master);
+        var roar = loop(nb, 'lowpass', 180, 0.9); fireG._roar = roar.gain;
+        crackleG = ctx.createGain(); crackleG.gain.value = 0; crackleG.connect(sfx);
+        bleatG = ctx.createGain(); bleatG.gain.value = 0.5; bleatG.connect(sfx);
+        padG = ctx.createGain(); padG.gain.value = 0; padG.connect(music);
       } catch (e) { ctx = null; }
     }
-    /* 떨기나무와의 거리에 따라 불 소리가 커진다 */
+    function pop(v) {
+      var o = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime;
+      o.type = 'square'; o.frequency.value = 900 + Math.random() * 2600;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime((0.05 + Math.random() * 0.12) * Math.max(0.2, v), t0 + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.03 + Math.random() * 0.04);
+      o.connect(g); g.connect(crackleG); o.start(t0); o.stop(t0 + 0.09);
+    }
+    /* 떨기나무와의 거리에 따라 불 소리가 커진다. 압도 장면에서는 fire(v)로 직접 정한다 */
     function setFire(dist) {
       if (!ctx) return;
       var v = Math.max(0, Math.min(1, 1 - (dist - 8) / 34)); v = v * v;
+      if (fireOverride >= 0) v = fireOverride;
       fireG.gain.setTargetAtTime(0.02 + v * 0.5, ctx.currentTime, 0.3);
+      fireG._roar.gain.setTargetAtTime(v * v * 0.55, ctx.currentTime, 0.4);
       crackleG.gain.setTargetAtTime(v * 0.55, ctx.currentTime, 0.3);
-      if (ctx.currentTime > nextPop && v > 0.05) {
-        nextPop = ctx.currentTime + 0.04 + Math.random() * 0.22;
-        var o = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime;
-        o.type = 'square'; o.frequency.value = 900 + Math.random() * 2600;
-        g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.05 + Math.random() * 0.12, t0 + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.03 + Math.random() * 0.04);
-        o.connect(g); g.connect(crackleG); o.start(t0); o.stop(t0 + 0.09);
-      }
+      if (ctx.currentTime > nextPop && v > 0.05) { nextPop = ctx.currentTime + (0.04 + Math.random() * 0.22) / (0.6 + v); pop(v); }
+      /* 양 울음: 양 떼가 가까우면 가끔 */
+      if (flockNear > 0.02 && ctx.currentTime > nextBleat) { nextBleat = ctx.currentTime + 1.5 + Math.random() * (6 / (0.3 + flockNear)); bleat(flockNear); }
     }
+    function fire(v) { fireOverride = v; }
+    /* 양 울음 한 번: 떨리는 톱니파를 '아' 소리 쪽 두 대역으로 거른다 */
+    function bleat(v) {
+      if (!ctx) return;
+      var t0 = ctx.currentTime, dur = 0.45 + Math.random() * 0.35, f0 = 230 + Math.random() * 160;
+      var o = ctx.createOscillator(); o.type = 'sawtooth';
+      o.frequency.setValueAtTime(f0 * 1.06, t0); o.frequency.linearRampToValueAtTime(f0 * 0.92, t0 + dur);
+      var vib = ctx.createOscillator(), vg = ctx.createGain(); vib.frequency.value = 7 + Math.random() * 3; vg.gain.value = f0 * 0.05; vib.connect(vg); vg.connect(o.frequency);
+      var f1 = ctx.createBiquadFilter(); f1.type = 'bandpass'; f1.frequency.value = 760; f1.Q.value = 5;
+      var f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = 1250; f2.Q.value = 6;
+      var g = ctx.createGain(), vol = 0.05 + 0.1 * Math.min(1, v);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.06); g.gain.setValueAtTime(vol, t0 + dur * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(f1); o.connect(f2); f1.connect(g); f2.connect(g); g.connect(bleatG);
+      o.start(t0); vib.start(t0); o.stop(t0 + dur + 0.05); vib.stop(t0 + dur + 0.05);
+    }
+    function setFlock(dist) { flockNear = Math.max(0, Math.min(1, 1 - (dist - 4) / 30)); }
     function tone(freq, t0, dur, vol, type, dest) {
       var o = ctx.createOscillator(), g = ctx.createGain();
       o.type = type || 'sine'; o.frequency.value = freq;
       g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(0.05, dur * 0.3)); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-      o.connect(g); g.connect(dest || master); o.start(t0); o.stop(t0 + dur + 0.05);
+      o.connect(g); g.connect(dest || sfx); o.start(t0); o.stop(t0 + dur + 0.05);
     }
     function chime() { if (!ctx) return; var t = ctx.currentTime; [659.3, 880, 1318.5].forEach(function (f, i) { tone(f, t + i * 0.09, 0.7, 0.14, 'sine'); }); }
     /* 사건을 지켜보는 동안 깔리는 낮고 조용한 화음 */
@@ -260,14 +287,41 @@ window.BO3D = window.BO3D || {};
       }
       padG.gain.setTargetAtTime(on ? 0.9 : 0, ctx.currentTime, on ? 1.6 : 0.8);
     }
+    /* 효과음을 모두 멎게 한다(정적). 음악 묶음은 그대로 */
+    function silence(on, sec) { if (!ctx) return; sfx.gain.cancelScheduledValues(ctx.currentTime); sfx.gain.setTargetAtTime(on ? 0 : 1, ctx.currentTime, (sec || 0.6) / 3); }
+    /* 압도 장면 뒤의 낮고 조용한 음악: 느린 화음 네 개가 천천히 바뀐다 */
+    var hymn = null;
+    function quietMusic(on) {
+      if (!ctx) return;
+      if (on && !hymn) {
+        hymn = ctx.createGain(); hymn.gain.value = 0; hymn.connect(music);
+        var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400; lp.connect(hymn);
+        var chords = [[146.83, 220.0, 293.66, 369.99], [123.47, 185.0, 246.94, 293.66], [98.0, 196.0, 246.94, 293.66], [110.0, 164.81, 220.0, 277.18]];
+        var t0 = ctx.currentTime + 0.1, len = 4.0;
+        for (var rep = 0; rep < 8; rep++) chords.forEach(function (ch, ci) {
+          var ts = t0 + (rep * 4 + ci) * len;
+          ch.forEach(function (f, k) {
+            var o = ctx.createOscillator(), g = ctx.createGain();
+            o.type = k === 0 ? 'triangle' : 'sine'; o.frequency.value = f; o.detune.value = (k - 1.5) * 3;
+            var v = (k === 0 ? 0.06 : 0.035);
+            g.gain.setValueAtTime(0.0001, ts); g.gain.exponentialRampToValueAtTime(v, ts + 1.6); g.gain.setValueAtTime(v, ts + len - 0.6); g.gain.exponentialRampToValueAtTime(0.0001, ts + len + 1.2);
+            o.connect(g); g.connect(lp); o.start(ts); o.stop(ts + len + 1.3);
+          });
+        });
+        hymn.gain.setTargetAtTime(1, ctx.currentTime, 1.2);
+      } else if (!on && hymn) {
+        var h = hymn; hymn = null; h.gain.setTargetAtTime(0, ctx.currentTime, 0.8); setTimeout(function () { try { h.disconnect(); } catch (e) { /* 무시 */ } }, 4000);
+      }
+    }
     function shutter() { if (!ctx) return; var t = ctx.currentTime; tone(2100, t, 0.035, 0.1, 'square'); tone(1300, t + 0.055, 0.05, 0.08, 'square'); }
     function rise() { if (!ctx) return; var t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
       o.type = 'sawtooth'; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(880, t + 3.6);
       var f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(3200, t + 3.6);
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t + 4.0);
-      o.connect(f); f.connect(g); g.connect(master); o.start(t); o.stop(t + 4.1); }
+      o.connect(f); f.connect(g); g.connect(sfx); o.start(t); o.stop(t + 4.1); }
+    function wind(v) { if (ctx) windG.gain.setTargetAtTime(v, ctx.currentTime, 0.8); }
     function mute(m) { muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); }
-    return { start: start, setFire: setFire, chime: chime, shutter: shutter, rise: rise, pad: pad, mute: mute, isMuted: function () { return muted; } };
+    return { start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, mute: mute, isMuted: function () { return muted; } };
   })();
 
   BO3D.fx = { fire: fire, upgradeBush: upgradeBush, sortLayers: sortLayers, Post: Post, audio: audio, GLOW: GLOW, SOFT: SOFT };
