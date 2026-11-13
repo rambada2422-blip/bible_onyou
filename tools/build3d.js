@@ -16,7 +16,7 @@ fs.writeFileSync(path.join(root, 'web3d/js/avatars.js'),
 
 const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fonts = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Jua&display=swap';
-const scripts = ['web/js/content.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/models.js', 'web3d/js/world.js', 'web3d/js/game.js'];
+const scripts = ['web/js/content.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/models.js', 'web3d/js/world.js', 'web3d/js/fx.js', 'web3d/js/game.js'];
 const page = [
   '<title>성경 탐험대 3D</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',

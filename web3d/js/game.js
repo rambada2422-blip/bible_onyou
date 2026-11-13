@@ -4,7 +4,7 @@
  */
 (function () {
   'use strict';
-  var T = THREE, C = BO.content, IC = BO.icons, W = BO3D.world, M = BO3D.models || {}, AV = BO3D.avatars || {};
+  var T = THREE, C = BO.content, IC = BO.icons, W = BO3D.world, M = BO3D.models || {}, AV = BO3D.avatars || {}, FX = BO3D.fx || null;
   var P = W.P, SC = C.scenes['EX-01'];
   var S = { tier: 't2', ch: 'hyu' };
   var root = document.getElementById('game'), canvas = document.getElementById('c'), ui = document.getElementById('ui');
@@ -62,6 +62,8 @@
   var scene = new T.Scene();
   var camera = new T.PerspectiveCamera(58, 1, 0.3, 700);
   var env = W.build(scene);
+  camera.layers.enable(1); camera.layers.enable(2);
+  var post = FX ? new FX.Post(renderer) : null;
 
   function place(obj, x, z, lift) { obj.position.set(x, W.height(x, z) + (lift || 0), z); return obj; }
 
@@ -74,6 +76,7 @@
     return { group: g, update: function () {} };
   });
   scene.add(place(bush.group, P.bush[0], P.bush[1]));
+  var bushFx = FX ? FX.upgradeBush(bush.group) : null;
 
   var moses = mk('moses', null, function () { return { group: fallback('#8A5A3C', 1.75, 0.27), setPose: function () {}, update: function () {} }; });
   scene.add(place(moses.group, P.mosesStart[0], P.mosesStart[1]));
@@ -97,6 +100,7 @@
     /* 멀리서도 보이는 빛기둥 */
     var beam = new T.Mesh(new T.CylinderGeometry(0.08, 0.34, 9, 10, 1, true), new T.MeshBasicMaterial({ color: '#FFE08A', transparent: true, opacity: 0.13, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
     beam.position.y = 4.6; s.group.add(beam);
+    if (FX) s.group.traverse(function (o) { if (o.isSprite || (o.material && o.material.transparent)) o.layers.set(FX.GLOW); });
     return s;
   });
 
@@ -113,6 +117,7 @@
     player.group.rotation.y = Math.PI;
     followers.forEach(function (f, i) { place(f.group, P.start[0] + (i ? 1.5 : -1.5), P.start[1] + 0.5); f.group.rotation.y = Math.PI; f.spd = 0; });
     trail = [];
+    if (FX) FX.sortLayers(scene);
   }
 
   /* ── 상태 ── */
@@ -139,7 +144,10 @@
   var panel = el('div', { class: 'panel3 sheet', hidden: '' }, panelBody, panelFoot);
   var overlay = el('div', { class: 'overlay3', hidden: '' });
   var touch = el('div', { class: 'touch3' });
-  add(ui, [touch, hud, base, hint, toastEl, panel, overlay]);
+  var snd = el('button', { class: 'snd3', hidden: '', 'aria-label': '소리 끄기', 'aria-pressed': 'false', on: { click: function () {
+    var m = !FX.audio.isMuted(); FX.audio.mute(m); snd.setAttribute('aria-pressed', String(m)); snd.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기');
+  } } }, icon('speaker'));
+  add(ui, [touch, hud, base, hint, toastEl, snd, panel, overlay]);
 
   function setObjective(t) { objText.textContent = t; }
   function toast(html, who) {
@@ -170,7 +178,8 @@
 
   /* ── 처음 화면 ── */
   function menu() {
-    state = 'menu'; hud.hidden = true; hidePanel(); base.hidden = true;
+    state = 'menu'; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true;
+    if (FX) FX.audio.pad(false);
     var tier = S.tier, ch = S.ch, picked = false;
     var ids = ['choeon', 'hyu', 'onwoo'];
     var tb = C.tiers.map(function (t) {
@@ -201,6 +210,7 @@
   function begin() {
     root.className = 'g3 app ' + S.tier;
     overlay.hidden = true;
+    if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; }
     spawnKids();
     step = 0; mosesWalking = false; mosesArrived = false; evIdx = 2;
     place(moses.group, P.mosesStart[0], P.mosesStart[1]); moses.group.rotation.y = Math.PI * 0.8;
@@ -220,6 +230,7 @@
   /* ── 말씀 조각 줍기 ── */
   function collect(i) {
     scraps[i].taken = true; scraps[i].group.visible = false;
+    if (FX) FX.audio.chime();
     count.textContent = '말씀 조각 ' + (i + 1) + ' / 3';
     count.classList.remove('pulse'); void count.offsetWidth; count.classList.add('pulse');
     if (i < 2) {
@@ -237,6 +248,7 @@
   /* ── 사건 목격 ── */
   function startEvent() {
     state = 'event'; hud.hidden = true; hint.hidden = true;
+    if (FX) FX.audio.pad(true);
     mosesWalking = false; mosesArrived = true;
     place(moses.group, P.mosesEnd[0], P.mosesEnd[1]);
     moses.group.rotation.y = Math.atan2(P.bush[0] - P.mosesEnd[0], P.bush[1] - P.mosesEnd[1]);
@@ -360,6 +372,7 @@
   }
   function finish() {
     state = 'end';
+    if (FX) FX.audio.pad(false);
     var c = SC.close[S.tier], kids_ = [
       el('div', { class: 'q-kicker', text: '탐험을 마치며' }),
       el('p', { class: 'q-prompt', text: '탐험 일지에 말씀 카드가 들어왔어요.' }),
@@ -531,7 +544,9 @@
       camera.position.set(P.start[0] + Math.sin(a) * 9, W.height(P.start[0], P.start[1]) + 5.5, P.start[1] + 10);
       camera.lookAt(P.bush[0], 6, P.bush[1] - 30);
     }
-    renderer.render(scene, camera);
+    if (bushFx) bushFx.update(now, camera, renderer.domElement.height);
+    if (FX && player) FX.audio.setFire(dist2(player.group.position.x, player.group.position.z, P.bush[0], P.bush[1]));
+    if (post) post.render(scene, camera); else renderer.render(scene, camera);
   }
 
   /* 자동 점검용 (화면에는 영향 없음) */

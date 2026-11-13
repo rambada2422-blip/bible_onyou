@@ -42,3 +42,8 @@
 
 /* hidden 속성이 display 지정에 밀리지 않게 */
 .g3 [hidden] { display: none !important; }
+
+.snd3 { position: absolute; right: var(--gutter-r); bottom: 22px; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: rgba(14, 23, 48, .72); color: var(--paper); }
+.snd3 svg { width: 22px; height: 22px; }
+.snd3[aria-pressed="true"] { color: #8FA0C8; background: rgba(14, 23, 48, .5); }
+.snd3[aria-pressed="true"]::after { content: ""; position: absolute; width: 30px; height: 3px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
