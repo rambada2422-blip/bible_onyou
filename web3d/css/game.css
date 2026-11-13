@@ -109,6 +109,9 @@
 
 /* 시간 나침반과 시대 추리 */
 .den3ov .route-q { font-size: 17px; line-height: 1.6; color: var(--paper); padding: 14px; border-radius: 14px; background: rgba(251, 247, 238, .07); }
+.den3ov .route-q { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.den3ov .route-q .ask { font-family: var(--f-display); font-size: 18px; line-height: 1.5; color: var(--brass); }
+.dexcell .aside { font-size: 12px; color: var(--text-soft); border-top: 1px dashed var(--paper-line); padding-top: 4px; }
 .t1 .den3ov .route-q { font-size: 19px; }
 .route-opts { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
 .overlay3.warp3 { justify-content: center; text-align: center; }

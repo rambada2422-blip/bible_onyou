@@ -462,7 +462,7 @@
     var opts = C.route.options.map(function (o) {
       var ready = o.to === 'EX-01' || o.to === 'ALT-02';
       var b = btn(ready ? o.label : C3.route.locked, function () {
-        warpTo(o.label + '의 시대로', function () { if (o.to === 'ALT-02') enterJordan(); else begin(); });
+        warpTo(C3.route.warpTitle, function () { if (o.to === 'ALT-02') enterJordan(); else begin(); });
       }, 'wide');
       if (!ready) b.disabled = true;
       return b;
@@ -472,8 +472,11 @@
       el('div', { class: 'eyebrow', text: '탐험대 이야기' }),
       el('h1', { class: 'den-title', text: C3.route.title }),
       el('p', { class: 'den-lead', text: C3.route.lead }),
-      el('p', { class: 'route-q', text: tx(C.route.prompt) }),
-      el('div', { class: 'route-opts' }, opts));
+      el('div', { class: 'route-q' },
+        el('p', { text: tx(C.scenes['EX-00'].beats[3].text) }), refChip(C3.route.contextRef, true),
+        el('p', { class: 'ask', text: tx(C.route.prompt) })),
+      el('div', { class: 'route-opts' }, opts),
+      el('p', { class: 'den-msg', text: C3.route.hint }));
     overlay.hidden = false;
   }
   function warpTo(title, fn) {
@@ -508,7 +511,7 @@
     });
   }
   function loadJordanGlb() {
-    swapGlb('joshua', JL.leader, 'Point', true, false);
+    swapGlb('joshua', JL.leader, 'Idle', false, false);
     JL.priests.forEach(function (pr) { swapGlb('priest', pr, 'Carry', false, pr.side === 'L'); });
   }
   var clue = {}, dedReady = false;
@@ -522,7 +525,7 @@
     setObjective(JD.objective); hud.hidden = false; snd.hidden = false;
     state = 'caption';
     var sy = JD.story.say, who = C.chars[sy.who];
-    showPanel([el('div', { class: 'q-kicker', text: '탐험대 이야기' }), el('p', { class: 'narr', text: JD.story.text }),
+    showPanel([el('div', { class: 'q-kicker', text: '탐험대 이야기' }), el('p', { class: 'narr', text: tx(JD.story.text) }),
       el('div', { class: 'say' }, avatar(sy.who), el('div', { class: 'bubble' }, el('b', { text: who.name, style: 'color:' + who.color }), sy.text))],
       btn('둘러보자', function () {
         hidePanel(); state = 'explore'; camBtn.hidden = false; dexBtn.hidden = false; hint.hidden = false;
@@ -567,7 +570,8 @@
       has && clue[c.id] ? el('img', { src: clue[c.id], alt: c.name }) : el('div', { class: 'ph', text: has ? '' : '?' }),
       el('b', { text: has ? c.name : '아직 못 찾은 단서' }),
       el('span', { text: has ? tx(c.text) : '눈에 띄는 것을 사진으로 찍어 보세요.' }),
-      has ? refChip(c.ref) : null);
+      has ? refChip(c.ref) : null,
+      has && c.aside ? el('span', { class: 'aside', text: c.aside }) : null);
   }
   function openClues() {
     stick.x = stick.y = 0; stick.id = null; base.hidden = true;
@@ -608,7 +612,11 @@
         if (ev.ok.indexOf(c.id) >= 0) {
           btns.forEach(function (x) { x.disabled = true; if (x !== b) x.classList.add('rest'); }); b.classList.add('ok');
           if (ev.find) noteBox.replaceChildren(el('div', { style: 'display:flex;flex-direction:column;gap:12px' }, findBlock(ev.find, onOk)));
-          else { var nt = ev.notes ? ev.notes[c.id] : { text: ev.note, ref: ev.ref }; noteBox.replaceChildren(goodNote(nt.ref, nt.text)); onOk(); }
+          else {
+            var nt = (ev.notes && ev.notes[c.id]) || ev.note, rf = nt.ref;
+            if (rf && typeof rf === 'object') rf = rf[S.tier];
+            noteBox.replaceChildren(goodNote(rf || null, tx(nt.text))); onOk();
+          }
         } else {
           b.classList.add('rest'); b.disabled = true;
           noteBox.replaceChildren(el('div', { class: 'note look fadein' }, el('b', { text: '그 사진만으로는 알 수 없어요.' }), el('span', { text: '다른 단서를 골라 보세요.' })));
@@ -624,16 +632,14 @@
     dedBtn.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; hint.hidden = true;
     var evs = JD.evidence.filter(function (e) { return e.tiers.indexOf(S.tier) >= 0; }), steps = [];
     evs.forEach(function (e) { steps.push({ k: '증거 고르기', make: function (ok) { return evidenceBlock(e, ok); } }); });
-    steps.push({ k: '마지막 추리', make: function (ok) {
-      if (S.tier === 't1') return findBlock(JD.finalT1, ok);
-      if (S.tier === 't2') return multiBlock(ALT.spot.t2, ok);
-      return findrefBlock(ALT.spot.t3, ok, 'ded');
-    } });
+    steps.push({ k: '성경에서 확인', make: function (ok) { return findBlock(JD.river, ok); } });
+    if (S.tier === 't2') steps.push({ k: '마지막 추리', make: function (ok) { return multiBlock(ALT.spot.t2, ok); } });
+    if (S.tier === 't3') steps.push({ k: '마지막 추리', make: function (ok) { return findrefBlock(ALT.spot.t3, ok, 'ded'); } });
     var i = 0;
     (function show() {
       var st = steps[i], last = i === steps.length - 1;
       var nb = btn(last ? '추리 결과 보기' : '다음', function () { if (last) conclude(); else { i++; show(); } }); nb.disabled = true;
-      sheetOverlay([el('div', { class: 'q-kicker', text: st.k + ' ' + (i + 1) + ' / ' + steps.length }), st.make(function () { nb.disabled = false; })], nb);
+      sheetOverlay([el('div', { class: 'q-kicker', text: '추리 ' + (i + 1) + ' / ' + steps.length + ' · ' + st.k }), st.make(function () { nb.disabled = false; })], nb);
     })();
   }
   function conclude() {
@@ -642,6 +648,7 @@
       el('p', { class: 'q-prompt', text: JD.place }),
       el('p', { class: 'narr', text: tx(cc.text) }),
       el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap' }, cc.refs.map(function (r) { return refChip(r); })),
+      el('div', { class: 'found-list' }, cc.found.map(function (f) { return el('div', { class: 'it' }, el('span', {}, f.text + ' '), refChip(f.ref)); })),
       el('div', { class: 'say' }, avatar(cc.say.who), el('div', { class: 'bubble' }, el('b', { text: who.name, style: 'color:' + who.color }), cc.say.text))],
       btn('타임머신 다시 맞추기', function () {
         var nb = btn('다음', function () {
@@ -650,7 +657,7 @@
             el('div', { class: 'vcards' }, ALT.cards.map(function (cd) {
               return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }), el('div', { class: 'm', text: ALT.title + ' · 성경책에서 직접 읽어 보세요' }), el('span', { class: 'tag', text: '돌아가는 길에 찾은 말씀' }));
             }))],
-            btn('모세가 있는 곳으로', function () { warpTo('모세의 시대로', begin); }));
+            btn('모세가 있는 곳으로', function () { warpTo(C3.route.warpTitle, begin); }));
         }); nb.disabled = true;
         sheetOverlay([el('div', { class: 'q-kicker', text: '타임머신 다시 맞추기' }),
           findBlock({ ref: ALT.back.ref, prompt: ALT.back.prompt, confirm: ALT.back.confirm }, function () { nb.disabled = false; })], nb);
