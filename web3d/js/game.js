@@ -167,9 +167,13 @@
   var place_ = el('span', { class: 'place', text: SC.place });
   var objText = el('span', { text: '' });
   var count = el('span', { class: 'count', text: '말씀 조각 0 / 3' });
+  var partCount = el('span', { class: 'count teal', text: '부품 0 / 3' });
+  var trackArrow = el('i', {}, icon('arrow')), trackText = el('span', { text: '' });
+  var track = el('div', { class: 'track3', hidden: '' }, trackArrow, trackText);
   var hud = el('div', { class: 'hud3 pad', hidden: '' },
-    el('div', { class: 'row' }, place_, refChip(SC.ref, true), count),
-    el('div', { class: 'obj' }, icon('compass'), objText));
+    el('div', { class: 'row' }, place_, refChip(SC.ref, true)),
+    el('div', { class: 'row' }, count, partCount),
+    el('div', { class: 'obj' }, icon('compass'), objText), track);
   var knob = el('i', {}), base = el('div', { class: 'stick', hidden: '' }, knob);
   var hint = el('div', { class: 'hint', hidden: '' }, '왼쪽 아래를 누른 채 밀면 걸어요. 오른쪽을 밀면 둘러봐요. 사진기 버튼으로 본 것을 찍어 도감에 담아요.');
   var toastEl = el('div', { class: 'toast3', hidden: '' });
@@ -184,7 +188,8 @@
   var dexBtn = el('button', { class: 'dex3', hidden: '', on: { click: function () { openDex(); } } }, icon('journal'), dexLabel);
   var camBtn = el('button', { class: 'cam3', hidden: '', 'aria-label': '사진 찍기', on: { click: function () { wantShot = true; } } }, icon('camera'));
   var flash = el('div', { class: 'flash3', hidden: '' });
-  add(ui, [touch, hud, base, hint, toastEl, dexBtn, camBtn, snd, flash, panel, overlay]);
+  var denBtn = el('button', { class: 'den3', hidden: '', on: { click: function () { openDen(); } } }, '타임머신에 타기');
+  add(ui, [touch, hud, base, hint, toastEl, dexBtn, camBtn, denBtn, snd, flash, panel, overlay]);
 
   function setObjective(t) { objText.textContent = t; }
   function toast(html, who) {
@@ -278,9 +283,160 @@
       btn('닫기', function () { overlay.className = prevClass; overlay.replaceChildren.apply(overlay, prevKids); overlay.hidden = wasHidden; }));
   }
 
+
+  /* ── 탐험대 이야기: 타임머신 고장과 부품 찾기, 아지트 ──
+   * 세 아이만의 이야기이며 성경 내용이 아니다. 화면에 "탐험대 이야기"라고 적어 본문과 구분한다.
+   * 원칙: 과거에 아무것도 남기지 않고, 가져오는 것은 사진과 기록뿐이다. */
+  var PARTS = [
+    { id: 'gear', name: '톱니바퀴', at: [-17, 31], line: '톱니바퀴를 찾았어!' },
+    { id: 'needle', name: '나침반 바늘', at: [15.5, 22], line: '나침반 바늘이 여기 있었네!' },
+    { id: 'lens', name: '등불 유리', at: [-11, 3], line: '등불 유리를 찾았어!' }
+  ];
+  var partsFound = 0, sceneDone = false, flagColor = null, hatOn = false, flag = null, departT = 0, machineY = machine.group.position.y;
+  var brass = new T.MeshStandardMaterial({ color: '#D9A441', metalness: 0.55, roughness: 0.35, flatShading: true });
+  function partMesh(kind) {
+    var g = new T.Group(), i, m;
+    if (kind === 'gear') {
+      g.add(new T.Mesh(new T.TorusGeometry(0.2, 0.065, 6, 14), brass));
+      for (i = 0; i < 8; i++) { m = new T.Mesh(new T.BoxGeometry(0.09, 0.1, 0.11), brass); m.position.set(Math.cos(i * 0.785) * 0.29, Math.sin(i * 0.785) * 0.29, 0); m.rotation.z = i * 0.785; g.add(m); }
+    } else if (kind === 'needle') {
+      m = new T.Mesh(new T.ConeGeometry(0.09, 0.36, 4), new T.MeshStandardMaterial({ color: '#EE7B62', flatShading: true })); m.position.y = 0.18; m.scale.z = 0.35; g.add(m);
+      m = new T.Mesh(new T.ConeGeometry(0.09, 0.36, 4), new T.MeshStandardMaterial({ color: '#FBF7EE', flatShading: true })); m.position.y = -0.18; m.rotation.z = Math.PI; m.scale.z = 0.35; g.add(m);
+      g.add(new T.Mesh(new T.SphereGeometry(0.06, 8, 6), brass));
+    } else {
+      m = new T.Mesh(new T.SphereGeometry(0.2, 12, 8), new T.MeshStandardMaterial({ color: '#7AD0C8', emissive: '#2F9C95', emissiveIntensity: 0.5, roughness: 0.2, flatShading: true })); m.scale.z = 0.4; g.add(m);
+      g.add(new T.Mesh(new T.TorusGeometry(0.21, 0.035, 6, 16), brass));
+    }
+    g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
+    return g;
+  }
+  var partObjs = PARTS.map(function (p, i) {
+    var grp = new T.Group(), mesh = partMesh(p.id);
+    mesh.position.y = 0.95; grp.add(mesh);
+    var beam = new T.Mesh(new T.CylinderGeometry(0.05, 0.22, 5, 8, 1, true), new T.MeshBasicMaterial({ color: '#8FE3DA', transparent: true, opacity: 0.16, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
+    beam.position.y = 2.7; if (FX) beam.layers.set(FX.GLOW); grp.add(beam);
+    place(grp, p.at[0], p.at[1]); scene.add(grp);
+    if (M.rock) { var rk = M.rock(40 + i); rk.scale.multiplyScalar(1.7); place(rk, p.at[0] + 1.5, p.at[1] - 1.1, -0.05); scene.add(rk); }
+    return { group: grp, mesh: mesh, taken: false };
+  });
+  function takePart(i) {
+    var po = partObjs[i]; po.taken = true; po.group.visible = false; partsFound++;
+    partCount.textContent = '부품 ' + partsFound + ' / ' + PARTS.length;
+    partCount.classList.remove('pulse'); void partCount.offsetWidth; partCount.classList.add('pulse');
+    if (FX) FX.audio.chime();
+    var all = partsFound === PARTS.length;
+    toast(PARTS[i].line + (all ? ' 이제 다 모았어. 타임머신에 끼우러 가자.' : ' 남은 부품은 ' + (PARTS.length - partsFound) + '개야.'), S.ch);
+    if (all && (state === 'free')) setObjective('타임머신으로 돌아가자');
+  }
+  function updateTracker() {
+    var p = player.group.position, best = null, bd = 1e9;
+    partObjs.forEach(function (po, i) { if (po.taken) return; var d = dist2(p.x, p.z, PARTS[i].at[0], PARTS[i].at[1]); if (d < bd) { bd = d; best = PARTS[i]; } });
+    var show = (state === 'explore' || state === 'free');
+    denBtn.hidden = !(show && dist2(p.x, p.z, P.machine[0], P.machine[1]) < 6.5);
+    var target = best ? best.at : ((sceneDone || partsFound === PARTS.length) ? P.machine : null);
+    if (!show || !target) { track.hidden = true; return; }
+    var d = dist2(p.x, p.z, target[0], target[1]);
+    if (!best && d < 6.5) { track.hidden = true; return; }
+    track.hidden = false;
+    var rel = Math.atan2(target[0] - p.x, target[1] - p.z) - camYaw;
+    trackArrow.style.transform = 'rotate(' + (-rel) + 'rad)';
+    trackText.textContent = (best ? '부품 탐지기 ' : '타임머신까지 ') + Math.round(d) + 'm';
+  }
+  function setFlag(color) {
+    flagColor = color;
+    if (flag) { machine.group.remove(flag); flag = null; }
+    if (!color) return;
+    flag = new T.Group();
+    var pole = new T.Mesh(new T.CylinderGeometry(0.018, 0.018, 1.0, 6), brass); pole.position.y = 0.5; flag.add(pole);
+    var shape = new T.Shape(); shape.moveTo(0, 0); shape.lineTo(0.5, -0.14); shape.lineTo(0, -0.28); shape.lineTo(0, 0);
+    var pen = new T.Mesh(new T.ShapeGeometry(shape), new T.MeshStandardMaterial({ color: color, side: T.DoubleSide, flatShading: true })); pen.position.y = 0.98; flag.add(pen);
+    flag.position.set(0.62, 1.75, 0); flag.rotation.z = -0.12;
+    machine.group.add(flag);
+  }
+  function setHat(on) {
+    hatOn = on;
+    if (hat && hat.parent) hat.parent.remove(hat);
+    if (on) wearHat();
+  }
+  function openDen() {
+    var prev = state; state = 'den'; stick.x = stick.y = 0; stick.id = null; base.hidden = true;
+    function render() {
+      var ready = partsFound === PARTS.length && sceneDone;
+      var slots = PARTS.map(function (p, i) {
+        var on = partObjs[i].taken;
+        return el('div', { class: 'slot' + (on ? ' on' : '') }, icon(p.id === 'needle' ? 'compass' : p.id), el('b', { text: p.name }), el('span', { text: on ? '끼웠어요' : '아직 못 찾았어요' }));
+      });
+      var frames = DEX.map(function (d) {
+        var has = d.id in dex;
+        return el('div', { class: 'frame' + (has ? '' : ' empty') }, has && dex[d.id] ? el('img', { src: dex[d.id], alt: d.name }) : el('div', { class: 'ph' }), el('span', { text: has ? d.name : '빈 액자' }));
+      });
+      var cols = [null, '#EE7B62', '#2F9C95', '#4E5FB0', '#F7D774'];
+      var sw = cols.map(function (c) {
+        return el('button', { class: 'sw' + (c ? '' : ' none'), 'aria-pressed': String(flagColor === c), 'aria-label': c ? '깃발 색' : '깃발 없음', style: c ? 'background:' + c : '', on: { click: function () { setFlag(c); render(); } } }, c ? null : '없음');
+      });
+      var hatBtn = el('button', { class: 'tog', 'aria-pressed': String(hatOn), on: { click: function () { setHat(!hatOn); render(); } } }, hatOn ? '쓰고 있어요' : '쓰기');
+      if (!sceneDone) hatBtn.disabled = true;
+      var msg = ready ? '부품을 모두 끼웠고 이 시대의 탐험도 마쳤어요. 이제 떠날 수 있어요.'
+        : [partsFound < PARTS.length ? '시간 나침반의 부품이 ' + (PARTS.length - partsFound) + '개 모자라요.' : '부품은 모두 끼웠어요.',
+          sceneDone ? '' : '떨기나무 장면을 끝까지 지켜봐야 떠날 수 있어요.'].join(' ');
+      var go = btn('다음 시대로 출발', depart, 'wide'); go.disabled = !ready;
+      overlay.className = 'overlay3 den3ov pad';
+      overlay.replaceChildren(
+        el('div', { class: 'eyebrow', text: '탐험대 이야기' }),
+        el('h1', { class: 'den-title', text: '타임머신 아지트' }),
+        el('p', { class: 'den-lead', text: '과거에는 아무것도 남기지 않고, 가져오는 것은 사진과 기록뿐이에요.' }),
+        el('h2', { text: '시간 나침반 수리' }), el('div', { class: 'slots' }, slots), el('p', { class: 'den-msg', text: msg }),
+        el('h2', { text: '사진 벽' }), el('div', { class: 'frames' }, frames),
+        el('h2', { text: '꾸미기' }),
+        el('div', { class: 'deco' }, el('span', { text: '타임머신 깃발' }), el('div', { class: 'sws' }, sw)),
+        el('div', { class: 'deco' }, el('span', { text: sceneDone ? '탐험 모자' : '탐험 모자 (첫 장면을 마치면 열려요)' }), hatBtn),
+        el('div', { class: 'den-foot' }, btn('밖으로 나가기', function () { overlay.hidden = true; state = prev; }, 'quiet'), go));
+      overlay.hidden = false;
+    }
+    render();
+  }
+  var departGlow = (function () {
+    var cv = document.createElement('canvas'); cv.width = cv.height = 128;
+    var cx = cv.getContext('2d'), gr = cx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,236,170,0.55)'); gr.addColorStop(1, 'rgba(255,220,140,0)');
+    cx.fillStyle = gr; cx.fillRect(0, 0, 128, 128);
+    var sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), transparent: true, opacity: 0, blending: T.AdditiveBlending, depthWrite: false, fog: false }));
+    sp.scale.setScalar(5); return sp;
+  })();
+  departGlow.position.y = 1.3; if (FX) departGlow.layers.set(FX.GLOW); machine.group.add(departGlow);
+  function depart() {
+    overlay.hidden = true; state = 'depart'; departT = 0;
+    hud.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true; hint.hidden = true;
+    for (var k in kids) kids[k].group.visible = false;
+    if (FX) FX.audio.rise();
+  }
+  function updateDepart(dt) {
+    departT += dt;
+    var u = Math.min(1, departT / 3.8), e = u * u * u;
+    machine.group.position.y = machineY + e * 22;
+    machine.group.rotation.y += dt * (0.6 + u * 7);
+    departGlow.material.opacity = Math.min(0.6, departT * 0.3); departGlow.scale.setScalar(5 + u * 5);
+    if (departT > 4.3) endCard();
+  }
+  function endCard() {
+    state = 'end2';
+    overlay.className = 'overlay3 den3ov pad';
+    overlay.replaceChildren(
+      el('div', { class: 'eyebrow', text: '출애굽기 3장 탐험 완료' }),
+      el('h1', { class: 'den-title', text: '다음 시대로!' }),
+      el('p', { class: 'den-lead', text: '타임머신이 다시 떠올랐어요. 과거에는 아무것도 남기지 않았어요.' }),
+      el('div', { class: 'slots' },
+        el('div', { class: 'slot on' }, icon('book'), el('b', { text: '말씀 카드' }), el('span', { text: SC.cards.length + '장' })),
+        el('div', { class: 'slot on' }, icon('camera'), el('b', { text: '탐험 도감' }), el('span', { text: dexCount() + ' / ' + DEX.length })),
+        el('div', { class: 'slot on' }, icon('gear'), el('b', { text: '찾은 부품' }), el('span', { text: partsFound + ' / ' + PARTS.length }))),
+      el('p', { class: 'den-msg', text: '다음 장면(하나님의 이름과 세 가지 표징, 출 3:13-4:17)은 목사님 감수를 마친 뒤 열립니다.' }),
+      el('div', { class: 'den-foot' }, btn('처음부터 다시', menu, 'wide')));
+    overlay.hidden = false;
+  }
+
   /* ── 처음 화면 ── */
   function menu() {
-    state = 'menu'; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true;
+    state = 'menu'; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
     if (FX) FX.audio.pad(false);
     var tier = S.tier, ch = S.ch, picked = false;
     var ids = ['choeon', 'hyu', 'onwoo'];
@@ -320,13 +476,25 @@
     scraps.forEach(function (s, i) { s.group.visible = i === 0; s.taken = false; });
     ring.material.opacity = 0;
     if (hat) { hat.parent && hat.parent.remove(hat); }
+    hatOn = false; sceneDone = false; partsFound = 0;
+    partObjs.forEach(function (po) { po.taken = false; po.group.visible = true; });
+    partCount.textContent = '부품 0 / ' + PARTS.length;
+    for (var kk in kids) kids[kk].group.visible = true;
+    machine.group.position.y = machineY; machine.group.rotation.y = -0.5; departGlow.material.opacity = 0; departGlow.scale.setScalar(5);
     camYaw = Math.PI; snapCamera();
     count.textContent = '말씀 조각 0 / 3';
-    setObjective(OBJ[0]); hud.hidden = false; hint.hidden = false;
-    setTimeout(function () { hint.hidden = true; }, 9000);
-    camBtn.hidden = false; dexBtn.hidden = false; updateDexBtn();
-    state = 'explore';
-    toast('타임머신이 도착했어. 저기 빛나는 곳부터 가 보자!', followers.length ? keyOf(followers[0]) : null);
+    setObjective(OBJ[0]); hud.hidden = false;
+    updateDexBtn();
+    state = 'caption';
+    var teller = S.ch === 'onwoo' ? 'hyu' : 'onwoo';
+    showPanel([el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+      el('p', { class: 'narr', text: '타임머신이 모래 위에 거칠게 내려앉았어요. 시간 나침반의 부품 세 개가 튕겨 나갔어요. 부품을 모두 찾아야 다시 떠날 수 있어요.' }),
+      el('div', { class: 'say' }, avatar(teller), el('div', { class: 'bubble' }, el('b', { text: C.chars[teller].name, style: 'color:' + C.chars[teller].color }), '과거에는 아무것도 남기면 안 돼. 탐지기를 보면서 부품을 꼭 다 찾자.'))],
+      btn('출발하자', function () {
+        hidePanel(); state = 'explore'; hint.hidden = false; camBtn.hidden = false; dexBtn.hidden = false;
+        setTimeout(function () { hint.hidden = true; }, 9000);
+        toast('저기 빛나는 곳부터 가 보자! 부품 탐지기도 잊지 마.', followers.length ? keyOf(followers[0]) : null);
+      }));
   }
   function keyOf(k) { for (var n in kids) if (kids[n] === k) return n; return null; }
 
@@ -468,6 +636,7 @@
     return g;
   }
   function wearHat() {
+    if (hat && hat.parent) hat.parent.remove(hat);
     hat = makeHat();
     var box = new T.Box3().setFromObject(player.group);
     hat.position.y = (box.max.y - player.group.position.y) - 0.04;
@@ -489,9 +658,10 @@
       kids_.push(el('p', { class: 'pending', text: '뜻과 삶의 적용을 묻는 질문은 목사님 감수를 마친 뒤 이 자리에 열립니다.' }));
     }
     kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 도감' }), el('p', { text: '지금까지 ' + dexCount() + ' / ' + DEX.length + '장을 담았어요. 더 둘러보며 남은 사진을 찍을 수 있어요.' })));
-    kids_.push(el('div', { class: 'closebox reward3' }, el('h3', { text: '탐험대 꾸미기' }), el('p', { text: '첫 장면을 끝까지 탐험해서 탐험 모자를 얻었어요. 믿음의 점수가 아니라, 다녀온 곳을 기념하는 물건이에요.' })));
-    sheetOverlay(kids_, [btn('처음부터', menu, 'plain'), btn('모자 쓰고 더 둘러보기', function () {
-      overlay.hidden = true; wearHat(); state = 'free'; hud.hidden = false; camBtn.hidden = false; dexBtn.hidden = false; setObjective('자유롭게 둘러보세요'); ring.material.opacity = 0.45;
+    kids_.push(el('div', { class: 'closebox reward3' }, el('h3', { text: '탐험대 이야기' }), el('p', { text: (partsFound < PARTS.length ? '남은 부품 ' + (PARTS.length - partsFound) + '개를 찾아 타임머신으로 돌아가요. ' : '부품을 다 찾았으니 타임머신으로 돌아가요. ') + '아지트에서 탐험 모자를 쓸 수 있게 됐어요. 믿음의 점수가 아니라, 다녀온 곳을 기념하는 물건이에요.' })));
+    sheetOverlay(kids_, [btn('처음부터', menu, 'plain'), btn('계속 탐험하기', function () {
+      overlay.hidden = true; sceneDone = true; state = 'free'; hud.hidden = false; camBtn.hidden = false; dexBtn.hidden = false;
+      setObjective(partsFound < PARTS.length ? '남은 부품을 찾아 타임머신으로 돌아가자' : '타임머신으로 돌아가자'); ring.material.opacity = 0.45;
     })]);
   }
 
@@ -587,7 +757,11 @@
   }
   function updateCamera(dt) {
     var p = player.group.position, k = 1 - Math.exp(-dt * 6), want = new T.Vector3();
-    if (state === 'event' || state === 'gates' || state === 'end') {
+    if (state === 'depart' || state === 'end2') {
+      var mp = machine.group.position;
+      want.set(P.machine[0] - 4, W.height(P.machine[0], P.machine[1]) + 3.2, P.machine[1] + 10.5);
+      camLookT.set(mp.x, mp.y + 1.4, mp.z); k = 1 - Math.exp(-dt * 3);
+    } else if (state === 'event' || state === 'gates' || state === 'end') {
       /* 아이들 어깨 너머로 떨기나무와 모세를 본다 */
       var ax = p.x - P.bush[0], az = p.z - P.bush[1], al = Math.sqrt(ax * ax + az * az) || 1;
       want.set(p.x + ax / al * 3.6 + az / al * 1.5, p.y + 2.5, p.z + az / al * 3.6 - ax / al * 1.5);
@@ -631,6 +805,11 @@
     if (player) {
       if (state === 'explore' || state === 'free') {
         movePlayer(dt); moveFollowers(dt);
+        partObjs.forEach(function (po, pi) {
+          if (po.taken) return;
+          po.mesh.rotation.y = now * 1.6; po.mesh.position.y = 0.95 + Math.sin(now * 2.2 + pi) * 0.1;
+          if (dist2(player.group.position.x, player.group.position.z, PARTS[pi].at[0], PARTS[pi].at[1]) < 1.7) takePart(pi);
+        });
         if (state === 'explore') {
           var s = scraps[step], pp = player.group.position;
           if (s && !s.taken && dist2(pp.x, pp.z, s.group.position.x, s.group.position.z) < 1.7) collect(step);
@@ -639,6 +818,8 @@
       moveMoses(dt);
       if (player.update) player.update(dt, pspeed);
       followers.forEach(function (f) { if (f.update) f.update(dt, f.spd || 0); });
+      if (state === 'depart') updateDepart(dt);
+      updateTracker();
       updateCamera(dt);
       var pp2 = player.group.position;
       env.sun.position.set(pp2.x - 38, pp2.y + 46, pp2.z + 30); env.sun.target.position.copy(pp2);
@@ -656,6 +837,7 @@
 
   /* 자동 점검용 (화면에는 영향 없음) */
   BO3D.debug = {
+    parts: function () { return { found: partsFound, at: PARTS.map(function (p) { return p.at; }), done: sceneDone }; },
     dex: function () { return Object.keys(dex); },
     state: function () { return { state: state, step: step, x: player && player.group.position.x, z: player && player.group.position.z, mosesArrived: mosesArrived }; },
     stick: function (x, y) { stick.x = x; stick.y = y; },

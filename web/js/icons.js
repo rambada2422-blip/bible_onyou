@@ -40,6 +40,9 @@ window.BO = window.BO || {};
     lock: S('<rect x="14" y="28" width="36" height="28" rx="6" fill="currentColor"/><path d="M22 28v-8a10 10 0 0 1 20 0v8" fill="none" stroke="currentColor" stroke-width="6"/>'),
     back: S('<path d="M38 12L18 32l20 20" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>'),
     camera: S('<path d="M10 20h10l4-7h16l4 7h10a4 4 0 0 1 4 4v24a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V24a4 4 0 0 1 4-4Z" fill="currentColor"/><circle cx="32" cy="35" r="10" fill="none" stroke="#FBF7EE" stroke-width="4"/>'),
+    arrow: S('<path d="M32 6l19 27H39v25H25V33H13Z" fill="currentColor"/>'),
+    gear: S('<circle cx="32" cy="32" r="19" fill="none" stroke="currentColor" stroke-width="11" stroke-dasharray="7.5 4.44"/><circle cx="32" cy="32" r="12" fill="none" stroke="currentColor" stroke-width="7"/>'),
+    lens: S('<circle cx="32" cy="32" r="19" fill="#7AD0C8"/><circle cx="32" cy="32" r="19" fill="none" stroke="currentColor" stroke-width="6"/><path d="M22 26c3-5 8-7 13-6" fill="none" stroke="#FBF7EE" stroke-width="4" stroke-linecap="round"/>'),
     compass: S('<circle cx="32" cy="32" r="25" fill="none" stroke="currentColor" stroke-width="4"/><path d="M40 24L36 36 24 40l4-12Z" fill="currentColor"/><circle cx="32" cy="32" r="3" fill="#16233F"/>')
   };
 })();

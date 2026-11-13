@@ -134,8 +134,10 @@ window.BO3D = window.BO3D || {};
       var ang = (i / 14) * Math.PI * 2 + r() * 0.3;
       if (Math.abs(ang - Math.PI * 1.5) < 0.5) continue; /* 호렙 쪽은 비워 둔다 */
       var h = 26 + r() * 30, w = 50 + r() * 45;
-      var m = new T.Mesh(new T.ConeGeometry(w, h, 6 + Math.floor(r() * 3), 1), new T.MeshStandardMaterial({ color: cols[i % 3], flatShading: true, roughness: 1 }));
-      m.position.set(Math.cos(ang) * (190 + r() * 30), h / 2 - 3, Math.sin(ang) * (190 + r() * 30) + 8);
+      /* 피라미드처럼 보이지 않게, 둥글고 낮은 바위산 덩어리로 만든다 */
+      var m = new T.Mesh(new T.DodecahedronGeometry(1, 1), new T.MeshStandardMaterial({ color: cols[i % 3], flatShading: true, roughness: 1 }));
+      m.scale.set(w * (0.9 + r() * 0.5), h * 0.75, w * (0.6 + r() * 0.5));
+      m.position.set(Math.cos(ang) * (195 + r() * 30), -h * 0.12, Math.sin(ang) * (195 + r() * 30) + 8);
       m.rotation.y = r() * 3;
       grp.add(m);
     }
