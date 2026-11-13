@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+/* 3D 샘플용: 아바타 그림을 묶고(web3d/js/avatars.js), 한 파일짜리 미리보기(dist/preview3d.html)를 만든다.
+ * 실행: node tools/build3d.js
+ * 미리보기는 three.js를 cdnjs에서 불러온다. 저장소의 web3d/index.html은 vendor 폴더의 사본을 쓴다.
+ */
+const fs = require('fs');
+const path = require('path');
+const root = path.join(__dirname, '..');
+const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+const clean = (s) => s.replace(/<\?xml[^>]*\?>/g, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\n\s*/g, '\n').trim();
+
+const av = {};
+for (const k of ['choeon', 'hyu', 'onwoo']) av[k] = clean(read(`web/assets/char/${k}-avatar.svg`));
+fs.writeFileSync(path.join(root, 'web3d/js/avatars.js'),
+  '/* tools/build3d.js가 만든 파일. 직접 고치지 말 것. */\nwindow.BO3D = window.BO3D || {};\nBO3D.avatars = ' + JSON.stringify(av) + ';\n');
+
+const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
+const fonts = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Jua&display=swap';
+const scripts = ['web/js/content.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/models.js', 'web3d/js/world.js', 'web3d/js/game.js'];
+const page = [
+  '<title>성경 탐험대 3D</title>',
+  '<meta name="claude:viewport-fit-sides" content="cover">',
+  `<link rel="stylesheet" href="${fonts}">`,
+  '<style>\n' + read('web/css/app.css') + '\n' + read('web3d/css/game.css') + '\n</style>',
+  '<div id="game" class="g3 app"><canvas id="c"></canvas><div id="ui"></div></div>',
+  '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>',
+  ...scripts.filter((p) => fs.existsSync(path.join(root, p))).map((p) => '<script>\n' + esc(read(p)) + '\n</script>')
+].join('\n');
+fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
+fs.writeFileSync(path.join(root, 'dist/preview3d.html'), page);
+console.log('avatars.js 생성 · dist/preview3d.html', (Buffer.byteLength(page) / 1024).toFixed(0) + 'KB');
