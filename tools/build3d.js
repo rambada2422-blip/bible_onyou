@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* 3D 샘플용: 아바타 그림을 묶고(web3d/js/avatars.js), 한 파일짜리 미리보기(dist/preview3d.html)를 만든다.
  * 실행: node tools/build3d.js
- * 미리보기는 three.js를 cdnjs에서 불러온다. 저장소의 web3d/index.html은 vendor 폴더의 사본을 쓴다.
+ * 미리보기에는 three.js(vendor 폴더의 사본)를 함께 넣는다. 이 작업 환경에서 CDN 주소를 확인할 수 없어서다.
  */
 const fs = require('fs');
 const path = require('path');
@@ -23,7 +23,7 @@ const page = [
   `<link rel="stylesheet" href="${fonts}">`,
   '<style>\n' + read('web/css/app.css') + '\n' + read('web3d/css/game.css') + '\n</style>',
   '<div id="game" class="g3 app"><canvas id="c"></canvas><div id="ui"></div></div>',
-  '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>',
+  '<script>\n' + esc(read('web3d/vendor/three.min.js')) + '\n</script>',
   ...scripts.filter((p) => fs.existsSync(path.join(root, p))).map((p) => '<script>\n' + esc(read(p)) + '\n</script>')
 ].join('\n');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });

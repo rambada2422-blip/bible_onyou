@@ -95,7 +95,7 @@
     });
     place(s.group, p[0], p[1]); s.group.visible = false; scene.add(s.group);
     /* 멀리서도 보이는 빛기둥 */
-    var beam = new T.Mesh(new T.CylinderGeometry(0.16, 0.5, 9, 10, 1, true), new T.MeshBasicMaterial({ color: '#FFE08A', transparent: true, opacity: 0.2, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
+    var beam = new T.Mesh(new T.CylinderGeometry(0.08, 0.34, 9, 10, 1, true), new T.MeshBasicMaterial({ color: '#FFE08A', transparent: true, opacity: 0.13, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
     beam.position.y = 4.6; s.group.add(beam);
     return s;
   });
@@ -111,17 +111,18 @@
     followers = ['choeon', 'hyu', 'onwoo'].filter(function (k) { return k !== S.ch; }).map(function (k) { return kids[k]; });
     place(player.group, P.start[0], P.start[1]);
     player.group.rotation.y = Math.PI;
-    followers.forEach(function (f, i) { place(f.group, P.start[0] + (i ? 1.3 : -1.3), P.start[1] + 1.4); f.group.rotation.y = Math.PI; f.spd = 0; });
+    followers.forEach(function (f, i) { place(f.group, P.start[0] + (i ? 1.5 : -1.5), P.start[1] + 0.5); f.group.rotation.y = Math.PI; f.spd = 0; });
     trail = [];
   }
 
   /* ── 상태 ── */
   var state = 'menu';         /* menu | explore | caption | event | gates | end | free */
   var step = 0;               /* 0: 양 떼 쪽, 1: 모세를 따라, 2: 더 가까이 */
-  var camYaw = Math.PI, camPitchH = 1.25, camDist = 6.3, lastDrag = -9, now = 0;
+  var camYaw = Math.PI, camPitchH = 1.45, camDist = 7.4, lastDrag = -9, now = 0;
   var camPos = new T.Vector3(), camLook = new T.Vector3(), camLookT = new T.Vector3();
   var stick = { x: 0, y: 0, id: null, bx: 0, by: 0 }, drag = { id: null, x: 0 }, keys = {};
   var trail = [], mosesWalking = false, mosesArrived = false, lastToast = -9, evIdx = 2, pspeed = 0;
+  var baseFov = 62, viewShift = 0;
   var OBJ = ['양 떼가 있는 곳에서 빛나는 말씀 조각을 찾아보자', '모세가 가는 쪽으로 따라가 보자', '떨기나무가 보이는 곳까지 조금 더 가 보자'];
 
   /* ── 화면 위 UI ── */
@@ -441,10 +442,11 @@
   }
   function moveFollowers(dt) {
     followers.forEach(function (f, k) {
-      var idx = trail.length - 1 - (k + 1) * 5, tgt = idx >= 0 ? trail[idx] : null, p = f.group.position;
+      var idx = trail.length - 1 - 3, tgt = idx >= 0 ? trail[idx] : null, p = f.group.position;
       f.spd = 0;
       if (!tgt) return;
-      var dx = tgt[0] - p.x, dz = tgt[1] - p.z, d = Math.sqrt(dx * dx + dz * dz);
+      var hd = player.group.rotation.y, side = k ? 1.3 : -1.3;
+      var dx = tgt[0] + Math.cos(hd) * side - p.x, dz = tgt[1] - Math.sin(hd) * side - p.z, d = Math.sqrt(dx * dx + dz * dz);
       if (d < 0.15) return;
       var sp = Math.min(5.2, d * 4), st = Math.min(d, sp * dt);
       p.x += dx / d * st; p.z += dz / d * st; p.y = W.height(p.x, p.z);
@@ -471,7 +473,7 @@
     if (state === 'event' || state === 'gates' || state === 'end') {
       /* 아이들 어깨 너머로 떨기나무와 모세를 본다 */
       var ax = p.x - P.bush[0], az = p.z - P.bush[1], al = Math.sqrt(ax * ax + az * az) || 1;
-      want.set(p.x + ax / al * 5.2 + az / al * 1.6, p.y + 3.1, p.z + az / al * 5.2 - ax / al * 1.6);
+      want.set(p.x + ax / al * 3.6 + az / al * 1.5, p.y + 2.5, p.z + az / al * 3.6 - ax / al * 1.5);
       k = 1 - Math.exp(-dt * 2.2);
     } else {
       var fx = Math.sin(camYaw), fz = Math.cos(camYaw);
@@ -482,12 +484,22 @@
     if (want.y < ground) want.y = ground;
     camPos.lerp(want, k); camLook.lerp(camLookT, k);
     camera.position.copy(camPos); camera.lookAt(camLook);
+    /* 자막 창이 열리면 장면을 화면 위쪽으로 올리고, 사건을 볼 때는 당겨 본다 */
+    var wantShift = (state === 'event') ? 0.2 : (state === 'caption' ? 0.14 : 0);
+    var wantFov = (state === 'event') ? 46 : baseFov;
+    if (Math.abs(wantShift - viewShift) > 0.001 || Math.abs(wantFov - camera.fov) > 0.05) {
+      viewShift += (wantShift - viewShift) * Math.min(1, dt * 3);
+      camera.fov += (wantFov - camera.fov) * Math.min(1, dt * 3);
+      var vw = root.clientWidth, vh = root.clientHeight;
+      if (viewShift > 0.002) camera.setViewOffset(vw, vh, 0, vh * viewShift, vw, vh); else camera.clearViewOffset();
+      camera.updateProjectionMatrix();
+    }
   }
   function resize() {
     var w = root.clientWidth, h = root.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
-    camera.aspect = w / h; camera.fov = w < h ? 62 : 50; camera.updateProjectionMatrix();
+    camera.aspect = w / h; baseFov = w < h ? 62 : 50; camera.fov = baseFov; viewShift = 0; camera.clearViewOffset(); camera.updateProjectionMatrix();
   }
   window.addEventListener('resize', resize);
 

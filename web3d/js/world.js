@@ -175,7 +175,7 @@ window.BO3D = window.BO3D || {};
     function scatter(n, make, rad, minS, maxS) {
       for (i = 0; i < n; i++) {
         x = (r() * 2 - 1) * rad; z = 8 + (r() * 2 - 1) * rad;
-        if (!clear(x, z) || mountain(x, z) > 14) continue;
+        if (!clear(x, z) || mountain(x, z) > 1.5) continue;
         o = make(Math.floor(r() * 9999));
         if (!o) continue;
         var s = minS + r() * (maxS - minS);

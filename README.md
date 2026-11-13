@@ -27,3 +27,22 @@ node tools/build.js
 ```
 
 이 명령은 `dist/preview.html`(한 파일짜리 미리보기)도 함께 만든다.
+
+## 3D 한 장면 샘플
+
+`web3d/` 폴더는 떨기나무 장면을 3D로 만든 샘플이다. 주인공을 직접 움직여 탐험하는 구조를 확인하기 위한 것이며, 그래픽은 코드로 만든 단순한 3D다. `web3d/index.html`을 브라우저로 열면 된다.
+
+| 위치 | 내용 |
+|---|---|
+| `web3d/js/world.js` | 지형, 하늘, 빛, 소품 배치 |
+| `web3d/js/models.js` | 세 아이, 모세, 양, 떨기나무, 타임머신 등 3D 모델 |
+| `web3d/js/game.js` | 조작, 카메라, 진행, 화면 위 안내 |
+| `web3d/vendor/` | three.js r128 (MIT 라이선스) |
+
+대본은 2D 시범판과 같은 `web/js/content.js`를 쓴다. 한 파일짜리 미리보기는 아래 명령으로 만든다.
+
+```bash
+node tools/build3d.js
+```
+
+사실적 3D 외주 제작의 비용 자료는 [docs/04_외주_시세조사.md](docs/04_외주_시세조사.md)에 있다.
