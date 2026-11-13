@@ -260,8 +260,9 @@ window.BO3D = window.BO3D || {};
       }
       padG.gain.setTargetAtTime(on ? 0.9 : 0, ctx.currentTime, on ? 1.6 : 0.8);
     }
+    function shutter() { if (!ctx) return; var t = ctx.currentTime; tone(2100, t, 0.035, 0.1, 'square'); tone(1300, t + 0.055, 0.05, 0.08, 'square'); }
     function mute(m) { muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); }
-    return { start: start, setFire: setFire, chime: chime, pad: pad, mute: mute, isMuted: function () { return muted; } };
+    return { start: start, setFire: setFire, chime: chime, shutter: shutter, pad: pad, mute: mute, isMuted: function () { return muted; } };
   })();
 
   BO3D.fx = { fire: fire, upgradeBush: upgradeBush, sortLayers: sortLayers, Post: Post, audio: audio, GLOW: GLOW, SOFT: SOFT };

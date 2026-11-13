@@ -39,6 +39,7 @@ window.BO = window.BO || {};
     check: S('<path d="M12 34l13 13 27-30" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>'),
     lock: S('<rect x="14" y="28" width="36" height="28" rx="6" fill="currentColor"/><path d="M22 28v-8a10 10 0 0 1 20 0v8" fill="none" stroke="currentColor" stroke-width="6"/>'),
     back: S('<path d="M38 12L18 32l20 20" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>'),
+    camera: S('<path d="M10 20h10l4-7h16l4 7h10a4 4 0 0 1 4 4v24a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V24a4 4 0 0 1 4-4Z" fill="currentColor"/><circle cx="32" cy="35" r="10" fill="none" stroke="#FBF7EE" stroke-width="4"/>'),
     compass: S('<circle cx="32" cy="32" r="25" fill="none" stroke="currentColor" stroke-width="4"/><path d="M40 24L36 36 24 40l4-12Z" fill="currentColor"/><circle cx="32" cy="32" r="3" fill="#16233F"/>')
   };
 })();

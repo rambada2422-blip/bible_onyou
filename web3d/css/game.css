@@ -47,3 +47,25 @@
 .snd3 svg { width: 22px; height: 22px; }
 .snd3[aria-pressed="true"] { color: #8FA0C8; background: rgba(14, 23, 48, .5); }
 .snd3[aria-pressed="true"]::after { content: ""; position: absolute; width: 30px; height: 3px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
+
+/* 사진과 도감 */
+.cam3 { position: absolute; right: var(--gutter-r); bottom: 80px; width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; background: var(--brass); color: var(--ink-3); box-shadow: 0 4px 0 var(--brass-deep); }
+.cam3:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--brass-deep); }
+.cam3 svg { width: 30px; height: 30px; }
+.dex3 { position: absolute; right: var(--gutter-r); bottom: 154px; min-height: 40px; padding: 0 13px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-display); font-size: 14px; background: rgba(14, 23, 48, .78); color: var(--paper); }
+.dex3 svg { width: 18px; height: 18px; }
+.dex3.pulse { animation: pulse3 .6s ease; }
+.g3.ev .cam3 { bottom: calc(50% + 22px); }
+.g3.ev .dex3 { bottom: calc(50% + 96px); }
+.g3.ev .snd3 { display: none; }
+.flash3 { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none !important; }
+.flash3.go { animation: flash3 .4s ease-out; }
+@keyframes flash3 { 0% { opacity: .85; } 100% { opacity: 0; } }
+.dexgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.dexcell { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; padding: 8px; border-radius: 14px; background: #fff; box-shadow: inset 0 0 0 2px var(--paper-line); min-width: 0; }
+.dexcell img, .dexcell .ph { width: 100%; aspect-ratio: 1; border-radius: 10px; display: block; object-fit: cover; }
+.dexcell .ph { display: grid; place-items: center; background: var(--paper-2); color: var(--text-soft); font-family: var(--f-display); font-size: 40px; }
+.dexcell b { font-family: var(--f-display); font-weight: 400; font-size: 15.5px; line-height: 1.3; }
+.dexcell span { font-size: 13px; line-height: 1.4; color: var(--text-soft); }
+.dexcell.none { background: transparent; box-shadow: inset 0 0 0 2px var(--paper-line); }
+@media (prefers-reduced-motion: reduce) { .flash3.go, .dex3.pulse { animation: none; } }

@@ -138,7 +138,7 @@
     el('div', { class: 'row' }, place_, refChip(SC.ref, true), count),
     el('div', { class: 'obj' }, icon('compass'), objText));
   var knob = el('i', {}), base = el('div', { class: 'stick', hidden: '' }, knob);
-  var hint = el('div', { class: 'hint', hidden: '' }, '왼쪽 아래를 누른 채 밀면 걸어요. 오른쪽을 밀면 둘러봐요.');
+  var hint = el('div', { class: 'hint', hidden: '' }, '왼쪽 아래를 누른 채 밀면 걸어요. 오른쪽을 밀면 둘러봐요. 사진기 버튼으로 본 것을 찍어 도감에 담아요.');
   var toastEl = el('div', { class: 'toast3', hidden: '' });
   var panelBody = el('div', { class: 'sheet-body pad' }), panelFoot = el('div', { class: 'sheet-foot pad' });
   var panel = el('div', { class: 'panel3 sheet', hidden: '' }, panelBody, panelFoot);
@@ -147,7 +147,11 @@
   var snd = el('button', { class: 'snd3', hidden: '', 'aria-label': '소리 끄기', 'aria-pressed': 'false', on: { click: function () {
     var m = !FX.audio.isMuted(); FX.audio.mute(m); snd.setAttribute('aria-pressed', String(m)); snd.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기');
   } } }, icon('speaker'));
-  add(ui, [touch, hud, base, hint, toastEl, snd, panel, overlay]);
+  var dexLabel = el('span', { text: '도감 0 / 5' });
+  var dexBtn = el('button', { class: 'dex3', hidden: '', on: { click: function () { openDex(); } } }, icon('journal'), dexLabel);
+  var camBtn = el('button', { class: 'cam3', hidden: '', 'aria-label': '사진 찍기', on: { click: function () { wantShot = true; } } }, icon('camera'));
+  var flash = el('div', { class: 'flash3', hidden: '' });
+  add(ui, [touch, hud, base, hint, toastEl, dexBtn, camBtn, snd, flash, panel, overlay]);
 
   function setObjective(t) { objText.textContent = t; }
   function toast(html, who) {
@@ -176,9 +180,74 @@
     ];
   }
 
+
+  /* ── 사진과 탐험 도감 ──
+   * 세 아이는 목격자다. 본 것을 사진으로 담아 도감을 채운다. 설명은 본문에 있는 사실만 적는다. */
+  function v3(x, y, z) { return new T.Vector3(x, y, z); }
+  var DEX = [
+    { id: 'sheep', name: '양 떼', desc: '모세가 치던 장인 이드로의 양 떼', ref: '출 3:1', hint: '출발한 곳에서 가까운 곳에 모여 있어요.', range: 17,
+      pos: function () { return v3(P.flock[0], W.height(P.flock[0], P.flock[1]) + 0.6, P.flock[1]); } },
+    { id: 'moses', name: '모세', desc: '미디안 제사장 이드로의 사위. 장인의 양 떼를 치고 있었다', ref: '출 3:1', hint: '양 떼 가까이에서 찾아보세요.', range: 19,
+      pos: function () { var p = moses.group.position; return v3(p.x, p.y + 1.1, p.z); } },
+    { id: 'horeb', name: '하나님의 산 호렙', desc: '모세가 양 떼를 이끌고 이른 산', ref: '출 3:1', hint: '가장 높은 봉우리를 화면 가운데에 담아 보세요.', range: 500, crop: 0.95,
+      pos: function () { return v3(P.mountain[0], W.height(P.mountain[0], P.mountain[1]) * 0.62, P.mountain[1]); } },
+    { id: 'bush', name: '불붙은 떨기나무', desc: '불이 붙었으나 타서 없어지지 않은 떨기나무', ref: '출 3:2', hint: '모세가 가는 쪽으로 따라가면 보여요.', range: 36,
+      pos: function () { return v3(P.bush[0], W.height(P.bush[0], P.bush[1]) + 1.3, P.bush[1]); } },
+    { id: 'machine', name: '타임머신', desc: '탐험대가 타고 온 놋쇠 타임머신. 성경에 나오는 물건은 아니다', ref: null, hint: '처음 도착한 자리에 서 있어요.', range: 17,
+      pos: function () { return v3(P.machine[0], W.height(P.machine[0], P.machine[1]) + 1.3, P.machine[1]); } }
+  ];
+  var dex = {}, wantShot = false;
+  function dexCount() { return Object.keys(dex).length; }
+  function updateDexBtn() { dexLabel.textContent = '도감 ' + dexCount() + ' / ' + DEX.length; }
+  function takeShot() {
+    var cw = canvas.width, ch = canvas.height, found = [], best = null;
+    DEX.forEach(function (d) {
+      var wp = d.pos(), cs = wp.clone().applyMatrix4(camera.matrixWorldInverse);
+      if (cs.z > -0.5 || wp.distanceTo(camera.position) > d.range) return;
+      var n = wp.clone().project(camera);
+      if (Math.abs(n.x) > 0.82 || Math.abs(n.y) > 0.86) return;
+      var item = { d: d, n: n, c: n.x * n.x + n.y * n.y };
+      found.push(item); if (!best || item.c < best.c) best = item;
+    });
+    flash.hidden = false; flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+    setTimeout(function () { flash.hidden = true; }, 420);
+    if (FX) FX.audio.shutter();
+    if (!found.length) { toast('사진에 담긴 것이 없어요. 찍고 싶은 것을 화면 가운데에 놓고 다시 찍어 보세요.'); return; }
+    var fresh = found.filter(function (f) { return !dex[f.d.id]; });
+    fresh.forEach(function (f) {
+      var size = Math.min(cw, ch) * (f.d.crop || 0.5), sx = (f.n.x * 0.5 + 0.5) * cw - size / 2, sy = (1 - (f.n.y * 0.5 + 0.5)) * ch - size / 2;
+      sx = Math.max(0, Math.min(cw - size, sx)); sy = Math.max(0, Math.min(ch - size, sy));
+      var cv = document.createElement('canvas'); cv.width = cv.height = 220;
+      try { cv.getContext('2d').drawImage(canvas, sx, sy, size, size, 0, 0, 220, 220); dex[f.d.id] = cv.toDataURL('image/jpeg', 0.82); }
+      catch (e) { dex[f.d.id] = ''; }
+    });
+    updateDexBtn();
+    if (fresh.length) {
+      if (FX) FX.audio.chime();
+      dexBtn.classList.remove('pulse'); void dexBtn.offsetWidth; dexBtn.classList.add('pulse');
+      toast('도감에 새로 담았어요: ' + fresh.map(function (f) { return f.d.name; }).join(', ') + (dexCount() === DEX.length ? '. 도감을 모두 채웠어요!' : ''));
+    } else toast('이미 도감에 있는 사진이에요: ' + best.d.name);
+  }
+  function openDex() {
+    stick.x = stick.y = 0; stick.id = null; base.hidden = true;
+    var cells = DEX.map(function (d) {
+      var has = d.id in dex;
+      return el('div', { class: 'dexcell' + (has ? '' : ' none') },
+        has && dex[d.id] ? el('img', { src: dex[d.id], alt: d.name }) : el('div', { class: 'ph', text: has ? '' : '?' }),
+        el('b', { text: has ? d.name : '아직 못 찍었어요' }),
+        el('span', { text: has ? d.desc : d.hint }),
+        has && d.ref ? refChip(d.ref) : null);
+    });
+    var prevClass = overlay.className, prevKids = Array.prototype.slice.call(overlay.childNodes), wasHidden = overlay.hidden;
+    sheetOverlay([el('div', { class: 'q-kicker', text: '탐험 도감 ' + dexCount() + ' / ' + DEX.length }),
+      el('p', { class: 'q-prompt', text: '본 것을 사진으로 담아 도감을 채워요.' }),
+      el('div', { class: 'dexgrid' }, cells)],
+      btn('닫기', function () { overlay.className = prevClass; overlay.replaceChildren.apply(overlay, prevKids); overlay.hidden = wasHidden; }));
+  }
+
   /* ── 처음 화면 ── */
   function menu() {
-    state = 'menu'; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true;
+    state = 'menu'; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true;
     if (FX) FX.audio.pad(false);
     var tier = S.tier, ch = S.ch, picked = false;
     var ids = ['choeon', 'hyu', 'onwoo'];
@@ -221,7 +290,8 @@
     camYaw = Math.PI; snapCamera();
     count.textContent = '말씀 조각 0 / 3';
     setObjective(OBJ[0]); hud.hidden = false; hint.hidden = false;
-    setTimeout(function () { hint.hidden = true; }, 7000);
+    setTimeout(function () { hint.hidden = true; }, 9000);
+    camBtn.hidden = false; dexBtn.hidden = false; updateDexBtn();
     state = 'explore';
     toast('타임머신이 도착했어. 저기 빛나는 곳부터 가 보자!', followers.length ? keyOf(followers[0]) : null);
   }
@@ -247,7 +317,7 @@
 
   /* ── 사건 목격 ── */
   function startEvent() {
-    state = 'event'; hud.hidden = true; hint.hidden = true;
+    state = 'event'; hud.hidden = true; hint.hidden = true; root.classList.add('ev');
     if (FX) FX.audio.pad(true);
     mosesWalking = false; mosesArrived = true;
     place(moses.group, P.mosesEnd[0], P.mosesEnd[1]);
@@ -344,7 +414,7 @@
     overlay.hidden = false;
   }
   function startGates() {
-    state = 'gates'; hidePanel();
+    state = 'gates'; hidePanel(); root.classList.remove('ev'); camBtn.hidden = true; dexBtn.hidden = true;
     var gates = SC.gates[S.tier], gi = 0;
     (function show() {
       var q = gates[gi], last = gi === gates.length - 1;
@@ -385,9 +455,10 @@
       kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 기록' }), el('p', { text: c.prompt }), el('textarea', { id: 'g-note', 'aria-label': '기록', placeholder: '여기에 적어 보세요.' })));
       kids_.push(el('p', { class: 'pending', text: '뜻과 삶의 적용을 묻는 질문은 목사님 감수를 마친 뒤 이 자리에 열립니다.' }));
     }
+    kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 도감' }), el('p', { text: '지금까지 ' + dexCount() + ' / ' + DEX.length + '장을 담았어요. 더 둘러보며 남은 사진을 찍을 수 있어요.' })));
     kids_.push(el('div', { class: 'closebox reward3' }, el('h3', { text: '탐험대 꾸미기' }), el('p', { text: '첫 장면을 끝까지 탐험해서 탐험 모자를 얻었어요. 믿음의 점수가 아니라, 다녀온 곳을 기념하는 물건이에요.' })));
     sheetOverlay(kids_, [btn('처음부터', menu, 'plain'), btn('모자 쓰고 더 둘러보기', function () {
-      overlay.hidden = true; wearHat(); state = 'free'; hud.hidden = false; setObjective('자유롭게 둘러보세요'); ring.material.opacity = 0.45;
+      overlay.hidden = true; wearHat(); state = 'free'; hud.hidden = false; camBtn.hidden = false; dexBtn.hidden = false; setObjective('자유롭게 둘러보세요'); ring.material.opacity = 0.45;
     })]);
   }
 
@@ -547,10 +618,12 @@
     if (bushFx) bushFx.update(now, camera, renderer.domElement.height);
     if (FX && player) FX.audio.setFire(dist2(player.group.position.x, player.group.position.z, P.bush[0], P.bush[1]));
     if (post) post.render(scene, camera); else renderer.render(scene, camera);
+    if (wantShot) { wantShot = false; takeShot(); }
   }
 
   /* 자동 점검용 (화면에는 영향 없음) */
   BO3D.debug = {
+    dex: function () { return Object.keys(dex); },
     state: function () { return { state: state, step: step, x: player && player.group.position.x, z: player && player.group.position.z, mosesArrived: mosesArrived }; },
     stick: function (x, y) { stick.x = x; stick.y = y; },
     yaw: function (v) { camYaw = v; lastDrag = now + 999; },
