@@ -6,6 +6,11 @@
   'use strict';
   var T = THREE, C = BO.content, IC = BO.icons, W = BO3D.world, M = BO3D.models || {}, AV = BO3D.avatars || {}, FX = BO3D.fx || null;
   var P = W.P, SC = C.scenes['EX-01'];
+  var C3 = BO.content3d || null, JD = C3 ? C3.jordan : null, ALT = C.scenes['ALT-02'];
+  /* 지금 있는 장소: 'horeb'(호렙 산) 또는 'jordan'(요단 강). 높이와 걸을 수 있는 곳은 장소마다 다르다. */
+  var cur = 'horeb', JL = null;
+  function H(x, z) { return cur === 'jordan' && JL ? JL.height(x, z) : W['height'](x, z); }
+  function WALK(x, z) { return cur === 'jordan' && JL ? JL.walkable(x, z) : W['walkable'](x, z); }
   var S = { tier: 't2', ch: 'hyu' };
   var root = document.getElementById('game'), canvas = document.getElementById('c'), ui = document.getElementById('ui');
 
@@ -36,7 +41,7 @@
     return el('img', { class: 'avatar', alt: '', src: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(AV[key]) });
   }
   function bookName(ref) {
-    return ref.replace(/^출 /, '출애굽기 ').replace(/^창 /, '창세기 ').replace(/(\d+):/, '$1장 ').replace(/$/, '절');
+    return ref.replace(/^출 /, '출애굽기 ').replace(/^창 /, '창세기 ').replace(/^수 /, '여호수아 ').replace(/(\d+):/, '$1장 ').replace(/$/, '절');
   }
   function dist2(ax, az, bx, bz) { var dx = ax - bx, dz = az - bz; return Math.sqrt(dx * dx + dz * dz); }
   function lerpAngle(a, b, t) { var d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; }
@@ -65,7 +70,7 @@
   camera.layers.enable(1); camera.layers.enable(2);
   var post = FX ? new FX.Post(renderer) : null;
 
-  function place(obj, x, z, lift) { obj.position.set(x, W.height(x, z) + (lift || 0), z); return obj; }
+  function place(obj, x, z, lift) { obj.position.set(x, H(x, z) + (lift || 0), z); return obj; }
 
   var machine = mk('timeMachine', null, function () { return { group: fallback('#D9A441', 2.4, 0.9), update: function () {} }; });
   scene.add(place(machine.group, P.machine[0], P.machine[1]));
@@ -143,14 +148,18 @@
 
   var kids = {}, player = null, followers = [];
   function spawnKids() {
-    ['choeon', 'hyu', 'onwoo'].forEach(function (k) { if (kids[k]) scene.remove(kids[k].group); kids[k] = mkKid(k); scene.add(kids[k].group); });
+    var sc = cur === 'jordan' ? JL.scene : scene, st = cur === 'jordan' ? JL.P.start : P.start;
+    ['choeon', 'hyu', 'onwoo'].forEach(function (k) {
+      if (kids[k]) { scene.remove(kids[k].group); if (JL) JL.scene.remove(kids[k].group); }
+      kids[k] = mkKid(k); sc.add(kids[k].group);
+    });
     player = kids[S.ch];
     followers = ['choeon', 'hyu', 'onwoo'].filter(function (k) { return k !== S.ch; }).map(function (k) { return kids[k]; });
-    place(player.group, P.start[0], P.start[1]);
+    place(player.group, st[0], st[1]);
     player.group.rotation.y = Math.PI;
-    followers.forEach(function (f, i) { place(f.group, P.start[0] + (i ? 1.5 : -1.5), P.start[1] + 0.5); f.group.rotation.y = Math.PI; f.spd = 0; });
+    followers.forEach(function (f, i) { place(f.group, st[0] + (i ? 1.5 : -1.5), st[1] + 0.5); f.group.rotation.y = Math.PI; f.spd = 0; });
     trail = [];
-    if (FX) FX.sortLayers(scene);
+    if (FX) FX.sortLayers(sc);
   }
 
   /* ── 상태 ── */
@@ -170,9 +179,10 @@
   var partCount = el('span', { class: 'count teal', text: '부품 0 / 3' });
   var trackArrow = el('i', {}, icon('arrow')), trackText = el('span', { text: '' });
   var track = el('div', { class: 'track3', hidden: '' }, trackArrow, trackText);
+  var hudRef = refChip(SC.ref, true), clueCount = el('span', { class: 'count teal', hidden: '', text: '단서 0 / 5' });
   var hud = el('div', { class: 'hud3 pad', hidden: '' },
-    el('div', { class: 'row' }, place_, refChip(SC.ref, true)),
-    el('div', { class: 'row' }, count, partCount),
+    el('div', { class: 'row' }, place_, hudRef),
+    el('div', { class: 'row' }, count, partCount, clueCount),
     el('div', { class: 'obj' }, icon('compass'), objText), track);
   var knob = el('i', {}), base = el('div', { class: 'stick', hidden: '' }, knob);
   var hint = el('div', { class: 'hint', hidden: '' }, '왼쪽 아래를 누른 채 밀면 걸어요. 오른쪽을 밀면 둘러봐요. 사진기 버튼으로 본 것을 찍어 도감에 담아요.');
@@ -185,11 +195,12 @@
     var m = !FX.audio.isMuted(); FX.audio.mute(m); snd.setAttribute('aria-pressed', String(m)); snd.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기');
   } } }, icon('speaker'));
   var dexLabel = el('span', { text: '도감 0 / 5' });
-  var dexBtn = el('button', { class: 'dex3', hidden: '', on: { click: function () { openDex(); } } }, icon('journal'), dexLabel);
+  var dexBtn = el('button', { class: 'dex3', hidden: '', on: { click: function () { if (cur === 'jordan') openClues(); else openDex(); } } }, icon('journal'), dexLabel);
   var camBtn = el('button', { class: 'cam3', hidden: '', 'aria-label': '사진 찍기', on: { click: function () { wantShot = true; } } }, icon('camera'));
   var flash = el('div', { class: 'flash3', hidden: '' });
   var denBtn = el('button', { class: 'den3', hidden: '', on: { click: function () { openDen(); } } }, '타임머신에 타기');
-  add(ui, [touch, hud, base, hint, toastEl, dexBtn, camBtn, denBtn, snd, flash, panel, overlay]);
+  var dedBtn = el('button', { class: 'den3', hidden: '', on: { click: function () { startDeduce(); } } }, '추리하기');
+  add(ui, [touch, hud, base, hint, toastEl, dexBtn, camBtn, denBtn, dedBtn, snd, flash, panel, overlay]);
 
   function setObjective(t) { objText.textContent = t; }
   function toast(html, who) {
@@ -224,15 +235,15 @@
   function v3(x, y, z) { return new T.Vector3(x, y, z); }
   var DEX = [
     { id: 'sheep', name: '양 떼', desc: '모세가 치던 장인 이드로의 양 떼', ref: '출 3:1', hint: '출발한 곳에서 가까운 곳에 모여 있어요.', range: 17,
-      pos: function () { return v3(P.flock[0], W.height(P.flock[0], P.flock[1]) + 0.6, P.flock[1]); } },
+      pos: function () { return v3(P.flock[0], H(P.flock[0], P.flock[1]) + 0.6, P.flock[1]); } },
     { id: 'moses', name: '모세', desc: '미디안 제사장 이드로의 사위. 장인의 양 떼를 치고 있었다', ref: '출 3:1', hint: '양 떼 가까이에서 찾아보세요.', range: 19,
       pos: function () { var p = moses.group.position; return v3(p.x, p.y + 1.1, p.z); } },
     { id: 'horeb', name: '하나님의 산 호렙', desc: '모세가 양 떼를 이끌고 이른 산', ref: '출 3:1', hint: '가장 높은 봉우리를 화면 가운데에 담아 보세요.', range: 500, crop: 0.95,
-      pos: function () { return v3(P.mountain[0], W.height(P.mountain[0], P.mountain[1]) * 0.62, P.mountain[1]); } },
+      pos: function () { return v3(P.mountain[0], H(P.mountain[0], P.mountain[1]) * 0.62, P.mountain[1]); } },
     { id: 'bush', name: '불붙은 떨기나무', desc: '불이 붙었으나 타서 없어지지 않은 떨기나무', ref: '출 3:2', hint: '모세가 가는 쪽으로 따라가면 보여요.', range: 36,
-      pos: function () { return v3(P.bush[0], W.height(P.bush[0], P.bush[1]) + 1.3, P.bush[1]); } },
+      pos: function () { return v3(P.bush[0], H(P.bush[0], P.bush[1]) + 1.3, P.bush[1]); } },
     { id: 'machine', name: '타임머신', desc: '탐험대가 타고 온 놋쇠 타임머신. 성경에 나오는 물건은 아니다', ref: null, hint: '처음 도착한 자리에 서 있어요.', range: 17,
-      pos: function () { return v3(P.machine[0], W.height(P.machine[0], P.machine[1]) + 1.3, P.machine[1]); } }
+      pos: function () { return v3(P.machine[0], H(P.machine[0], P.machine[1]) + 1.3, P.machine[1]); } }
   ];
   var dex = {}, wantShot = false;
   function dexCount() { return Object.keys(dex).length; }
@@ -430,13 +441,225 @@
         el('div', { class: 'slot on' }, icon('camera'), el('b', { text: '탐험 도감' }), el('span', { text: dexCount() + ' / ' + DEX.length })),
         el('div', { class: 'slot on' }, icon('gear'), el('b', { text: '찾은 부품' }), el('span', { text: partsFound + ' / ' + PARTS.length }))),
       el('p', { class: 'den-msg', text: '다음 장면(하나님의 이름과 세 가지 표징, 출 3:13-4:17)은 목사님 감수를 마친 뒤 열립니다.' }),
-      el('div', { class: 'den-foot' }, btn('처음부터 다시', menu, 'wide')));
+      el('div', { class: 'den-foot' }, btn('처음부터 다시', menu, 'quiet'), btn('다른 이름으로 가 보기', function () { if (C3 && BO3D.jordan) route(); else menu(); }, 'wide')));
     overlay.hidden = false;
+  }
+
+
+  /* ── 시대 추리: 이름을 잘못 넣으면 성경의 다른 실제 장면으로 간다 ──
+   * 도착한 곳이 언제, 어디인지 모르는 채로 사진으로 단서를 모으고, 증거를 골라 추리한 뒤 성경에서 확인한다. */
+  function hudMode() {
+    var j = cur === 'jordan';
+    place_.textContent = j ? JD.unknownPlace : SC.place;
+    hudRef.hidden = j; count.hidden = j; partCount.hidden = j; clueCount.hidden = !j;
+    dedBtn.hidden = true;
+    if (j) { track.hidden = true; denBtn.hidden = true; }
+  }
+  function route() {
+    state = 'route'; hud.hidden = true; hidePanel(); camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; dedBtn.hidden = true; track.hidden = true;
+    root.className = 'g3 app ' + S.tier;
+    if (FX) { FX.audio.start(); FX.audio.pad(false); }
+    var opts = C.route.options.map(function (o) {
+      var ready = o.to === 'EX-01' || o.to === 'ALT-02';
+      var b = btn(ready ? o.label : C3.route.locked, function () {
+        warpTo(o.label + '의 시대로', function () { if (o.to === 'ALT-02') enterJordan(); else begin(); });
+      }, 'wide');
+      if (!ready) b.disabled = true;
+      return b;
+    });
+    overlay.className = 'overlay3 den3ov pad';
+    overlay.replaceChildren(
+      el('div', { class: 'eyebrow', text: '탐험대 이야기' }),
+      el('h1', { class: 'den-title', text: C3.route.title }),
+      el('p', { class: 'den-lead', text: C3.route.lead }),
+      el('p', { class: 'route-q', text: tx(C.route.prompt) }),
+      el('div', { class: 'route-opts' }, opts));
+    overlay.hidden = false;
+  }
+  function warpTo(title, fn) {
+    overlay.className = 'overlay3 den3ov warp3 pad';
+    overlay.replaceChildren(el('div', { class: 'eyebrow', text: '시간 이동' }), el('h1', { class: 'den-title', text: title }), el('p', { class: 'den-lead', text: '타임머신이 이름을 따라 시대를 찾고 있어요.' }));
+    overlay.hidden = false;
+    if (FX) FX.audio.chime();
+    setTimeout(fn, 1500);
+  }
+  function loadGlb(name, cb) {
+    var data = BO3D.glbData && BO3D.glbData[name];
+    if (!data || !T.GLTFLoader) return;
+    try {
+      var bin = atob(data), buf = new Uint8Array(bin.length), i;
+      for (i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      new T.GLTFLoader().parse(buf.buffer, '', cb, function (e) { console.error('glb ' + name, e); });
+    } catch (e) { console.error('glb ' + name, e); }
+  }
+  /* Blender로 만든 여호수아와 제사장이 있으면 단순 모형과 바꿔 끼운다 */
+  function swapGlb(name, old, clipName, once, mirror) {
+    loadGlb(name, function (gltf) {
+      var g = gltf.scene, mixer = new T.AnimationMixer(g), clip = null;
+      g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+      gltf.animations.forEach(function (c) { if (c.name === clipName) clip = c; });
+      if (!clip) clip = gltf.animations[0];
+      if (clip) { var a = mixer.clipAction(clip); if (once) { a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = true; } a.play(); }
+      g.position.copy(old.group.position); g.rotation.y = old.group.rotation.y;
+      if (mirror) g.scale.x = -1;
+      JL.scene.remove(old.group); JL.scene.add(g); old.group = g;
+      JL.addUpdate(function (dt) { mixer.update(dt); });
+      if (FX) FX.sortLayers(g);
+    });
+  }
+  function loadJordanGlb() {
+    swapGlb('joshua', JL.leader, 'Point', true, false);
+    JL.priests.forEach(function (pr) { swapGlb('priest', pr, 'Carry', false, pr.side === 'L'); });
+  }
+  var clue = {}, dedReady = false;
+  function clueN() { return Object.keys(clue).length; }
+  function enterJordan() {
+    if (!JL) { JL = BO3D.jordan.build(); loadJordanGlb(); }
+    cur = 'jordan'; overlay.hidden = true; clue = {}; dedReady = false;
+    spawnKids(); hudMode();
+    camYaw = Math.PI; snapCamera();
+    clueCount.textContent = '단서 0 / ' + JD.clues.length; dexLabel.textContent = '추리 수첩 0 / ' + JD.clues.length;
+    setObjective(JD.objective); hud.hidden = false; snd.hidden = false;
+    state = 'caption';
+    var sy = JD.story.say, who = C.chars[sy.who];
+    showPanel([el('div', { class: 'q-kicker', text: '탐험대 이야기' }), el('p', { class: 'narr', text: JD.story.text }),
+      el('div', { class: 'say' }, avatar(sy.who), el('div', { class: 'bubble' }, el('b', { text: who.name, style: 'color:' + who.color }), sy.text))],
+      btn('둘러보자', function () {
+        hidePanel(); state = 'explore'; camBtn.hidden = false; dexBtn.hidden = false; hint.hidden = false;
+        setTimeout(function () { hint.hidden = true; }, 9000);
+      }));
+  }
+  function shutterFx() {
+    flash.hidden = false; flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+    setTimeout(function () { flash.hidden = true; }, 420);
+    if (FX) FX.audio.shutter();
+  }
+  function thumbAt(n, crop) {
+    var cw = canvas.width, ch = canvas.height, size = Math.min(cw, ch) * (crop || 0.5);
+    var sx = Math.max(0, Math.min(cw - size, (n.x * 0.5 + 0.5) * cw - size / 2)), sy = Math.max(0, Math.min(ch - size, (1 - (n.y * 0.5 + 0.5)) * ch - size / 2));
+    var cv = document.createElement('canvas'); cv.width = cv.height = 220;
+    try { cv.getContext('2d').drawImage(canvas, sx, sy, size, size, 0, 0, 220, 220); return cv.toDataURL('image/jpeg', 0.82); } catch (e) { return ''; }
+  }
+  function takeClue() {
+    var found = [];
+    JD.clues.forEach(function (c) {
+      var t = JL.targets[c.id], wp = t.pos(), cs = wp.clone().applyMatrix4(camera.matrixWorldInverse);
+      if (cs.z > -0.5 || wp.distanceTo(camera.position) > t.range) return;
+      var n = wp.clone().project(camera);
+      if (Math.abs(n.x) > 0.82 || Math.abs(n.y) > 0.86) return;
+      found.push({ c: c, t: t, n: n });
+    });
+    shutterFx();
+    if (!found.length) { toast('사진에 단서가 담기지 않았어요. 눈에 띄는 것을 화면 가운데에 놓고 찍어 보세요.'); return; }
+    var fresh = found.filter(function (f) { return !(f.c.id in clue); });
+    fresh.forEach(function (f) { clue[f.c.id] = thumbAt(f.n, f.t.crop); });
+    clueCount.textContent = '단서 ' + clueN() + ' / ' + JD.clues.length; dexLabel.textContent = '추리 수첩 ' + clueN() + ' / ' + JD.clues.length;
+    if (fresh.length) {
+      if (FX) FX.audio.chime();
+      clueCount.classList.remove('pulse'); void clueCount.offsetWidth; clueCount.classList.add('pulse');
+      toast('단서를 찾았어요: ' + fresh.map(function (f) { return f.c.name; }).join(', '));
+    } else toast('이미 찾은 단서예요: ' + found[0].c.name);
+    if (!dedReady && clueN() >= JD.need[S.tier]) { dedReady = true; dedBtn.hidden = false; setObjective(JD.objectiveReady); }
+  }
+  function clueCell(c) {
+    var has = c.id in clue;
+    return el('div', { class: 'dexcell' + (has ? '' : ' none') },
+      has && clue[c.id] ? el('img', { src: clue[c.id], alt: c.name }) : el('div', { class: 'ph', text: has ? '' : '?' }),
+      el('b', { text: has ? c.name : '아직 못 찾은 단서' }),
+      el('span', { text: has ? tx(c.text) : '눈에 띄는 것을 사진으로 찍어 보세요.' }),
+      has ? refChip(c.ref) : null);
+  }
+  function openClues() {
+    stick.x = stick.y = 0; stick.id = null; base.hidden = true;
+    sheetOverlay([el('div', { class: 'q-kicker', text: '추리 수첩 ' + clueN() + ' / ' + JD.clues.length }),
+      el('p', { class: 'q-prompt', text: '찍은 사진이 단서예요. 장절을 성경책에서 찾아보면 더 알 수 있어요.' }),
+      el('div', { class: 'dexgrid' }, JD.clues.map(clueCell))],
+      btn('닫기', function () { overlay.hidden = true; }));
+  }
+  function multiBlock(q, onOk) {
+    var noteBox = el('div', {});
+    var btns = q.options.map(function (o) {
+      var b = el('button', { class: 'opt', 'aria-pressed': 'false', on: { click: function () { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); } } },
+        el('span', { class: 'mark' }, icon('check')), el('span', { text: o.label }));
+      return b;
+    });
+    var check = el('button', { class: 'btn plain', on: { click: function () {
+      var ok = q.options.every(function (o, k) { return (btns[k].getAttribute('aria-pressed') === 'true') === !!o.ok; });
+      if (ok) {
+        btns.forEach(function (b, k) { b.disabled = true; b.classList.add(q.options[k].ok ? 'ok' : 'rest'); }); check.disabled = true;
+        noteBox.replaceChildren(el('div', { class: 'note good fadein' }, el('b', { text: '다른 점을 모두 찾았어요.' }),
+          el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap' }, q.options.filter(function (o) { return o.ref; }).map(function (o) { return refChip(o.ref); }))));
+        onOk();
+      } else noteBox.replaceChildren(el('div', { class: 'note look fadein' }, el('b', { text: '다시 살펴볼까요?' }), el('span', { text: '방금 본 장면에 있었던 것만 골라 보세요.' })));
+      noteBox.scrollIntoView({ block: 'nearest' });
+    } } }, '확인');
+    return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' }, btns), check, noteBox];
+  }
+  function backToExplore() { overlay.hidden = true; state = 'explore'; camBtn.hidden = false; dexBtn.hidden = false; dedBtn.hidden = false; }
+  function evidenceBlock(ev, onOk) {
+    var noteBox = el('div', {}), have = JD.clues.filter(function (c) { return c.id in clue; });
+    if (!have.some(function (c) { return ev.ok.indexOf(c.id) >= 0; })) {
+      return [el('p', { class: 'q-prompt', text: tx(ev.q) }),
+        el('div', { class: 'note look' }, el('b', { text: '이 물음에 맞는 단서를 아직 못 찾았어요.' }), el('span', { text: '조금 더 둘러보며 사진을 찍고 다시 추리해 보세요.' })),
+        el('button', { class: 'btn plain', on: { click: backToExplore } }, '더 찾아보기')];
+    }
+    var btns = have.map(function (c) {
+      var b = el('button', { class: 'evi', on: { click: function () {
+        if (ev.ok.indexOf(c.id) >= 0) {
+          btns.forEach(function (x) { x.disabled = true; if (x !== b) x.classList.add('rest'); }); b.classList.add('ok');
+          if (ev.find) noteBox.replaceChildren(el('div', { style: 'display:flex;flex-direction:column;gap:12px' }, findBlock(ev.find, onOk)));
+          else { var nt = ev.notes ? ev.notes[c.id] : { text: ev.note, ref: ev.ref }; noteBox.replaceChildren(goodNote(nt.ref, nt.text)); onOk(); }
+        } else {
+          b.classList.add('rest'); b.disabled = true;
+          noteBox.replaceChildren(el('div', { class: 'note look fadein' }, el('b', { text: '그 사진만으로는 알 수 없어요.' }), el('span', { text: '다른 단서를 골라 보세요.' })));
+        }
+        noteBox.scrollIntoView({ block: 'nearest' });
+      } } }, clue[c.id] ? el('img', { src: clue[c.id], alt: '' }) : el('div', { class: 'ph' }), el('span', { text: c.name }));
+      return b;
+    });
+    return [el('p', { class: 'q-prompt', text: tx(ev.q) }), el('div', { class: 'evigrid' }, btns), noteBox];
+  }
+  function startDeduce() {
+    state = 'deduce'; stick.x = stick.y = 0; stick.id = null; base.hidden = true;
+    dedBtn.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; hint.hidden = true;
+    var evs = JD.evidence.filter(function (e) { return e.tiers.indexOf(S.tier) >= 0; }), steps = [];
+    evs.forEach(function (e) { steps.push({ k: '증거 고르기', make: function (ok) { return evidenceBlock(e, ok); } }); });
+    steps.push({ k: '마지막 추리', make: function (ok) {
+      if (S.tier === 't1') return findBlock(JD.finalT1, ok);
+      if (S.tier === 't2') return multiBlock(ALT.spot.t2, ok);
+      return findrefBlock(ALT.spot.t3, ok, 'ded');
+    } });
+    var i = 0;
+    (function show() {
+      var st = steps[i], last = i === steps.length - 1;
+      var nb = btn(last ? '추리 결과 보기' : '다음', function () { if (last) conclude(); else { i++; show(); } }); nb.disabled = true;
+      sheetOverlay([el('div', { class: 'q-kicker', text: st.k + ' ' + (i + 1) + ' / ' + steps.length }), st.make(function () { nb.disabled = false; })], nb);
+    })();
+  }
+  function conclude() {
+    var cc = JD.conclusion, who = C.chars[cc.say.who];
+    sheetOverlay([el('div', { class: 'q-kicker', text: '추리 결과' }),
+      el('p', { class: 'q-prompt', text: JD.place }),
+      el('p', { class: 'narr', text: tx(cc.text) }),
+      el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap' }, cc.refs.map(function (r) { return refChip(r); })),
+      el('div', { class: 'say' }, avatar(cc.say.who), el('div', { class: 'bubble' }, el('b', { text: who.name, style: 'color:' + who.color }), cc.say.text))],
+      btn('타임머신 다시 맞추기', function () {
+        var nb = btn('다음', function () {
+          sheetOverlay([el('div', { class: 'q-kicker', text: '돌아가는 길에 찾은 말씀' }),
+            el('p', { class: 'q-prompt', text: '길을 잘못 들었지만, 성경의 다른 장면을 직접 보고 왔어요.' }),
+            el('div', { class: 'vcards' }, ALT.cards.map(function (cd) {
+              return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }), el('div', { class: 'm', text: ALT.title + ' · 성경책에서 직접 읽어 보세요' }), el('span', { class: 'tag', text: '돌아가는 길에 찾은 말씀' }));
+            }))],
+            btn('모세가 있는 곳으로', function () { warpTo('모세의 시대로', begin); }));
+        }); nb.disabled = true;
+        sheetOverlay([el('div', { class: 'q-kicker', text: '타임머신 다시 맞추기' }),
+          findBlock({ ref: ALT.back.ref, prompt: ALT.back.prompt, confirm: ALT.back.confirm }, function () { nb.disabled = false; })], nb);
+      }));
   }
 
   /* ── 처음 화면 ── */
   function menu() {
-    state = 'menu'; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
+    state = 'menu'; cur = 'horeb'; dedBtn.hidden = true; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
     if (FX) FX.audio.pad(false);
     var tier = S.tier, ch = S.ch, picked = false;
     var ids = ['choeon', 'hyu', 'onwoo'];
@@ -460,7 +683,7 @@
       el('p', { class: 'game-sub', text: '직접 걸어가서 그 자리를 지켜봐요' }),
       el('h2', { text: '몇 살 탐험대인가요?' }), el('div', { class: 'tier-list' }, tb),
       el('h2', { text: '누가 되어 탐험할까요?' }), el('div', { class: 'char-row' }, cb),
-      btn('탐험 시작', function () { S.tier = tier; S.ch = ch; begin(); }, 'wide'),
+      btn('탐험 시작', function () { S.tier = tier; S.ch = ch; if (C3 && BO3D.jordan) route(); else begin(); }, 'wide'),
       el('p', { class: 'fine', text: '감수 전 샘플입니다. 그래픽은 단순한 3D이며, 탐험하는 구조를 확인하기 위한 것입니다.' }));
     overlay.hidden = false;
   }
@@ -469,6 +692,7 @@
     root.className = 'g3 app ' + S.tier;
     overlay.hidden = true;
     if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; }
+    cur = 'horeb'; hudMode();
     spawnKids();
     step = 0; mosesWalking = false; mosesArrived = false; evIdx = 2;
     place(moses.group, P.mosesStart[0], P.mosesStart[1]); moses.group.rotation.y = Math.PI * 0.8;
@@ -537,8 +761,8 @@
     var b = SC.beats[evIdx], last = evIdx === SC.beats.length - 1;
     if (moses.setPose && b.state) moses.setPose(b.state);
     var bx = P.bush[0], bz = P.bush[1], mx = P.mosesEnd[0], mz = P.mosesEnd[1];
-    if (b.focus === 'moses') camLookT.set(mx * 0.75 + bx * 0.25, W.height(mx, mz) + 1.3, mz * 0.75 + bz * 0.25);
-    else camLookT.set(bx * 0.7 + mx * 0.3, W.height(bx, bz) + 1.2, bz * 0.7 + mz * 0.3);
+    if (b.focus === 'moses') camLookT.set(mx * 0.75 + bx * 0.25, H(mx, mz) + 1.3, mz * 0.75 + bz * 0.25);
+    else camLookT.set(bx * 0.7 + mx * 0.3, H(bx, bz) + 1.2, bz * 0.7 + mz * 0.3);
     showPanel([el('div', { class: 'q-kicker', text: '지켜보기 ' + (evIdx - 1) + ' / ' + (SC.beats.length - 2) }), beatNodes(b)],
       [evIdx > 2 ? btn('이전', function () { evIdx--; showBeat(); }, 'plain') : null,
         btn(last ? '다음으로 가는 관문' : '다음', function () { if (last) startGates(); else { evIdx++; showBeat(); } })]);
@@ -696,7 +920,7 @@
 
   /* ── 매 프레임 ── */
   function snapCamera() {
-    var p = player ? player.group.position : new T.Vector3(P.start[0], W.height(P.start[0], P.start[1]), P.start[1]);
+    var p = player ? player.group.position : new T.Vector3(P.start[0], H(P.start[0], P.start[1]), P.start[1]);
     var fx = Math.sin(camYaw), fz = Math.cos(camYaw);
     camPos.set(p.x - fx * camDist, p.y + camPitchH + 1.3, p.z - fz * camDist);
     camLook.set(p.x, p.y + 1.35, p.z); camLookT.copy(camLook);
@@ -714,14 +938,17 @@
     var p = player.group.position, nx = p.x + mx / m * sp * dt, nz = p.z + mz / m * sp * dt;
     /* 지켜보는 자리의 경계 */
     var d = dist2(nx, nz, P.bush[0], P.bush[1]);
-    if (d < P.witnessRadius) {
+    if (cur === 'horeb' && d < P.witnessRadius) {
       var k = P.witnessRadius / Math.max(d, 0.001);
       nx = P.bush[0] + (nx - P.bush[0]) * k; nz = P.bush[1] + (nz - P.bush[1]) * k;
       if (now - lastToast > 7) { lastToast = now; ring.material.opacity = 0.45; toast('여기까지만 가자. 우리는 지켜보는 사람이야.', S.ch === 'onwoo' ? 'hyu' : 'onwoo'); }
     }
-    if (!W.walkable(nx, nz)) { if (W.walkable(nx, p.z)) nz = p.z; else if (W.walkable(p.x, nz)) nx = p.x; else return; }
+    if (!WALK(nx, nz)) {
+      if (cur === 'jordan' && now - lastToast > 7) { var eg = JL.edge(nx, nz); if (eg !== 'far') { lastToast = now; toast(eg === 'river' ? JD.edgeRiver : JD.edgeCrowd, S.ch === 'onwoo' ? 'hyu' : 'onwoo'); } }
+      if (WALK(nx, p.z)) nz = p.z; else if (WALK(p.x, nz)) nx = p.x; else return;
+    }
     var moved = dist2(nx, nz, p.x, p.z);
-    p.set(nx, W.height(nx, nz), nz);
+    p.set(nx, H(nx, nz), nz);
     player.group.rotation.y = lerpAngle(player.group.rotation.y, Math.atan2(mx, mz), Math.min(1, dt * 12));
     pspeed = moved / Math.max(dt, 0.001);
     if (!trail.length || dist2(trail[trail.length - 1][0], trail[trail.length - 1][1], nx, nz) > 0.3) { trail.push([nx, nz]); if (trail.length > 80) trail.shift(); }
@@ -736,7 +963,7 @@
       var dx = tgt[0] + Math.cos(hd) * side - p.x, dz = tgt[1] - Math.sin(hd) * side - p.z, d = Math.sqrt(dx * dx + dz * dz);
       if (d < 0.15) return;
       var sp = Math.min(5.2, d * 4), st = Math.min(d, sp * dt);
-      p.x += dx / d * st; p.z += dz / d * st; p.y = W.height(p.x, p.z);
+      p.x += dx / d * st; p.z += dz / d * st; p.y = H(p.x, p.z);
       f.group.rotation.y = lerpAngle(f.group.rotation.y, Math.atan2(dx, dz), Math.min(1, dt * 10));
       f.spd = st / Math.max(dt, 0.001);
     });
@@ -751,7 +978,7 @@
       return;
     }
     var st = Math.min(d, 2.1 * dt);
-    p.x += dx / d * st; p.z += dz / d * st; p.y = W.height(p.x, p.z);
+    p.x += dx / d * st; p.z += dz / d * st; p.y = H(p.x, p.z);
     moses.group.rotation.y = lerpAngle(moses.group.rotation.y, Math.atan2(dx, dz), Math.min(1, dt * 6));
     if (moses.update) moses.update(dt, true);
   }
@@ -759,7 +986,7 @@
     var p = player.group.position, k = 1 - Math.exp(-dt * 6), want = new T.Vector3();
     if (state === 'depart' || state === 'end2') {
       var mp = machine.group.position;
-      want.set(P.machine[0] - 4, W.height(P.machine[0], P.machine[1]) + 3.2, P.machine[1] + 10.5);
+      want.set(P.machine[0] - 4, H(P.machine[0], P.machine[1]) + 3.2, P.machine[1] + 10.5);
       camLookT.set(mp.x, mp.y + 1.4, mp.z); k = 1 - Math.exp(-dt * 3);
     } else if (state === 'event' || state === 'gates' || state === 'end') {
       /* 아이들 어깨 너머로 떨기나무와 모세를 본다 */
@@ -771,7 +998,7 @@
       want.set(p.x - fx * camDist, p.y + camPitchH + 1.3, p.z - fz * camDist);
       camLookT.set(p.x + fx * 4.5, p.y + 1.75, p.z + fz * 4.5);
     }
-    var ground = W.height(want.x, want.z) + 1.0;
+    var ground = H(want.x, want.z) + 1.0;
     if (want.y < ground) want.y = ground;
     camPos.lerp(want, k); camLook.lerp(camLookT, k);
     camera.position.copy(camPos); camera.lookAt(camLook);
@@ -798,51 +1025,61 @@
   function frame(t) {
     requestAnimationFrame(frame);
     var dt = Math.min(0.05, (t - last) / 1000); last = t; now += dt;
-    if (bush.update) bush.update(now);
-    if (machine.update) machine.update(now);
-    sheep.forEach(function (s) { if (s.update) s.update(dt); });
-    scraps.forEach(function (s) { if (s.group.visible && s.update) s.update(now); });
+    var horeb = cur === 'horeb' || !JL;
+    if (horeb) {
+      if (bush.update) bush.update(now);
+      if (machine.update) machine.update(now);
+      sheep.forEach(function (s) { if (s.update) s.update(dt); });
+      scraps.forEach(function (s) { if (s.group.visible && s.update) s.update(now); });
+    } else JL.update(dt, now);
     if (player) {
       if (state === 'explore' || state === 'free') {
         movePlayer(dt); moveFollowers(dt);
-        partObjs.forEach(function (po, pi) {
-          if (po.taken) return;
-          po.mesh.rotation.y = now * 1.6; po.mesh.position.y = 0.95 + Math.sin(now * 2.2 + pi) * 0.1;
-          if (dist2(player.group.position.x, player.group.position.z, PARTS[pi].at[0], PARTS[pi].at[1]) < 1.7) takePart(pi);
-        });
-        if (state === 'explore') {
-          var s = scraps[step], pp = player.group.position;
-          if (s && !s.taken && dist2(pp.x, pp.z, s.group.position.x, s.group.position.z) < 1.7) collect(step);
+        if (horeb) {
+          partObjs.forEach(function (po, pi) {
+            if (po.taken) return;
+            po.mesh.rotation.y = now * 1.6; po.mesh.position.y = 0.95 + Math.sin(now * 2.2 + pi) * 0.1;
+            if (dist2(player.group.position.x, player.group.position.z, PARTS[pi].at[0], PARTS[pi].at[1]) < 1.7) takePart(pi);
+          });
+          if (state === 'explore') {
+            var s = scraps[step], pp = player.group.position;
+            if (s && !s.taken && dist2(pp.x, pp.z, s.group.position.x, s.group.position.z) < 1.7) collect(step);
+          }
         }
       } else { pspeed = 0; followers.forEach(function (f) { f.spd = 0; }); }
-      moveMoses(dt);
+      if (horeb) moveMoses(dt);
       if (player.update) player.update(dt, pspeed);
       followers.forEach(function (f) { if (f.update) f.update(dt, f.spd || 0); });
       if (state === 'depart') updateDepart(dt);
-      updateTracker();
+      if (horeb) updateTracker();
       updateCamera(dt);
-      var pp2 = player.group.position;
-      env.sun.position.set(pp2.x - 38, pp2.y + 46, pp2.z + 30); env.sun.target.position.copy(pp2);
+      var pp2 = player.group.position, sun = horeb ? env.sun : JL.sun;
+      if (horeb) sun.position.set(pp2.x - 38, pp2.y + 46, pp2.z + 30); else sun.position.set(pp2.x + 30, pp2.y + 50, pp2.z + 34);
+      sun.target.position.copy(pp2);
     } else {
       /* 처음 화면 뒤로 보이는 풍경 */
       var a = now * 0.05;
-      camera.position.set(P.start[0] + Math.sin(a) * 9, W.height(P.start[0], P.start[1]) + 5.5, P.start[1] + 10);
+      camera.position.set(P.start[0] + Math.sin(a) * 9, H(P.start[0], P.start[1]) + 5.5, P.start[1] + 10);
       camera.lookAt(P.bush[0], 6, P.bush[1] - 30);
     }
-    if (bushFx) bushFx.update(now, camera, renderer.domElement.height);
-    if (FX && player) FX.audio.setFire(dist2(player.group.position.x, player.group.position.z, P.bush[0], P.bush[1]));
-    if (post) post.render(scene, camera); else renderer.render(scene, camera);
-    if (wantShot) { wantShot = false; takeShot(); }
+    if (horeb && bushFx) bushFx.update(now, camera, renderer.domElement.height);
+    if (FX && player) FX.audio.setFire(horeb ? dist2(player.group.position.x, player.group.position.z, P.bush[0], P.bush[1]) : 999);
+    var rs = horeb ? scene : JL.scene;
+    if (post) post.render(rs, camera); else renderer.render(rs, camera);
+    if (wantShot) { wantShot = false; if (horeb) takeShot(); else takeClue(); }
   }
 
   /* 자동 점검용 (화면에는 영향 없음) */
   BO3D.debug = {
+    level: function () { return cur; },
+    clues: function () { return Object.keys(clue); },
+    jordan: function () { return JL ? { P: JL.P, targets: Object.keys(JL.targets).map(function (k) { var v = JL.targets[k].pos(); return [k, v.x, v.y, v.z]; }) } : null; },
     parts: function () { return { found: partsFound, at: PARTS.map(function (p) { return p.at; }), done: sceneDone }; },
     dex: function () { return Object.keys(dex); },
     state: function () { return { state: state, step: step, x: player && player.group.position.x, z: player && player.group.position.z, mosesArrived: mosesArrived }; },
     stick: function (x, y) { stick.x = x; stick.y = y; },
     yaw: function (v) { camYaw = v; lastDrag = now + 999; },
-    goto: function (x, z) { player.group.position.set(x, W.height(x, z), z); trail.push([x, z]); }
+    goto: function (x, z) { player.group.position.set(x, H(x, z), z); trail.push([x, z]); }
   };
 
   resize(); menu(); requestAnimationFrame(frame);
