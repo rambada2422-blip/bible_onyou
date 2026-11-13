@@ -42,6 +42,11 @@ fs.mkdirSync(out, { recursive: true });
       await p.click('.overlay3 .opt:has-text("' + wrong.label + '")'); await p.waitForTimeout(300);
       if (label === 'quiz1') await shot(label + '-look');
       await p.click('.overlay3 .opt:has-text("' + q.options.find((o) => o.ok).label + '")');
+    } else if (q.type === 'order') {
+      // 일부러 거꾸로 한 번 눌러 안내 문구를 본 뒤, 바른 순서로
+      for (const it of [...q.items].reverse()) await p.click('.overlay3 .opt:has-text("' + it + '")');
+      await p.waitForTimeout(300); await shot(label + '-look');
+      for (const it of q.items) await p.click('.overlay3 .opt:has-text("' + it + '")');
     } else if (q.type === 'findref') {
       const ins = await p.$$('.refin input');
       await ins[0].fill('3'); await ins[1].fill('9'); await p.click('.refin .btn'); await p.waitForTimeout(300);

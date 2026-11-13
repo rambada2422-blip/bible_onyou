@@ -369,9 +369,10 @@
       el('div', { class: 'bibleq3' }, icon('bookline'), el('span', { text: '성경 물음 · ' + where })),
       blockFor(quizTier(q), function () {
         go.disabled = false;
-        foundBox.replaceChildren(
+        foundBox.replaceChildren();
+        add(foundBox, [
           q.after ? el('div', { class: 'note good fadein' }, el('b', { text: q.after }), refChip(q.ref || '출 3:1')) : null,
-          el('div', { class: 'note story3 found3 fadein' }, icon('compass'), el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: Q.found }))));
+          el('div', { class: 'note story3 found3 fadein' }, icon('compass'), el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: Q.found })))]);
         foundBox.scrollIntoView({ block: 'nearest' });
       }, 'q' + quest), foundBox], go);
   }
