@@ -1036,7 +1036,7 @@
       for (j = 0; j < placed.length; j++) if (Math.abs(placed[j][0] - hx2) < (placed[j][2] + w2) * 0.46 && Math.abs(placed[j][1] - hz2) < (placed[j][3] + d2) * 0.46) { ok = false; break; }
       if (!ok) continue;
       placed.push([hx2, hz2, w2, d2]);
-      var gy2 = groundY(hx2, hz2), hh = 4.2 + R() * 3 + (1 - rr) * 1.2, hc = HOUSES[Math.floor(R() * HOUSES.length)], ry = (R() - 0.5) * 0.3;
+      var gy2 = groundY(hx2, hz2), hh = 4.4 + R() * 3 + (1 - rr) * 2.2, hc = HOUSES[Math.floor(R() * HOUSES.length)], ry = (R() - 0.5) * 0.3;
       var houseCol = (function (c0) { return function (x, y, z, nx, ny, nz) { return ny > 0.5 ? ROOF : (nx * 0.55 + nz * 0.45 > -0.1 ? c0 : shade(c0, 0.8)); }; })(hc);
       b.add(new T.BoxGeometry(w2, hh + 1.5, d2), houseCol, TR(hx2, gy2 + (hh - 1.5) / 2, hz2, 0, ry, 0));
       var front = hz2 >= 0 ? 1 : -1, wm = TR(hx2, gy2, hz2, 0, ry, 0), nwin = 1 + Math.floor(R() * 2);
