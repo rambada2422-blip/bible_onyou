@@ -83,6 +83,39 @@
   moses.group.rotation.y = Math.PI * 0.8;
   if (moses.setPose) moses.setPose('approach');
 
+  /* Blender로 만든 모세(뼈대와 동작이 있는 GLB)가 있으면 읽어서 바꿔 끼운다 */
+  (function loadMosesGlb() {
+    var data = BO3D.glbData && BO3D.glbData.moses;
+    if (!data || !T.GLTFLoader) return;
+    try {
+      var bin = atob(data), buf = new Uint8Array(bin.length), i;
+      for (i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      new T.GLTFLoader().parse(buf.buffer, '', function (gltf) {
+        var g = gltf.scene, mixer = new T.AnimationMixer(g), act = {}, cur = null, pose = 'approach';
+        g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+        gltf.animations.forEach(function (c) { act[c.name] = mixer.clipAction(c); });
+        if (!act.Idle) return;
+        if (act.HideFace) { act.HideFace.setLoop(T.LoopOnce, 1); act.HideFace.clampWhenFinished = true; }
+        function play(name, fade) {
+          var a = act[name]; if (!a || a === cur) return;
+          a.reset(); a.play();
+          if (cur) cur.crossFadeTo(a, fade, false);
+          cur = a;
+        }
+        play('Idle', 0);
+        var nm = {
+          group: g,
+          setPose: function (name) { pose = name; play(name === 'hideface' ? 'HideFace' : 'Idle', 0.35); },
+          update: function (dt, moving) { if (pose !== 'hideface') play(moving && act.Walk ? 'Walk' : 'Idle', 0.25); mixer.update(dt); }
+        };
+        g.position.copy(moses.group.position); g.rotation.y = moses.group.rotation.y;
+        scene.remove(moses.group); scene.add(g);
+        moses = nm;
+        if (FX) FX.sortLayers(g);
+      }, function (e) { console.error('moses glb', e); });
+    } catch (e) { console.error('moses glb', e); }
+  })();
+
   var sheep = [], sr = W.rng(5);
   for (var si = 0; si < 7; si++) {
     var sh = mk('sheep', si, function () { var g = new T.Mesh(new T.SphereGeometry(0.42, 8, 6), new T.MeshStandardMaterial({ color: '#F4EFE4', flatShading: true })); g.position.y = 0.45; var gg = new T.Group(); gg.add(g); return { group: gg, update: function () {} }; });

@@ -14,9 +14,17 @@ for (const k of ['choeon', 'hyu', 'onwoo']) av[k] = clean(read(`web/assets/char/
 fs.writeFileSync(path.join(root, 'web3d/js/avatars.js'),
   '/* tools/build3d.js가 만든 파일. 직접 고치지 말 것. */\nwindow.BO3D = window.BO3D || {};\nBO3D.avatars = ' + JSON.stringify(av) + ';\n');
 
+/* Blender로 만든 모델(GLB)을 글자 형태로 묶는다 */
+const glb = {};
+for (const f of fs.existsSync(path.join(root, 'web3d/assets')) ? fs.readdirSync(path.join(root, 'web3d/assets')).filter((x) => x.endsWith('.glb')) : []) {
+  glb[f.replace('.glb', '')] = fs.readFileSync(path.join(root, 'web3d/assets', f)).toString('base64');
+}
+fs.writeFileSync(path.join(root, 'web3d/js/glbdata.js'),
+  '/* tools/build3d.js가 만든 파일. 직접 고치지 말 것. */\nwindow.BO3D = window.BO3D || {};\nBO3D.glbData = ' + JSON.stringify(glb) + ';\n');
+
 const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fonts = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Jua&display=swap';
-const scripts = ['web/js/content.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/models.js', 'web3d/js/world.js', 'web3d/js/fx.js', 'web3d/js/game.js'];
+const scripts = ['web/js/content.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/models.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/fx.js', 'web3d/js/game.js'];
 const page = [
   '<title>성경 탐험대 3D</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',
@@ -24,6 +32,7 @@ const page = [
   '<style>\n' + read('web/css/app.css') + '\n' + read('web3d/css/game.css') + '\n</style>',
   '<div id="game" class="g3 app"><canvas id="c"></canvas><div id="ui"></div></div>',
   '<script>\n' + esc(read('web3d/vendor/three.min.js')) + '\n</script>',
+  '<script>\n' + esc(read('web3d/vendor/GLTFLoader.js')) + '\n</script>',
   ...scripts.filter((p) => fs.existsSync(path.join(root, p))).map((p) => '<script>\n' + esc(read(p)) + '\n</script>')
 ].join('\n');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
