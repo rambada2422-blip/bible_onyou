@@ -496,7 +496,7 @@
     } catch (e) { console.error('glb ' + name, e); }
   }
   /* Blender로 만든 여호수아와 제사장이 있으면 단순 모형과 바꿔 끼운다 */
-  function swapGlb(name, old, clipName, once, mirror) {
+  function swapGlb(name, old, clipName, once, mirror, after) {
     loadGlb(name, function (gltf) {
       var g = gltf.scene, mixer = new T.AnimationMixer(g), clip = null;
       g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
@@ -506,13 +506,22 @@
       g.position.copy(old.group.position); g.rotation.y = old.group.rotation.y;
       if (mirror) g.scale.x = -1;
       JL.scene.remove(old.group); JL.scene.add(g); old.group = g;
+      if (after) after(g);
       JL.addUpdate(function (dt) { mixer.update(dt); });
       if (FX) FX.sortLayers(g);
     });
   }
   function loadJordanGlb() {
     swapGlb('joshua', JL.leader, 'Idle', false, false);
-    JL.priests.forEach(function (pr) { swapGlb('priest', pr, 'Carry', false, pr.side === 'L'); });
+    /* Blender 제사장은 채가 모델 기준 (x -0.156, y 1.393)을 지난다. 오른쪽 어깨용이며 왼쪽은 좌우를 뒤집어 쓴다. */
+    var PX = 0.156, PY = 1.393, a = JL.P.ark, bed = JL.height(a[0], a[1]);
+    JL.priests.forEach(function (pr) {
+      swapGlb('priest', pr, 'Carry', false, pr.side === 'L', function (g) {
+        g.position.x = a[0] + (pr.side === 'R' ? -1 : 1) * (JL.arkPole.x + PX);
+        g.position.y = JL.height(g.position.x, g.position.z);
+        JL.ark.position.y = bed + PY - JL.arkPole.y;
+      });
+    });
   }
   var clue = {}, dedReady = false;
   function clueN() { return Object.keys(clue).length; }

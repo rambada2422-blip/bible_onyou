@@ -8,8 +8,8 @@
  *                                         group.userData.poleY / poleX = 채가 얹히는 어깨 위 지점
  *   BO3D.models2.leaderSimple()        -> { group, update(dt) }          백성을 이끄는 사람. 두 팔을 내리고 곧게 서 있다
  *   BO3D.models2.arkCovered()          -> THREE.Group                    청색 보자기로 덮인 궤와 채 둘
- *   BO3D.models2.waterWall(len, h)     -> { group, update(t) }           멈춰 쌓인 물
- *   BO3D.models2.waterSurface(w, d)    -> { mesh, update(t) }            흐르는 강물 면
+ *   BO3D.models2.waterWall(len, h)     -> { group, update(t) }           멈춰 쌓인 물      ┐ 이 둘은 만들어 두었지만 이 장면에서는 쓰지 않기로 했다.
+ *   BO3D.models2.waterSurface(w, d)    -> { mesh, update(t) }            흐르는 강물 면    ┘ 본문은 물이 "심히 멀리" 쌓였다고 한다(수 3:16).
  *   BO3D.models2.jericho()             -> THREE.Group
  *   BO3D.models2.palm(seed) / reeds(seed) / grain(seed) -> THREE.Group
  *

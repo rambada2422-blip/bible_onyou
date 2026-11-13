@@ -100,18 +100,20 @@ window.BO3D = window.BO3D || {};
 
     /* 강 한가운데 마른 땅에 선 제사장들과 덮개로 덮인 궤 (수 3:17) */
     var ark = safe('arkCovered', null, function () { var g = new T.Group(), b = box(0.69, 0.69, 1.14, '#2F5FA8'); b.position.y = 0.345; g.add(b); [-0.42, 0.42].forEach(function (x) { var p = box(0.05, 0.05, 3.4, '#B98A3A'); p.position.set(x, 0.345, 0); g.add(p); }); return g; });
-    var priests = [], poleY = 1.42, poleX = 0.42;
-    [['L', 1.25], ['R', 1.25], ['L', -1.25], ['R', -1.25]].forEach(function (s) {
+    /* 궤와 제사장은 모두 서쪽(-Z)을 보도록 반 바퀴 돌려 세운다. 제사장은 채의 바깥쪽에 서서 안쪽 어깨로 멘다. */
+    var au = ark.userData || {}, arkPoleX = au.poleX || 0.395, arkPoleY = au.poleY || 0.345, poleR = au.poleRadius || 0.028;
+    var priests = [], poleY = 1.36, shoulderX = 0.184;
+    [['R', 1.25], ['L', 1.25], ['R', -1.25], ['L', -1.25]].forEach(function (s) {
       var pr = safe('priestSimple', s[0], function () { return { group: simplePerson('#F3EEE2', 1.72), update: function () {} }; });
-      if (pr.group.userData && pr.group.userData.poleY) { poleY = pr.group.userData.poleY; poleX = Math.abs(pr.group.userData.poleX || poleX); }
-      /* 서쪽(-Z)을 보고 서므로 왼쪽 어깨가 +X 쪽이다 */
-      var sx = s[0] === 'L' ? 1 : -1;
-      pr.side = s[0]; pr.dz = s[1]; priests.push(pr);
+      if (pr.group.userData && pr.group.userData.poleY) { poleY = pr.group.userData.poleY; shoulderX = Math.abs(pr.group.userData.poleX || shoulderX); }
+      /* 궤 기준 자리: 'R'은 +X쪽 채의 바깥, 'L'은 -X쪽 채의 바깥. 반 바퀴 돌렸으므로 세계 좌표에서는 부호가 뒤집힌다. */
+      var lx = (s[0] === 'R' ? 1 : -1) * (arkPoleX + shoulderX);
+      pr.side = s[0]; pr.lx = lx; pr.lz = s[1]; priests.push(pr);
       pr.group.rotation.y = Math.PI;
-      put(pr.group, JP.ark[0] + sx * (poleX + 0.2), JP.ark[1] + s[1]);
+      put(pr.group, JP.ark[0] - lx, JP.ark[1] - s[1]);
       ups.push(function (dt) { if (pr.update) pr.update(dt); });
     });
-    put(ark, JP.ark[0], JP.ark[1], Math.max(0, poleY - 0.345));
+    put(ark, JP.ark[0], JP.ark[1], Math.max(0, poleY + poleR - arkPoleY));
     ark.rotation.y = Math.PI;
 
     /* 백성을 이끄는 사람. 본문에 그가 선 자리는 없다. 백성 곁에 서 있게만 한다. */
@@ -167,7 +169,7 @@ window.BO3D = window.BO3D || {};
     };
     return {
       scene: scene, sun: sun, P: JP, height: height, walkable: walkable, edge: edge, targets: targets,
-      priests: priests, leader: leader, ark: ark, poleY: function () { return poleY; },
+      priests: priests, leader: leader, ark: ark, poleY: function () { return poleY; }, arkPole: { x: arkPoleX, y: arkPoleY, r: poleR },
       update: function (dt, t) { for (var q = 0; q < ups.length; q++) ups[q](dt, t); },
       addUpdate: function (fn) { ups.push(fn); }
     };
