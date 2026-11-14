@@ -55,7 +55,8 @@ node tools/build3d.js
 ## 압도 장면 영상 (Blender)
 
 - `tools/blender/bush_vision.py`: 불붙은 떨기나무 장면(사실적인 덤불, 불, 바위, 모세). `--shots A,B,C,D`로 정지 화면을 뽑는다.
-- `tools/blender/vision_video.py`: 같은 장면을 층으로 나눠 그린 뒤 합쳐 30초 영상(`vision_bush.mp4`)을 만든다.
+- `tools/blender/vision_video.py`: 같은 장면을 층으로 나눠 그린 뒤 합쳐 30초 영상(`vision_bush.mp4`)을 만든다. 약 3~4시간.
+- `tools/blender/moses_real.py`: 영상용 사실적 모세(뒷모습과 윤곽만 보인다. 얼굴은 만들지 않는다).
 - bpy 설치: `uv venv --python 3.13 venv && VIRTUAL_ENV=venv uv pip install bpy`
 
 사실적 3D 외주 제작의 비용 자료는 [docs/04_외주_시세조사.md](docs/04_외주_시세조사.md)에 있다.

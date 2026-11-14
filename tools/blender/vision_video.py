@@ -38,6 +38,8 @@ FIRE_SAMPLES = int(arg('--fire-samples', 12))
 BG_SAMPLES = int(arg('--bg-samples', 96))
 MOSES_SAMPLES = int(arg('--moses-samples', 16))
 FPS = bv.FPS
+FIRE_SAT = float(arg('--fire-sat', 1.3))
+FIRE_COVER = float(arg('--fire-cover', 3.0))
 
 # 장면표: 전체 30초(720프레임). zoom은 처음→끝 확대 비율(천천히 다가가기)
 SHOTS = [
@@ -185,6 +187,9 @@ def compose(S, shot, f, layers, out_png):
     sun, firel, fire, mo = layers['sun'], layers['firelight'], layers['fire'], layers.get('moses')
     bg = sun[..., :3] + firel[..., :3] * flick(t)
     fr = resize(fire, H, W)
+    # 불꽃 색을 조금 진하게 (밝은 곳이 하얗게 바래지 않게). 장면의 선형 빛 값에서 채도만 올린다
+    lum = (fr[..., 0:1] * 0.2126 + fr[..., 1:2] * 0.7152 + fr[..., 2:3] * 0.0722)
+    fr = np.concatenate([np.clip(lum + (fr[..., :3] - lum) * FIRE_SAT, 0, None), fr[..., 3:4]], axis=2)
     # 아지랑이: 불 위쪽 공기가 일렁인다 (불의 알파를 흐리게 해 위로 끌어올린 영역)
     m = blur(fr[..., 3:4], 8)
     m = np.maximum(m, np.roll(m, int(H * 0.06), axis=0))   # 위쪽으로 (Blender 순서는 아래 줄부터)
@@ -193,7 +198,12 @@ def compose(S, shot, f, layers, out_png):
     dx = amp * np.sin(yy * 0.11 - t * 9.0 + np.sin(xx * 0.05) * 2.0)
     dy = amp * 0.6 * np.sin(xx * 0.09 + t * 7.0)
     bg = sample(bg, yy + dy, xx + dx)
-    col = fr[..., :3] + (1 - fr[..., 3:4]) * bg
+    # 밝은 불꽃은 뒤를 거의 가린다(파란 하늘과 더해져 분홍빛이 되지 않게). 연기처럼 어둡게 하지는 않는다
+    flum = fr[..., 0:1] * 0.2126 + fr[..., 1:2] * 0.7152 + fr[..., 2:3] * 0.0722
+    blum = bg[..., 0:1] * 0.2126 + bg[..., 1:2] * 0.7152 + bg[..., 2:3] * 0.0722
+    cover = np.minimum(np.clip(flum * FIRE_COVER, 0, 0.9), 0.9 * flum / (blum + 1e-4))   # 뒤보다 어두워지지 않게
+    a_eff = np.maximum(fr[..., 3:4], cover)
+    col = fr[..., :3] + (1 - a_eff) * bg
     if mo is not None:
         col = mo[..., :3] + (1 - mo[..., 3:4]) * col
     # 천천히 다가가기
