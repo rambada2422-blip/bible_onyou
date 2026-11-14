@@ -94,10 +94,11 @@
   moses.group.rotation.y = Math.PI * 0.8;
   if (moses.setPose) moses.setPose('approach');
 
-  /* Blender로 만든 모세(뼈대와 동작이 있는 GLB)가 있으면 읽어서 바꿔 끼운다 */
-  (function loadMosesGlb() {
-    /* 인물 품질 실험(docs/07): 주소 끝에 #moses2를 붙였을 때만 새 모세(B-2)를 쓴다. 기본 화면은 그대로 */
-    var data = BO3D.glbData && ((/moses2/.test(location.hash) && BO3D.glbData.moses_v2) || BO3D.glbData.moses);
+  /* Blender로 만든 모세(뼈대와 동작이 있는 GLB)가 있으면 읽어서 바꿔 끼운다.
+     인물 품질 실험(docs/07): 첫 화면의 시험용 버튼이나 주소 끝 #moses2로 새 모세(B-2, moses_v2)와 바꿔 볼 수 있다. 기본은 기존 모세 */
+  var mosesKey = (/moses2/.test(location.hash) && BO3D.glbData && BO3D.glbData.moses_v2) ? 'moses_v2' : 'moses', mosesPose = 'approach';
+  function useMosesGlb(key) {
+    var data = BO3D.glbData && BO3D.glbData[key];
     if (!data || !T.GLTFLoader) return;
     try {
       var bin = atob(data), buf = new Uint8Array(bin.length), i;
@@ -116,17 +117,19 @@
         }
         play('Idle', 0); mixer.update(0); /* 시작 화면에서는 동작 갱신이 없으므로, 팔 벌린 기본 자세가 보이지 않게 Idle 첫 자세를 바로 적용한다 */
         var nm = {
-          group: g,
-          setPose: function (name) { pose = name; play(name === 'hideface' ? 'HideFace' : 'Idle', 0.35); },
+          group: g, key: key,
+          setPose: function (name) { pose = name; mosesPose = name; play(name === 'hideface' ? 'HideFace' : 'Idle', 0.35); },
           update: function (dt, moving) { if (pose !== 'hideface') play(moving && act.Walk ? 'Walk' : 'Idle', 0.25); mixer.update(dt); }
         };
         g.position.copy(moses.group.position); g.rotation.y = moses.group.rotation.y;
         scene.remove(moses.group); scene.add(g);
         moses = nm;
+        if (mosesPose !== 'approach') { nm.setPose(mosesPose); mixer.update(1); }
         if (FX) FX.sortLayers(g);
       }, function (e) { console.error('moses glb', e); });
     } catch (e) { console.error('moses glb', e); }
-  })();
+  }
+  useMosesGlb(mosesKey);
 
   /* 양 떼 (출 3:1). 40마리를 한 번에 그린다 (web3d/js/flock.js) */
   var flock = null;
@@ -743,8 +746,24 @@
       el('h2', { text: '몇 살 탐험대인가요?' }), el('div', { class: 'tier-list' }, tb),
       el('h2', { text: '누가 되어 탐험할까요?' }), el('div', { class: 'char-row' }, cb),
       btn('탐험 시작', function () { S.tier = tier; S.ch = ch; if (C3 && BO3D.jordan) route(); else begin(); }, 'wide'),
-      el('p', { class: 'fine', text: '감수 전 샘플입니다. 그래픽은 단순한 3D이며, 탐험하는 구조를 확인하기 위한 것입니다.' }));
+      el('p', { class: 'fine', text: '감수 전 샘플입니다. 그래픽은 단순한 3D이며, 탐험하는 구조를 확인하기 위한 것입니다.' }),
+      testOpts());
     overlay.hidden = false;
+  }
+
+  /* 대표 확인용 시험 버튼(인물 품질 실험이 끝나면 뺀다): 새 모세로 바꿔 보기, 초당 장면 수 보기 */
+  function testOpts() {
+    var mb = null, fb;
+    function label() {
+      if (mb) mb.textContent = '새 모세(시험): ' + (mosesKey === 'moses_v2' ? '켬' : '끔');
+      fb.textContent = '초당 장면 수: ' + (fpsOn ? '켬' : '끔');
+    }
+    if (BO3D.glbData && BO3D.glbData.moses_v2) {
+      mb = el('button', { class: 'testopt', on: { click: function () { mosesKey = mosesKey === 'moses_v2' ? 'moses' : 'moses_v2'; useMosesGlb(mosesKey); label(); } } });
+    }
+    fb = el('button', { class: 'testopt', on: { click: function () { fpsOn = !fpsOn; fpsEl.hidden = !fpsOn; label(); } } });
+    label();
+    return el('div', { class: 'testopts' }, [mb, fb].filter(Boolean));
   }
 
   function begin() {
@@ -1191,6 +1210,7 @@
   /* 자동 점검용 (화면에는 영향 없음) */
   BO3D.debug = {
     level: function () { return cur; },
+    moses: function () { return { key: moses.key || 'code', pose: mosesPose }; },
     clues: function () { return Object.keys(clue); },
     jordan: function () { return JL ? { P: JL.P, targets: Object.keys(JL.targets).map(function (k) { var v = JL.targets[k].pos(); return [k, v.x, v.y, v.z]; }) } : null; },
     parts: function () { return { found: partsFound, at: PARTS.map(function (p) { return p.at; }), done: sceneDone }; },

@@ -144,3 +144,7 @@ button.track3 { border: 0; font: inherit; font-family: var(--f-display); cursor:
 .note.story3 { background: #E3F1EE; color: #16433E; }
 .note.story3 span { display: flex; flex-direction: column; gap: 2px; }
 .note.story3 small { font-size: 12px; letter-spacing: .04em; color: #2F7C74; }
+
+/* 대표 확인용 시험 버튼(인물 품질 실험이 끝나면 뺀다) */
+.testopts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
+.testopt { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px dashed rgba(255,255,255,.45); background: rgba(0,0,0,.25); color: #fff; }
