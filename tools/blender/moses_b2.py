@@ -31,6 +31,8 @@ argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
 BUNDLE, OUT = argv[0], argv[1]
 MAX_TRIS = int(argv[argv.index('--tris') + 1]) if '--tris' in argv else 8000
 SAVE_BLEND = argv[argv.index('--blend') + 1] if '--blend' in argv else None
+DUMP = argv[argv.index('--dump') + 1] if '--dump' in argv else None   # 2단계(뼈대) 스크립트에 넘길 형태
+EYE_SCALE = 0.88                   # 대표 결정(2026-11-14): 베이스 메시 눈을 조금 작게
 FAST = '--fast' in argv            # 시험용: 천 시뮬레이션 프레임을 줄인다
 
 pal = C.palette(CORD='#4A2E22', CORD_SH='#3A241A')
@@ -280,6 +282,7 @@ def build_sash():
 # ---------------------------------------------------------------------------- 겉옷: 몸판(앞이 열림, 진동 구멍) + 소매 두 개 → 한 물체로 천 시뮬레이션
 def build_mantle():
     V, F, PIN = [], [], []
+    SLV = {}                               # 소매 꼭짓점: (쪽, 소매를 따라간 정도 0..1). 뼈대 단계에서 가중치에 쓴다
     ZS = [1.475, 1.462, 1.448, 1.434, 1.42, 1.405] + [1.39 - i * 0.022 for i in range(64)]
     ZS = [z for z in ZS if z > 0.03] + [0.03]
     NC = 96
@@ -349,6 +352,7 @@ def build_mantle():
                 rr = r * (1.0 + 0.10 * waves(ph, t, 5.3 + s_, n=4, k0=3, k1=7) * C.sstep(0.3, 1.0, t))
                 circ = cen + (u1 * math.cos(ph) + u2 * math.sin(ph)) * rr
                 ring.append(len(V))
+                SLV[len(V)] = (s_, t)
                 V.append(V[vi].lerp(circ, bl))
                 PIN.append(0.45 if k == 1 else (0.2 if k == 2 else 0.0))
             for j in range(n):
@@ -360,6 +364,10 @@ def build_mantle():
     for i, w in enumerate(PIN):
         if w > 0:
             g.add([i], w, 'REPLACE')
+    gl, gr, gt = (ob.vertex_groups.new(name=n) for n in ('slvL', 'slvR', 'slvT'))
+    for i, (sd_, t) in SLV.items():
+        (gl if sd_ > 0 else gr).add([i], C.sstep(0.0, 0.22, t) * 0.999 + 0.001, 'REPLACE')
+        gt.add([i], max(0.001, t), 'REPLACE')
     return ob
 
 
@@ -606,6 +614,18 @@ bmesh.ops.delete(bm, geom=kill, context='VERTS')
 bm.to_mesh(body.data)
 bm.free()
 body.data.update()
+# 손은 따로 줄인다(머리와 같이 줄이면 손에 삼각형이 너무 적어 쥔 손이 각진 덩어리가 된다)
+hands = body.copy()
+hands.data = body.data.copy()
+hands.name = 'Hands'
+sc.collection.objects.link(hands)
+for ob_, keep_head in ((body, True), (hands, False)):
+    bm = bmesh.new()
+    bm.from_mesh(ob_.data)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if (v.co.z > 1.0) != keep_head], context='VERTS')
+    bm.to_mesh(ob_.data)
+    bm.free()
+    ob_.data.update()
 
 # 수염 겹: 얼굴과 (겉옷·속옷) 가슴 위
 face_bvh, _, _ = bvh_of([body, tunic, mantle])
@@ -812,13 +832,19 @@ def decimate(ob, target):
     return sum(len(p.vertices) - 2 for p in me.polygons)
 
 
-share = dict(Body=0.285, Mantle=0.30, HeadCloth=0.115, Beard=0.10, Tunic=0.04, Staff=0.02, Cord=0.025,
+share = dict(Body=0.205, Hands=0.08, Mantle=0.30, HeadCloth=0.115, Beard=0.10, Tunic=0.04, Staff=0.02, Cord=0.025,
              Sash=0.01, Mustache=0.012, Brows=0.008, EyeL=0.02, EyeR=0.02)
-parts = dict(Body=body, Mantle=mantle, HeadCloth=headcloth, Beard=beard, Tunic=tunic, Staff=staff, Cord=cord,
+parts = dict(Body=body, Hands=hands, Mantle=mantle, HeadCloth=headcloth, Beard=beard, Tunic=tunic, Staff=staff, Cord=cord,
              Sash=sash, Mustache=mustache, Brows=brows, EyeL=eyeL, EyeR=eyeR)
 COL = dict(Mantle=pal.ROBE, HeadCloth=pal.CLOTH, Beard=pal.BEARD, Tunic=pal.TUNIC, Staff=pal.STAFF, Cord=pal.CORD,
            Sash=pal.BELT, Mustache=pal.BEARD, Brows=pal.BROW)
 CLOTH_PARTS = {'Mantle', 'HeadCloth', 'Tunic', 'Sash'}
+for eo in (eyeL, eyeR):                          # 눈알을 조금 줄이고 살짝 안으로(눈꺼풀이 더 덮는다)
+    vs = eo.data.vertices
+    cen = sum((v.co for v in vs), Vector()) / len(vs)
+    for v in vs:
+        v.co = cen + (v.co - cen) * EYE_SCALE + Vector((0.0, 0.004, 0.0))
+    eo.data.update()
 tris = {}
 for k, ob in parts.items():
     tris[k] = decimate(ob, int(MAX_TRIS * share[k] * 0.98))
@@ -839,6 +865,24 @@ for pi, k in enumerate(order):
 top = max(v.z for v in P)
 k_scale = C.MODEL_TOP / top
 P = [Vector((v.x * k_scale, v.y * k_scale, max(0.0, v.z * k_scale))) for v in P]
+if DUMP:
+    import json
+    VG = {}
+    b0 = 0
+    for k in order:
+        ob = parts[k]
+        if k == 'Mantle':
+            names = {g.index: g.name for g in ob.vertex_groups}
+            for v in ob.data.vertices:
+                ws = {names[e.group]: round(e.weight, 4) for e in v.groups if names.get(e.group) in ('slvL', 'slvR', 'slvT')}
+                if ws:
+                    VG[b0 + v.index] = ws
+        b0 += len(ob.data.vertices)
+    json.dump(dict(P=[tuple(round(c, 6) for c in v) for v in P], F=Fs, FP=FP, order=order, k_scale=k_scale, VG=VG,
+                   SHO=[tuple(SHO[s] * k_scale) for s in (1, -1)], WRI=[tuple(WRI[s] * k_scale) for s in (1, -1)],
+                   HEAD_C=tuple(HEAD_C * k_scale), BAND=[tuple(b * k_scale) for b in BAND]),
+              open(DUMP, 'w'))
+    log('dump', DUMP)
 
 # 반구 가림(AO): 땅 포함
 gnd = len(P)
@@ -898,7 +942,7 @@ for fi, poly in enumerate(me.polygons):
     poly.use_smooth = True
     for vi in poly.vertices:
         a = ao[vi]
-        if k in ('Body',):
+        if k in ('Body', 'Hands'):
             col = pal.SKIN
             p = P[vi]
             zz = p.z / k_scale

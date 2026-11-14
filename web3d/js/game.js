@@ -96,7 +96,8 @@
 
   /* Blender로 만든 모세(뼈대와 동작이 있는 GLB)가 있으면 읽어서 바꿔 끼운다 */
   (function loadMosesGlb() {
-    var data = BO3D.glbData && BO3D.glbData.moses;
+    /* 인물 품질 실험(docs/07): 주소 끝에 #moses2를 붙였을 때만 새 모세(B-2)를 쓴다. 기본 화면은 그대로 */
+    var data = BO3D.glbData && ((/moses2/.test(location.hash) && BO3D.glbData.moses_v2) || BO3D.glbData.moses);
     if (!data || !T.GLTFLoader) return;
     try {
       var bin = atob(data), buf = new Uint8Array(bin.length), i;
