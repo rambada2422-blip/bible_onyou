@@ -113,7 +113,7 @@
           if (cur) cur.crossFadeTo(a, fade, false);
           cur = a;
         }
-        play('Idle', 0);
+        play('Idle', 0); mixer.update(0); /* 시작 화면에서는 동작 갱신이 없으므로, 팔 벌린 기본 자세가 보이지 않게 Idle 첫 자세를 바로 적용한다 */
         var nm = {
           group: g,
           setPose: function (name) { pose = name; play(name === 'hideface' ? 'HideFace' : 'Idle', 0.35); },

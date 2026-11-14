@@ -9,6 +9,7 @@
 - [docs/02_그림_스타일가이드.md](docs/02_그림_스타일가이드.md): 그림 규칙과 파일 규격
 - [docs/05_본제작_지시서.md](docs/05_본제작_지시서.md): 본 제작 작업 순서와 결정 사항
 - [docs/08_협업운영지침.md](docs/08_협업운영지침.md): 대표·GPT·Claude Code 협업 방식과 보고 형식
+- [tools/codex_review/README.md](tools/codex_review/README.md): Codex 2차 검토(읽기 전용) 실행 방법
 
 ## 시범 화면
 
