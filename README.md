@@ -42,9 +42,12 @@ node tools/build.js
 | `web3d/js/models.js` | 세 아이, 모세, 양, 떨기나무, 타임머신 등 3D 모델 |
 | `web3d/js/content3d.js` | 부품 찾기 성경 물음, 압도 장면 자막, 시대 추리 문구 |
 | `web3d/js/fx.js` | 불꽃, 빛 번짐, 합성 소리(바람·불·양 울음·정적·조용한 음악) |
+| `web3d/assets/moses.glb` | 모세 (뼈대와 Idle·Walk·HideFace 동작). `tools/blender/moses_b2.py` + `moses_b2_rig.py`로 만든다. 이전 모세는 `web3d/assets/old/` |
 | `web3d/assets/vision_bush.mp4` | 압도 장면 영상 (Blender로 미리 그린 것. 있으면 올려다보기 뒤에 재생, 없으면 건너뜀) |
 | `web3d/js/game.js` | 조작, 카메라, 진행, 화면 위 안내 |
 | `web3d/vendor/` | three.js r128 (MIT 라이선스) |
+
+출처: 모세의 얼굴·손 형태는 Blender Studio의 "Human Base Meshes" v1.4.1(CC0)에서 시작했다. © Blender Foundation | studio.blender.org
 
 대본은 2D 시범판과 같은 `web/js/content.js`를 쓴다. 한 파일짜리 미리보기는 아래 명령으로 만든다.
 

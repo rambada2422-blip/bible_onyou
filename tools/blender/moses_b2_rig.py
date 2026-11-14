@@ -3,7 +3,7 @@
 인물 품질 실험 2단계 (docs/07): B-2 모세(moses_b2.py가 넘긴 형태)에 뼈대와 동작(Idle, Walk, HideFace)을 넣는다.
 
     <bpy 파이썬> tools/blender/moses_b2.py <베이스 메시 .blend> <정지.glb> --dump <형태.json>
-    <bpy 파이썬> tools/blender/moses_b2_rig.py <형태.json> <출력.glb> [--check]
+    <bpy 파이썬> tools/blender/moses_b2_rig.py <형태.json> web3d/assets/moses.glb [--check]   (게임의 기본 모세, 2026-11-14 대표 승인)
 
 - 뼈대·자세·굽기·내보내기는 common.py(Person, Pose, set_arm, ik2, set_sleeve, run)를 그대로 쓴다.
   어깨 자리, 팔 길이, 팔 각도만 B-2 몸(베이스 메시)에 맞춘다(common의 값을 이 스크립트 안에서만 바꾼다).

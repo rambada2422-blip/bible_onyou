@@ -4,7 +4,7 @@
 
 실행 방법 (저장소 루트에서):
     <bpy가 설치된 파이썬> tools/blender/moses.py
-    -> web3d/assets/moses.glb 를 새로 쓴다. 다른 곳에 쓰려면: ... moses.py --out /경로/moses.glb
+    -> web3d/assets/old/moses_v1.glb 를 새로 쓴다(2026-11-14부터 게임의 기본 모세는 moses_b2_rig.py가 만든다). 다른 곳에 쓰려면: ... moses.py --out /경로/moses.glb
     ("MeshOptimizer is not available", "Draco is not available" 경고는 무시해도 된다. 둘 다 쓰지 않는다.)
 
 bpy 설치 방법 (Blender 화면 없이 파이썬 모듈로만 쓴다):
@@ -52,7 +52,7 @@ from mathutils import Vector, Matrix, Quaternion
 from mathutils.bvhtree import BVHTree
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.normpath(os.path.join(HERE, '..', '..', 'web3d', 'assets', 'moses.glb'))
+OUT = os.path.normpath(os.path.join(HERE, '..', '..', 'web3d', 'assets', 'old', 'moses_v1.glb'))
 if '--out' in sys.argv:
     OUT = sys.argv[sys.argv.index('--out') + 1]
 SRGB_OUTPUT = False          # 게임이 renderer.outputEncoding = sRGBEncoding 을 쓰게 되면 True

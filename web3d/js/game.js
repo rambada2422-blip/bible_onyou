@@ -95,8 +95,8 @@
   if (moses.setPose) moses.setPose('approach');
 
   /* Blender로 만든 모세(뼈대와 동작이 있는 GLB)가 있으면 읽어서 바꿔 끼운다.
-     인물 품질 실험(docs/07): 첫 화면의 시험용 버튼이나 주소 끝 #moses2로 새 모세(B-2, moses_v2)와 바꿔 볼 수 있다. 기본은 기존 모세 */
-  var mosesKey = (/moses2/.test(location.hash) && BO3D.glbData && BO3D.glbData.moses_v2) ? 'moses_v2' : 'moses', mosesPose = 'approach';
+     2026-11-14 대표 승인으로 인물 품질 실험의 B-2 모세(tools/blender/moses_b2.py + moses_b2_rig.py)가 기본이다. 기존 모세는 web3d/assets/old/ */
+  var mosesKey = 'moses', mosesPose = 'approach';
   function useMosesGlb(key) {
     var data = BO3D.glbData && BO3D.glbData[key];
     if (!data || !T.GLTFLoader) return;
@@ -746,24 +746,8 @@
       el('h2', { text: '몇 살 탐험대인가요?' }), el('div', { class: 'tier-list' }, tb),
       el('h2', { text: '누가 되어 탐험할까요?' }), el('div', { class: 'char-row' }, cb),
       btn('탐험 시작', function () { S.tier = tier; S.ch = ch; if (C3 && BO3D.jordan) route(); else begin(); }, 'wide'),
-      el('p', { class: 'fine', text: '감수 전 샘플입니다. 그래픽은 단순한 3D이며, 탐험하는 구조를 확인하기 위한 것입니다.' }),
-      testOpts());
+      el('p', { class: 'fine', text: '감수 전 샘플입니다. 그래픽은 단순한 3D이며, 탐험하는 구조를 확인하기 위한 것입니다.' }));
     overlay.hidden = false;
-  }
-
-  /* 대표 확인용 시험 버튼(인물 품질 실험이 끝나면 뺀다): 새 모세로 바꿔 보기, 초당 장면 수 보기 */
-  function testOpts() {
-    var mb = null, fb;
-    function label() {
-      if (mb) mb.textContent = '새 모세(시험): ' + (mosesKey === 'moses_v2' ? '켬' : '끔');
-      fb.textContent = '초당 장면 수: ' + (fpsOn ? '켬' : '끔');
-    }
-    if (BO3D.glbData && BO3D.glbData.moses_v2) {
-      mb = el('button', { class: 'testopt', on: { click: function () { mosesKey = mosesKey === 'moses_v2' ? 'moses' : 'moses_v2'; useMosesGlb(mosesKey); label(); } } });
-    }
-    fb = el('button', { class: 'testopt', on: { click: function () { fpsOn = !fpsOn; fpsEl.hidden = !fpsOn; label(); } } });
-    label();
-    return el('div', { class: 'testopts' }, [mb, fb].filter(Boolean));
   }
 
   function begin() {

@@ -744,8 +744,13 @@ def build_embers(src):
 def build_moses():
     """영상용 사실적 모세(moses_real.py). 뒷모습과 윤곽만 보인다"""
     sys.path.insert(0, HERE)
-    import moses_real
-    m = moses_real.build()
+    glb = arg('--moses-glb', None)
+    if glb:                                   # 게임의 기본 모세(B-2) GLB를 쓴다(moses_glb_video.py)
+        import moses_glb_video
+        m = moses_glb_video.build(glb)
+    else:
+        import moses_real
+        m = moses_real.build()
     root = m['root']
     root.location = (MOSES_AT[0], MOSES_AT[1], ground_h(*MOSES_AT))
     d = Vector((0, 0.15, 0)) - Vector((MOSES_AT[0], MOSES_AT[1], 0))
