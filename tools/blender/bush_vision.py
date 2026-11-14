@@ -742,56 +742,21 @@ def build_embers(src):
 
 # ---------------------------------------------------------------------------- 모세
 def build_moses():
-    glb = os.path.join(ROOT, 'web3d', 'assets', 'moses.glb')
-    before = set(bpy.data.objects)
-    bpy.ops.import_scene.gltf(filepath=glb)
-    new = [o for o in bpy.data.objects if o not in before]
-    arm = [o for o in new if o.type == 'ARMATURE']
-    meshes = [o for o in new if o.type == 'MESH']
-    root = arm[0] if arm else meshes[0]
-    while root.parent:
-        root = root.parent
-    # 사실적인 천 재질 (모양은 같고, 빛 받는 방식만 바꾼다)
-    m, nt, out = node_mat('MosesReal')
-    ca = nt.nodes.new('ShaderNodeVertexColor')
-    if meshes and meshes[0].data.color_attributes:
-        ca.layer_name = meshes[0].data.color_attributes[0].name
-    # 게임용 꼭짓점 색은 sRGB 값을 그대로 넣었으므로 선형으로 바꾼다
-    gm = nt.nodes.new('ShaderNodeGamma')
-    gm.inputs['Gamma'].default_value = 2.2
-    link(nt, ca.outputs['Color'], gm.inputs['Color'])
-    hsv = nt.nodes.new('ShaderNodeHueSaturation')
-    hsv.inputs['Saturation'].default_value = 0.75
-    hsv.inputs['Value'].default_value = 0.42
-    link(nt, gm.outputs['Color'], hsv.inputs['Color'])
-    b = nt.nodes.new('ShaderNodeBsdfPrincipled')
-    b.inputs['Roughness'].default_value = 0.95
-    if 'Sheen Weight' in b.inputs:
-        b.inputs['Sheen Weight'].default_value = 0.6
-    link(nt, hsv.outputs['Color'], b.inputs['Base Color'])
-    tc = nt.nodes.new('ShaderNodeTexCoord')
-    n = nt.nodes.new('ShaderNodeTexNoise')
-    n.inputs['Scale'].default_value = 180
-    link(nt, tc.outputs['Object'], n.inputs['Vector'])
-    bump = nt.nodes.new('ShaderNodeBump')
-    bump.inputs['Strength'].default_value = 0.25
-    link(nt, n.outputs['Fac'], bump.inputs['Height'])
-    link(nt, bump.outputs['Normal'], b.inputs['Normal'])
-    link(nt, b.outputs['BSDF'], out.inputs['Surface'])
-    for o in meshes:
-        for i in range(len(o.data.materials)):
-            o.data.materials[i] = m
-    # 자리: 떨기나무 서쪽 2.3m, 조금 뒤. 떨기나무를 바라본다.
+    """영상용 사실적 모세(moses_real.py). 뒷모습과 윤곽만 보인다"""
+    sys.path.insert(0, HERE)
+    import moses_real
+    m = moses_real.build()
+    root = m['root']
     root.location = (MOSES_AT[0], MOSES_AT[1], ground_h(*MOSES_AT))
     d = Vector((0, 0.15, 0)) - Vector((MOSES_AT[0], MOSES_AT[1], 0))
-    root.rotation_mode = 'XYZ'
-    # glTF에서 가져오면 앞이 -Y. 떨기나무 쪽(+X 근처)을 보게 돌린다.
-    root.rotation_euler = (0, 0, math.atan2(d.y, d.x) + math.pi / 2)
-    if arm:
-        pb = arm[0].pose.bones.get('head')
-        if pb:
-            pb.scale = (0.86, 0.86, 0.86)
-    return root, arm[0] if arm else None
+    # 모세는 +Y를 보도록 만들어져 있다. 떨기나무 쪽으로 돌린다
+    root.rotation_euler = (0, 0, math.atan2(d.y, d.x) - math.pi / 2)
+    global MOSES_POSE
+    MOSES_POSE = m['pose']
+    return root, None
+
+
+MOSES_POSE = None
 
 
 def set_action(arm, name, frame):
@@ -923,7 +888,8 @@ def main():
         bake_fire(dom)
     for s in SHOTS:
         sc.camera = cams[s]
-        set_action(arm, 'HideFace' if s == 'D' else 'Idle', FRAME)
+        if MOSES_POSE:
+            MOSES_POSE(FRAME / FPS, 1.0 if s == 'D' else 0.0)
         sc.frame_set(FRAME + (14 if s == 'D' else 0))
         sc.render.filepath = os.path.join(OUT, 'still_%s.png' % s)
         bpy.ops.render.render(write_still=True)

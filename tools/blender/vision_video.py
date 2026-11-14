@@ -36,7 +36,7 @@ W, H = [int(v) for v in str(arg('--res', '540x960')).split('x')]
 FIRE_SCALE = float(arg('--fire-scale', 0.5))
 FIRE_SAMPLES = int(arg('--fire-samples', 12))
 BG_SAMPLES = int(arg('--bg-samples', 96))
-MOSES_SAMPLES = int(arg('--moses-samples', 32))
+MOSES_SAMPLES = int(arg('--moses-samples', 16))
 FPS = bv.FPS
 
 # 장면표: 전체 30초(720프레임). zoom은 처음→끝 확대 비율(천천히 다가가기)
@@ -73,39 +73,25 @@ def build():
             L.data.animation_data_clear()
         base[L.name] = float(L.get('base_energy', L.data.energy))
     sun = bpy.data.objects['Sun']
-    moses_objs = [o for o in bpy.data.objects if o == moses or o.parent == moses or (o.parent and o.parent.parent == moses)]
+    def under(o, top):
+        while o is not None:
+            if o == top:
+                return True
+            o = o.parent
+        return False
+    moses_objs = [o for o in bpy.data.objects if under(o, moses)]
     return dict(sc=sc, dom=dom, src=src, moses=moses, arm=arm, moses_objs=moses_objs, lights=lights, base=base, sun=sun, cams=cams)
 
 
-def nla_moses(S, hide_at):
-    """모세 동작: 처음엔 가만히 숨 쉬고(Idle 반복), hide_at 프레임에 얼굴을 가린다(HideFace, 끝 자세 유지)"""
-    arm = S['arm']
-    if not arm:
+def pose_moses(shot, f):
+    """모세 자세: 숨 쉬는 작은 움직임, 장면 D에서는 hide_at 프레임부터 0.9초 동안 얼굴을 가린다"""
+    if not bv.MOSES_POSE:
         return
-    def find(name):
-        for a in bpy.data.actions:
-            if a.name == name or a.name.startswith(name):
-                return a
-        return None
-    idle, hide = find('Idle'), find('HideFace')
-    ad = arm.animation_data_create()
-    ad.action = None
-    for t in list(ad.nla_tracks):
-        ad.nla_tracks.remove(t)
-    tr = ad.nla_tracks.new()
-    if idle:
-        st = tr.strips.new('idle', 1, idle)
-        if hasattr(st, 'action_slot') and idle.slots:
-            st.action_slot = idle.slots[0]
-        length = st.frame_end - st.frame_start
-        st.repeat = max(1.0, (hide_at if hide_at else 900) / max(1.0, length))
-    if hide and hide_at:
-        tr2 = ad.nla_tracks.new()
-        st2 = tr2.strips.new('hide', hide_at + 1, hide)
-        if hasattr(st2, 'action_slot') and hide.slots:
-            st2.action_slot = hide.slots[0]
-        st2.extrapolation = 'HOLD_FORWARD'
-        st2.blend_in = 4
+    hide = 0.0
+    if shot.get('hide_at') is not None:
+        hide = max(0.0, min(1.0, (f - shot['hide_at']) / (0.9 * FPS)))
+    bv.MOSES_POSE(f / FPS, hide)
+    bpy.context.view_layer.update()
 
 
 def set_mode(S, mode, shot):
@@ -116,7 +102,7 @@ def set_mode(S, mode, shot):
     for o in bpy.data.objects:
         o.hide_render = False
         o.is_holdout = False
-        o.visible_camera = True
+        o.visible_camera = o.type != 'LIGHT'     # 불빛 광원 자체는 화면에 보이지 않는다
         o.visible_shadow = True
     S['src'].show_instancer_for_render = False
     sc.render.film_transparent = mode in ('fire', 'moses')
@@ -240,12 +226,12 @@ def main():
             continue
         k = shot['key']
         sc.camera = S['cams'][k]
-        nla_moses(S, shot.get('hide_at'))
         d = os.path.join(WORK, k)
         os.makedirs(d, exist_ok=True)
         f0, f1 = shot['start'], shot['end'] if not TEST else min(shot['end'], shot['start'] + TEST)
         # 배경 두 장
         sc.frame_set(f0 + 1)
+        pose_moses(shot, f0)
         for mode in ('sun', 'firelight'):
             p = os.path.join(d, 'bg_%s.exr' % mode)
             if not os.path.exists(p):
@@ -255,6 +241,7 @@ def main():
         bgs = {m: load_exr(os.path.join(d, 'bg_%s.exr' % m)) for m in ('sun', 'firelight')}
         for f in range(f0, f1):
             sc.frame_set(f + 1)
+            pose_moses(shot, f)
             pf = os.path.join(d, 'fire_%04d.exr' % f)
             if not os.path.exists(pf):
                 set_mode(S, 'fire', shot)
@@ -262,7 +249,13 @@ def main():
             layers = dict(bgs)
             layers['fire'] = load_exr(pf)
             if shot['moses']:
-                pm = os.path.join(d, 'moses_%04d.exr' % f)
+                # 모세가 거의 움직이지 않는 구간은 4프레임마다 한 번 그리고 그 사이는 같은 그림을 쓴다
+                ha = shot.get('hide_at')
+                moving = ha is not None and ha - 2 <= f <= ha + int(1.0 * FPS)
+                fm = f if moving else f - ((f - f0) % 4)
+                if fm != f:
+                    pose_moses(shot, fm)
+                pm = os.path.join(d, 'moses_%04d.exr' % fm)
                 if not os.path.exists(pm):
                     set_mode(S, 'moses', shot)
                     tt = (f + 1) / FPS
