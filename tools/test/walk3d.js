@@ -105,8 +105,18 @@ fs.mkdirSync(out, { recursive: true });
   console.log('event', JSON.stringify(await st()));
   for (let i = 0; i < 4; i++) { await p.click('.panel3 .btn.onpaper'); await p.waitForTimeout(1300); if (i === 1 || i === 3) await shot('event' + (i + 2)); }
   await p.click('.panel3 .btn.onpaper'); await p.waitForTimeout(600);
+  // 임무가 있으면 동행 문답(story.js 조각)이 관문 앞에, 오늘의 물음이 관문 뒤에 뜬다. 시트의 마지막 버튼을 닫힐 때까지 누른다
+  const segs = async (label) => {
+    for (let i = 0; i < 8; i++) {
+      const on = await p.evaluate(() => !!(BO3D.story && BO3D.story.debug.state().screen === 'seg'));
+      if (!on) return;
+      if (i === 0) await shot(label);
+      await p.click('.ot3 .sheet-foot .btn >> nth=-1'); await p.waitForTimeout(250);
+    }
+  };
+  await segs('talk-after');
   // 관문 풀기
-  const gates = C.scenes['EX-01'].gates[tier];
+  const gates = (await p.evaluate(() => BO3D.ot ? BO3D.ot.scenes['OT-09'].gates : BO.content.scenes['EX-01'].gates))[tier];
   for (let g = 0; g < gates.length; g++) {
     const q = gates[g];
     await shot('gate' + (g + 1));
@@ -118,6 +128,8 @@ fs.mkdirSync(out, { recursive: true });
     await p.waitForTimeout(300);
     await p.click('.overlay3 .sheet-foot .btn.onpaper'); await p.waitForTimeout(400);
   }
+  await segs('today');
+  await p.waitForSelector('text=계속 탐험하기', { timeout: 20000 });
   await shot('end');
   await p.click('.overlay3 .sheet-foot .btn.onpaper'); await p.waitForTimeout(600);
   console.log('parts', JSON.stringify(await p.evaluate(() => BO3D.debug.parts())));
