@@ -1,0 +1,3 @@
+{ "name": "Daniel", "note": "다니엘(단 6장). 이 본문은 생김새와 옷을 말하지 않는다. 지팡이 없음. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#4E5E7E", "ROBE_SH": "#36425A", "ROBE_HI": "#627292", "TUNIC": "#E8DEC8", "BEARD": "#A8A296", "BEARD_SH": "#8E887C", "BROW": "#A8A296", "HAIR": "#A8A296", "CLOTH": "#E4DAC4", "CLOTH_SH": "#CCC0A6" } }

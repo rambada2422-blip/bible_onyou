@@ -1,0 +1,3 @@
+{ "name": "Darius", "note": "다리오 왕(단 6장). 이 본문은 생김새와 옷을 말하지 않는다. 왕관과 신상의 무늬는 그리지 않는다. 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#7A3E4E", "ROBE_SH": "#562A36", "ROBE_HI": "#8E5262", "TUNIC": "#E2CFA6", "BEARD": "#2E2420", "BEARD_SH": "#241C18", "BROW": "#2E2420", "HAIR": "#2E2420", "CLOTH": "#D9B868", "CLOTH_SH": "#BC9A4E", "BELT": "#B9893E", "BELT_SH": "#8E6A2E" } }

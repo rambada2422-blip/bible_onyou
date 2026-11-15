@@ -1,0 +1,3 @@
+{ "name": "Abraham", "note": "아브람(창 12:1-9, 15:1-6). 이 본문은 생김새와 옷을 말하지 않는다. 떠날 때 칠십오 세(창 12:4). 지팡이 없음. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#8A6A3E", "ROBE_SH": "#64492A", "ROBE_HI": "#9E7E50", "TUNIC": "#ECE0C4", "BEARD": "#D6D0C4", "BEARD_SH": "#BEB8AC", "BROW": "#D6D0C4", "HAIR": "#D6D0C4", "CLOTH": "#EFE6D0", "CLOTH_SH": "#D8CDB2", "BELT": "#5A3E28", "BELT_SH": "#42301E" } }

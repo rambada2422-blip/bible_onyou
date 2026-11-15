@@ -1,0 +1,3 @@
+{ "name": "Nehemiah", "note": "느헤미야(느 2:11-20, 6:15-16, 8:1-12). 이 본문은 생김새와 옷을 말하지 않는다. 지팡이 없음. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#3E6E62", "ROBE_SH": "#2A4E44", "ROBE_HI": "#528276", "TUNIC": "#E6DCC4", "BEARD": "#4A3A2E", "BEARD_SH": "#382A20", "BROW": "#4A3A2E", "HAIR": "#4A3A2E", "CLOTH": "#E2D6BC", "CLOTH_SH": "#CABE9E" } }
