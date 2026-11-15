@@ -107,8 +107,8 @@
       if (p === 'day') { tod = 0; todWant = 0; applyTod(); }
       if (p === 'window') { todWant = 0.2; dan.group.visible = false; }                                  /* 6:10: 위층 방(창 너머, 멀리서) */
       if (p === 'accuse') { todWant = 1; dan.group.visible = false; offTo = [HOUSE[0] - 14, HOUSE[1] + 8]; }   /* 6:11-15: 모여 발견하고(집 앞), 왕에게 나아간다(왕궁 앞). 해 질 때까지 */
-      if (p === 'den') { todWant = 2; at(dan, HOUSE[0] - 6, HOUSE[1] + 6); danTo = [DEN[0] + 3.2, DEN[1] + 1]; kingTo = [DEN[0] - 6, DEN[1] + 6];   /* 6:16-18: 끌어다가 굴에 던져 넣는다 */
-        officials.forEach(function (o, k) { at(o, HOUSE[0] - 7 + (k % 4) * 1.2, HOUSE[1] + 8 + Math.floor(k / 4) * 1.2); }); }
+      if (p === 'den') { todWant = 2; at(dan, DEN[0] + 16, DEN[1] + 9); danTo = [DEN[0] + 3.2, DEN[1] + 1]; at(king, DEN[0] - 14, DEN[1] + 9); kingTo = [DEN[0] - 6, DEN[1] + 6];   /* 6:16-18: 끌어다가 굴에 던져 넣는다(굴로 가는 길 중간부터 보여 준다) */
+        officials.forEach(function (o, k) { at(o, DEN[0] + 16 + (k % 4) * 1.2 - 1.8, DEN[1] + 10.4 + Math.floor(k / 4) * 1.2); }); }
       if (p === 'dawn') { todWant = 3; danIn = true; dan.group.visible = false; stoneWant = 1; stoneOn = 1; seal.visible = true; kingTo = [DEN[0] - 4, DEN[1] + 4]; offHide = true; } /* 6:19-23: 새벽에 왕이 왕궁에서 급히 굴로 */
       if (p === 'decree') { todWant = 3; at(dan, DEN[0] - 2, DEN[1] + 6); dan.group.rotation.y = Math.PI * 0.2; at(king, DEN[0] - 4, DEN[1] + 4); kingTo = [KING0[0], KING0[1]]; offHide = true; } /* 6:24-28: 참소한 사람들의 일은 그리지 않는다 */
       if (offHide) officials.forEach(function (o) { o.group.visible = false; });
