@@ -6,7 +6,7 @@
  *  - 모세는 지팡이를 들고 손을 바다 위로 내민다(출 14:16, 14:21, 14:26). 지팡이로 바다를 치지 않는다.
  *  - 새벽에 물이 돌아와 병거를 덮는다(출 14:27-28). 멀리서만 보이고, 물이 덮을 때 병거는 물에 가려진다. 사람이 빠지는 모습·주검은 그리지 않는다.
  *  - 이스라엘 자손이 건너며 노래하거나 환호하지 않는다(이 본문에 없음). 세 아이는 진 가장자리 바닷가에서만 다닌다.
- * 감수가 필요한 설정: 진과 길의 자리와 방향, 물 벽의 높이, 병거의 수(육백 대 가운데 일부만 그림), 모세가 선 자리, 하늘빛(밤과 새벽).
+ * 감수가 필요한 설정: 진과 길의 자리와 방향, 물 벽의 높이, 병거의 수(육백 대 가운데 일부만 그림), 병거에 사람을 태우지 않은 것, 모세가 선 자리, 하늘빛(밤과 새벽).
  */
 (function () {
   'use strict';
@@ -94,7 +94,7 @@
     /* 진의 장막 (출 14:2, 14:9) */
     for (i = 0; i < 46; i++) {
       var tx = -90 + R() * 150, tz = 8 + R() * 50;
-      if (tx > 16 && tz < 30) continue;
+      if (tx > 16 && tz < 54) continue;   /* 아이들이 다니는 곳(진 가장자리)에는 장막을 두지 않는다 */
       if (Math.abs(tx) < 9 && tz < 22) continue;
       var tn = PR.tent(i); put(tn, tx, tz); tn.rotation.y = R() * 6.28;
     }
@@ -104,7 +104,7 @@
       var per = null;
       try { if (M2.israelite) per = M2.israelite(k * 13 + 5); } catch (e) { per = null; }
       if (!per) per = { group: api.fallback(['#8A6A4A', '#5F7350', '#4E5E7A', '#9A4E3C'][k % 4], 1.5, 0.22), update: function () {} };
-      per.camp = [-62 + hash(k, 3) * 72, 9 + hash(k, 7) * 30]; if (Math.abs(per.camp[0]) < 8) per.camp[0] += 16;
+      per.camp = [-66 + hash(k, 3) * 70, 9 + hash(k, 7) * 30]; if (Math.abs(per.camp[0]) < 8) per.camp[0] -= 16;
       per.lane = ((k % 5) - 2) * 2.6; per.far = [per.lane + (hash(k, 9) - 0.5) * 6, FAR - 6 - Math.floor(k / 5) * 1.7];
       per.leg = 0; per.delay = k * 0.35; per.t = 0;
       put(per.group, per.camp[0], per.camp[1]); per.group.rotation.y = Math.PI;
@@ -117,6 +117,7 @@
         if (crossing === 'camp') { p.set(per.camp[0], height(per.camp[0], per.camp[1]), per.camp[1]); per.group.rotation.y = Math.PI; }
         else if (crossing === 'far') { p.set(per.far[0], height(per.far[0], per.far[1]), per.far[1]); per.group.rotation.y = Math.PI; }
         else {
+          if (part < 0.9) { if (per.update) per.update(dt, 0); return; }   /* 마른 땅이 된 뒤에 들어간다(14:21-22) */
           per.t += dt; if (per.t < per.delay) { if (per.update) per.update(dt, 0); return; }
           var tg = per.leg === 0 ? [per.lane, 1.5] : per.far, dx = tg[0] - p.x, dz = tg[1] - p.z, d = Math.sqrt(dx * dx + dz * dz);
           if (d < 0.4) { if (per.leg === 0) per.leg = 1; }
@@ -137,7 +138,7 @@
         var p = ch.group.position, tg = null, sp = 0;
         if (chMode === 'far') { p.set(ch.start[0], height(ch.start[0], ch.start[1]), ch.start[1]); ch.group.visible = true; }
         else if (chMode === 'approach' || chMode === 'camp') tg = ch.home;
-        else if (chMode === 'pursue') { ch.t += dt; if (ch.t < ch.delay) tg = null; else tg = ch.leg === 0 ? [ch.lane, 4] : [ch.lane, -30 - (ch.delay * 8) % 50]; }
+        else if (chMode === 'pursue') { ch.t += dt; tg = [ch.lane, -24 - (ch.delay * 9) % 44]; }
         if (tg) {
           var dx = tg[0] - p.x, dz = tg[1] - p.z, d = Math.sqrt(dx * dx + dz * dz);
           if (d < 0.5) { if (chMode === 'pursue' && ch.leg === 0) ch.leg = 1; }
@@ -195,6 +196,8 @@
     var phase = 'camp';
     function setPhase(p) {
       phase = p;
+      if (p !== 'return' && p !== 'shore' && p !== 'camp') { retT = 0; if (chMode === 'pursue' || chMode === 'gone') { chMode = 'camp'; chariots.forEach(function (ch) { ch.group.visible = true; ch.group.position.set(ch.home[0], height(ch.home[0], ch.home[1]), ch.home[1]); ch.group.rotation.y = Math.PI; }); }
+        moses.group.position.set(MOS[0], height(MOS[0], MOS[1]), MOS[1]); moses.group.rotation.y = Math.PI; if (p !== 'part') { partWant = 0; crossing = 'camp'; stretchWant = 0; } }   /* '이전'으로 돌아올 때 */
       if (p === 'camp') { todWant = 0; tod = 0; partWant = 0; part = 0; crossing = 'camp'; chMode = 'far'; pilAt = PIL_FRONT.slice(); pilTo = null; stretchWant = 0; stretch = 0;
         moses.group.position.set(MOS[0], height(MOS[0], MOS[1]), MOS[1]); moses.group.rotation.y = Math.PI;
         people.forEach(function (per) { per.leg = 0; per.t = 0; }); chariots.forEach(function (ch) { ch.leg = 0; ch.t = 0; ch.group.visible = true; }); }
@@ -202,7 +205,10 @@
       if (p === 'command') { todWant = 0.55; chMode = 'camp'; }                         /* 출 14:15-18: 저녁 */
       if (p === 'pillar') { todWant = 1; chMode = 'camp'; pilTo = PIL_MID; }            /* 출 14:19-20: 밤, 구름 기둥이 두 진 사이로 */
       if (p === 'part') { todWant = 1; chMode = 'camp'; pilTo = null; pilAt = PIL_MID.slice(); stretchWant = 1; partWant = 1; crossing = 'cross'; if (FX) FX.audio.wind(0.5); }
-      if (p === 'return') { todWant = 2; crossing = 'far'; chMode = 'pursue'; partWant = 1; stretchWant = 0;
+      if (p === 'return') { todWant = 2; crossing = 'far'; partWant = 1; part = Math.max(part, 0.95); stretchWant = 0;
+        /* 14:23: 애굽 사람들이 뒤쫓아 바다 가운데로 들어온다. 길 어귀에서 시작해 안으로 달린다 */
+        if (chMode !== 'pursue') chariots.forEach(function (ch, k) { var ex = ch.lane + ((k % 2) - 0.5) * 1.5, ez = 6 + Math.floor(k / 3) * 7; ch.group.visible = true; ch.group.position.set(ex, height(ex, ez), ez); ch.group.rotation.y = Math.PI; ch.t = 0; });
+        chMode = 'pursue';
         moses.group.position.set(MOS_FAR[0], height(MOS_FAR[0], MOS_FAR[1]), MOS_FAR[1]); if (FX) FX.audio.wind(0.16); }
       if (p === 'shore') { todWant = 2; crossing = 'far'; chMode = 'gone'; partWant = 0; chariots.forEach(function (ch) { ch.group.visible = false; }); }
     }
@@ -222,7 +228,7 @@
       },
       P: { start: [48, 16], machine: [54, 22], machineRot: -0.4,
         /* 재료가 놓인 곳(quests[i].found): 바닷가 장막들 쪽 / 진 뒤쪽 / 물이 갈라진 바다 쪽 */
-        parts: [[29, 31], [46, 47], [24.5, 4.6]], lookSpot: [24.5, 4.6],
+        parts: [[40, 6.5], [46, 47], [24.5, 4.6]], lookSpot: [24.5, 4.6],
         look: { focus: MOS, mid: [0, -20], dy: 1.4, backE: 7, upE: 2.6 } },
       eventLook: function (i) {
         if (i === 2) return { focus: MOS, mid: [0, -24], dy: 1.4, backE: 7, upE: 2.6 };
@@ -263,7 +269,9 @@
         pillar.update(now);
         stretch += (stretchWant - stretch) * Math.min(1, dt * 1.5);
         /* 출 14:26-27: 새벽, 병거가 길 가운데로 들어온 뒤 모세가 다시 손을 내밀고 물이 돌아온다 */
-        if (phase === 'return') { retT += dt; if (retT > 6) partWant = 0; }
+        /* 14:26-27: 병거들이 길 가운데로 들어온 뒤 모세가 다시 손을 내밀고, 새벽에 물이 돌아온다 */
+        if (phase === 'return') { retT += dt; var inside = chariots.filter(function (ch) { return ch.group.position.z < -16; }).length;
+          if (retT > 3 && (inside >= chariots.length * 0.8 || retT > 14)) { stretchWant = 1; if (retT > 5) partWant = 0; } }
         part += (partWant - part) * Math.min(1, dt * (partWant > part ? 0.35 : 0.45));
         seaC.mesh.position.y = (BED - 0.8) * Math.min(1, part * 1.15);
         seaC.mesh.visible = part < 0.97;

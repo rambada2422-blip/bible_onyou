@@ -84,7 +84,7 @@
       var grp = i % 3, ang = [-0.9, 0, 0.9][grp] + (hash(i, 4) - 0.5) * 0.35, rad = 48 + hash(i, 6) * 6;
       o.ring = [MCAMP[0] + Math.sin(ang) * rad, MCAMP[1] + Math.cos(ang) * rad * 0.62];
       o.three = [ICAMP[0] - 14 + grp * 12 + (i % 4) * 1.4, ICAMP[1] - 14 + (hash(i, 8) - 0.5) * 3];
-      put(o.group, o.home[0], o.home[1]); o.at = o.home.slice();
+      put(o.group, o.home[0], o.home[1]); o.group.rotation.order = 'YXZ'; o.at = o.home.slice();
       var jar = new T.Mesh(new T.SphereGeometry(0.13, 6, 5), std('#B88A5A')); jar.position.set(-0.3, 1.0, 0.18); jar.visible = false; o.group.add(jar); o.jar = jar;
       var horn = new T.Mesh(new T.ConeGeometry(0.05, 0.42, 5), std('#D8C7A0')); horn.position.set(0.3, 1.25, 0.2); horn.rotation.x = -1; horn.visible = false; o.group.add(horn); o.horn = horn;
       var fl = new T.Mesh(new T.ConeGeometry(0.1, 0.36, 6), new T.MeshBasicMaterial({ color: '#FFB040', fog: false })); fl.position.set(-0.3, 1.75, 0.2); fl.visible = false; o.group.add(fl); o.flame = fl;

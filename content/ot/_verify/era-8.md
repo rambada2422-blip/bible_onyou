@@ -307,3 +307,7 @@
 - `content/ot/OT-30.json`: mission.call.t3 끝 문장.
 - `content/ot/OT-31.json`: mission.companion.ref(욘 1:1 → 욘 4:5).
 - 대목·관문·quests·design3d는 건드리지 않았다.
+
+## 3D 연결 때 고친 것 (2026-11-15, 코딩 담당. 3D 배치 독립 대조의 지적)
+
+- OT-30 quests[1]·[2]의 found·say와 mission.materials[1]·[2]의 how·line: 3D에서 재료를 찾는 때는 엘리야가 단을 고쳐 쌓기(왕상 18:30-32) 전이다. "열두 돌로 쌓은 단과 도랑", "물에 젖은 단", "물이 닿지 않은"이 아직 일어나지 않은 일을 미리 말하므로 "무너진 단", "단 자리"로 좁혔다(탐험대 이야기 문장. 성경 사실은 바꾸지 않음).

@@ -62,7 +62,7 @@
       o.home = [CAMP[0] + Math.cos(ha) * hr, CAMP[1] + Math.sin(ha) * hr];
       var fa = hash(i, 3) * 6.28, fr = CAMP_R + 6 + hash(i, 4) * 16; o.field = [CAMP[0] + Math.cos(fa) * fr, CAMP[1] + Math.sin(fa) * fr];
       if (o.field[0] > 22) o.field[0] = 22 - hash(i, 6) * 10;   /* 아이들 쪽으로는 오지 않게 */
-      o.t = hash(i, 5) * 4; put(o.group, o.home[0], o.home[1]); o.at = o.home.slice(); people.push(o);
+      o.t = hash(i, 5) * 4; put(o.group, o.home[0], o.home[1]); o.group.rotation.order = 'YXZ'; o.at = o.home.slice(); people.push(o);
     }
     var bodyOf = function (o) { return o.group; };
     /* 모세와 아론(Blender) */

@@ -6,7 +6,8 @@
  *  - 나팔 소리와 외침 뒤에 성벽이 무너져 내린다(수 6:20). 땅이 갈라지거나 흔들리지 않는다. 성벽 조각이 바깥으로 쓰러져 가라앉는다.
  *  - 깔리는 사람, 싸움, 주검, 불타는 성 안은 그리지 않는다(수 6:21, 6:24는 글로만). 무너진 뒤 성 안으로 들어가는 모습도 그리지 않는다.
  *  - 궤는 덮개로 덮여 있고 빛나지 않는다. 하나님은 말씀 자막으로만. 라합의 집과 붉은 줄은 그리지 않는다.
- * 감수가 필요한 설정: 성의 크기와 성벽 높이, 성 둘레 길, 진의 자리, 행렬의 사람 수(일부만 그림), 일곱 바퀴를 빠르게 돌려 보여 주는 것.
+ * 감수가 필요한 설정: 성의 크기와 성벽 높이, 성 둘레 길, 진의 자리, 행렬의 사람 수(일부만 그림), 궤를 멘 제사장 수(넷), 여호수아의 자리,
+ *   일곱 바퀴를 빠르게 돌려 보여 주는 것, 성벽이 바깥쪽으로 쓰러져 가라앉는 모양(본문은 무너져 내렸다고만 한다).
  */
 (function () {
   'use strict';
@@ -21,7 +22,7 @@
       var a = hash(ix, iz), b = hash(ix + 1, iz), c = hash(ix, iz + 1), d = hash(ix + 1, iz + 1);
       return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
     }
-    var CITY = [0, -62], A = 30, B = 22, PATH_A = 41, PATH_B = 33;
+    var CITY = [0, -62], A = 30, B = 22, PATH_A = 47, PATH_B = 39;
     function ell(x, z, a, b) { var dx = (x - CITY[0]) / a, dz = (z - CITY[1]) / b; return Math.sqrt(dx * dx + dz * dz); }
     /* 땅: 평지, 성이 선 둔덕, 멀리 서쪽 산 */
     function height(x, z) {
@@ -30,7 +31,7 @@
       h += sm(-170, -260, z) * 30 * (0.5 + 0.6 * noise(x * 0.02, 4)) + sm(150, 230, Math.abs(x)) * 10 * noise(3, z * 0.02);
       return h;
     }
-    function walkable(x, z) { return x >= 14 && x <= 58 && z >= 0 && z <= 46; }
+    function walkable(x, z) { return x >= 20 && x <= 58 && z >= 0 && z <= 46; }
 
     var scene = new T.Scene();
     scene.background = new T.Color('#F1E3C2'); scene.fog = new T.Fog('#EEDDBA', 80, 330);
@@ -66,7 +67,7 @@
     for (i = 0; i < NSEG; i++) {
       var t0 = (i / NSEG) * 6.283, t1 = ((i + 1) / NSEG) * 6.283, x0 = CITY[0] + Math.cos(t0) * A, z0 = CITY[1] + Math.sin(t0) * B, x1 = CITY[0] + Math.cos(t1) * A, z1 = CITY[1] + Math.sin(t1) * B;
       var len = Math.sqrt((x1 - x0) * (x1 - x0) + (z1 - z0) * (z1 - z0)) + 0.4, mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
-      var pivot = new T.Group(), seg = new T.Group();
+      var pivot = new T.Group(), seg = new T.Group(); pivot.rotation.order = 'YXZ';   /* 쓰러질 때 조각마다 바깥쪽으로(Y 다음 X) */
       var wall = new T.Mesh(new T.BoxGeometry(len, WH, 2.4), i % 3 ? wallM : wallM2); wall.position.y = WH / 2; wall.castShadow = true; seg.add(wall);
       for (var k = 0; k < 4; k++) { var cr = new T.Mesh(new T.BoxGeometry(len / 8, 0.8, 2.5), capM); cr.position.set(-len / 2 + len / 8 * (k * 2 + 0.5), WH + 0.4, 0); seg.add(cr); }
       if (i % 5 === 0) { var tw = new T.Mesh(new T.BoxGeometry(4.2, WH + 3, 4.2), wallM2); tw.position.y = (WH + 3) / 2; tw.castShadow = true; seg.add(tw); }
@@ -139,7 +140,7 @@
         var vis = on || marching;
         /* 출발 전에는 진 쪽(남쪽 성 둘레 길 시작점 뒤)에 줄지어 선다 */
         var x = pp[0], z = pp[1];
-        if (s < 0) { x = START[0] + 12 + (o.k % 3) * 1.4; z = START[1] + 8 - s * 0.6; hd = Math.PI; }
+        if (s < 0) { x = START[0] - 12 - (o.k % 3) * 1.4; z = START[1] + 8 - s * 0.6; hd = Math.PI; }   /* 출발 전에는 서쪽(아이들 반대쪽)에 줄지어 선다 */
         if (o.kind === 'ark') {
           ark.position.set(x, height(x, z) + 1.0, z); ark.rotation.y = hd;
           o.bearers.forEach(function (pr) {
@@ -167,11 +168,12 @@
     }
     function setPhase(p) {
       phase = p;
+      if (p !== 'fall' && p !== 'after') { fallT = -1; segs.forEach(function (sg) { sg.pivot.rotation.x = 0; sg.pivot.position.y = sg.y0; }); dustM.opacity = 0; }   /* '이전'으로 돌아올 때 */
       if (p === 'closed') { marching = false; lapS = 0; lapsLeft = 0; fallT = -1; dawnWant = 0; dawn = 0; applyDawn(); segs.forEach(function (sg) { sg.fall = 0; sg.pivot.rotation.x = 0; sg.pivot.position.y = sg.y0; sg.pivot.visible = true; }); dustM.opacity = 0; }
       if (p === 'march1') { marching = true; lapsLeft = 1; speed = 2.4; dawnWant = 0; }          /* 수 6:11: 한 번 */
       if (p === 'march6') { marching = true; lapsLeft = 1; speed = 4.2; dawnWant = 0; }          /* 수 6:14: 엿새 동안(한 바퀴로 보여 줌) */
       if (p === 'march7') { marching = true; lapsLeft = 7; speed = 16; dawnWant = 1; }           /* 수 6:15: 새벽, 일곱 번(빠르게) */
-      if (p === 'fall') { marching = false; dawnWant = 1; if (fallT < 0) fallT = 0; }            /* 수 6:20 */
+      if (p === 'fall') { var L7 = pathPos(0)[3]; marching = false; lapS = Math.max(lapS, Math.ceil((lapS - order[order.length - 1].s) / L7) * L7); dawnWant = 1; if (fallT < 0) fallT = -2.5; }   /* 수 6:20: 일곱 바퀴를 마친 뒤 나팔과 외침, 그 뒤 무너진다(-2.5초는 그 사이) */
       if (p === 'after') { marching = false; dawnWant = 0.4; if (fallT < 0) fallT = 99; }
     }
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
@@ -222,11 +224,11 @@
           if (Math.floor(lapS / L) > before) { lapsLeft--; if (lapsLeft <= 0) { marching = false; lapS = Math.ceil(lapS / L) * L; } }
         }
         placeMarch(dt);
-        if (fallT >= 0) {
+        if ((phase === 'fall' || phase === 'after') && fallT > -3) {
           fallT += dt;
           segs.forEach(function (sg) {
             var u = Math.min(1, Math.max(0, (fallT - sg.delay) / 2.2)), e = u * u;
-            sg.pivot.rotation.x = e * 1.45; sg.pivot.position.y = sg.y0 - e * 3.2;
+            sg.pivot.rotation.x = e * 1.2; sg.pivot.position.y = sg.y0 - e * 5.5;
           });
           dustM.opacity = fallT < 99 ? Math.max(0, Math.min(0.55, (fallT - 0.3) * 0.5) - Math.max(0, fallT - 5) * 0.08) : 0;
           dust.position.y = Math.min(3, fallT * 0.4);

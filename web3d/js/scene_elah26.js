@@ -6,7 +6,8 @@
  *  - 골리앗이 땅에 엎드러지는 것은 멀리서만 보인다(17:49). 돌이 박히는 모습, 피, 머리를 베는 모습은 그리지 않는다(17:51은 글로만).
  *  - 블레셋 사람들이 달아나고 이스라엘이 뒤쫓는 것은 멀리서 진영이 움직이는 것으로만(17:52). 쓰러진 사람은 그리지 않는다.
  *  - 이 본문에는 하나님이 나타나시는 대목이 없다. 불·구름·빛을 만들지 않는다. 사자와 곰은 그리지 않는다(다윗의 말이다).
- * 감수가 필요한 설정: 두 진영의 자리와 사람 수, 시내의 자리(본문에 없음), 짐 두는 곳, 사울의 모습(그리지 않음), 다윗의 옷 색.
+ * 감수가 필요한 설정: 두 진영의 자리와 사람 수, 시내의 자리(본문에 없음), 짐 두는 곳, 사울의 모습(그리지 않음), 다윗의 옷 색,
+ *   골리앗의 키(여섯 규빗 한 뼘을 약 2.9m로 환산), 두 사람이 마주친 자리.
  * 세 아이는 이스라엘이 선 산 쪽 가장자리에서만 다니고 골짜기로 내려가지 않는다(목격자).
  */
 (function () {
@@ -29,7 +30,7 @@
       h += sm(90, 160, Math.abs(dz)) * 10 * noise(x * 0.02, 2);
       return h;
     }
-    function walkable(x, z) { return x >= 16 && x <= 56 && z >= 9 && z <= 48; }
+    function walkable(x, z) { return x >= 16 && x <= 56 && z >= 14 && z <= 48; }   /* 이스라엘 진영의 동쪽 옆. 진영 앞 골짜기로는 가지 않는다 */
 
     var scene = new T.Scene();
     scene.background = new T.Color('#EFE6CC'); scene.fog = new T.Fog('#ECE2C6', 70, 300);
@@ -79,25 +80,26 @@
     }
     /* 짐 두는 곳과 짐 지키는 사람(삼상 17:22), 이스라엘 진의 장막(17:54의 다윗의 장막은 따로 그리지 않음) */
     var bagM = new T.MeshStandardMaterial({ color: '#B8946A', flatShading: true });
-    for (i = 0; i < 9; i++) { var bg = new T.Mesh(new T.DodecahedronGeometry(0.35, 0), bagM); bg.scale.set(1, 0.8, 1.2); put(bg, 38 + (i % 3) * 1.1, 52 + Math.floor(i / 3) * 1.1, 0.25); }
+    for (i = 0; i < 9; i++) { var bg = new T.Mesh(new T.DodecahedronGeometry(0.35, 0), bagM); bg.scale.set(1, 0.8, 1.2); put(bg, 10 + (i % 3) * 1.1, 41 + Math.floor(i / 3) * 1.1, 0.25); }
     var keeper = null; try { keeper = M2.israelite ? M2.israelite(77) : null; } catch (e) { keeper = null; }
-    if (keeper) { put(keeper.group, 41.5, 51); keeper.group.rotation.y = Math.PI * 0.8; }
+    if (keeper) { put(keeper.group, 13.6, 40.6); keeper.group.rotation.y = Math.PI * 0.8; }
     for (i = 0; i < 18; i++) { var tn = PR.tent(i + 70); put(tn, -60 + R() * 120, 46 + R() * 22); tn.rotation.y = R() * 6.28; }
 
     /* 골리앗(Blender, 삼상 17:4-7)과 방패 든 사람(17:7, 17:41). 키는 여섯 규빗 한 뼘(약 2.9m)으로 늘인다 */
     var GOL0 = [-8, -10], gol = { group: api.fallback('#5A4632', 2.9, 0.4), update: function () {} }, golAt = GOL0.slice(), golTo = null, golFall = 0, golFallWant = 0;
-    put(gol.group, GOL0[0], GOL0[1]); gol.group.visible = false;
-    api.person('goliath', function (nm) { nm.group.scale.setScalar(1.65); nm.group.position.copy(gol.group.position); nm.group.visible = gol.group.visible; scene.remove(gol.group); scene.add(nm.group); gol = nm; });
+    put(gol.group, GOL0[0], GOL0[1]); gol.group.visible = false; gol.group.rotation.order = 'YXZ';   /* 엎드러질 때 바라보는 쪽으로 */
+    api.person('goliath', function (nm) { nm.group.scale.setScalar(1.65); nm.group.rotation.order = 'YXZ'; nm.group.position.copy(gol.group.position); nm.group.visible = gol.group.visible; scene.remove(gol.group); scene.add(nm.group); gol = nm; });
     var bearer = PR.soldier(999, '#7A5A3A', '#B98A3E'), bShield = PR.shield('#8A6A3A'); bShield.position.set(0, 0, 0.38); bearer.group.add(bShield);
     put(bearer.group, GOL0[0] + 1.2, GOL0[1] + 2.2); bearer.group.visible = false;
     /* 다윗(Blender, 소년. 삼상 17:33, 17:42): 진에 이르러(17:20, 17:22) 시내로 가서(17:40) 나아간다 */
-    var DAV0 = [12, 40], dav = { group: api.fallback('#7A8A4A', 1.55, 0.22), update: function () {} }, davAt = DAV0.slice(), davTo = null, davRun = false;
+    var DAV0 = [12.5, 44],   /* 짐 두는 곳에서 진영으로(17:22) */ dav = { group: api.fallback('#7A8A4A', 1.55, 0.22), update: function () {} }, davAt = DAV0.slice(), davTo = null, davRun = false;
     put(dav.group, DAV0[0], DAV0[1]); dav.group.visible = false;
     api.person('david', function (nm) { nm.group.scale.setScalar(0.9); nm.group.position.copy(dav.group.position); nm.group.visible = dav.group.visible; scene.remove(dav.group); scene.add(nm.group); dav = nm; });
 
-    var phase = 'arrayed', flee = 0;
+    var phase = 'arrayed', flee = 0, fallPending = false;
     function setPhase(p) {
       phase = p;
+      if (p !== 'fall') { golFall = 0; golFallWant = 0; fallPending = false; davRun = false; flee = 0; phi.forEach(function (o) { o.at = o.home.slice(); o.group.visible = true; o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); }); bearer.group.visible = gol.group.visible || p !== 'arrayed'; }   /* '이전'으로 돌아올 때 */
       if (p === 'arrayed') { gol.group.visible = false; bearer.group.visible = false; dav.group.visible = false; golAt = GOL0.slice(); golTo = null; golFall = 0; golFallWant = 0; davAt = DAV0.slice(); davTo = null; flee = 0;
         isr.forEach(function (o) { o.at = o.home.slice(); }); phi.forEach(function (o) { o.at = o.home.slice(); o.group.visible = true; }); }
       if (p === 'goliath') { gol.group.visible = true; bearer.group.visible = true; golTo = [-6, -6]; }                         /* 17:4-10 */
@@ -105,8 +107,8 @@
       if (p === 'fear') { isr.forEach(function (o) { o.at = [o.home[0], o.home[1] + 4]; }); davTo = [6, 24]; golTo = [-5, -4]; } /* 17:24 */
       if (p === 'saul') { isr.forEach(function (o) { o.at = [o.home[0], o.home[1] + 4]; }); davTo = [-4, 22]; }               /* 17:31-37 */
       if (p === 'brook') { davTo = [-3, BROOK_Z + 1.6]; }                                                                     /* 17:40 */
-      if (p === 'near') { davTo = [-3, BROOK_Z - 0.5]; golTo = [-4, -6.5]; }                                                    /* 17:41-47 */
-      if (p === 'fall') { davTo = [-3.5, -2.8]; davRun = true; golTo = null; golFallWant = 1; flee = 0.001; }                   /* 17:48-52 */
+      if (p === 'near') { davTo = [-3, BROOK_Z + 2.4]; golTo = [-4, -3.2]; }                                                    /* 17:41-47: 골리앗이 다윗 쪽으로 다가온다 */
+      if (p === 'fall') { davTo = [-3.6, BROOK_Z + 0.4]; davRun = true; golTo = [-4, -2.2]; fallPending = true; flee = 0.001; }  /* 17:48-52: 서로 다가간 뒤 골리앗이 엎드러진다 */
     }
     function step(o, at, to, spd, dt) {
       var p = o.group.position, dx = to[0] - at[0], dz = to[1] - at[1], d = Math.sqrt(dx * dx + dz * dz);
@@ -128,7 +130,7 @@
       },
       P: { start: [44, 32], machine: [50, 38], machineRot: -0.5,
         /* 재료가 놓인 곳(quests[i].found): 이스라엘이 선 산 쪽 / 짐 지키는 사람이 있는 쪽 / 시내 쪽 */
-        parts: [[24, 30], [36, 47], [20, 10.5]], lookSpot: [20, 10.5],
+        parts: [[24, 30], [18.5, 43], [21, 15]], lookSpot: [21, 15],
         look: { focus: GOL0, mid: [-4, 2], dy: 1.8, backE: 6, upE: 3 } },
       eventLook: function (i) {
         if (i === 2 || i === 3) return { focus: davAt, mid: davAt, dy: 1.0, backE: 6, upE: 3 };
@@ -157,7 +159,7 @@
       beatPose: function (i) { setPhase(i <= 1 ? 'goliath' : ['', '', 'david', 'fear', 'saul', 'brook', 'near', 'fall'][i]); },
       update: function (dt, now) {
         if (golTo && gol.group.visible) { step(gol, golAt, golTo, 0.9, dt); bearer.group.position.set(golAt[0] + 1.1, height(golAt[0] + 1.1, golAt[1] + 2.0), golAt[1] + 2.0); bearer.group.rotation.y = gol.group.rotation.y = Math.PI * 0.02; }
-        if (davTo && dav.group.visible) { var ar = step(dav, davAt, davTo, davRun ? 4.5 : 1.6, dt); if (dav.update) dav.update(dt, !ar); } else if (dav.update) dav.update(dt, false);
+        if (davTo && dav.group.visible) { var ar = step(dav, davAt, davTo, davRun ? 4.5 : 1.6, dt); if (dav.update) dav.update(dt, !ar); if (ar && fallPending) { fallPending = false; golFallWant = 1; golTo = null; } } else if (dav.update) dav.update(dt, false);
         if (gol.update) gol.update(dt, !!golTo);
         /* 17:49: 땅에 엎드러짐(멀리서). 앞으로 천천히 눕는다 */
         golFall += (golFallWant - golFall) * Math.min(1, dt * (golFallWant ? 0.9 : 3));

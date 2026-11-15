@@ -6,7 +6,8 @@
  *  - 제사장들은 궤를 멘 채 요단 가운데 마른 땅에 서 있고, 백성은 궤에서 멀리 떨어진 하류 쪽으로 건넌다(수 3:4, 3:17).
  *  - 제사장들이 올라와 발바닥이 뭍을 밟자 물이 제자리로 돌아와 언덕까지 넘친다(수 4:18).
  *  - 여호수아는 서 있기만 한다. 지팡이를 들거나 손을 내밀지 않는다. 궤는 덮개로 덮여 있고 빛나지 않는다. 하나님은 말씀 자막으로만.
- * 감수가 필요한 설정: 진과 장막의 자리, 제사장의 수(넷), 백성이 건너는 자리, 제사장들이 올라온 쪽(서쪽으로 둠), 재료가 놓인 곳.
+ * 감수가 필요한 설정: 진과 장막의 자리, 제사장의 수(넷), 백성이 건너는 자리, 제사장들이 올라온 쪽(서쪽으로 둠), 재료가 놓인 곳,
+ *   여호수아가 선 자리, 이천 규빗(수 3:4)을 화면에 담으려고 줄인 축척.
  * 세 아이는 동쪽 둑 위에서만 다닌다(목격자).
  */
 (function () {
@@ -14,9 +15,9 @@
   window.BO3D = window.BO3D || {};
   BO3D.scene3d = BO3D.scene3d || {};
   BO3D.scene3d['OT-18'] = function (api) {
-    var T = THREE, J = BO3D.jordan, JP = J.P, M2 = BO3D.models2 || {}, FX = api.FX;
+    var T = THREE, J = BO3D.jordan, JP = J.P, M2 = BO3D.models2 || {}, FX = api.FX, PR = BO3D.props;
     var JL = J.build({ staged: true }), scene = JL.scene, H = JL.height;
-    var BANK = [22, 10.6], MID = [22, -6], WEST = [22, -24.5], CROSS = [-44, -6], GILGAL = [-45, -42];
+    var BANK = [40, 10.6], MID = [40, -6], WEST = [40, -24.5], CROSS = [-44, -6], GILGAL = [-45, -42];   /* 궤는 아이들에게서 멀리(수 3:4) */
 
     /* 강물: 처음에는 언덕까지 넘치고(수 3:15), 물이 끊어지면 강바닥 아래로 내려간다 */
     var FULL = 0.55, LOW = JP.bedY - 0.9, level = FULL, want = FULL, water = null;
@@ -82,17 +83,24 @@
       scene.remove(JL.leader.group); scene.add(nm.group); JL.leader = nm;
     });
     setArk(BANK[0], BANK[1]);
+    /* 돌 열둘(수 4:8-9, 4:20): 강 가운데 제사장들이 섰던 곳과 길갈. 글자나 무늬는 없다 */
+    var heapMid = PR && PR.stoneHeap ? PR.stoneHeap(418, 12) : new T.Group(), heapGil = PR && PR.stoneHeap ? PR.stoneHeap(420, 12) : new T.Group();
+    heapMid.scale.setScalar(1.6); heapGil.scale.setScalar(1.6); JL.put(heapMid, MID[0] - 3, MID[1] + 2); JL.put(heapGil, GILGAL[0] + 6, GILGAL[1] + 4); heapMid.visible = false; heapGil.visible = false;
+    var LEAD0 = JP.leader.slice(), LEAD_W = [GILGAL[0] + 3, GILGAL[1] + 10];
+    function setLeader(at) { var lg = JL.leader.group; lg.position.set(at[0], H(at[0], at[1]), at[1]); }
 
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
     var phase = 'camp';
     function setPhase(p) {
       phase = p;
+      heapMid.visible = p === 'stones' || p === 'return' || p === 'gilgal'; heapGil.visible = p === 'gilgal';
+      setLeader(p === 'return' || p === 'gilgal' ? LEAD_W : LEAD0);   /* 여호수아는 건넌 뒤 서쪽(길갈 쪽)에 있다(수 4:19-20) */
       if (p === 'camp') { want = FULL; level = FULL; JL.setCrowd('camp'); arkTo = null; setArk(BANK[0], BANK[1]); }
       /* 수 3:14-16: 제사장들이 물가에 발을 담그자 물이 끊어진다 */
-      if (p === 'stop') { JL.setCrowd('camp'); arkTo = [BANK[0], 8.4]; onDone = function () { want = LOW; arkTo = [MID[0], MID[1]]; onDone = null; }; }
+      if (p === 'stop') { JL.setCrowd('camp'); want = FULL; level = Math.max(level, FULL - 0.2); setArk(BANK[0], BANK[1]); arkTo = [BANK[0], 8.4]; onDone = function () { want = LOW; arkTo = [MID[0], MID[1]]; onDone = null; }; }
       /* 수 3:17: 제사장들은 가운데 마른 땅에 서 있고 백성이 건넌다 */
       if (p === 'cross') { want = LOW; level = Math.min(level, LOW + 0.3); if (!arkTo) setArk(MID[0], MID[1]); JL.setCrowd('cross'); }
-      if (p === 'stones') { want = LOW; JL.setCrowd('cross'); arkTo = null; setArk(MID[0], MID[1]); }
+      if (p === 'stones') { want = LOW; JL.setCrowd('west'); arkTo = null; setArk(MID[0], MID[1]); }   /* 수 4:1: 온 백성이 건너기를 마침 */
       /* 수 4:15-18: 제사장들이 올라오자 물이 돌아온다 */
       if (p === 'return') { JL.setCrowd('west'); arkTo = [WEST[0], WEST[1]]; onDone = function () { want = FULL; onDone = null; }; }
       if (p === 'gilgal') { JL.setCrowd('west'); arkTo = null; setArk(WEST[0], WEST[1]); want = FULL; }
@@ -111,7 +119,7 @@
       },
       P: { start: JP.start, machine: JP.machine, machineRot: 0.6,
         /* 재료가 놓인 곳: 진 가장자리 / 물이 닿지 않는 강 언덕 위쪽(상류) / 강 아래쪽 언덕(하류) — quests[i].found */
-        parts: [[-20.5, 34], [10.5, 13.2], [-14.5, 12.6]], lookSpot: [-14.5, 12.6],
+        parts: [[-20, 12.2], [-2, 16], [-14.5, 12.6]], lookSpot: [-14.5, 12.6],
         look: { focus: BANK, mid: [8, 8], dy: 0.4, backE: 9, upE: 3.6 } },
       /* 대목마다 카메라가 볼 곳: 물가의 제사장들 → 건너는 백성 → 가운데 선 제사장들 → 올라오는 제사장들과 돌아오는 물 → 길갈 쪽 */
       eventLook: function (i) {

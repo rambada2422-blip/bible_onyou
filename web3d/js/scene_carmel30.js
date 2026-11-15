@@ -21,7 +21,7 @@
       var a = hash(ix, iz), b = hash(ix + 1, iz), c = hash(ix, iz + 1), d = hash(ix + 1, iz + 1);
       return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
     }
-    var ALT = [0, -8], BAAL = [-30, -16];
+    var ALT = [0, -8], BAAL = [-26, -36];
     function height(x, z) {
       var h = 0.6 * noise(x * 0.05 + 3, z * 0.05 + 1) + 0.04 * x + 0.02 * z * (z > 0 ? 1 : 0.3);   /* 동쪽이 조금 높은 넓은 산 어깨 */
       h += sm(50, 120, -z) * 18 * (0.5 + 0.6 * noise(x * 0.02, 5)) + sm(80, 160, Math.abs(x)) * 14 * noise(2, z * 0.02);
@@ -83,13 +83,13 @@
 
     /* 여호와의 불(18:38): 위에서 단으로 내려오는 불. 단 위에서 타오른 뒤 단과 물이 사라진다 */
     var fire = FX ? FX.fire() : null, fireT = -1;
-    if (fire) { fire.group.scale.setScalar(2.6); fire.group.visible = false; put(fire.group, ALT[0], ALT[1], 0.4); }
+    if (fire) { fire.group.scale.setScalar(1.7); fire.group.visible = false; put(fire.group, ALT[0], ALT[1], 0.4); }
     var fallCv = document.createElement('canvas'); fallCv.width = 32; fallCv.height = 128;
     var fcx = fallCv.getContext('2d'), fgr = fcx.createLinearGradient(0, 0, 0, 128);
     fgr.addColorStop(0, 'rgba(255,200,90,0)'); fgr.addColorStop(0.6, 'rgba(255,170,60,0.7)'); fgr.addColorStop(1, 'rgba(255,240,170,1)'); fcx.fillStyle = fgr; fcx.fillRect(0, 0, 32, 128);
     var hg = fcx.createLinearGradient(0, 0, 32, 0); hg.addColorStop(0, 'rgba(0,0,0,1)'); hg.addColorStop(0.5, 'rgba(0,0,0,0)'); hg.addColorStop(1, 'rgba(0,0,0,1)');
     fcx.globalCompositeOperation = 'destination-out'; fcx.fillStyle = hg; fcx.fillRect(0, 0, 32, 128);
-    var fall = new T.Mesh(new T.PlaneGeometry(3.2, 18), new T.MeshBasicMaterial({ map: new T.CanvasTexture(fallCv), transparent: true, opacity: 0, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
+    var fall = new T.Mesh(new T.PlaneGeometry(2.4, 9), new T.MeshBasicMaterial({ map: new T.CanvasTexture(fallCv), transparent: true, opacity: 0, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
     put(fall, ALT[0], ALT[1], 30); if (FX) fall.layers.set(FX.GLOW);
     var flash = new T.PointLight('#FFB060', 0, 60, 1.6); put(flash, ALT[0], ALT[1], 3);
 
@@ -99,7 +99,7 @@
       var o = null; try { if (M2.israelite) o = M2.israelite(i * 9 + 4); } catch (e) { o = null; }
       if (!o) o = PR.soldier(i, '#7A6A4A', null);
       o.home = [-18 + (i % 12) * 3.1 + (hash(i, 2) - 0.5) * 1.4, 10 + Math.floor(i / 12) * 3.2 + hash(i, 4) * 1.5]; o.near = [o.home[0] * 0.7, o.home[1] - 5];
-      put(o.group, o.home[0], o.home[1]); o.group.rotation.y = Math.PI; o.at = o.home.slice(); people.push(o);
+      put(o.group, o.home[0], o.home[1]); o.group.rotation.order = 'YXZ'; o.group.rotation.y = Math.PI; o.at = o.home.slice(); people.push(o);   /* YXZ: 엎드릴 때 바라보는 쪽(단 쪽)으로 기운다 */
     }
     for (i = 0; i < 40; i++) { var pp = PR.soldier(i + 500, ['#A84A32', '#8E5A3E', '#B0623A'][i % 3], null); pp.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); pp.a = i / 40 * 6.283; pp.r = 5 + (i % 3) * 1.4; put(pp.group, BAAL[0] + Math.cos(pp.a) * pp.r, BAAL[1] + Math.sin(pp.a) * pp.r); prophets.push(pp); }
     /* 엘리야(Blender, 지팡이 없음) */
@@ -116,14 +116,18 @@
     }
     function setPhase(p) {
       phase = p;
+      baal.wood.visible = p !== 'gather';
+      if (p === 'fire') yah.wood.visible = true;
       if (p === 'gather') { dusk = 0; duskWant = 0; applyDusk(); prophetsDancing = false; ruin.visible = true; yah.group.visible = false; trench.visible = false; water.visible = false; waterLv = 0; waterWant = 0;
         yah.group.children.forEach(function (m) { if (m.material === wetM) m.material = stoneM; }); fireT = -1; if (fire) fire.group.visible = false; fall.material.opacity = 0; flash.intensity = 0; bow = 0; bowWant = 0; nearWant = false; eliTo = null;
         eli.group.position.set(ELI0[0], height(ELI0[0], ELI0[1]), ELI0[1]); yah.group.scale.set(1, 1, 1); }
-      if (p === 'baal') { prophetsDancing = true; duskWant = 0.55; }                                       /* 18:26-29 아침부터 저녁 소제 때까지 */
-      if (p === 'altar') { prophetsDancing = false; duskWant = 0.7; nearWant = true; ruin.visible = false; yah.group.visible = true; trench.visible = true; eliTo = [3.4, -3.6]; } /* 18:30-32 */
-      if (p === 'water') { duskWant = 0.75; nearWant = true; ruin.visible = false; yah.group.visible = true; trench.visible = true; water.visible = true; waterWant = 1; /* 18:33-35 */
+      if (p !== 'fire' && p !== 'gather') { fireT = -1; if (fire) fire.group.visible = false; fall.material.opacity = 0; flash.intensity = 0; bow = 0; bowWant = 0; yah.group.scale.set(1, 1, 1); }   /* '이전'으로 돌아올 때 뒤 대목의 상태를 지운다 */
+      if (p === 'baal') { prophetsDancing = true; duskWant = 0.55; nearWant = false; eliTo = null; ruin.visible = true; yah.group.visible = false; trench.visible = false; water.visible = false; waterLv = 0; waterWant = 0; }                                       /* 18:26-29 아침부터 저녁 소제 때까지 */
+      if (p === 'altar') { prophetsDancing = false; duskWant = 0.7; nearWant = true; ruin.visible = false; yah.group.visible = true; trench.visible = true; eliTo = [3.4, -3.6]; water.visible = false; waterLv = 0; waterWant = 0; yah.wood.visible = false;
+        yah.group.children.forEach(function (m) { if (m.material === wetM) m.material = stoneM; }); } /* 18:30-32 */
+      if (p === 'water') { duskWant = 0.75; nearWant = true; ruin.visible = false; yah.group.visible = true; yah.wood.visible = true; trench.visible = true; water.visible = true; waterWant = 1; /* 18:33-35 */
         yah.group.children.forEach(function (m) { if (m.material === stoneM || m.material === stoneM2) m.material = wetM; }); }
-      if (p === 'pray') { duskWant = 0.85; nearWant = true; eliTo = [2.6, -2.6]; if (!water.visible) { water.visible = true; waterWant = 1; } ruin.visible = false; yah.group.visible = true; trench.visible = true; } /* 18:36-37 */
+      if (p === 'pray') { yah.wood.visible = true; duskWant = 0.85; nearWant = true; eliTo = [2.6, -2.6]; if (!water.visible) { water.visible = true; waterWant = 1; } ruin.visible = false; yah.group.visible = true; trench.visible = true; } /* 18:36-37 */
       if (p === 'fire') { duskWant = 0.85; if (fireT < 0) fireT = 0; }                                     /* 18:38-39 */
     }
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
@@ -185,7 +189,7 @@
         if (fireT >= 0) {
           fireT += dt;
           var fd = Math.min(1, fireT / 0.9);
-          fall.position.y = height(ALT[0], ALT[1]) + 30 - 21 * fd; fall.material.opacity = fireT < 2.4 ? Math.min(1, fireT * 2) : Math.max(0, 1 - (fireT - 2.4));
+          fall.position.y = height(ALT[0], ALT[1]) + 16 - 11 * fd; fall.material.opacity = fireT < 2.4 ? Math.min(1, fireT * 2) : Math.max(0, 1 - (fireT - 2.4));
           fall.lookAt(api.camera().position.x, fall.position.y, api.camera().position.z);
           if (fire && fireT > 0.7) fire.group.visible = fireT < 9;
           flash.intensity = fireT > 0.7 && fireT < 9 ? 2.4 + Math.sin(fireT * 9) * 0.4 : 0;
