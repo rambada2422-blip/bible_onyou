@@ -58,6 +58,12 @@ function check(file) {
   // 물음
   const question = (q, w, tier) => {
     if (!q || !TYPES[tier].includes(q.type)) { E(`${w}: ${tier}에 쓸 수 있는 유형은 ${TYPES[tier].join(', ')} (지금: ${q && q.type})`); return; }
+    if (V2) {   /* 규칙서 13.5 물음의 세 단계(--v2): 모두 find. t1 한 절 / t2 범위 / t3 떨어진 두 곳 이상 */
+      if (q.type !== 'find') E(`${w}: 13.5에 따라 find로 쓴다(지금: ${q.type})`);
+      else if (tier === 't1' && (q.refs || !/^\S+ \d+:\d+$/.test(String(q.ref || '')))) E(`${w}: 8~10세는 ref에 한 절(예: "출 12:7")`);
+      else if (tier === 't2' && (q.refs || !/^\S+ \d+:\d+-(\d+:)?\d+$/.test(String(q.ref || '')))) E(`${w}: 11~13세는 ref에 범위(예: "출 12:21-23")`);
+      else if (tier === 't3' && !(Array.isArray(q.refs) && q.refs.length >= 2)) E(`${w}: 14~19세는 refs에 떨어진 두 곳 이상`);
+    }
     const sim = q && (q.refs || [q.ref]).filter(Boolean);   /* 보기 글도 물음의 장절 본문과 대조한다(그대로 옮긴 보기를 막는다) */
     const opts = (o, ww) => {
       if (!Array.isArray(o) || o.length < 3 || o.length > 4) { E(`${ww}: 보기는 3~4개`); return; }
@@ -136,11 +142,13 @@ function check(file) {
       });
     }
     /* 현장 돕기(규칙서 13.6, 작성규칙 7.2): 본문에 그 사람들이 했다고 적힌 평범한 일만. 거룩한 행위는 watch로 곁에서 본다 */
+    if (V2 && !m.help) E('mission.help 없음(규칙서 13.6. 돕는 일이 없으면 watch·stay·ask만으로)');
     if (m.help !== undefined) {
       const h = m.help || {};
       if (!str(h.who)) E('mission.help.who 없음(돕는 상대, 예: "이스라엘 자손의 한 집")');
       if (!Array.isArray(h.steps) || h.steps.length < 2 || h.steps.length > 8) E('mission.help.steps는 2~8개');
-      else h.steps.forEach((x, i) => {
+      else if (V2 && !h.steps.some((x) => x.kind === 'ask')) E('mission.help.steps에 뜻을 묻는 ask가 하나는 있어야 함');
+      if (Array.isArray(h.steps)) h.steps.forEach((x, i) => {
         const w = `mission.help.steps[${i}]`;
         if (!HELP_KINDS.includes(x.kind)) E(`${w}.kind는 ${HELP_KINDS.join(', ')}`);
         if (!(x.after === 'gates' || (Number.isInteger(x.after) && x.after >= 0 && x.after < (d.beats || []).length))) E(`${w}.after는 대목 번호 또는 "gates"`);
@@ -153,6 +161,7 @@ function check(file) {
         }
         if (x.kind === 'stay' && !str(x.wait)) E(`${w}.wait 없음(기다리기 버튼 글)`);
         if (x.say) { if (!WHO.includes(x.say.who) || !str(x.say.text)) E(`${w}.say: {who, text}`); else texts.push([`${w}.say`, x.say.text, x.basis]); }
+        if (x.kind === 'ask' && !str(x.by)) E(`${w}.by 없음(답하는 사람. 본문에 말할 사람이 없으면 "최현 박사")`);
         if (x.kind === 'ask') {
           if (!x.ask || !WHO.includes(x.ask.who) || !str(x.ask.text)) E(`${w}.ask: {who, text}`); else texts.push([`${w}.ask`, x.ask.text, null]);
           tri(x.answer, w + '.answer', x.basis);
@@ -180,7 +189,8 @@ function check(file) {
   });
 }
 
-const NEED_MISSION = process.argv.includes('--mission');
+const NEED_MISSION = process.argv.includes('--mission') || process.argv.includes('--v2');
+const V2 = process.argv.includes('--v2');
 const want = process.argv.slice(2).filter((x) => !x.startsWith('--'));
 const files = fs.readdirSync(DIR).filter((f) => /^OT-\d\d\.json$/.test(f) && (!want.length || want.includes(f.replace('.json', '')))).sort();
 if (!hasRef) console.log('주의: ref/bible 이 없어 장절이 실제로 있는지는 검사하지 못함 (tools/bible_ref/fetch.sh)');

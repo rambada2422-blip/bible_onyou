@@ -196,7 +196,7 @@
     var d = sc(cur.id), e = eraOf(d.era), s = cur.steps[cur.step], m = d.mission || {};
     cur.k = s.k;
     var last = cur.step === cur.steps.length - 1, next = cur.steps[cur.step + 1];
-    var kick = s.k in KICK ? KICK[s.k] + ' ' + (s.i + 1) + ' / ' + nOf(s.k) : '';
+    var kick = s.k in KICK ? KICK[s.k] + ' ' + (s.i + 1) + ' / ' + (s.k === 'help' ? m.help.steps.length : nOf(s.k)) : '';
     var nextLabel = !next ? '' : (next.k === 'gate' && s.k !== 'gate' ? '다음으로 가는 관문' : (next.k === 'finish' ? '탐험 마치기' : '다음'));
     var nb = next ? btn(nextLabel, go) : null, body = [], gated = false;
     var prev = (s.k === 'beat' || s.k === 'talk') && cur.step > 0 && cur.steps[cur.step - 1].k !== 'arrive' ? btn('이전', function () { cur.step--; render(); }, 'plain') : null;
@@ -350,6 +350,7 @@
     var d = sc(id), m = d && d.mission, st = [];
     if (m && m.companion && (kind === 'before' || kind === 'after') && (m.companion.when === 'after' ? 'after' : 'before') === kind) m.companion.talks.forEach(function (t, i) { st.push({ k: 'talk', i: i }); });
     if (m && m.today && kind === 'today') m.today.forEach(function (x, i) { st.push({ k: 'today', i: i }); });
+    if (m && m.help && /^help:/.test(kind)) m.help.steps.forEach(function (h, i) { if (String(h.after) === kind.slice(5)) st.push({ k: 'help', i: i }); });   /* 3D의 현장 돕기 */
     if (!st.length) { done(); return; }
     cur.screen = 'seg'; cur.id = id; cur.steps = st; cur.step = 0; cur.seg = done;
     render();

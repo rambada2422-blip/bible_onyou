@@ -6,6 +6,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 const enter3d = require('./lib/enter.js');
+const doHelp = require('./lib/help.js');
 const id = process.argv[2] || 'OT-18', ti = Number(process.argv[3] || '1'), out = process.argv[4] || '/tmp/walk3dScene';
 fs.mkdirSync(out, { recursive: true });
 (async () => {
@@ -29,11 +30,14 @@ fs.mkdirSync(out, { recursive: true });
   await shot('arrive');
   await p.click('text=출발하자'); await p.waitForTimeout(500);
   // story.js 조각(동행 문답·오늘의 물음): 시트의 마지막 버튼을 닫힐 때까지 누른다
+  let helpSeen = 0;
   const segs = async (label) => {
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 12; i++) {
       const on = await p.evaluate(() => !!(BO3D.story && BO3D.story.debug.state().screen === 'seg'));
       if (!on) return i;
       if (i === 0) await shot(label);
+      const h = await doHelp(p);   /* 현장 돕기 조각이면 돕기를 마친다 */
+      if (h) { helpSeen++; await shot(label + '-help' + helpSeen + '-' + h.kind); if (!h.enabled || !h.good || !h.said) probs.push(label + ': 현장 돕기(' + h.kind + ' ' + h.title + ')를 마치지 못함'); }
       await p.click('.ot3 .sheet-foot .btn >> nth=-1'); await p.waitForTimeout(250);
     }
     probs.push(label + ': 조각이 닫히지 않음'); return -1;
@@ -78,6 +82,7 @@ fs.mkdirSync(out, { recursive: true });
       if (s.state !== 'caption') { probs.push('재료 ' + (i + 1) + '을 줍지 못함 ' + JSON.stringify(s)); break; }
       await shot('part' + (i + 1));
       await p.click('text=계속 탐험하기'); await p.waitForTimeout(500);
+      await segs('help-after-part' + (i + 1));
     }
   }
   await p.waitForTimeout(1500); await shot('lookup-a');
@@ -88,6 +93,7 @@ fs.mkdirSync(out, { recursive: true });
     await p.waitForTimeout(i === 0 ? 4000 : 1800);
     if (i > 0) await shot('event' + (i + 1));
     await p.click('.panel3 .btn.onpaper'); await p.waitForTimeout(400);
+    await segs('help-after-beat');
   }
   await segs('talk-after');
   const gates = D.gates[tier];
@@ -98,6 +104,8 @@ fs.mkdirSync(out, { recursive: true });
     await p.click('.overlay3 .sheet-foot .btn.onpaper'); await p.waitForTimeout(400);
   }
   await segs('today');
+  const helpN = D.mission && D.mission.help ? D.mission.help.steps.length : 0;
+  if (helpSeen !== helpN) probs.push('현장 돕기 ' + helpN + '단계 가운데 ' + helpSeen + '단계만 나옴(3D에서는 after가 재료 때 보여 주는 대목·지켜보기 대목·gates여야 함)');
   await p.waitForSelector('text=계속 탐험하기', { timeout: 20000 }); await shot('end');
   await p.click('.overlay3 .sheet-foot .btn.onpaper'); await p.waitForTimeout(600);
   const pr = await p.evaluate(() => BO3D.debug.parts());

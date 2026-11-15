@@ -321,7 +321,8 @@
         btn('계속 탐험하기', function () {
           hidePanel();
           if (SCN.partContinue) SCN.partContinue(i);
-          quest = i + 1; openQuiz();
+          var go2 = function () { quest = i + 1; openQuiz(); };
+          if (bi !== null && bi !== undefined && hasHelp(bi)) seg('help:' + bi, go2); else go2();   /* 이 대목 뒤의 현장 돕기(규칙서 13.6) */
         }));
     } else { if (SCN.partFound) SCN.partFound(i); startLookup(); }
   }
@@ -775,6 +776,8 @@
     var prev = state; state = 'seg'; base.hidden = true; stick.x = stick.y = 0; stick.id = null;
     BO3D.story.segment(SCN.id, kind, function () { state = prev; done(); });
   }
+  /* 현장 돕기(규칙서 13.6): 이 대목 뒤에 돕기 단계가 있는가. 3D에서도 이야기 카드 조각(seg)으로 보여 준다 */
+  function hasHelp(i) { var h = SC && SC.mission && SC.mission.help; return !!(h && h.steps.some(function (x) { return x.after === i; })); }
   function keyOf(k) { for (var n in kids) if (kids[n] === k) return n; return null; }
 
   /* ── 올려다보기: 마지막 부품을 주운 뒤, 언덕 위 떨기나무 앞에 선 모세를 올려다본다 ──
@@ -877,7 +880,7 @@
     showPanel([el('div', { class: 'q-kicker', text: '지켜보기 ' + (evIdx - e0 + 1) + ' / ' + (SC.beats.length - e0) }),
       storyNote(bn), beatNodes(b)],
       [evIdx > e0 ? btn('이전', function () { evIdx--; showBeat(); }, 'plain') : null,
-        btn(last ? '다음으로 가는 관문' : '다음', function () { if (last) { hidePanel(); startGates(); } else { evIdx++; showBeat(); } })]);
+        btn(last ? '다음으로 가는 관문' : '다음', function () { var go2 = function () { if (last) { hidePanel(); startGates(); } else { evIdx++; showBeat(); } }; if (hasHelp(evIdx)) { hidePanel(); seg('help:' + evIdx, go2); } else go2(); })]);
   }
 
   /* ── 관문 (2D 시범판과 같은 방식) ── */
@@ -894,7 +897,7 @@
     var gates = SC.gates[S.tier], gi = 0;
     (function show() {
       var q = gates[gi], last = gi === gates.length - 1;
-      var nb = btn(last ? '관문 통과' : '다음 관문', function () { if (last) { overlay.hidden = true; seg('after', function () { seg('today', finish); }); } else { gi++; show(); } });
+      var nb = btn(last ? '관문 통과' : '다음 관문', function () { if (last) { overlay.hidden = true; seg('help:gates', function () { seg('after', function () { seg('today', finish); }); }); } else { gi++; show(); } });
       nb.disabled = true;
       sheetOverlay([el('div', { class: 'q-kicker', text: '다음으로 가는 관문 ' + (gi + 1) + ' / ' + gates.length }), blockFor(q, function () { nb.disabled = false; }, gi)], nb);
     })();
