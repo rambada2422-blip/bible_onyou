@@ -1,5 +1,5 @@
 // 3D 장면이 호렙 산보다 무거워지지 않았는지 비교한다(지시서 4.1의 5). 사용: node tools/test/perf3d.js [장면들...]
-// 장면마다 도착 화면과 지켜보기 첫 대목에서 그리기 호출 수(calls), 삼각형 수(tris), 기하·텍스처 수, 초당 장면 수(fps)를 잰다.
+// 장면마다 도착 화면과 지켜보기 첫 대목에서 한 화면의 그리기 호출 수(calls, 후처리 포함), 삼각형 수(tris), 기하·텍스처 수, 초당 장면 수(fps)를 잰다.
 // 이 컴퓨터는 GPU 없이 그리므로 fps의 절대값은 휴대폰과 다르다. 같은 조건에서 호렙 산과 견주는 데만 쓴다.
 const { chromium } = require('playwright');
 const enter3d = require('./lib/enter.js');
@@ -15,9 +15,7 @@ const ids = process.argv.slice(2).length ? process.argv.slice(2) : ['OT-09', 'OT
     const fps = () => p.evaluate(() => new Promise((res) => { let n = 0; const t0 = performance.now(); function f() { n++; if (performance.now() - t0 < 3000) requestAnimationFrame(f); else res(Math.round(n / ((performance.now() - t0) / 1000) * 10) / 10); } requestAnimationFrame(f); }));
     try {
       await enter3d(p, 1, id);
-      if (id === 'OT-09') { /* 호렙 산은 타임머신 이름 고르기를 거친다: 첫 보기로 넘어간다 */
-        for (let i = 0; i < 6 && !(await p.$('text=출발하자')); i++) { const c = await p.$('.overlay3:not([hidden]) .choice'); if (c) await c.click(); const n = await p.$('.overlay3:not([hidden]) .sheet-foot .btn.onpaper'); if (n) await n.click(); await p.waitForTimeout(800); }
-      }
+      if (id === 'OT-09') { await p.waitForTimeout(600); await p.click('.route-opts .btn:has-text("모세")'); }   /* 호렙 산은 시대 추리(누구를 만나러 가나)를 거친다(walk3d.js와 같게) */
       await p.waitForSelector('text=출발하자', { timeout: 60000 }); await p.click('text=출발하자'); await p.waitForTimeout(800);
       await p.evaluate(() => { const o = document.querySelector('.overlay3'); if (o) o.hidden = true; });
       await p.waitForTimeout(1500);

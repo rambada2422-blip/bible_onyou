@@ -1109,6 +1109,7 @@
       if (horeb && SCN.audio) SCN.audio(FX.audio, player.group.position); else { FX.audio.setFlock(999); FX.audio.setFire(999); }
     }
     var rs = horeb ? SCN.scene : JL.scene;
+    renderer.info.autoReset = false; renderer.info.reset();   /* 한 화면(후처리 포함)의 그리기 수를 모아 센다(perf3d.js) */
     if (post) post.render(rs, camera); else renderer.render(rs, camera);
     if (wantShot) { wantShot = false; if (horeb) takeShot(); else takeClue(); }
   }
