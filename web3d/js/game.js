@@ -303,7 +303,7 @@
   }
   function takePart(i) {
     var po = partObjs[i]; po.taken = true; po.group.visible = false; partsFound++;
-    partCount.textContent = '부품 ' + partsFound + ' / ' + PARTS.length;
+    partCount.textContent = partWord() + ' ' + partsFound + ' / ' + PARTS.length;
     partCount.classList.remove('pulse'); void partCount.offsetWidth; partCount.classList.add('pulse');
     if (FX) FX.audio.chime();
     questOpen = false; track.hidden = true;
@@ -325,6 +325,7 @@
         }));
     } else { if (SCN.partFound) SCN.partFound(i); startLookup(); }
   }
+  function partWord() { return PARTS.length && PARTS[0].mat ? '재료' : '부품'; }
   /* 재료를 얻었을 때 최현 박사의 통신(탐험대 이야기) */
   function matNote(m) {
     return el('div', { class: 'note story3 found3' }, icon('compass'), el('span', {}, el('small', { text: '탐험대 이야기 · 최현 박사' }), el('b', { text: m.use })));
@@ -742,7 +743,7 @@
     if (hat) { hat.parent && hat.parent.remove(hat); }
     hatOn = false; sceneDone = false; partsFound = 0;
     partObjs.forEach(function (po) { po.taken = false; po.group.visible = true; });
-    partCount.textContent = '부품 0 / ' + PARTS.length;
+    partCount.textContent = partWord() + ' 0 / ' + PARTS.length;
     for (var kk in kids) kids[kk].group.visible = true;
     machine.group.position.y = machineY; machine.group.rotation.y = -0.5; departGlow.material.opacity = 0; departGlow.scale.setScalar(5);
     camYaw = Math.PI; snapCamera();
@@ -1129,6 +1130,7 @@
     vision: function () { return vision ? { ok: visionReady(), t: vision.v.currentTime, seen: wasSeen() } : null; },
     lookup: function () { overlay.hidden = true; hidePanel(); quest = PARTS.length - 1; partObjs.forEach(function (po) { po.taken = true; po.group.visible = false; }); partsFound = PARTS.length; startLookup(); },
     flock: function () { return SCN.debug && SCN.debug.flock ? SCN.debug.flock() : null; },
+    phase: function () { return SCN.debug && SCN.debug.phase ? SCN.debug.phase() : null; },
     state: function () { return { state: state, quest: quest, x: player && player.group.position.x, z: player && player.group.position.z, mosesArrived: !!(SCN.debug && SCN.debug.arrived && SCN.debug.arrived()) }; },
     stick: function (x, y) { stick.x = x; stick.y = y; },
     yaw: function (v) { camYaw = v; lastDrag = now + 999; },

@@ -31,6 +31,8 @@
   /* ── 작은 그림 ── */
   var DOC_SVG = '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="23" fill="#2F7C74"/><rect x="15" y="16" width="18" height="22" rx="4" fill="#FBF7EE"/><circle cx="24" cy="31" r="3" fill="#2F7C74"/><rect x="19" y="20" width="10" height="5" rx="1.5" fill="#7AD0C8"/><path d="M24 16 V8" stroke="#FBF7EE" stroke-width="2.4" stroke-linecap="round"/><path d="M17 9 Q24 3 31 9" stroke="#F7D774" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M13 6 Q24 -2 35 6" stroke="#F7D774" stroke-width="2" fill="none" stroke-linecap="round" opacity=".6"/></svg>';
   var MAT_SVG = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 20 Q24 12 38 20 L35 40 Q24 45 13 40 Z" fill="#C9A769"/><path d="M14 22 Q24 17 34 22" stroke="#8A6A3A" stroke-width="2" fill="none"/><path d="M17 15 Q24 6 31 15" stroke="#8A6A3A" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="24" cy="30" r="4" fill="#E9B44C"/></svg>';
+  /* 받침이 있으면 b(과·은), 없으면 a(와·는) */
+  function josa(w, a, b) { var c = String(w).charCodeAt(String(w).length - 1); return c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? b : a; }
   function svgSpan(svg, cls) { return el('span', { class: cls, html: svg }); }
   function doctor(text, kicker) {
     return el('div', { class: 'comm3' }, svgSpan(DOC_SVG, 'doc'),
@@ -205,7 +207,7 @@
     } else if (s.k === 'talk') {
       var cp = m.companion, t = cp.talks[s.i];
       body = [el('div', { class: 'q-kicker', text: kick + ' · ' + cp.who }),
-        s.i === 0 ? el('p', { class: 'ot-soft', text: cp.who + '와(과) 함께 걸어요. ' + cp.who + '은(는) 성경에 기록된 자기 말만 해요. 실제 말은 성경책에서 읽어요.' }) : null,
+        s.i === 0 ? el('p', { class: 'ot-soft', text: cp.who + josa(cp.who, '와', '과') + ' 함께 걸어요. ' + cp.who + josa(cp.who, '는', '은') + ' 성경에 기록된 자기 말만 해요. 실제 말은 성경책에서 읽어요.' }) : null,
         U.say(t.ask.who, t.ask.text),
         el('div', { class: 'otans' }, el('b', { text: cp.who }), el('p', { text: tx(t.answer) }), refChip(t.ref)),
         el('div', { class: 'openbible' }, icon('book'), el('span', {}, cp.who + '의 말은 성경책에서 직접 읽어요. ', el('b', { text: U.bookName(t.open) })))];

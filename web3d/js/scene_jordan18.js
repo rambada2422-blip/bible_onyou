@@ -116,10 +116,10 @@
       /* 대목마다 카메라가 볼 곳: 물가의 제사장들 → 건너는 백성 → 가운데 선 제사장들 → 올라오는 제사장들과 돌아오는 물 → 길갈 쪽 */
       eventLook: function (i) {
         if (i === 2) return { focus: [BANK[0], 8.6], mid: [6, 4], dy: 0.4, backE: 9, upE: 3.6 };
-        if (i === 3) return { focus: CROSS, mid: MID, dy: 1.6, backE: 10, upE: 5 };
-        if (i === 4) return { focus: MID, mid: CROSS, dy: 1.6, backE: 10, upE: 5 };
-        if (i === 5) return { focus: [WEST[0], -18], mid: [0, -10], dy: 1.2, backE: 10, upE: 5 };
-        if (i === 6) return { focus: GILGAL, mid: [-20, -30], dy: 1.5, backE: 10, upE: 6 };
+        if (i === 3) return { focus: CROSS, mid: CROSS, dy: 1.4, backE: 9, upE: 4.5 };
+        if (i === 4) return { focus: MID, mid: MID, dy: 1.2, backE: 9, upE: 4.5 };
+        if (i === 5) return { focus: [WEST[0], -16], mid: [WEST[0], -16], dy: 1.0, backE: 9, upE: 4.5 };
+        if (i === 6) return { focus: GILGAL, mid: GILGAL, dy: 1.5, backE: 10, upE: 6 };
         return null;
       },
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
