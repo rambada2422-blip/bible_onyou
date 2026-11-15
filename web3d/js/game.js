@@ -1143,7 +1143,8 @@
     state: function () { return { state: state, quest: quest, x: player && player.group.position.x, z: player && player.group.position.z, mosesArrived: !!(SCN.debug && SCN.debug.arrived && SCN.debug.arrived()) }; },
     stick: function (x, y) { stick.x = x; stick.y = y; },
     yaw: function (v) { camYaw = v; lastDrag = now + 999; },
-    goto: function (x, z) { player.group.position.set(x, H(x, z), z); trail.push([x, z]); }
+    goto: function (x, z) { player.group.position.set(x, H(x, z), z); trail.push([x, z]); },
+    render: function () { var r = renderer.info.render, m = renderer.info.memory; return { calls: r.calls, tris: r.triangles, geo: m.geometries, tex: m.textures }; }   /* 장면이 무거워지지 않았는지 비교용 */
   };
 
   useScene('OT-09'); hudMode();

@@ -46,6 +46,10 @@ node tools/build.js
 | `web3d/assets/moses.glb` | 모세 (뼈대와 Idle·Walk·HideFace 동작). `tools/blender/moses_b2.py` + `moses_b2_rig.py`로 만든다. 이전 모세는 `web3d/assets/old/` |
 | `web3d/assets/vision_bush.mp4` | 압도 장면 영상 (Blender로 미리 그린 것. 있으면 올려다보기 뒤에 재생, 없으면 건너뜀) |
 | `web3d/js/game.js` | 조작, 카메라, 진행, 화면 위 안내 |
+| `web3d/js/scene_*.js` | 3D 장면 설정 하나에 장면 하나(`BO3D.scene3d['OT-NN']`). 호렙 산(`scene_horeb.js`), 요단 강, 홍해, 여리고, 다윗과 골리앗, 갈멜 산, 노아의 방주, 만나, 아브람, 기드온, 사자 굴, 느헤미야 성벽. 파일 머리말에 본문에 맞춘 점과 감수할 설정이 있다 |
+| `web3d/js/props_ot.js`, `jordan.js` | 여러 장면이 함께 쓰는 소품(장막, 병거, 말, 구름 기둥, 돌무더기, 병사)과 백성 무리 |
+| `web3d/js/story.js`, `ui.js`, `eraart.js`, `otdata.js` | 구약 전체 흐름: 비상 착륙 이야기, 시대 지도, 이야기 카드 장면, 진행 저장. `otdata.js`는 `tools/build_ot.js`가 `content/ot/`에서 만든다 |
+| `web3d/assets/<인물>.glb` | 성경 인물(다윗, 골리앗, 엘리야, 노아, 아론, 아브라함, 기드온, 다니엘, 다리오, 느헤미야, 에스라 등). `tools/blender/make_person.sh <이름>`이 `tools/blender/people/<이름>.json`의 옷 색·수염·소품으로 모세와 같은 방법(삼각형 8,000개, 재질 4개, 500KB, 뼈 25개 이하)으로 만든다 |
 | `web3d/vendor/` | three.js r128 (MIT 라이선스) |
 
 출처: 모세의 얼굴·손 형태는 Blender Studio의 "Human Base Meshes" v1.4.1(CC0)에서 시작했다. © Blender Foundation | studio.blender.org
@@ -56,7 +60,7 @@ node tools/build.js
 node tools/build3d.js
 ```
 
-자동 점검: `node tools/test/walk3d.js <단계 0~2> <저장 폴더>` (자세한 것은 `tools/test/README.md`).
+자동 점검: `node tools/test/walk3d.js <단계 0~2> <저장 폴더>`(호렙 산), `walk3dScene.js <OT-NN> <단계> <저장 폴더>`(다른 3D 장면), `walkOT.js`(40장면 이야기 카드). 자세한 것은 `tools/test/README.md`.
 휴대폰에서 장소 이름을 세 번 빠르게 누르거나 주소 끝에 `#fps`를 붙이면 초당 장면 수가 보인다.
 
 ## 압도 장면 영상 (Blender)
