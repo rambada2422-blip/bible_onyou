@@ -1,0 +1,7 @@
+{
+  "name": "Aaron",
+  "note": "아론(출 16:2-10, 16:33-34). 이 본문은 생김새와 옷을 말하지 않는다. 제사장 옷(에봇 등)은 이 장면에서 그리지 않는다. 지팡이 없음. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#5A6A86", "ROBE_SH": "#404C62", "ROBE_HI": "#6E7E9A", "TUNIC": "#E6DCC0", "BEARD": "#9A9488", "BEARD_SH": "#7E786E", "BROW": "#9A9488", "HAIR": "#9A9488",
+              "CLOTH": "#E0D4B8", "CLOTH_SH": "#CABE9E", "BELT": "#8A6A3A", "BELT_SH": "#6E5228" }
+}
