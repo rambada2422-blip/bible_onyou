@@ -1,0 +1,7 @@
+{
+  "name": "David",
+  "note": "다윗(삼상 17장). 소년(17:33, 17:42), 손에 막대기(17:40). 물매와 주머니는 작아서 그리지 않는다. 수염 없음, 옷 색은 본문에 없어 감수 대상. 게임에서 키를 줄여 쓴다(소년).",
+  "beard": "none",
+  "colors": { "ROBE": "#7A8A4A", "ROBE_SH": "#566238", "ROBE_HI": "#8E9E58", "TUNIC": "#EADBB6", "CLOTH": "#E6D6B0", "CLOTH_SH": "#D2C29A",
+              "BROW": "#3A2A1E", "BEARD": "#3A2A1E", "BEARD_SH": "#2E2018", "HAIR": "#3A2A1E", "BELT": "#7A4E2C", "BELT_SH": "#5E3A20", "SKIN": "#C98A60", "SKIN_SH": "#A86E48" }
+}

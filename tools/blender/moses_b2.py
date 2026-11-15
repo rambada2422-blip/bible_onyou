@@ -34,8 +34,13 @@ SAVE_BLEND = argv[argv.index('--blend') + 1] if '--blend' in argv else None
 DUMP = argv[argv.index('--dump') + 1] if '--dump' in argv else None   # 2단계(뼈대) 스크립트에 넘길 형태
 EYE_SCALE = 0.88                   # 대표 결정(2026-11-14): 베이스 메시 눈을 조금 작게
 FAST = '--fast' in argv            # 시험용: 천 시뮬레이션 프레임을 줄인다
+# 인물 제작 라인(2026-11-15): --spec 인물.json 으로 모세 말고 다른 인물을 만든다(tools/blender/people/*.json).
+#   colors: palette 덮어쓰기, beard: "full"|"none", staff: false(지팡이를 아주 작게 해 보이지 않게), spear: true(굵은 자루+창날),
+#   helmet: true(머리쓰개 대신 투구), armor: true(겉옷·속옷에 비늘 무늬. 색은 rig가 칠한다). 모양의 본문 근거는 json의 note에 적는다.
+import json
+SPEC = json.load(open(argv[argv.index('--spec') + 1])) if '--spec' in argv else {}
 
-pal = C.palette(CORD='#4A2E22', CORD_SH='#3A241A')
+pal = C.palette(**dict(dict(CORD='#4A2E22', CORD_SH='#3A241A'), **SPEC.get('colors', {})))
 SCLERA = C.hexc('#E2D9CA')
 DEG = math.pi / 180
 t_start = time.time()
@@ -599,6 +604,55 @@ MANTLE_BVH = bvh_of([mantle])[0]
 headcloth = build_headcloth()
 cord = build_cord()
 staff = build_staff()
+if SPEC.get('staff') is False or SPEC.get('spear'):
+    # 지팡이 없음: 뼈대 스크립트가 쥔 손을 맞추도록 아주 작게만 남긴다. 창: 자루를 굵게, 꼭대기에 창날
+    sv_ = staff.data.vertices
+    z0 = min(v.co.z for v in sv_)
+    cx = sum(v.co.x for v in sv_) / len(sv_)
+    cy = sum(v.co.y for v in sv_) / len(sv_)
+    for v in sv_:
+        if SPEC.get('spear'):
+            v.co.x = cx + (v.co.x - cx) * 1.9
+            v.co.y = cy + (v.co.y - cy) * 1.9
+        else:
+            v.co.x = cx + (v.co.x - cx) * 0.02
+            v.co.y = cy + (v.co.y - cy) * 0.02
+            v.co.z = z0 + 0.95 + (v.co.z - z0) * 0.01
+    if SPEC.get('spear'):
+        ztop = max(v.co.z for v in sv_)
+        bm_ = bmesh.new()
+        bm_.from_mesh(staff.data)
+        ring = [bm_.verts.new((cx + math.cos(2 * math.pi * j / 6) * 0.045, cy + math.sin(2 * math.pi * j / 6) * 0.018, ztop)) for j in range(6)]
+        tip = bm_.verts.new((cx, cy, ztop + 0.36))
+        for j in range(6):
+            bm_.faces.new((ring[j], ring[(j + 1) % 6], tip))
+        bm_.faces.new(list(reversed(ring)))
+        bm_.to_mesh(staff.data)
+        bm_.free()
+    staff.data.update()
+if SPEC.get('helmet'):
+    # 투구(삼상 17:5): 머리 위를 덮는 둥근 덮개와 테. 머리쓰개 자리(HeadCloth)를 대신한다
+    V_, F_ = [], []
+    NA, NE = 28, 9
+    for e in range(NE + 1):
+        el = -0.32 + (math.pi / 2 + 0.32) * e / NE
+        for a in range(NA):
+            az = 2 * math.pi * a / NA
+            V_.append(Vector((HEAD_C.x + math.cos(el) * math.sin(az) * HR[0] * 1.13, HEAD_C.y - math.cos(el) * math.cos(az) * HR[1] * 1.13,
+                              HEAD_C.z + 0.02 + math.sin(el) * HR[2] * 1.06)))
+    for e in range(NE):
+        for a in range(NA):
+            a2 = (a + 1) % NA
+            F_.append([e * NA + a, e * NA + a2, (e + 1) * NA + a2, (e + 1) * NA + a])
+    b0 = len(V_)
+    for a in range(NA):
+        az = 2 * math.pi * a / NA
+        V_.append(Vector((HEAD_C.x + math.sin(az) * HR[0] * 1.24, HEAD_C.y - math.cos(az) * HR[1] * 1.24, HEAD_C.z + 0.02 - math.sin(0.32) * HR[2])))
+    for a in range(NA):
+        a2 = (a + 1) % NA
+        F_.append([a, b0 + a, b0 + a2, a2])
+    bpy.data.objects.remove(headcloth)
+    headcloth = mesh_obj('HeadCloth', V_, F_)
 
 # 얼굴·몸: 보이는 곳만 남긴다(머리·목, 손). 몸통·팔·다리는 옷 안이라 지운다.
 bm = bmesh.new()
@@ -839,6 +893,11 @@ parts = dict(Body=body, Hands=hands, Mantle=mantle, HeadCloth=headcloth, Beard=b
 COL = dict(Mantle=pal.ROBE, HeadCloth=pal.CLOTH, Beard=pal.BEARD, Tunic=pal.TUNIC, Staff=pal.STAFF, Cord=pal.CORD,
            Sash=pal.BELT, Mustache=pal.BEARD, Brows=pal.BROW)
 CLOTH_PARTS = {'Mantle', 'HeadCloth', 'Tunic', 'Sash'}
+if SPEC.get('beard') == 'none':                  # 수염 없는 인물(젊은이 등)
+    for k_ in ('Beard', 'Mustache'):
+        parts.pop(k_, None)
+if SPEC.get('helmet'):                            # 투구에는 머리끈이 없다
+    parts.pop('Cord', None)
 for eo in (eyeL, eyeR):                          # 눈알을 조금 줄이고 살짝 안으로(눈꺼풀이 더 덮는다)
     vs = eo.data.vertices
     cen = sum((v.co for v in vs), Vector()) / len(vs)
@@ -880,7 +939,7 @@ if DUMP:
         b0 += len(ob.data.vertices)
     json.dump(dict(P=[tuple(round(c, 6) for c in v) for v in P], F=Fs, FP=FP, order=order, k_scale=k_scale, VG=VG,
                    SHO=[tuple(SHO[s] * k_scale) for s in (1, -1)], WRI=[tuple(WRI[s] * k_scale) for s in (1, -1)],
-                   HEAD_C=tuple(HEAD_C * k_scale), BAND=[tuple(b * k_scale) for b in BAND]),
+                   HEAD_C=tuple(HEAD_C * k_scale), BAND=[tuple(b * k_scale) for b in BAND], spec=SPEC),
               open(DUMP, 'w'))
     log('dump', DUMP)
 

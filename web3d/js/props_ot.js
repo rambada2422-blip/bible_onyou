@@ -93,5 +93,23 @@
     return g;
   }
 
-  BO3D.props = { tent: tent, chariot: chariot, horse: horse, cloudPillar: cloudPillar, stoneHeap: stoneHeap, rng: rng };
+  /* 멀리 보이는 군사(진영의 줄): 통옷, 머리, 투구, 창. 사람의 생김새는 그리지 않는다(멀리서 보는 크기) */
+  function soldier(seed, tunic, helm) {
+    var r = rng(seed + 29), g = new T.Group(), body = new T.Group();
+    var robe = new T.Mesh(new T.CylinderGeometry(0.17, 0.27, 1.15, 7), M(tunic || '#8A5A3A')); robe.position.y = 0.6; body.add(robe);
+    var torso = new T.Mesh(new T.CylinderGeometry(0.2, 0.17, 0.4, 7), M(tunic || '#8A5A3A')); torso.position.y = 1.32; body.add(torso);
+    var head = new T.Mesh(new T.SphereGeometry(0.13, 8, 6), M('#B98A62')); head.position.y = 1.63; body.add(head);
+    if (helm) { var hm = new T.Mesh(new T.SphereGeometry(0.15, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), M(helm)); hm.position.y = 1.66; body.add(hm); }
+    var sp = new T.Mesh(new T.CylinderGeometry(0.02, 0.02, 2.1, 4), M('#6B4A2A')); sp.position.set(0.27, 1.15, 0.05); body.add(sp);
+    g.add(body); g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
+    var ph = r() * 6;
+    return { group: g, update: function (dt, speed, t) { body.position.y = speed > 0.1 ? Math.abs(Math.sin((t || 0) * 8 + ph)) * 0.06 : 0; } };
+  }
+  function shield(col) {
+    var g = new T.Group(), m = new T.Mesh(new T.BoxGeometry(0.75, 1.2, 0.08), M(col || '#9A7A4A')); m.position.y = 1.0; m.castShadow = true; g.add(m);
+    var b = new T.Mesh(new T.CylinderGeometry(0.12, 0.12, 0.05, 10), M('#B98A3E')); b.rotation.x = Math.PI / 2; b.position.set(0, 1.0, 0.06); g.add(b);
+    return g;
+  }
+
+  BO3D.props = { tent: tent, chariot: chariot, horse: horse, cloudPillar: cloudPillar, stoneHeap: stoneHeap, soldier: soldier, shield: shield, rng: rng };
 })();

@@ -1,0 +1,7 @@
+{
+  "name": "Elijah",
+  "note": "엘리야(왕상 18:20-39). 이 본문은 생김새와 옷을 말하지 않는다. 지팡이 없음. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#7A6248", "ROBE_SH": "#54432F", "ROBE_HI": "#8E7456", "TUNIC": "#E2D2AE", "BEARD": "#8A8478", "BEARD_SH": "#6E695F", "BROW": "#8A8478", "HAIR": "#8A8478",
+              "CLOTH": "#D8CBA8", "CLOTH_SH": "#C2B48E" }
+}

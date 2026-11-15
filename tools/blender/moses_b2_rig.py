@@ -132,8 +132,9 @@ for i in sv:
     P[i] = STAFF_B0 + Vector((q.x, q.y, q.z))
 
 # ---------------------------------------------------------------------------- 사람, 뼈대
-pal = C.palette(CORD='#4A2E22', CORD_SH='#3A241A')
-p = C.Person('MosesV2', C.MODEL_TOP, pal)
+SPEC = d.get('spec') or {}                      # 인물 제작 라인(moses_b2.py --spec): 색, 비늘 갑옷, 동작
+pal = C.palette(**dict(dict(CORD='#4A2E22', CORD_SH='#3A241A'), **SPEC.get('colors', {})))
+p = C.Person(SPEC.get('name', 'MosesV2'), C.MODEL_TOP, pal)
 p.std_bones(veil=True, beard=True)
 BN = p.BONES
 BN['chest']['tail'] = V(0, 1.39, 0)
@@ -259,6 +260,15 @@ for f, pi in zip(F, FP):
             col = pal.SKIN_SH
     else:
         col = COL[part]
+        if SPEC.get('armor') and part in ('Mantle', 'Tunic') and cen.y > 0.88:
+            # 비늘 갑옷(삼상 17:5): 줄마다 엇갈린 비늘. 허리 아래는 옷 그대로
+            u = math.atan2(cen.x, cen.z) / (2 * math.pi) * 22
+            row = math.floor(cen.y / 0.045)
+            fr = (u + 0.5 * (row % 2)) % 1.0
+            vv = (cen.y / 0.045) % 1.0
+            col = C.mixc(C.hexc(SPEC.get('armor_dark', '#6E4A1E')), C.hexc(SPEC.get('armor_light', '#B98A3E')), 0.3 + 0.7 * C.clamp(1.0 - abs(fr - 0.5) * 1.4 - vv * 0.45))
+    if part == 'HeadCloth' and SPEC.get('helmet'):
+        col = C.mixc(C.hexc('#7A5426'), C.hexc(SPEC.get('armor_light', '#B98A3E')), C.clamp(0.4 + 0.6 * nrm.y))
     p.B.f(list(f), col, C.MAT_CLOTH if part in CLOTH else C.MAT_SOLID)
 p.parts = [(k_, sum(len(f) - 2 for f, pi in zip(F, FP) if ORDER[pi] == k_)) for k_ in ORDER]
 
@@ -400,7 +410,7 @@ def hide(t):
     return out
 
 
-CLIPS = [('Idle', 3.0, idle), ('Walk', 1.2, walk), ('HideFace', 0.8, hide)]
+CLIPS = [('Idle', 3.0, idle), ('Walk', 1.2, walk)] + ([('HideFace', 0.8, hide)] if SPEC.get('hideface', not SPEC) else [])
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 C.run(p, CLIPS, OUT, max_tris=8000)

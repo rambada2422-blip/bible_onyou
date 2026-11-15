@@ -1,0 +1,24 @@
+{
+  "name": "Goliath",
+  "note": "골리앗(삼상 17:4-7). 놋 투구와 비늘 갑옷(17:5), 창(17:7). 놋 각반과 어깨 사이의 단창(17:6)은 그리지 않는다. 키는 여섯 규빗 한 뼘(17:4): 게임에서 크게 늘여 쓴다. 수염과 옷 색은 본문에 없어 감수 대상. 칼과 싸움 장면은 만들지 않는다.",
+  "beard": "full",
+  "helmet": true,
+  "armor": true,
+  "spear": true,
+  "armor_dark": "#7A5426",
+  "armor_light": "#D3A256",
+  "colors": {
+    "ROBE": "#6E5A40",
+    "ROBE_SH": "#4E3E2C",
+    "ROBE_HI": "#82704E",
+    "TUNIC": "#5E4A34",
+    "BEARD": "#2E2420",
+    "BEARD_SH": "#241C18",
+    "BROW": "#2E2420",
+    "HAIR": "#2E2420",
+    "STAFF": "#5A3E22",
+    "STAFF_HI": "#6E4E2E",
+    "BELT": "#6E4A1E",
+    "BELT_SH": "#4E3414"
+  }
+}
