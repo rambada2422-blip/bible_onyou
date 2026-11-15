@@ -71,7 +71,7 @@
       if (FX) FX.sortLayers(g);
     });
   }
-  var api = { T: T, M: M, FX: FX, mk: mk, fallback: fallback, person: person, loadGlb: function (k, cb) { loadGlb(k, cb); }, now: function () { return now; } };
+  var api = { T: T, M: M, FX: FX, mk: mk, fallback: fallback, person: person, loadGlb: function (k, cb) { loadGlb(k, cb); }, now: function () { return now; }, camera: function () { return camera; } };
 
   /* 장면 만들기: 장면 설정(BO3D.scene3d[id])이 지형·인물·소품을 만들고, 틀이 타임머신·재료·도감을 더한다. 한 번 만든 장면은 다시 쓴다. */
   var built = {}, machine = null, PARTS = [], partObjs = [], DEX = [], machineY = 0, departGlow = null;
