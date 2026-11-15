@@ -170,8 +170,11 @@
   function buildSteps(d) {
     var m = d.mission || null, st = [{ k: 'arrive' }], cp = m && m.companion;
     if (cp && cp.when !== 'after') cp.talks.forEach(function (t, i) { st.push({ k: 'talk', i: i }); });
-    d.beats.forEach(function (b, i) { st.push({ k: 'beat', i: i }); });
+    /* 현장 돕기(규칙서 13.6): 대목 뒤에 끼우고, 뜻을 묻는 단계는 관문 뒤에 둔다(관문의 답을 미리 듣지 않게) */
+    var hp = m && m.help && m.help.steps ? m.help.steps : [];
+    d.beats.forEach(function (b, i) { st.push({ k: 'beat', i: i }); hp.forEach(function (h, j) { if (h.after === i) st.push({ k: 'help', i: j }); }); });
     (d.gates[S.tier] || d.gates.t2).forEach(function (q, i) { st.push({ k: 'gate', i: i }); });
+    hp.forEach(function (h, j) { if (h.after === 'gates') st.push({ k: 'help', i: j }); });
     /* 사건 뒤의 문답은 관문 뒤에 둔다: 문답의 장절이 관문 물음의 답을 미리 알려 주지 않게(2026-11-15 임무 독립 대조) */
     if (cp && cp.when === 'after') cp.talks.forEach(function (t, i) { st.push({ k: 'talk', i: i }); });
     var ms = m ? m.materials || [] : [];
@@ -187,7 +190,7 @@
     var f = FX(); if (f && f.audio) { try { f.audio.start(); f.audio.pad(true); } catch (e) { /* 무시 */ } }
     render();
   }
-  var KICK = { talk: '동행', beat: '지켜보기', gate: '다음으로 가는 관문', quest: '재료 찾기', mat: '재료 얻기', today: '오늘의 물음' };
+  var KICK = { talk: '동행', beat: '지켜보기', help: '현장 돕기', gate: '다음으로 가는 관문', quest: '재료 찾기', mat: '재료 얻기', today: '오늘의 물음' };
   function nOf(k) { return cur.steps.filter(function (s) { return s.k === k; }).length; }
   function render() {
     var d = sc(cur.id), e = eraOf(d.era), s = cur.steps[cur.step], m = d.mission || {};
@@ -214,6 +217,8 @@
         el('div', { class: 'openbible' }, icon('book'), el('span', {}, cp.who + '의 말은 성경책에서 직접 읽어요. ', el('b', { text: U.bookName(t.open) })))];
     } else if (s.k === 'beat') {
       body = [el('div', { class: 'q-kicker', text: kick }), beatNodes(d.beats[s.i])];
+    } else if (s.k === 'help') {
+      body = helpNodes(m.help, m.help.steps[s.i], kick, ok); gated = true;
     } else if (s.k === 'gate') {
       var q = (d.gates[S.tier] || d.gates.t2)[s.i];
       body = [el('div', { class: 'q-kicker', text: kick }), U.blockFor(q, ok, 'og' + s.i)]; gated = true;
@@ -251,6 +256,41 @@
     if (s.k === 'arrive') return { stage: 0 };
     if (s.k === 'beat') return { stage: s.i };
     return { stage: 9 };
+  }
+  /* 현장 돕기 한 단계(규칙서 13.6). do: 본문에 그 사람들이 했다고 적힌 평범한 일을 누르며 돕는다 / watch: 거룩한 행위는 곁에서 본다
+     stay: 함께 기다린다 / ask: 그 뜻을 묻고, 본문에 기록된 말로 답을 듣고, 성경을 펴서 확인한다 */
+  function helpNodes(h, hs, kick, ok) {
+    var head = [el('div', { class: 'eyebrow dark', text: '탐험대 이야기 · 현장 돕기' }), el('div', { class: 'q-kicker', text: kick + ' · ' + hs.title })];
+    var got = el('div', { class: 'help-got' });
+    if (hs.kind === 'do') {
+      var left = hs.tasks.length;
+      var tasks = hs.tasks.map(function (t) {
+        var b = el('button', { class: 'opt help-task', 'aria-pressed': 'false', on: { click: function () {
+          if (b.getAttribute('aria-pressed') === 'true') return;
+          b.setAttribute('aria-pressed', 'true'); b.disabled = true; left--;
+          if (!left) { got.replaceChildren(U.say(hs.done.who, hs.done.text)); ok(); got.scrollIntoView({ block: 'nearest' }); }
+        } } }, el('span', { class: 'mark', html: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 L6.5 12 L13 4.5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' }), el('span', { text: t }));
+        return b;
+      });
+      return head.concat([el('p', { class: 'narr', text: tx(hs.text) }), el('div', { class: 'narr-meta' }, refChip(hs.basis)),
+        el('p', { class: 'ot-soft', text: '눌러서 도와요. 본문에 이 사람들이 했다고 적힌 일만 도와요.' }), el('div', { class: 'opts' }, tasks), got]);
+    }
+    if (hs.kind === 'watch') {
+      setTimeout(ok, 0);
+      return head.concat([el('p', { class: 'narr', text: tx(hs.text) }), el('div', { class: 'narr-meta' }, refChip(hs.basis)),
+        el('div', { class: 'note look' }, el('b', { text: '곁에서 봐요' }), el('span', { text: '이 일은 본문에 적힌 사람이 해요. 우리는 손대지 않고 지켜봐요.' })),
+        hs.say ? U.say(hs.say.who, hs.say.text) : null]);
+    }
+    if (hs.kind === 'stay') {
+      var wb = el('button', { class: 'btn plain', on: { click: function () { wb.disabled = true; got.replaceChildren(hs.say ? U.say(hs.say.who, hs.say.text) : story('기다렸어요.')); ok(); got.scrollIntoView({ block: 'nearest' }); } } }, hs.wait);
+      return head.concat([el('p', { class: 'narr', text: tx(hs.text) }), el('div', { class: 'narr-meta' }, refChip(hs.basis)), wb, got]);
+    }
+    /* ask: 아이가 묻고 → 본문에 기록된 말로 답을 듣고 → 성경을 펴서 뜻을 확인한다 */
+    var nt = hs.nt && S.tier === 't3' ? el('div', { class: 'note story3' }, el('span', {}, el('small', { text: '신약과 이어 읽기 · 목사님 감수 전' }), el('b', { text: hs.nt.text }), el('div', { class: 'ot-refs' }, refChip(hs.nt.ref)))) : null;
+    return head.concat([U.say(hs.ask.who, hs.ask.text),
+      el('div', { class: 'otans' }, el('b', { text: hs.by || h.who }), el('p', { text: tx(hs.answer) }), refChip(hs.basis)),
+      doctor('그 뜻을 성경에서 직접 확인해 보자. 성경책을 펴서 읽어 봐.', '탐험대 이야기 · 최현 박사'),
+      U.blockFor(hs.read[S.tier] || hs.read.t2, function () { if (nt) got.replaceChildren(nt); ok(); got.scrollIntoView({ block: 'nearest' }); }, 'oh' + hs.title.length), got]);
   }
   function go() { if (cur.step < cur.steps.length - 1) { cur.step++; render(); } }
   function take(mt) { if (mt && mt.key) { PG.mats[cur.id + ':' + mt.key] = 1; save(); } }
@@ -329,11 +369,13 @@
       state: function () { return { screen: cur.screen, id: cur.id, step: cur.step, k: cur.k, n: cur.steps.length, done: doneCount(), mats: matCount(), total: MAT_TOTAL }; },
       fast: function () { window.BO3D_TEST = true; },
       /* 지금 화면의 물음(관문·재료 찾기). 자동 시험이 답을 고를 때 쓴다 */
+      help: function () { var s = cur.steps[cur.step], d = cur.id && sc(cur.id); return s && s.k === 'help' ? d.mission.help.steps[s.i] : null; },
       q: function () {
         var s = cur.steps[cur.step], d = cur.id && sc(cur.id);
         if (!s || !d) return null;
         if (s.k === 'gate') return (d.gates[S.tier] || d.gates.t2)[s.i];
         if (s.k === 'quest') return d.quests[s.i].q[S.tier] || d.quests[s.i].q.t2;
+        if (s.k === 'help') { var hs = d.mission.help.steps[s.i]; return hs.kind === 'ask' ? (hs.read[S.tier] || hs.read.t2) : null; }
         return null;
       }
     }

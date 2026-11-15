@@ -56,9 +56,10 @@
     return el('div', { class: 'say' }, avatar(who), el('div', { class: 'bubble' }, el('b', { text: c ? c.name : '', style: c ? 'color:' + c.color : '' }), text));
   }
 
-  function goodNote(ref, text) { return el('div', { class: 'note good fadein' }, el('b', { text: text || '성경에 그렇게 기록되어 있어요.' }), ref ? refChip(ref) : null); }
+  function chips(ref) { return ref ? (Array.isArray(ref) ? el('div', { class: 'ot-refs' }, ref.map(function (r) { return refChip(r); })) : refChip(ref)) : null; }
+  function goodNote(ref, text) { return el('div', { class: 'note good fadein' }, el('b', { text: text || '성경에 그렇게 기록되어 있어요.' }), chips(ref)); }
   function lookNote(ref, text) {
-    return el('div', { class: 'note look fadein' }, el('b', { text: '성경에서 확인해 볼까요?' }), el('span', { text: text || '성경책을 펴서 읽은 뒤 다시 골라 보세요.' }), ref ? refChip(ref) : null);
+    return el('div', { class: 'note look fadein' }, el('b', { text: '성경에서 확인해 볼까요?' }), el('span', { text: text || '성경책을 펴서 읽은 뒤 다시 골라 보세요.' }), chips(ref));
   }
   function choiceBlock(q, ref, onOk) {
     var pics = q.options.some(function (o) { return o.icon; }), noteBox = el('div', {});
@@ -72,10 +73,11 @@
     });
     return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' + (pics ? ' pics' : '') }, btns), noteBox];
   }
+  /* 읽을 곳을 먼저 보여 주고, 찾아 읽은 뒤에 묻는다(규칙서 13.5). refs가 있으면 떨어진 여러 곳을 함께 읽는다 */
   function findBlock(q, onOk) {
-    var after = el('div', { style: 'display:flex;flex-direction:column;gap:12px' });
-    var rb = el('button', { class: 'btn plain', on: { click: function () { rb.disabled = true; rb.textContent = '읽었어요'; add(after, choiceBlock(q.confirm, q.ref, onOk)); after.scrollIntoView({ block: 'nearest' }); } } }, '찾아서 읽었어요');
-    return [el('div', { class: 'findcard' }, icon('book'), el('div', {}, el('div', { class: 'big', text: bookName(q.ref) }), el('p', { text: tx(q.prompt) }))), rb, after];
+    var refs = q.refs || [q.ref], after = el('div', { style: 'display:flex;flex-direction:column;gap:12px' });
+    var rb = el('button', { class: 'btn plain', on: { click: function () { rb.disabled = true; rb.textContent = '읽었어요'; add(after, choiceBlock(q.confirm, q.refs ? refs : q.ref, onOk)); after.scrollIntoView({ block: 'nearest' }); } } }, '찾아서 읽었어요');
+    return [el('div', { class: 'findcard' }, icon('book'), el('div', {}, refs.map(function (r) { return el('div', { class: 'big', text: bookName(r) }); }), el('p', { text: tx(q.prompt) }))), rb, after];
   }
   function findrefBlock(q, onOk, idp) {
     var ch = el('input', { id: 'g-ch-' + idp, type: 'text', inputmode: 'numeric', 'aria-label': '장', autocomplete: 'off', maxlength: '3' });

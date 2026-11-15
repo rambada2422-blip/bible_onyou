@@ -89,6 +89,15 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
       const where = id + ' ' + s.k + ' ' + (s.step + 1) + '/' + s.n;
       if (firstOfEra && ['arrive', 'talk', 'gate', 'quest', 'mat', 'today'].includes(s.k) && !kinds.slice(0, -1).includes(s.k)) await shot(id + '-' + s.k);
       if (s.k === 'gate' || s.k === 'quest') await solve(where, gi++ === 0);
+      if (s.k === 'help') {   /* 현장 돕기(규칙서 13.6): 돕기 버튼을 모두 누르고, 기다리기를 누르고, 뜻 묻기의 성경 물음을 푼다 */
+        const h = await p.evaluate(() => BO3D.story.debug.help());
+        if (h.kind === 'do') { const r = await p.evaluate(async () => { const sh = document.querySelector('.ot3 .sheet-body'); for (const b of [...sh.querySelectorAll('.help-task')]) { b.click(); await new Promise((res) => setTimeout(res, 20)); } return !!sh.querySelector('.help-got .say'); }); if (!r) probs.push(where + ': 돕기를 마친 뒤 말이 나오지 않음'); }
+        if (h.kind === 'stay') await p.click('.ot3 .sheet-body .btn:has-text("' + h.wait + '")');
+        if (h.kind === 'ask') await solve(where, false);
+        await shot(id + '-help-' + kinds.filter((x) => x === 'help').length + '-' + h.kind);
+        const en = await p.evaluate(() => { const b = [...document.querySelectorAll('.ot3 .sheet-foot .btn')].pop(); return b && !b.disabled; });
+        if (!en) probs.push(where + ': 돕기 뒤에 다음으로 갈 수 없음');
+      }
       await check(where);
       if (firstOfEra && (s.k === 'gate' || s.k === 'quest') && kinds.filter((x) => x === s.k).length === 1) await shot(id + '-' + s.k + '-ok');
       if (s.k === 'finish') break;

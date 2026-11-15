@@ -8,7 +8,9 @@ const fs = require('fs'), path = require('path');
 const R = require('./bible_ref/ref.js');
 const DIR = path.join(__dirname, '..', 'content', 'ot');
 const WHO = ['choeon', 'hyu', 'onwoo'];
-const TYPES = { t1: ['choice', 'find'], t2: ['order', 'choice', 'find'], t3: ['findref', 'choice'] };
+/* 규칙서 13.5: 세 단계 모두 읽을 곳을 주고 찾아 읽게 하는 find를 쓸 수 있다(14~19세는 refs로 떨어진 두 곳 이상) */
+const TYPES = { t1: ['choice', 'find'], t2: ['order', 'choice', 'find'], t3: ['findref', 'choice', 'find'] };
+const HELP_KINDS = ['do', 'watch', 'stay', 'ask'];
 const BAN = ['틀렸', '실패', '감점', '목숨'];
 const hasRef = fs.existsSync(path.join(__dirname, '..', 'ref', 'bible', 'krv', 'krv.1.1.txt'));
 let nerr = 0, nwarn = 0;
@@ -67,7 +69,11 @@ function check(file) {
     };
     if (!str(q.prompt)) E(`${w}.prompt 없음`); else texts.push([`${w}.prompt`, q.prompt, q.ref || null]);
     if (q.type === 'choice') { refOk(q.ref, w + '.ref'); opts(q.options, w + '.options'); }
-    if (q.type === 'find') { refOk(q.ref, w + '.ref'); if (!q.confirm || !str(q.confirm.prompt)) E(`${w}.confirm.prompt 없음`); else opts(q.confirm.options, w + '.confirm.options'); }
+    if (q.type === 'find') {
+      if (Array.isArray(q.refs)) { if (q.refs.length < 2) E(`${w}.refs는 두 곳 이상(한 곳이면 ref)`); q.refs.forEach((r, k) => refOk(r, `${w}.refs[${k}]`)); }
+      else refOk(q.ref, w + '.ref');
+      if (!q.confirm || !str(q.confirm.prompt)) E(`${w}.confirm.prompt 없음`); else { texts.push([`${w}.confirm.prompt`, q.confirm.prompt, q.ref || (q.refs && q.refs[0]) || null]); opts(q.confirm.options, w + '.confirm.options'); }
+    }
     if (q.type === 'order') { refOk(q.ref, w + '.ref'); if (!Array.isArray(q.items) || q.items.length < 3 || q.items.length > 6) E(`${w}.items는 3~6개(본문 순서대로)`); else q.items.forEach((x, k) => texts.push([`${w}.items[${k}]`, x, q.ref])); }
     if (q.type === 'findref') {
       const bk = R.BOOKS.find((b) => b[1] === q.book);
@@ -126,6 +132,33 @@ function check(file) {
         const w = `mission.companion.talks[${i}]`;
         if (!x.ask || !WHO.includes(x.ask.who) || !str(x.ask.text)) E(`${w}.ask: {who, text}`); else texts.push([`${w}.ask`, x.ask.text, null]);
         refOk(x.ref, w + '.ref'); refOk(x.open, w + '.open'); tri(x.answer, w + '.answer', x.ref);
+      });
+    }
+    /* 현장 돕기(규칙서 13.6, 작성규칙 7.2): 본문에 그 사람들이 했다고 적힌 평범한 일만. 거룩한 행위는 watch로 곁에서 본다 */
+    if (m.help !== undefined) {
+      const h = m.help || {};
+      if (!str(h.who)) E('mission.help.who 없음(돕는 상대, 예: "이스라엘 자손의 한 집")');
+      if (!Array.isArray(h.steps) || h.steps.length < 2 || h.steps.length > 8) E('mission.help.steps는 2~8개');
+      else h.steps.forEach((x, i) => {
+        const w = `mission.help.steps[${i}]`;
+        if (!HELP_KINDS.includes(x.kind)) E(`${w}.kind는 ${HELP_KINDS.join(', ')}`);
+        if (!(x.after === 'gates' || (Number.isInteger(x.after) && x.after >= 0 && x.after < (d.beats || []).length))) E(`${w}.after는 대목 번호 또는 "gates"`);
+        if (!str(x.title)) E(`${w}.title 없음`); else texts.push([`${w}.title`, x.title, null]);
+        refOk(x.basis, w + '.basis');
+        if (x.kind !== 'ask') tri(x.text, w + '.text', x.basis);
+        if (x.kind === 'do') {
+          if (!Array.isArray(x.tasks) || x.tasks.length < 2 || x.tasks.length > 4) E(`${w}.tasks는 2~4개(누르는 일)`); else x.tasks.forEach((t, k) => { if (!str(t)) E(`${w}.tasks[${k}] 없음`); });
+          if (!x.done || !WHO.includes(x.done.who) || !str(x.done.text)) E(`${w}.done: {who, text}`); else texts.push([`${w}.done`, x.done.text, x.basis]);
+        }
+        if (x.kind === 'stay' && !str(x.wait)) E(`${w}.wait 없음(기다리기 버튼 글)`);
+        if (x.say) { if (!WHO.includes(x.say.who) || !str(x.say.text)) E(`${w}.say: {who, text}`); else texts.push([`${w}.say`, x.say.text, x.basis]); }
+        if (x.kind === 'ask') {
+          if (!x.ask || !WHO.includes(x.ask.who) || !str(x.ask.text)) E(`${w}.ask: {who, text}`); else texts.push([`${w}.ask`, x.ask.text, null]);
+          tri(x.answer, w + '.answer', x.basis);
+          ['t1', 't2', 't3'].forEach((t) => question(x.read && x.read[t], `${w}.read.${t}`, t));
+          /* 신약 장절은 이 검사기(구약 본문)로 확인하지 않는다. 작성자가 확인하고 감수 전으로 둔다(규칙서 13.6) */
+          if (x.nt) { if (!/^\S+ \d+:\d+(-\d+)?$/.test(String(x.nt.ref || ''))) E(`${w}.nt.ref는 "책 장:절"`); if (!str(x.nt.text)) E(`${w}.nt.text 없음`); else texts.push([`${w}.nt.text`, x.nt.text, null]); }
+        }
       });
     }
     if (!Array.isArray(m.today) || m.today.length < 1 || m.today.length > 2) E('mission.today는 1~2개');
