@@ -174,9 +174,10 @@
     var hp = m && m.help && m.help.steps ? m.help.steps : [];
     d.beats.forEach(function (b, i) { st.push({ k: 'beat', i: i }); hp.forEach(function (h, j) { if (h.after === i) st.push({ k: 'help', i: j }); }); });
     (d.gates[S.tier] || d.gates.t2).forEach(function (q, i) { st.push({ k: 'gate', i: i }); });
-    hp.forEach(function (h, j) { if (h.after === 'gates') st.push({ k: 'help', i: j }); });
     /* 사건 뒤의 문답은 관문 뒤에 둔다: 문답의 장절이 관문 물음의 답을 미리 알려 주지 않게(2026-11-15 임무 독립 대조) */
     if (cp && cp.when === 'after') cp.talks.forEach(function (t, i) { st.push({ k: 'talk', i: i }); });
+    /* 뜻 묻기(현장 돕기의 ask)는 동행 문답 뒤에: 본문에서 뒤에 한 말을 먼저 묻지 않게(독립 대조 지적) */
+    hp.forEach(function (h, j) { if (h.after === 'gates') st.push({ k: 'help', i: j }); });
     var ms = m ? m.materials || [] : [];
     if (ms.length === 3 && d.quests && d.quests.length === 3) ms.forEach(function (x, i) { st.push({ k: 'quest', i: i }); });
     else ms.forEach(function (x, i) { st.push({ k: 'mat', i: i }); });

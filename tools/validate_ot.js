@@ -179,12 +179,20 @@ function check(file) {
     });
   }
   // 금지어, 본문과 지나치게 같은 문장
+  const beatRefs = (d.beats || []).map((b) => b.ref).filter((r) => r && R.parse(r));
   texts.forEach(([w, t, ref]) => {
     BAN.forEach((b) => { if (String(t).includes(b)) E(`${w}: 쓰지 않는 표현 "${b}" (규칙서 4.2)`); });
     if (hasRef && ref && R.parse(ref)) {
       const v = R.verses(ref); if (!v) return;
       const a = norm(t), n = Math.max(...v.list.map((x) => lcs(a, norm(x.krv))));
       if (n >= 16) W(`${w}: 본문 문장과 ${n}글자가 그대로 같음. 자기 말로 풀어 쓴다 (${ref})`);
+    }
+    /* 현장 돕기의 글은 근거 장절만이 아니라 장면의 대목 본문 전체와도 견준다(독립 대조 지적, 2026-11-15) */
+    if (hasRef && /^mission\.help/.test(w)) {
+      let best = 0, br = '';
+      const a = norm(t);
+      beatRefs.forEach((r) => { const v = R.verses(r); if (v) v.list.forEach((x) => { const n = lcs(a, norm(x.krv)); if (n > best) { best = n; br = r; } }); });
+      if (best >= 16 && br !== ref) W(`${w}: 장면 본문과 ${best}글자가 그대로 같음. 자기 말로 풀어 쓴다 (${br})`);
     }
   });
 }

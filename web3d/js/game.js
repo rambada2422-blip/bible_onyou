@@ -897,7 +897,7 @@
     var gates = SC.gates[S.tier], gi = 0;
     (function show() {
       var q = gates[gi], last = gi === gates.length - 1;
-      var nb = btn(last ? '관문 통과' : '다음 관문', function () { if (last) { overlay.hidden = true; seg('help:gates', function () { seg('after', function () { seg('today', finish); }); }); } else { gi++; show(); } });
+      var nb = btn(last ? '관문 통과' : '다음 관문', function () { if (last) { overlay.hidden = true; seg('after', function () { seg('help:gates', function () { seg('today', finish); }); }); } else { gi++; show(); } });
       nb.disabled = true;
       sheetOverlay([el('div', { class: 'q-kicker', text: '다음으로 가는 관문 ' + (gi + 1) + ' / ' + gates.length }), blockFor(q, function () { nb.disabled = false; }, gi)], nb);
     })();
