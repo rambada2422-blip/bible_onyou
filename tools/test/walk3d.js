@@ -4,6 +4,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 const enter3d = require('./lib/enter.js');
+const doHelp = require('./lib/help.js');
 const ti = process.argv[2] || '1', out = process.argv[3], dsf = Number(process.argv[4] || '1');
 fs.mkdirSync(out, { recursive: true });
 (async () => {
@@ -34,6 +35,18 @@ fs.mkdirSync(out, { recursive: true });
   const tier = C.tiers[Number(ti)].id;
   const P = await p.evaluate(() => BO3D.world.P);
 
+  /* 이야기 조각(동행 문답·현장 돕기·오늘의 물음): 돕기면 돕기를 마치고, 시트의 마지막 버튼을 닫힐 때까지 누른다 */
+  let helpSeen = 0; const probs = [];
+  const segs = async (label) => {
+    for (let i = 0; i < 12; i++) {
+      const on = await p.evaluate(() => !!(BO3D.story && BO3D.story.debug.state().screen === 'seg'));
+      if (!on) return;
+      if (i === 0) await shot(label);
+      const h = await doHelp(p);
+      if (h) { helpSeen++; await shot(label + '-help' + helpSeen + '-' + h.kind); if (!h.enabled || !h.good || !h.said) probs.push(label + ': 현장 돕기(' + h.kind + ')를 마치지 못함'); }
+      await p.click('.ot3 .sheet-foot .btn >> nth=-1'); await p.waitForTimeout(250);
+    }
+  };
   // 퀴즈 풀기: 먼저 틀린 보기 하나를 눌러 안내 문구를 확인한 뒤 맞는 답
   async function solve(q, label) {
     await shot(label);
@@ -47,6 +60,12 @@ fs.mkdirSync(out, { recursive: true });
       for (const it of [...q.items].reverse()) await p.click('.overlay3 .opt:has-text("' + it + '")');
       await p.waitForTimeout(300); await shot(label + '-look');
       for (const it of q.items) await p.click('.overlay3 .opt:has-text("' + it + '")');
+    } else if (q.type === 'find') {   /* 규칙서 13.5: 읽을 곳을 찾아 읽은 뒤 묻는다 */
+      await p.click('.overlay3 .btn:has-text("찾아서 읽었어요")'); await p.waitForTimeout(250);
+      const wrong = q.confirm.options.find((o) => !o.ok);
+      await p.click('.overlay3 .opt:has-text("' + wrong.label + '")'); await p.waitForTimeout(300);
+      if (label === 'quiz1') await shot(label + '-look');
+      await p.click('.overlay3 .opt:has-text("' + q.confirm.options.find((o) => o.ok).label + '")');
     } else if (q.type === 'findref') {
       const ins = await p.$$('.refin input');
       await ins[0].fill('3'); await ins[1].fill('9'); await p.click('.refin .btn'); await p.waitForTimeout(300);
@@ -75,7 +94,7 @@ fs.mkdirSync(out, { recursive: true });
   const aim = async (x, z) => { await p.evaluate(([x, z]) => { const s = BO3D.debug.state(); BO3D.debug.yaw(Math.atan2(x - s.x, z - s.z)); }, [x, z]); await p.waitForTimeout(2600); };
   const snap = async (label) => { await p.click('.cam3'); await p.waitForTimeout(700); await shot(label); console.log(label, JSON.stringify(await p.evaluate(() => BO3D.debug.dex()))); };
 
-  const Q = C3.horeb.quests;
+  const Q = await p.evaluate(() => (BO3D.ot && BO3D.ot.scenes['OT-09'].quests) || BO.content3d.horeb.quests);   /* 게임과 같은 자료(OT-09.json) */
   await solve(Q[0].q[tier], 'quiz1');
   await shot('tracker1');
   await aim(P.mountain[0], P.mountain[1]); await snap('photo-horeb');
@@ -83,6 +102,7 @@ fs.mkdirSync(out, { recursive: true });
   await shot('part1');
   console.log('after part1', JSON.stringify(await st()));
   await p.click('text=계속 탐험하기'); await p.waitForTimeout(500);
+  await segs('help-after-part');
   await solve(Q[1].q[tier], 'quiz2');
   await p.waitForTimeout(2500);
   const fc = await p.evaluate(() => BO3D.debug.flock());
@@ -91,6 +111,7 @@ fs.mkdirSync(out, { recursive: true });
   await walkTo(P.parts[1][0], P.parts[1][1], 'to-path');
   await shot('part2');
   await p.click('text=계속 탐험하기'); await p.waitForTimeout(500);
+  await segs('help-after-part');
   await solve(Q[2].q[tier], 'quiz3');
   // 언덕에 오르려고 해 본다 (막혀야 한다)
   await walkTo(P.bush[0] - 1, P.bush[1] + 2, null);
@@ -103,17 +124,15 @@ fs.mkdirSync(out, { recursive: true });
   await p.waitForTimeout(2500);
   await shot('event1');
   console.log('event', JSON.stringify(await st()));
-  for (let i = 0; i < 4; i++) { await p.click('.panel3 .btn.onpaper'); await p.waitForTimeout(1300); if (i === 1 || i === 3) await shot('event' + (i + 2)); }
-  await p.click('.panel3 .btn.onpaper'); await p.waitForTimeout(600);
+  /* 지켜보기 대목을 넘긴다. 대목 뒤에 현장 돕기 조각이 뜨면 마친다. 마지막은 '다음으로 가는 관문' */
+  for (let i = 0, k = 0; i < 24; i++) {
+    if (await p.evaluate(() => !!(BO3D.story && BO3D.story.debug.state().screen === 'seg'))) { await segs('help-after-beat'); continue; }
+    const pb = await p.$('.panel3:not([hidden]) .btn.onpaper'); if (!pb) break;
+    const txt = await pb.textContent(); await pb.click(); await p.waitForTimeout(1300); k++;
+    if (k === 2 || k === 4) await shot('event' + (k + 1));
+    if (/관문/.test(txt)) { await p.waitForTimeout(400); if (await p.evaluate(() => !!(BO3D.story && BO3D.story.debug.state().screen === 'seg'))) await segs('help-before-gates'); break; }
+  }
   // 임무가 있으면 동행 문답(story.js 조각)이 관문 앞에, 오늘의 물음이 관문 뒤에 뜬다. 시트의 마지막 버튼을 닫힐 때까지 누른다
-  const segs = async (label) => {
-    for (let i = 0; i < 8; i++) {
-      const on = await p.evaluate(() => !!(BO3D.story && BO3D.story.debug.state().screen === 'seg'));
-      if (!on) return;
-      if (i === 0) await shot(label);
-      await p.click('.ot3 .sheet-foot .btn >> nth=-1'); await p.waitForTimeout(250);
-    }
-  };
   await segs('talk-after');
   // 관문 풀기
   const gates = (await p.evaluate(() => BO3D.ot ? BO3D.ot.scenes['OT-09'].gates : BO.content.scenes['EX-01'].gates))[tier];
@@ -143,6 +162,9 @@ fs.mkdirSync(out, { recursive: true });
   await p.click('.den3'); await p.waitForTimeout(400);
   await p.click('text=다음 시대로 출발'); await p.waitForTimeout(5200); await shot('depart');
   await p.waitForSelector('text=/처음부터 다시|시대 지도로/', { timeout: 40000 }); await p.waitForTimeout(400); await shot('endcard');
-  console.log(tier, 'shots:', n, JSON.stringify(await st()), errs.length ? '\nERR ' + errs.slice(0, 8).join('\n') : 'no errors');
+  const helpN = await p.evaluate(() => { const h = BO3D.ot && BO3D.ot.scenes['OT-09'].mission && BO3D.ot.scenes['OT-09'].mission.help; return h ? h.steps.length : 0; });
+  if (helpSeen !== helpN) probs.push('현장 돕기 ' + helpN + '단계 가운데 ' + helpSeen + '단계만 나옴');
+  console.log(tier, 'shots:', n, JSON.stringify(await st()), errs.length ? '\nERR ' + errs.slice(0, 8).join('\n') : 'no errors', '· 돕기', helpSeen + '/' + helpN, probs.length ? '\n문제 ' + probs.join('\n') : '· 문제 0');
   await b.close();
+  if (errs.length || probs.length) process.exit(1);
 })().catch((e) => { console.error('FAIL', e.message); process.exit(1); });
