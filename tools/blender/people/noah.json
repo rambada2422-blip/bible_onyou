@@ -1,0 +1,7 @@
+{
+  "name": "Noah",
+  "note": "노아(창 6:9-9:17). 본문은 생김새와 옷을 말하지 않는다. 지팡이 없음. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#5E6E7A", "ROBE_SH": "#42505A", "ROBE_HI": "#72828E", "TUNIC": "#E6DABA", "BEARD": "#EDE8DC", "BEARD_SH": "#D6CFBF", "BROW": "#EDE8DC", "HAIR": "#EDE8DC",
+              "CLOTH": "#D9CDB0", "CLOTH_SH": "#C4B794", "BELT": "#7A5A3A", "BELT_SH": "#5E4228" }
+}

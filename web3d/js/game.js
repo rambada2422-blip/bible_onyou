@@ -869,9 +869,13 @@
     var b = SC.beats[evIdx], last = evIdx === SC.beats.length - 1, e0 = SCN.eventStart || 0;
     /* 인물의 자세는 장면 설정이 정한다(호렙: 영상에서 이미 얼굴을 가렸으면 그대로 둔다) */
     if (SCN.beatPose) SCN.beatPose(evIdx, afterVision);
-    showPanel([el('div', { class: 'q-kicker', text: '지켜보기 ' + (evIdx - e0 + 1) + ' / ' + (SC.beats.length - e0) }), beatNodes(b)],
+    /* 장면 설정이 이 대목에서 아이들을 숨기거나(예: 타임머신 창으로 보는 장면) 탐험대 이야기 한 줄을 덧붙일 수 있다 */
+    var hideK = !!(SCN.kidsHidden && SCN.kidsHidden(evIdx)), bn = SCN.beatNote ? SCN.beatNote(evIdx) : null;
+    for (var kk2 in kids) kids[kk2].group.visible = !hideK;
+    showPanel([el('div', { class: 'q-kicker', text: '지켜보기 ' + (evIdx - e0 + 1) + ' / ' + (SC.beats.length - e0) }),
+      bn ? el('div', { class: 'note story3' }, el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: bn }))) : null, beatNodes(b)],
       [evIdx > e0 ? btn('이전', function () { evIdx--; showBeat(); }, 'plain') : null,
-        btn(last ? '다음으로 가는 관문' : '다음', function () { if (last) { hidePanel(); seg('after', startGates); } else { evIdx++; showBeat(); } })]);
+        btn(last ? '다음으로 가는 관문' : '다음', function () { if (last) { hidePanel(); startGates(); } else { evIdx++; showBeat(); } })]);
   }
 
   /* ── 관문 (2D 시범판과 같은 방식) ── */
@@ -884,10 +888,11 @@
   }
   function startGates() {
     state = 'gates'; hidePanel(); root.classList.remove('ev'); camBtn.hidden = true; dexBtn.hidden = true;
+    for (var kk3 in kids) kids[kk3].group.visible = true;
     var gates = SC.gates[S.tier], gi = 0;
     (function show() {
       var q = gates[gi], last = gi === gates.length - 1;
-      var nb = btn(last ? '관문 통과' : '다음 관문', function () { if (last) { overlay.hidden = true; seg('today', finish); } else { gi++; show(); } });
+      var nb = btn(last ? '관문 통과' : '다음 관문', function () { if (last) { overlay.hidden = true; seg('after', function () { seg('today', finish); }); } else { gi++; show(); } });
       nb.disabled = true;
       sheetOverlay([el('div', { class: 'q-kicker', text: '다음으로 가는 관문 ' + (gi + 1) + ' / ' + gates.length }), blockFor(q, function () { nb.disabled = false; }, gi)], nb);
     })();
@@ -1014,6 +1019,10 @@
       var mp = machine.group.position;
       want.set(P.machine[0] - 4, H(P.machine[0], P.machine[1]) + 3.2, P.machine[1] + 10.5);
       camLookT.set(mp.x, mp.y + 1.4, mp.z); k = 1 - Math.exp(-dt * 3);
+    } else if (state === 'event' && SCN.eventCam && SCN.eventCam(evIdx)) {
+      /* 장면 설정이 이 대목의 카메라를 직접 정한다(아이들 어깨 너머가 아닌 곳) */
+      var ec = SCN.eventCam(evIdx);
+      want.set(ec.pos[0], ec.pos[1], ec.pos[2]); camLookT.set(ec.look[0], ec.look[1], ec.look[2]); k = 1 - Math.exp(-dt * 1.6);
     } else if (state === 'lookup' || state === 'vision' || state === 'event' || state === 'gates' || state === 'end') {
       /* 언덕 아래에서 올려다본다. 처음엔 아이들 어깨 너머, 천천히 위로 올라가며 언덕 위를 담는다 */
       /* 지켜보기 동안은 장면 설정이 대목마다 볼 곳을 바꿀 수 있다(eventLook) */

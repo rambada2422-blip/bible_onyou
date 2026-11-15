@@ -171,8 +171,9 @@
     var m = d.mission || null, st = [{ k: 'arrive' }], cp = m && m.companion;
     if (cp && cp.when !== 'after') cp.talks.forEach(function (t, i) { st.push({ k: 'talk', i: i }); });
     d.beats.forEach(function (b, i) { st.push({ k: 'beat', i: i }); });
-    if (cp && cp.when === 'after') cp.talks.forEach(function (t, i) { st.push({ k: 'talk', i: i }); });
     (d.gates[S.tier] || d.gates.t2).forEach(function (q, i) { st.push({ k: 'gate', i: i }); });
+    /* 사건 뒤의 문답은 관문 뒤에 둔다: 문답의 장절이 관문 물음의 답을 미리 알려 주지 않게(2026-11-15 임무 독립 대조) */
+    if (cp && cp.when === 'after') cp.talks.forEach(function (t, i) { st.push({ k: 'talk', i: i }); });
     var ms = m ? m.materials || [] : [];
     if (ms.length === 3 && d.quests && d.quests.length === 3) ms.forEach(function (x, i) { st.push({ k: 'quest', i: i }); });
     else ms.forEach(function (x, i) { st.push({ k: 'mat', i: i }); });
