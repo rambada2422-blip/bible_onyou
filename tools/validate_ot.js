@@ -58,11 +58,12 @@ function check(file) {
   // 물음
   const question = (q, w, tier) => {
     if (!q || !TYPES[tier].includes(q.type)) { E(`${w}: ${tier}에 쓸 수 있는 유형은 ${TYPES[tier].join(', ')} (지금: ${q && q.type})`); return; }
+    const sim = q && (q.refs || [q.ref]).filter(Boolean);   /* 보기 글도 물음의 장절 본문과 대조한다(그대로 옮긴 보기를 막는다) */
     const opts = (o, ww) => {
       if (!Array.isArray(o) || o.length < 3 || o.length > 4) { E(`${ww}: 보기는 3~4개`); return; }
       if (o.filter((x) => x.ok === true).length !== 1) E(`${ww}: 맞는 보기(ok: true)는 정확히 1개`);
       o.forEach((x, k) => {
-        if (!str(x.label)) E(`${ww}[${k}].label 없음`); else texts.push([`${ww}[${k}]`, x.label, null]);
+        if (!str(x.label)) E(`${ww}[${k}].label 없음`); else if (sim && sim.length) sim.forEach((r) => texts.push([`${ww}[${k}]`, x.label, r])); else texts.push([`${ww}[${k}]`, x.label, null]);
         if (!x.ok && !str(x.basis)) E(`${ww}[${k}]: 맞지 않는 보기에는 basis("본문에 없음" 또는 그 내용이 실제로 나오는 장절)를 적는다`);
         if (!x.ok && str(x.basis) && x.basis !== '본문에 없음') refOk(x.basis, `${ww}[${k}].basis`);
       });
