@@ -3,7 +3,7 @@
  * 외부 파일 없이 도형과 직접 만든 geometry만 쓴다. 단위는 미터, 바닥이 y=0, 정면이 +Z.
  * models.js와 같은 방식(Builder로 꼭짓점 색을 굽고 재질 몇 개를 함께 쓴다)이며, 도우미는 이 파일 안에 다시 만들었다.
  *
- *   BO3D.models2.israelite(seed)       -> { group, update(dt, speed) }   백성 한 사람(남자·여자·아이)
+ *   BO3D.models2.israelite(seed[, {kind, carry}]) -> { group, update(dt, speed) }   백성 한 사람(남자·여자·아이)
  *   BO3D.models2.priestSimple(side)    -> { group, update(dt) }          side: 'L'(왼어깨, +X) | 'R'(오른어깨, -X)
  *                                         group.userData.poleY / poleX = 채가 얹히는 어깨 위 지점
  *   BO3D.models2.leaderSimple()        -> { group, update(dt) }          백성을 이끄는 사람. 두 팔을 내리고 곧게 서 있다
@@ -355,11 +355,12 @@
   var HAIRS = ['#2B211C', '#33261E', '#3D2B20', '#241C1A'];
   var BEARDS = ['#2B211C', '#3A2A20', '#4A372A', '#5E5650', '#33261E'];
 
-  function makeIsraelite(seed) {
-    seed = seed | 0;
+  /* opt.kind('man'|'woman'|'boy'|'girl')와 opt.carry('none' 등)를 주면 씨앗값과 상관없이 그 사람으로 만든다(장면에 정해진 사람이 있을 때) */
+  function makeIsraelite(seed, opt) {
+    seed = seed | 0; opt = opt || {};
     var R = rng(seed * 7 + 4001), sm = mat('smooth');
     var pick = function (a) { return a[Math.min(a.length - 1, Math.floor(R() * a.length))]; };
-    var kind = KINDS[((seed % 10) + 10) % 10];
+    var kind = opt.kind || KINDS[((seed % 10) + 10) % 10];
     var man = kind === 'man', woman = kind === 'woman', child = !man && !woman, girl = kind === 'girl';
     var H = man ? 1.62 + R() * 0.14 : woman ? 1.55 + R() * 0.11 : 1.1 + R() * 0.18;     // 머리 꼭대기까지(머리쓰개 제외)
     var k = H / 1.73, q = k * (child ? 1.1 : woman ? 0.94 : 1);
@@ -375,13 +376,14 @@
     var striped = man && R() < 0.3;
     var SASH = pick(SASHES), CLOTH = pick(HEADCLOTHS);
     var carry = man ? pick(['none', 'none', 'staff', 'staff', 'sack']) : woman ? pick(['none', 'baby', 'baby', 'head', 'sack']) : pick(['none', 'none', 'none', 'sack']);
+    if (opt.carry) carry = opt.carry;
     var hemY = man ? (0.15 + R() * 0.1) * k : woman ? 0.055 * k : (0.29 + R() * 0.08) * k;
     var hemW = woman ? 1.08 : 1;
 
     var group = new T.Group(), rig = new T.Group();
     group.add(rig);
     group.userData.height = H;
-    group.userData.kind = kind;
+    group.userData.kind = kind; group.userData.carry = carry;
 
     /* --- 몸: 통옷, 허리띠, 겉옷, 머리를 mesh 하나로 --- */
     var b = new Builder();

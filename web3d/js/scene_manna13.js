@@ -1,5 +1,5 @@
 /* 3D 장면 설정: OT-13 하늘에서 내린 양식, 만나 (출 16:1-36). 신 광야의 이스라엘 진.
- * 방향: 진은 가운데, 아이들은 진 동쪽 가장자리(+X). 광야 쪽(구름이 나타나는 쪽)은 남쪽(+Z) 멀리.
+ * 방향: 진은 가운데, 아이들은 진 동쪽 가장자리(+X). 광야 쪽(구름이 나타나는 쪽)은 진 너머 서쪽(-X) 멀리. 아이들 자리에서 진과 구름이 함께 보인다.
  * 본문에 맞춘 점 (content/ot/OT-13.json design3d)
  *  - 광야 쪽에 구름을 두고, 여호와의 영광은 자막으로만 알린다(16:10). 영광의 모양과 빛깔을 지어 그리지 않는다.
  *  - 저녁에 메추라기가 진을 덮고(16:13), 아침에 진 둘레에 이슬이 있다가 마르면 땅 위에 작고 둥글고 서리처럼 가는 흰 것이 있다(16:13-14, 16:31).
@@ -61,7 +61,8 @@
       var ha = hash(i, 1) * 6.28, hr = 6 + hash(i, 2) * (CAMP_R - 8);
       o.home = [CAMP[0] + Math.cos(ha) * hr, CAMP[1] + Math.sin(ha) * hr];
       var fa = hash(i, 3) * 6.28, fr = CAMP_R + 6 + hash(i, 4) * 16; o.field = [CAMP[0] + Math.cos(fa) * fr, CAMP[1] + Math.sin(fa) * fr];
-      if (o.field[0] > 22) o.field[0] = 22 - hash(i, 6) * 10;   /* 아이들 쪽으로는 오지 않게 */
+      for (var tr = 0; tr < 12 && o.field[0] > 22; tr++) { fa = hash(i, 7 + tr) * 6.28; o.field = [CAMP[0] + Math.cos(fa) * fr, CAMP[1] + Math.sin(fa) * fr]; }   /* 아이들 쪽(동쪽)으로는 오지 않게 각도를 다시 뽑는다 */
+      if (o.field[0] > 22) o.field = [CAMP[0] - fr, CAMP[1]];
       o.t = hash(i, 5) * 4; put(o.group, o.home[0], o.home[1]); o.group.rotation.order = 'YXZ'; o.at = o.home.slice(); people.push(o);
     }
     var bodyOf = function (o) { return o.group; };
@@ -76,7 +77,7 @@
     /* 광야 쪽의 구름(16:10): 둥근 구름 덩이만. 영광의 모양과 빛깔은 그리지 않는다 */
     var cloud = new T.Group(), cloudM = new T.MeshStandardMaterial({ color: '#F4F1EA', roughness: 1 });
     for (i = 0; i < 14; i++) { var cs = new T.Mesh(new T.SphereGeometry(10 + R() * 9, 14, 10), cloudM); cs.position.set((R() - 0.5) * 70, 18 + R() * 16, (R() - 0.5) * 22); cs.scale.y = 0.6; cloud.add(cs); }
-    cloud.position.set(-20, 0, 190); scene.add(cloud);
+    cloud.position.set(-200, 0, 30); scene.add(cloud);
     /* 메추라기(16:13): 저녁에 진을 덮는다. 작은 새의 꼴로만 */
     var quailM = std('#A8865A'), quail = new T.InstancedMesh(new T.SphereGeometry(0.13, 6, 4), quailM, 600), qm = new T.Matrix4(), qp = [];
     for (i = 0; i < 600; i++) { var qa = R() * 6.28, qr = Math.sqrt(R()) * (CAMP_R + 4); qp.push([CAMP[0] + Math.cos(qa) * qr, CAMP[1] + Math.sin(qa) * qr, R() * 6.28, R() * 30]); }
@@ -87,13 +88,14 @@
     var NM = 5200, manna = new T.InstancedMesh(new T.SphereGeometry(0.035, 5, 3), new T.MeshStandardMaterial({ color: '#F6F4EE', roughness: 0.6 }), NM), mp = [];
     for (i = 0; i < NM; i++) {
       var ma = R() * 6.28, mr = CAMP_R + 1 + R() * 38, mx = CAMP[0] + Math.cos(ma) * mr, mz = CAMP[1] + Math.sin(ma) * mr;
-      if (mx > 24 && Math.abs(mz) < 28) { mx = 24 - R() * 4; }   /* 아이들이 다니는 곳에는 두지 않는다(밟지 않게) */
+      for (var tr2 = 0; tr2 < 12 && mx > 22; tr2++) { ma = R() * 6.28; mx = CAMP[0] + Math.cos(ma) * mr; mz = CAMP[1] + Math.sin(ma) * mr; }   /* 아이들 쪽(동쪽)에는 두지 않는다(밟지 않게). 다시 뽑는다 */
+      if (mx > 22) { mx = CAMP[0] - mr; mz = CAMP[1]; }
       mp.push([mx, height(mx, mz) + 0.02, mz]); qm.makeScale(1, 0.5, 1); qm.setPosition(mx, height(mx, mz) + 0.02, mz); manna.setMatrixAt(i, qm);
     }
     manna.instanceMatrix.needsUpdate = true; manna.visible = false; scene.add(manna);
     var mannaLeft = NM;
 
-    var phase = 'camp', tod = 0, todWant = 0, cloudOp = 0, cloudWant = 0, dewOp = 0, dewWant = 0, gather = false, gatherT = 0, few = false;
+    var phase = 'camp', tod = 0, todWant = 0, cloudOp = 0, cloudWant = 0, dewOp = 0, dewWant = 0, gather = false, gatherT = 0, few = false, qT = 0, melt = 0, faceCloud = false;
     var ca = new T.Color(), cb = new T.Color();
     function applyTod() {
       /* 0 낮, 1 저녁, 2 이른 아침 */
@@ -101,15 +103,17 @@
       ca.set(A[0]); cb.set(B[0]); ca.lerp(cb, t); scene.background.copy(ca); scene.fog.color.copy(ca);
       ca.set(A[1]); cb.set(B[1]); skyM.color.copy(ca.lerp(cb, t)); hemi.intensity = A[2] + (B[2] - A[2]) * t; sun.intensity = A[3] + (B[3] - A[3]) * t; ca.set(A[4]); cb.set(B[4]); sun.color.copy(ca.lerp(cb, t));
     }
+    /* 대목마다 모든 상태를 처음부터 정한다('이전'으로 돌아와도 뒤 대목의 것이 남지 않게) */
     function setPhase(p) {
       phase = p;
-      if (p === 'camp') { tod = 0; todWant = 0; applyTod(); cloudWant = 0; cloudOp = 0; quail.visible = false; dewWant = 0; dewOp = 0; manna.visible = false; gather = false; few = false; jar.visible = false; mannaLeft = NM; manna.count = NM;
-        people.forEach(function (o) { o.at = o.home.slice(); }); }
-      if (p === 'cloud') { todWant = 0.3; cloudWant = 1; }                                   /* 16:10 */
-      if (p === 'manna') { todWant = 1; cloudWant = 0.35; quail.visible = true; dewWant = 1; manna.visible = false; gather = false; }  /* 16:13-15: 저녁 메추라기 → 아침 이슬 → 만나 */
-      if (p === 'gather') { todWant = 2; quail.visible = false; dewWant = 0; manna.visible = true; gather = true; gatherT = 0; }       /* 16:16-21 */
-      if (p === 'sabbath') { todWant = 2; quail.visible = false; dewWant = 0; manna.visible = false; gather = false; few = true; gatherT = 0; } /* 16:22-30 */
-      if (p === 'jar') { todWant = 2; manna.visible = false; gather = false; few = false; jar.visible = true; }                       /* 16:31-36 */
+      quail.visible = false; dewWant = 0; dewOp = 0; manna.visible = false; gather = false; few = false; gatherT = 0; jar.visible = false; mannaLeft = NM; manna.count = NM; qT = 0; melt = 0; faceCloud = false;
+      people.forEach(function (o) { o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); o.group.rotation.x = 0; });
+      if (p === 'camp') { tod = 0; todWant = 0; applyTod(); cloudWant = 0; cloudOp = 0; }
+      if (p === 'cloud') { todWant = 0.3; cloudWant = 1; faceCloud = true; }                      /* 16:10: 백성이 광야 쪽을 바라본다 */
+      if (p === 'manna') { todWant = 1; cloudWant = 0.35; quail.visible = true; }                 /* 16:13-15: 저녁 메추라기 → 아침 이슬 → 만나 */
+      if (p === 'gather') { todWant = 2; cloudWant = 0.35; manna.visible = true; gather = true; }   /* 16:16-21 */
+      if (p === 'sabbath') { todWant = 2; cloudWant = 0.35; few = true; }                        /* 16:22-30 */
+      if (p === 'jar') { todWant = 2; cloudWant = 0.35; jar.visible = true; }                    /* 16:31-36 */
     }
     var mannaT = -1;
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
@@ -127,7 +131,7 @@
         parts: [[58, 18], [30, -12], [34, 14]], lookSpot: [34, 14],
         look: { focus: CAMP, mid: [10, 10], dy: 2, backE: 8, upE: 4 } },
       eventLook: function (i) {
-        if (i === 2) return { focus: [-20, 190], mid: [-10, 80], dy: 22, backE: 8, upE: 3 };
+        if (i === 2) return { focus: [-200, 30], mid: CAMP, dy: 16, backE: 8, upE: 3.4 };   /* 진 너머 광야 쪽의 구름(16:10) */
         if (i === 3) return { focus: [CAMP[0] + 20, CAMP[1] + 22], mid: [CAMP[0] + 20, CAMP[1] + 22], dy: 0.2, backE: 6, upE: 2.6 };
         if (i === 6) return { focus: AAR, mid: AAR, dy: 1, backE: 6, upE: 2.6 };
         return { focus: [CAMP[0] + 10, CAMP[1] + 30], mid: CAMP, dy: 1, backE: 7, upE: 3.2 };
@@ -140,7 +144,7 @@
       dex: [
         { id: 'camp', name: '이스라엘의 진', desc: '엘림과 시내 산 사이 신 광야에 친 진', ref: '출 16:1', hint: '장막들을 담아 보세요.', range: 80, pos: function () { return v3(CAMP[0], 1.5, CAMP[1]); } },
         { id: 'moses', name: '모세와 아론', desc: '백성이 원망한 두 사람. 원망은 여호와를 향한 것이라고 말했다', ref: '출 16:2', hint: '진 동쪽에 서 있어요.', range: 40, crop: 0.4, pos: function () { return v3(MOS[0], height(MOS[0], MOS[1]) + 1.1, MOS[1] + 2); } },
-        { id: 'cloud', name: '광야 쪽의 구름', desc: '백성이 광야 쪽을 바라보니 구름 속에 여호와의 영광이 나타났다', ref: '출 16:10', hint: '구름이 나타난 뒤 남쪽을 보세요.', range: 600, crop: 0.8,
+        { id: 'cloud', name: '광야 쪽의 구름', desc: '백성이 광야 쪽을 바라보니 구름 속에 여호와의 영광이 나타났다', ref: '출 16:10', hint: '구름이 나타난 뒤 진 너머를 보세요.', range: 600, crop: 0.8,
           visible: function () { return cloudOp > 0.4; }, pos: function () { return v3(cloud.position.x, 26, cloud.position.z); } },
         { id: 'manna', name: '작고 둥근 것', desc: '이슬이 마른 뒤 광야 땅 위에 있던, 서리처럼 가는 작고 둥근 것', ref: '출 16:14', hint: '아침에 진 둘레의 땅을 보세요.', range: 30, crop: 0.4,
           visible: function () { return manna.visible; }, pos: function () { return v3(CAMP[0] + 36, height(CAMP[0] + 36, CAMP[1] + 10), CAMP[1] + 10); } }
@@ -160,11 +164,12 @@
           if (mannaT > 6) { quail.visible = false; todWant = 2; }
           if (mannaT > 7 && mannaT < 12) dewWant = 1; else if (mannaT >= 12) { dewWant = 0; manna.visible = true; }
         }
-        if (quail.visible) { for (var q = 0; q < qp.length; q++) { var u = Math.min(1, Math.max(0, (now * 4 - qp[q][3]) / 10)); qm.makeRotationY(qp[q][2]); qm.setPosition(qp[q][0], height(qp[q][0], qp[q][1]) + 0.08 + (1 - u) * 12, qp[q][1]); quail.setMatrixAt(q, qm); } quail.instanceMatrix.needsUpdate = true; }
+        if (quail.visible) { qT += dt; for (var q = 0; q < qp.length; q++) { var u = Math.min(1, Math.max(0, (qT * 4 - qp[q][3]) / 10));   /* 이 대목이 시작될 때부터 내려앉는다 */ qm.makeRotationY(qp[q][2]); qm.setPosition(qp[q][0], height(qp[q][0], qp[q][1]) + 0.08 + (1 - u) * 12, qp[q][1]); quail.setMatrixAt(q, qm); } quail.instanceMatrix.needsUpdate = true; }
         dewOp += (dewWant - dewOp) * Math.min(1, dt * 0.5); dew.material.opacity = 0.45 * dewOp; dew.visible = dewOp > 0.02;
         /* 16:16-21: 나가서 거둔다(허리를 굽혔다 폈다). 땅의 것은 조금씩 줄어든다 */
         people.forEach(function (o, k) {
           var to = o.home;
+          if (faceCloud) { o.group.rotation.y = Math.atan2(cloud.position.x - o.group.position.x, cloud.position.z - o.group.position.z); if (o.update) o.update(dt, 0); return; }
           if (gather) { gatherT += dt / people.length; to = gatherT > 18 ? o.home : o.field; }
           if (few && k % 8 === 0) to = gatherT < 8 ? o.field : o.home;
           if (few) gatherT += dt / people.length;
@@ -175,6 +180,8 @@
           if (o.update) o.update(dt, mv ? 1.1 : 0);
         });
         if (gather && manna.visible && mannaLeft > 600) { mannaLeft = Math.max(600, mannaLeft - Math.round(dt * 260)); manna.count = mannaLeft; }
+        /* 16:21: 거둔 뒤 해가 뜨겁게 쬐면 남은 것이 스러진다 */
+        if (gather && gatherT > 18 && mannaLeft > 0) { melt += dt; mannaLeft = Math.max(0, Math.round(600 * (1 - melt / 6))); manna.count = mannaLeft; if (!mannaLeft) manna.visible = false; }
         if (moses.update) moses.update(dt, false); if (aaron.update) aaron.update(dt, false);
       },
       audio: function (A) { A.setFlock(999); A.setFire(999); },

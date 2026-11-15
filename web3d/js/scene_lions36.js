@@ -5,7 +5,8 @@
  *  - 해 질 때까지 왕이 근심하고(6:14), 다니엘을 굴에 넣은 뒤 돌로 어귀를 막고 도장을 찍는다(6:16-17). 밤(6:18), 이튿날 새벽(6:19).
  *  - 굴은 땅의 구덩이와 어귀(본문은 크기·깊이·사자의 수를 말하지 않는다). 굴 안은 보이지 않는다. 사자의 입을 막는 손·빛·천사는 그리지 않는다.
  *  - 다니엘이 굴에서 올려지고 몸에 상한 데가 없다(6:23). 6:24의 일은 그리지 않는다(글로만).
- * 감수가 필요한 설정: 왕궁·굴·집의 자리와 생김새, 도시, 사람 수, 굴의 생김새, 다니엘과 왕의 생김새.
+ * 감수가 필요한 설정: 왕궁·굴·집의 자리와 생김새, 도시, 사람 수, 굴의 생김새(구덩이와 어귀를 막는 돌), 다니엘과 왕의 생김새,
+ *   사자를 보이지 않게 한 것(6:16, 6:22), 다니엘을 굴에서 올린 사람들(6:23)을 그리지 않고 어귀 가장자리에서 올라오게 한 것.
  * 세 아이는 남쪽 빈터에서만 다닌다. 굴과 집과 왕궁 가까이에 가지 않는다(목격자).
  */
 (function () {
@@ -65,7 +66,7 @@
     var house = new T.Group(), hm1 = std('#E6CC9E'), hdark = std('#3E2E22');
     var h1 = new T.Mesh(new T.BoxGeometry(9, 4.5, 8), hm1); h1.position.y = 2.25; h1.castShadow = true; house.add(h1);
     var h2 = new T.Mesh(new T.BoxGeometry(6, 3.5, 6), hm1); h2.position.set(-1, 6.25, 0); h2.castShadow = true; house.add(h2);   /* 위층 방 */
-    var win = new T.Mesh(new T.BoxGeometry(0.2, 1.4, 1.6), new T.MeshBasicMaterial({ color: '#FFD890', fog: false })); win.position.set(-4.05, 6.4, 0); house.add(win);   /* 서쪽(예루살렘 쪽)으로 열린 창 */
+    var win = new T.Mesh(new T.BoxGeometry(0.2, 1.4, 1.6), std('#2E241C')); win.position.set(-4.05, 6.4, 0); house.add(win);   /* 서쪽(예루살렘 쪽)으로 열린 창. 특별한 빛으로 읽히지 않게 어두운 창으로 둔다 */
     var dr = new T.Mesh(new T.BoxGeometry(0.2, 2.4, 1.4), hdark); dr.position.set(-4.55, 1.2, 2); house.add(dr);
     put(house, HOUSE[0], HOUSE[1]);
     /* 사자 굴(6:16-17): 바위 둔덕의 어귀. 굴 안은 보이지 않는다. 어귀를 막는 돌 */
@@ -87,7 +88,7 @@
     var officials = [];
     for (i = 0; i < 8; i++) { var of = PR.soldier(i + 900, ['#6E4A5A', '#5A5A3E', '#7A5A3A'][i % 3], null); of.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); of.home = [PALACE[0] + 16 + (i % 4) * 1.6, PALACE[1] + 16 + Math.floor(i / 4) * 1.6]; put(of.group, of.home[0], of.home[1]); officials.push(of); }
 
-    var phase = 'day', tod = 0, todWant = 0, danTo = null, kingTo = null, danIn = false, lift = 0, liftWant = 0, offTo = null;
+    var phase = 'day', tod = 0, todWant = 0, danTo = null, kingTo = null, danIn = false, lift = 0, liftWant = 0, offTo = null, accT = 0, offHide = false;
     var ca = new T.Color(), cb = new T.Color();
     var TOD = [['#F1E3C2', '#FFFFFF', 0.64, 0.74, '#FFF0CF'], ['#E8B49A', '#E8B8A0', 0.5, 0.45, '#FFB078'], ['#141C34', '#26315A', 0.34, 0.16, '#9FB4E0'], ['#E2C2B6', '#F0C8B8', 0.52, 0.5, '#FFD0A0']];
     function applyTod() {
@@ -96,18 +97,23 @@
       ca.set(A[1]); cb.set(B[1]); skyM.color.copy(ca.lerp(cb, t)); hemi.intensity = A[2] + (B[2] - A[2]) * t; sun.intensity = A[3] + (B[3] - A[3]) * t; ca.set(A[4]); cb.set(B[4]); sun.color.copy(ca.lerp(cb, t));
       starM.opacity = Math.max(0, 1 - Math.abs(tod - 2)) * 0.9;
     }
+    /* 대목마다 모든 상태를 처음부터 정한다('이전'으로 돌아와도 뒤 대목의 것이 남지 않게) */
+    function at(o, x, z) { o.group.position.set(x, height(x, z), z); }
     function setPhase(p) {
       phase = p;
-      if (p === 'day') { tod = 0; todWant = 0; applyTod(); stoneWant = 0; stoneOn = 0; seal.visible = false; danIn = false; lift = 0; liftWant = 0; danTo = null; kingTo = null; offTo = null;
-        dan.group.visible = true; dan.group.position.set(DAN0[0], height(DAN0[0], DAN0[1]), DAN0[1]); king.group.position.set(KING0[0], height(KING0[0], KING0[1]), KING0[1]);
-        officials.forEach(function (o) { o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); }); win.material.color.set('#FFD890'); }
-      if (p === 'window') { todWant = 0.2; dan.group.visible = false; }                                                     /* 6:10: 위층 방(창 너머, 멀리서) */
-      if (p === 'accuse') { todWant = 1; dan.group.visible = false; offTo = [HOUSE[0] - 14, HOUSE[1] + 8]; }               /* 6:11-15: 모여 발견하고 왕에게, 해 질 때까지 */
-      if (p === 'den') { todWant = 2; dan.group.visible = true; dan.group.position.set(HOUSE[0] - 6, height(HOUSE[0] - 6, HOUSE[1] + 6), HOUSE[1] + 6); danTo = [DEN[0] + 3.2, DEN[1] + 1]; offTo = [DEN[0] + 8, DEN[1] + 6]; kingTo = [DEN[0] - 6, DEN[1] + 6]; } /* 6:16-18 */
-      if (p === 'dawn') { todWant = 3; danIn = true; dan.group.visible = false; stoneOn = 1; stoneWant = 0; seal.visible = false; kingTo = [DEN[0] - 4, DEN[1] + 4]; liftWant = 1; } /* 6:19-23 */
-      if (p === 'decree') { todWant = 3; danIn = false; stoneWant = 0; liftWant = 0; lift = 0; dan.group.visible = true; dan.group.position.set(DEN[0] - 2, height(DEN[0] - 2, DEN[1] + 6), DEN[1] + 6); kingTo = [KING0[0], KING0[1]]; } /* 6:24-28 */
+      stoneWant = 0; stoneOn = 0; seal.visible = false; danIn = false; lift = 0; liftWant = 0; danTo = null; kingTo = null; offTo = null; accT = 0; offHide = false;
+      dan.group.visible = true; at(dan, DAN0[0], DAN0[1]); at(king, KING0[0], KING0[1]); king.group.visible = true;
+      officials.forEach(function (o) { o.group.visible = true; at(o, o.home[0], o.home[1]); });
+      if (p === 'day') { tod = 0; todWant = 0; applyTod(); }
+      if (p === 'window') { todWant = 0.2; dan.group.visible = false; }                                  /* 6:10: 위층 방(창 너머, 멀리서) */
+      if (p === 'accuse') { todWant = 1; dan.group.visible = false; offTo = [HOUSE[0] - 14, HOUSE[1] + 8]; }   /* 6:11-15: 모여 발견하고(집 앞), 왕에게 나아간다(왕궁 앞). 해 질 때까지 */
+      if (p === 'den') { todWant = 2; at(dan, HOUSE[0] - 6, HOUSE[1] + 6); danTo = [DEN[0] + 3.2, DEN[1] + 1]; kingTo = [DEN[0] - 6, DEN[1] + 6];   /* 6:16-18: 끌어다가 굴에 던져 넣는다 */
+        officials.forEach(function (o, k) { at(o, HOUSE[0] - 7 + (k % 4) * 1.2, HOUSE[1] + 8 + Math.floor(k / 4) * 1.2); }); }
+      if (p === 'dawn') { todWant = 3; danIn = true; dan.group.visible = false; stoneWant = 1; stoneOn = 1; seal.visible = true; kingTo = [DEN[0] - 4, DEN[1] + 4]; offHide = true; } /* 6:19-23: 새벽에 왕이 왕궁에서 급히 굴로 */
+      if (p === 'decree') { todWant = 3; at(dan, DEN[0] - 2, DEN[1] + 6); dan.group.rotation.y = Math.PI * 0.2; at(king, DEN[0] - 4, DEN[1] + 4); kingTo = [KING0[0], KING0[1]]; offHide = true; } /* 6:24-28: 참소한 사람들의 일은 그리지 않는다 */
+      if (offHide) officials.forEach(function (o) { o.group.visible = false; });
     }
-    var denT = -1, dawnT = -1;
+    var denT = -1, dawnT = -1, dawnArr = 0;
     function step(o, to, spd, dt) { var p = o.group.position, dx = to[0] - p.x, dz = to[1] - p.z, d = Math.hypot(dx, dz); if (d < 0.2) return false; var st = Math.min(d, spd * dt); p.x += dx / d * st; p.z += dz / d * st; p.y = height(p.x, p.z); o.group.rotation.y = Math.atan2(dx, dz); return true; }
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
     if (FX) FX.sortLayers(scene);
@@ -143,20 +149,32 @@
       partContinue: function () {},
       lookupPose: function () {},
       /* 대목 번호(OT-36.json): 2 = 6:10, 3 = 6:11-15, 4 = 6:16-18, 5 = 6:19-23, 6 = 6:24-28 */
-      beatPose: function (i) { setPhase(i <= 1 ? 'day' : ['', '', 'window', 'accuse', 'den', 'dawn', 'decree'][i]); denT = i === 4 ? 0 : -1; dawnT = i === 5 ? 0 : -1; },
+      beatPose: function (i) { setPhase(i <= 1 ? 'day' : ['', '', 'window', 'accuse', 'den', 'dawn', 'decree'][i]); denT = i === 4 ? 0 : -1; dawnT = i === 5 ? 0 : -1; dawnArr = 0; },
       update: function (dt, now) {
         if (Math.abs(tod - todWant) > 0.003) { tod += (todWant - tod) * Math.min(1, dt * 0.6); applyTod(); }
-        if (danTo && dan.group.visible) { var dm = step(dan, danTo, 1.6, dt); if (dan.update) dan.update(dt, dm); if (!dm && phase === 'den') { dan.group.visible = false; danIn = true; } } else if (dan.update) dan.update(dt, false);
-        if (kingTo) { var km = step(king, kingTo, 2.2, dt); if (king.update) king.update(dt, km); } else if (king.update) king.update(dt, false);
-        officials.forEach(function (o, k) { var to = offTo ? [offTo[0] + (k % 4) * 1.5, offTo[1] + Math.floor(k / 4) * 1.5] : o.home; var om = step(o, to, 2.4, dt); o.update(dt, om ? 1 : 0, now); });
+        if (danTo && dan.group.visible) { var dm = step(dan, danTo, 2.6, dt); if (dan.update) dan.update(dt, dm); if (!dm && phase === 'den') { dan.group.visible = false; danIn = true; danTo = null; } } else if (dan.update) dan.update(dt, false);
+        /* 6:18: 굴을 봉한 뒤 왕은 궁으로 돌아간다 */
+        if (phase === 'den' && seal.visible && denT > 3) kingTo = [KING0[0], KING0[1]];
+        if (kingTo) { var km = step(king, kingTo, phase === 'dawn' ? 4.2 : 3, dt); if (king.update) king.update(dt, km); } else if (king.update) king.update(dt, false);
+        if (phase === 'accuse') { accT += dt; if (accT > 7) offTo = [KING0[0] + 3, KING0[1] + 2]; }   /* 6:12: 발견한 뒤 왕에게 나아간다 */
+        officials.forEach(function (o, k) {
+          var to = offTo ? [offTo[0] + (k % 4) * 1.5, offTo[1] + Math.floor(k / 4) * 1.5] : o.home;
+          if (phase === 'den') { var dp = dan.group.position; to = dan.group.visible ? [dp.x + (k % 4) * 1.2 - 1.8, dp.z + 1.4 + Math.floor(k / 4) * 1.2] : [DEN[0] + 8 + (k % 4) * 1.5, DEN[1] + 6 + Math.floor(k / 4) * 1.5]; }   /* 다니엘을 데리고 함께 간다 */
+          var om = step(o, to, phase === 'den' ? 2.8 : 2.4, dt); o.update(dt, om ? 1 : 0, now);
+        });
         /* 6:17: 다니엘이 굴에 들어간 뒤 돌이 어귀를 막고 도장 자국이 남는다 */
         if (denT >= 0) { denT += dt; if (danIn) stoneWant = 1; if (stoneOn > 0.95) seal.visible = true; }
         stoneOn += (stoneWant - stoneOn) * Math.min(1, dt * 0.8);
         var sx = STONE_OFF[0] + (DEN[0] - STONE_OFF[0]) * stoneOn, sz = STONE_OFF[1] + (DEN[1] - STONE_OFF[1]) * stoneOn;
         stone.position.set(sx, height(sx, sz) + 0.45 + stoneOn * 0.9, sz); stone.rotation.x = stoneOn * 0.4 - 0.4; seal.position.set(DEN[0] + 2.2, stone.position.y + 0.5, DEN[1] + 1.6);
         /* 6:19-23: 새벽, 돌을 치우고 다니엘을 굴에서 올린다 */
-        if (dawnT >= 0) { dawnT += dt; if (dawnT > 4) { lift += (liftWant - lift) * Math.min(1, dt * 0.6); dan.group.visible = lift > 0.05; dan.group.position.set(DEN[0], height(DEN[0], DEN[1]) - 1.6 + lift * 2.6, DEN[1]); dan.group.rotation.y = Math.PI * 0.2; } }
-        win.material.color.set(tod > 1.5 && tod < 2.6 ? '#FFC870' : '#FFD890');
+        if (dawnT >= 0) {
+          dawnT += dt;
+          var kp = king.group.position, kArr = Math.hypot(kp.x - (DEN[0] - 4), kp.z - (DEN[1] + 4)) < 0.6;
+          if (kArr && dawnT > 2) { if (!dawnArr) dawnArr = dawnT; if (dawnT - dawnArr > 2) { stoneWant = 0; seal.visible = false; } if (dawnT - dawnArr > 4) liftWant = 1; }
+          if (liftWant > 0) { lift += (liftWant - lift) * Math.min(1, dt * 0.6); dan.group.visible = lift > 0.05;   /* 굴 어귀 가장자리에서 올라온다(올린 사람들은 그리지 않는다) */
+            var lx = DEN[0] + 2.4, lz = DEN[1] + 1.8; dan.group.position.set(lx, height(lx, lz) - 1.4 + lift * 1.4, lz); dan.group.rotation.y = Math.PI * 0.2; if (dan.update) dan.update(dt, false); }
+        }
       },
       audio: function (A) { A.setFlock(999); A.setFire(999); },
       menuCam: function (camera, now) { var a = now * 0.05; camera.position.set(10 + Math.sin(a) * 8, 8, 28); camera.lookAt(DEN[0], 2, DEN[1]); },

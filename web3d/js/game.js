@@ -317,7 +317,7 @@
       showPanel([el('div', { class: 'q-kicker', text: (pm ? '재료 ' : '부품 ') + partsFound + ' / ' + PARTS.length + ' · ' + PARTS[i].name }),
         el('div', { class: 'say' }, avatar(S.ch), el('div', { class: 'bubble' }, el('b', { text: C.chars[S.ch].name, style: 'color:' + C.chars[S.ch].color }), PARTS[i].line)),
         pm ? matNote(pm) : null,
-        bi !== null && bi !== undefined && SC.beats[bi] ? [el('div', { class: 'q-kicker', text: '지켜보기' }), beatNodes(SC.beats[bi])] : null],
+        bi !== null && bi !== undefined && SC.beats[bi] ? [el('div', { class: 'q-kicker', text: '지켜보기' }), storyNote(SCN.beatNote ? SCN.beatNote(bi) : null), beatNodes(SC.beats[bi])] : null],
         btn('계속 탐험하기', function () {
           hidePanel();
           if (SCN.partContinue) SCN.partContinue(i);
@@ -325,6 +325,8 @@
         }));
     } else { if (SCN.partFound) SCN.partFound(i); startLookup(); }
   }
+  /* 대목 앞에 붙이는 탐험대 이야기 한 줄(예: 그 앞의 일을 타임머신 창으로 봄). 재료를 주울 때 보여 주는 대목에도 쓴다 */
+  function storyNote(t) { return t ? el('div', { class: 'note story3' }, el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: t }))) : null; }
   function partWord() { return PARTS.length && PARTS[0].mat ? '재료' : '부품'; }
   /* 재료를 얻었을 때 최현 박사의 통신(탐험대 이야기) */
   function matNote(m) {
@@ -873,7 +875,7 @@
     var hideK = !!(SCN.kidsHidden && SCN.kidsHidden(evIdx)), bn = SCN.beatNote ? SCN.beatNote(evIdx) : null;
     for (var kk2 in kids) kids[kk2].group.visible = !hideK;
     showPanel([el('div', { class: 'q-kicker', text: '지켜보기 ' + (evIdx - e0 + 1) + ' / ' + (SC.beats.length - e0) }),
-      bn ? el('div', { class: 'note story3' }, el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: bn }))) : null, beatNodes(b)],
+      storyNote(bn), beatNodes(b)],
       [evIdx > e0 ? btn('이전', function () { evIdx--; showBeat(); }, 'plain') : null,
         btn(last ? '다음으로 가는 관문' : '다음', function () { if (last) { hidePanel(); startGates(); } else { evIdx++; showBeat(); } })]);
   }

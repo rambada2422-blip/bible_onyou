@@ -102,7 +102,7 @@
       var o = null;
       try {
         if (kind === 'priest' && M2.priestSimple) o = M2.priestSimple(k % 2 ? 'L' : 'R');
-        else if (M2.israelite) o = M2.israelite(k * 17 + 3);
+        else if (M2.israelite) o = M2.israelite(k * 17 + 3, { kind: 'man', carry: 'none' });   /* 무장한 사람들과 후군(6:9): 어른 남자 */
       } catch (e) { o = null; }
       if (!o) o = { group: api.fallback(kind === 'priest' ? '#F3EEE2' : '#7A6A54', 1.7, 0.22), update: function () {} };
       scene.add(o.group); return o;

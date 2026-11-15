@@ -311,3 +311,8 @@
 - `content/ot/OT-14.json`: mission.materials[0].line
 - `content/ot/OT-15.json`: mission.materials[0].line, mission.companion.talks[2].ask
 - `content/ot/OT-16.json`: mission.materials[0].how, mission.materials[0].line
+
+## 3D 연결 때 고친 것 (2026-11-15, 코딩 담당. 3D 배치 독립 대조의 지적)
+
+- OT-13 quests[1]·[2]의 found·say, mission.materials[1]·[2]의 how·line: 재료를 찾는 때(신 광야에 이른 낮, 출 16:1-3)에는 메추라기(16:13)와 이슬·작고 둥근 것(16:14)이 아직 없으므로 "메추라기가 덮인 진", "이슬이 걷힌 광야 땅", "작고 둥근 것은 밟지도 줍지도 않는다"를 지금 보이는 것(장막이 가득한 진, 진에서 떨어진 광야의 빈 땅)으로 바꿨다. 흙의 basis(16:14 광야 지면)는 그대로 두었다.
+- 3D: 광야 쪽의 구름(16:10)을 진 너머 서쪽에 두어 아이들 자리에서 진과 함께 보이게 하고, 백성이 그쪽을 바라보게 했다. 16:21의 "해가 뜨겁게 쬐면 스러짐"을 넣었다.

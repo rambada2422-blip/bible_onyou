@@ -5,8 +5,10 @@
  *  - 밤에 기드온과 부라가 진 가로 내려간다(7:10-11). 꿈 이야기는 그리지 않는다(7:13은 말로만).
  *  - 삼백 명은 세 무리로 나뉘어 나팔과 빈 항아리(속에 횃불)를 든다(7:16). 이경 초에 항아리를 깨고 횃불을 들고 진을 둘러 제자리에 선다(7:19-21).
  *  - 미디안 군대는 달아난다(7:21-22). 싸우는 모습, 서로 치는 모습, 불타는 장막은 그리지 않는다. 횃불은 사람들이 든 물건일 뿐이다.
- *  - 여호와의 사자는 그리지 않는다. 사람 수는 줄여 그린다(삼백 명을 서른으로).
- * 감수가 필요한 설정: 샘과 진의 자리, 사람·낙타·장막의 수, 물가에서 마시는 모습의 표현, 세 무리가 선 자리.
+ *  - 여호와의 사자는 그리지 않는다. 사람 수는 줄여 그린다(처음 90명 → 7:3 뒤 45명 → 삼백 명을 열다섯으로). 모두 어른 남자.
+ *  - 6장(오브라)의 대목은 재료를 주울 때 "그 앞의 일"이라는 한 줄을 붙여 글로만 보여 준다.
+ *  - 횃불은 왼손, 나팔은 오른손(7:20). 각자 진 둘레 제자리에 선 뒤에 항아리를 깨고 횃불을 든다(7:19-21). 미디안 사람은 그 뒤에 달아난다.
+ * 감수가 필요한 설정: 샘과 진의 자리, 사람·낙타·장막의 수와 그 비율, 물가에서 마시는 모습의 표현, 세 무리가 선 자리(진의 서·남·동), 미디안이 달아나는 쪽(북), 낮에도 미디안 사람이 누워 있는 것.
  */
 (function () {
   'use strict';
@@ -72,46 +74,53 @@
     scene.add(camels);
     /* 골짜기에 누운 사람들(7:12): 멀리서 보이는 꼴. 달아날 때(7:21) 일어나 북쪽으로 */
     var midian = [];
-    for (i = 0; i < 40; i++) { var mm = PR.soldier(i + 700, ['#7A4A3A', '#6E5A3A', '#8A5A3E'][i % 3], null); mm.home = [MCAMP[0] + (R() - 0.5) * 100, MCAMP[1] + (R() - 0.5) * 36]; put(mm.group, mm.home[0], mm.home[1], 0.1); mm.group.rotation.x = -1.45; mm.group.rotation.y = R() * 6; midian.push(mm); }
+    for (i = 0; i < 40; i++) { var mm = PR.soldier(i + 700, ['#7A4A3A', '#6E5A3A', '#8A5A3E'][i % 3], null); mm.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; });   /* 창은 본문에 없어 숨긴다 */
+      mm.home = [MCAMP[0] + (R() - 0.5) * 100, MCAMP[1] + (R() - 0.5) * 36]; put(mm.group, mm.home[0], mm.home[1], 0.1); mm.group.rotation.x = -1.45; mm.group.rotation.y = R() * 6; midian.push(mm); }
     /* 이스라엘 백성(7:1-8): 많이 모였다가 돌아가고, 물가로 내려가고, 서른(삼백 명의 표시)이 남는다 */
-    var men = [], N = 60;
+    var men = [], N = 90;
     for (i = 0; i < N; i++) {
-      var o = null; try { if (M2.israelite) o = M2.israelite(i * 7 + 19); } catch (e) { o = null; }
+      var o = null; try { if (M2.israelite) o = M2.israelite(i * 7 + 19, { kind: 'man', carry: 'none' }); } catch (e) { o = null; }
       if (!o) o = PR.soldier(i, '#7A6A4A', null);
-      o.k = i; o.keep = i % 2 === 0; o.chosen = i % 2 === 0;   /* 반쯤은 7:3에서 돌아가고(실제는 셋 가운데 둘), 남은 이들 가운데 서른이 삼백 명을 나타낸다 */
+      /* 7:3에서 반이 돌아가고(실제는 셋 가운데 둘), 남은 45명 가운데 열다섯(chosen)이 손으로 떠 핥은 삼백 명을 나타낸다. 나머지 서른은 무릎을 꿇고 마신다(7:6) */
+      o.k = i; o.keep = i % 2 === 0; o.chosen = i % 6 === 0;
       o.home = [ICAMP[0] + (i % 12) * 2.6 - 14, ICAMP[1] - 8 + Math.floor(i / 12) * 2.2]; o.leave = [o.home[0] - 30 - hash(i, 2) * 20, o.home[1] + 60];
-      o.water = [SPRING[0] + Math.cos(i * 0.21) * 5.4, SPRING[1] + Math.sin(i * 0.21) * 4.4];
-      var grp = i % 3, ang = [-0.9, 0, 0.9][grp] + (hash(i, 4) - 0.5) * 0.35, rad = 48 + hash(i, 6) * 6;
-      o.ring = [MCAMP[0] + Math.sin(ang) * rad, MCAMP[1] + Math.cos(ang) * rad * 0.62];
-      o.three = [ICAMP[0] - 14 + grp * 12 + (i % 4) * 1.4, ICAMP[1] - 14 + (hash(i, 8) - 0.5) * 3];
+      o.water = [SPRING[0] + Math.cos(i * 0.0698) * 6.6, SPRING[1] + Math.sin(i * 0.0698) * 5.6];
+      var c6 = Math.floor(i / 6), grp = c6 % 3, rk = Math.floor(c6 / 3), ang = [-1.4, 0, 1.4][grp] + (rk - 2) * 0.09 + (hash(i, 4) - 0.5) * 0.03;
+      o.ring = [MCAMP[0] + Math.sin(ang) * 70, MCAMP[1] + Math.cos(ang) * 34];   /* 진 바깥 둘레(서·남·동), 각기 제자리(7:21) */
+      o.three = [ICAMP[0] - 2 + rk * 1.8, ICAMP[1] - 24 + grp * 8 + (rk % 2) * 1.2];   /* 7:16: 세 무리 */
       put(o.group, o.home[0], o.home[1]); o.group.rotation.order = 'YXZ'; o.at = o.home.slice();
-      var jar = new T.Mesh(new T.SphereGeometry(0.13, 6, 5), std('#B88A5A')); jar.position.set(-0.3, 1.0, 0.18); jar.visible = false; o.group.add(jar); o.jar = jar;
-      var horn = new T.Mesh(new T.ConeGeometry(0.05, 0.42, 5), std('#D8C7A0')); horn.position.set(0.3, 1.25, 0.2); horn.rotation.x = -1; horn.visible = false; o.group.add(horn); o.horn = horn;
-      var fl = new T.Mesh(new T.ConeGeometry(0.1, 0.36, 6), new T.MeshBasicMaterial({ color: '#FFB040', fog: false })); fl.position.set(-0.3, 1.75, 0.2); fl.visible = false; o.group.add(fl); o.flame = fl;
+      /* 모형은 +Z를 보고 서므로 왼손이 +X다. 왼손에 항아리(속에 횃불), 오른손에 나팔(7:16, 7:20) */
+      var jar = new T.Mesh(new T.SphereGeometry(0.13, 6, 5), std('#B88A5A')); jar.position.set(0.3, 1.0, 0.18); jar.visible = false; o.group.add(jar); o.jar = jar;
+      var horn = new T.Mesh(new T.ConeGeometry(0.05, 0.42, 5), std('#D8C7A0')); horn.position.set(-0.3, 1.25, 0.2); horn.rotation.x = -1; horn.visible = false; o.group.add(horn); o.horn = horn;
+      var fl = new T.Mesh(new T.ConeGeometry(0.1, 0.36, 6), new T.MeshBasicMaterial({ color: '#FFB040', fog: false })); fl.position.set(0.3, 1.75, 0.2); fl.visible = false; o.group.add(fl); o.flame = fl;
       men.push(o);
     }
     /* 기드온(Blender)과 부라 */
     var GID = [8, 20], gid = { group: api.fallback('#6A5A3A', 1.75, 0.27), update: function () {} }; put(gid.group, GID[0], GID[1]); gid.group.rotation.y = Math.PI;
     api.person('gideon', function (nm) { nm.group.position.copy(gid.group.position); nm.group.rotation.y = gid.group.rotation.y; scene.remove(gid.group); scene.add(nm.group); gid = nm; });
-    var purah = null; try { purah = M2.israelite ? M2.israelite(901) : null; } catch (e) { purah = null; } if (!purah) purah = PR.soldier(901, '#6E5A44', null); put(purah.group, GID[0] + 1.6, GID[1] + 0.8); purah.group.rotation.y = Math.PI;
-    var torchLights = [0, 1, 2].map(function (k) { var l = new T.PointLight('#FFA040', 0, 22, 2); scene.add(l); return l; });   /* 횃불 무리 둘레만 밝힌다(진이 타는 것처럼 보이지 않게) */
+    var purah = null; try { purah = M2.israelite ? M2.israelite(901, { kind: 'man', carry: 'none' }) : null; } catch (e) { purah = null; } if (!purah) purah = PR.soldier(901, '#6E5A44', null); put(purah.group, GID[0] + 1.6, GID[1] + 0.8); purah.group.rotation.y = Math.PI;
+    var torchLights = [0, 1, 2].map(function (k) { var l = new T.PointLight('#FFA040', 0, 12, 2); scene.add(l); return l; });   /* 횃불 무리 둘레만 밝힌다(진이 타는 것처럼 보이지 않게) */
 
-    var phase = 'camp', night = 0, nightWant = 0, gidTo = null, flee = 0;
+    var phase = 'camp', night = 0, nightWant = 0, gidTo = null, flee = 0, waterT = 0;
     var ca = new T.Color(), cb = new T.Color();
     function applyNight() {
       ca.set('#EFE6CC'); cb.set('#141C34'); ca.lerp(cb, night); scene.background.copy(ca); scene.fog.color.copy(ca);
       ca.set('#FFFFFF'); cb.set('#26315A'); skyM.color.copy(ca.lerp(cb, night)); hemi.intensity = 0.64 - 0.3 * night; sun.intensity = 0.76 - 0.56 * night; starM.opacity = night * 0.9;
     }
+    /* 대목마다 모든 상태를 처음부터 정한다('이전'으로 돌아와도 뒤 대목의 것이 남지 않게) */
     function setPhase(p) {
-      phase = p;
-      if (p === 'camp') { night = 0; nightWant = 0; applyNight(); flee = 0; gidTo = null; gid.group.position.set(GID[0], height(GID[0], GID[1]), GID[1]); purah.group.position.set(GID[0] + 1.6, height(GID[0] + 1.6, GID[1] + 0.8), GID[1] + 0.8);
-        men.forEach(function (o) { o.group.visible = true; o.target = o.home; o.kneel = 0; o.jar.visible = o.horn.visible = o.flame.visible = false; o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); });
-        midian.forEach(function (m) { m.group.visible = true; m.group.rotation.x = -1.45; m.group.position.set(m.home[0], height(m.home[0], m.home[1]) + 0.1, m.home[1]); }); torchLights.forEach(function (l) { l.intensity = 0; }); }
-      if (p === 'leave') { nightWant = 0; men.forEach(function (o) { o.target = o.keep ? o.home : o.leave; }); }                 /* 7:3 */
-      if (p === 'water') { nightWant = 0.15; men.forEach(function (o) { o.target = o.keep ? o.water : o.leave; }); }            /* 7:4-8 */
-      if (p === 'down') { nightWant = 1; gidTo = [MCAMP[0] + 30, MCAMP[1] + 28]; men.forEach(function (o) { o.kneel = 0; o.target = o.keep && o.chosen ? o.three : o.leave; }); }  /* 7:9-15 */
-      if (p === 'jars') { nightWant = 1; gidTo = [ICAMP[0] - 2, ICAMP[1] - 16]; men.forEach(function (o) { o.target = o.keep && o.chosen ? o.three : o.leave; o.jar.visible = o.horn.visible = o.keep && o.chosen; }); } /* 7:16-18 */
-      if (p === 'torches') { nightWant = 1; gidTo = [MCAMP[0], MCAMP[1] + 50]; men.forEach(function (o) { o.target = o.keep && o.chosen ? o.ring : o.leave; o.jar.visible = false; o.horn.visible = o.keep && o.chosen; }); } /* 7:19-22 */
+      phase = p; flee = 0; waterT = 0; torchLights.forEach(function (l) { l.intensity = 0; });
+      midian.forEach(function (m) { m.group.visible = true; m.group.rotation.x = -1.45; m.group.position.set(m.home[0], height(m.home[0], m.home[1]) + 0.1, m.home[1]); });
+      men.forEach(function (o) { o.lit = false; o.jar.visible = o.horn.visible = o.flame.visible = false; o.group.rotation.x = 0; });
+      function gidAt(x, z) { gid.group.position.set(x, height(x, z), z); purah.group.position.set(x + 1.6, height(x + 1.6, z + 0.8), z + 0.8); }
+      if (p === 'camp') { night = 0; nightWant = 0; applyNight(); gidTo = null; gidAt(GID[0], GID[1]);
+        men.forEach(function (o) { o.group.visible = true; o.target = o.home; o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); }); }
+      if (p === 'leave') { nightWant = 0; gidTo = null; gidAt(GID[0], GID[1]); men.forEach(function (o) { o.group.visible = true; o.target = o.keep ? o.home : o.leave; }); }      /* 7:3 */
+      if (p === 'water') { nightWant = 0.15; gidTo = [SPRING[0] - 9, SPRING[1] + 2];   /* 아이들이 샘을 보는 시선을 가리지 않게 샘 서쪽에 */ men.forEach(function (o) { o.group.visible = o.keep; o.target = o.keep ? o.water : o.leave; if (o.keep) o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); }); }   /* 7:4-8 */
+      if (p === 'down') { nightWant = 1; gidAt(GID[0], GID[1]); gidTo = [MCAMP[0] + 30, MCAMP[1] + 28]; men.forEach(function (o) { o.group.visible = o.chosen; o.target = o.chosen ? o.home : o.leave; if (o.chosen) o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); }); }  /* 7:9-15: 남은 삼백 명은 진에 머문다 */
+      if (p === 'jars') { nightWant = 1; gidTo = [ICAMP[0] - 6, ICAMP[1] - 16]; men.forEach(function (o) { o.group.visible = o.chosen; o.target = o.chosen ? o.three : o.leave; o.jar.visible = o.horn.visible = o.chosen; }); } /* 7:16-18 */
+      if (p === 'torches') { nightWant = 1; gidAt(ICAMP[0] - 6, ICAMP[1] - 16); gidTo = [MCAMP[0] + 3, MCAMP[1] + 36];   /* 7:19: 기드온과 백 명은 가운데 무리와 함께 */
+        men.forEach(function (o) { o.group.visible = o.chosen; o.target = o.chosen ? o.ring : o.leave; if (o.chosen) o.group.position.set(o.three[0], height(o.three[0], o.three[1]), o.three[1]); o.jar.visible = o.horn.visible = o.chosen; }); } /* 7:19-22 */
     }
     var torchT = -1;
     function step(o, to, spd, dt) { var p = o.group.position, dx = to[0] - p.x, dz = to[1] - p.z, d = Math.hypot(dx, dz); if (d < 0.2) return false; var st = Math.min(d, spd * dt); p.x += dx / d * st; p.z += dz / d * st; p.y = height(p.x, p.z); o.group.rotation.y = Math.atan2(dx, dz); return true; }
@@ -127,9 +136,10 @@
         return null;
       },
       P: { start: [44, 30], machine: [50, 36], machineRot: -0.8,
-        /* 재료가 놓인 곳(quests[i].found): 하롯 샘 쪽(물가에서 떨어진 땅) / 골짜기가 내려다보이는 쪽 / 이스라엘 진 쪽(진 바깥 빈 땅) */
+        /* 재료가 놓인 곳(quests[i].found): 하롯 샘 쪽(물가에서 떨어진 땅) / 골짜기가 내려다보이는 쪽 / 장막이 모인 이스라엘 진 쪽(진 바깥 빈 땅) */
         parts: [[20, 10], [36, -4], [22, 30]], lookSpot: [22, 30],
         look: { focus: SPRING, mid: ICAMP, dy: 1.2, backE: 7, upE: 3.4 } },
+      beatNote: function (i) { return i <= 1 ? '그 앞의 일이에요. 오브라에서 있었던 일이라 이 골짜기에서는 보이지 않아요.' : null; },
       eventLook: function (i) {
         if (i === 2) return { focus: ICAMP, mid: [ICAMP[0] - 20, ICAMP[1] + 20], dy: 1.2, backE: 8, upE: 4 };
         if (i === 3) return { focus: SPRING, mid: SPRING, dy: 0.6, backE: 6, upE: 3 };
@@ -156,20 +166,25 @@
       update: function (dt, now) {
         if (Math.abs(night - nightWant) > 0.003) { night += (nightWant - night) * Math.min(1, dt * 0.5); applyNight(); }
         men.forEach(function (o, k) {
-          var to = o.target || o.home, mv = step(o, to, to === o.leave ? 4.4 : 3.8, dt);
+          if (phase === 'water' && o.keep && !o.chosen && waterT > 12) o.target = o.leave;   /* 7:7-8: 시험 뒤 나머지는 돌려보낸다 */
+          var to = o.target || o.home, mv = step(o, to, to === o.leave ? 4.4 : phase === 'torches' ? 7 : 3.8, dt);
           if (to === o.leave) { var dl = Math.hypot(o.group.position.x - o.leave[0], o.group.position.z - o.leave[1]); o.group.visible = dl > 2; }
           /* 7:5-6: 물가에 이른 뒤, 삼백 명(chosen)은 서서 손을 입에 대고, 나머지는 무릎을 꿇는다 */
           var atW = to === o.water && !mv; o.group.rotation.x = 0; if (atW) { o.group.position.y = height(o.group.position.x, o.group.position.z) - (o.chosen ? 0 : 0.45); o.group.rotation.x = o.chosen ? 0.25 : 0.1; o.group.rotation.y = Math.atan2(SPRING[0] - o.group.position.x, SPRING[1] - o.group.position.z); }
           if (o.update) o.update(dt, mv ? 1.1 : 0);
-          o.flame.visible = torchT > 1.2 && o.keep && o.chosen;
+          /* 7:19-20: 진 가 제자리에 이른 뒤에 항아리를 깨고 횃불을 든다 */
+          if (phase === 'torches' && o.chosen && to === o.ring && !mv && !o.lit) { o.lit = true; o.jar.visible = false; o.group.rotation.y = Math.atan2(MCAMP[0] - o.group.position.x, MCAMP[1] - o.group.position.z); }
+          o.flame.visible = !!o.lit;
         });
         if (gidTo) { var gm = step(gid, gidTo, 2.8, dt); if (gid.update) gid.update(dt, gm); purah.group.position.set(gid.group.position.x + 1.4, height(gid.group.position.x + 1.4, gid.group.position.z + 0.8), gid.group.position.z + 0.8); purah.group.rotation.y = gid.group.rotation.y; if (purah.update) purah.update(dt, gm ? 1 : 0); }
         else if (gid.update) gid.update(dt, false);
-        /* 7:19-22: 횃불이 진을 둘러 서고, 미디안 사람들은 일어나 달아난다(멀리서) */
+        if (phase === 'water') waterT += dt;
+        /* 7:19-22: 모두 진 둘레 제자리에 서서 횃불을 든 뒤에야, 미디안 사람들이 일어나 달아난다(멀리서) */
         if (torchT >= 0) {
-          torchT += dt;
-          torchLights.forEach(function (l, k) { var a = [-0.9, 0, 0.9][k]; l.position.set(MCAMP[0] + Math.sin(a) * 51, height(MCAMP[0], MCAMP[1]) + 3, MCAMP[1] + Math.cos(a) * 32); l.intensity = torchT > 1.2 ? 0.7 + Math.sin(now * 8 + k) * 0.1 : 0; });
-          if (torchT > 3) { flee = Math.min(1, flee + dt * 0.12); midian.forEach(function (m) { m.group.rotation.x = 0; m.group.position.set(m.home[0], height(m.home[0], m.home[1] - flee * 80), m.home[1] - flee * 80); m.group.rotation.y = Math.PI; m.update(dt, 1, now); m.group.visible = flee < 0.85; }); }
+          var lit = 0, tot = 0; men.forEach(function (o) { if (o.chosen) { tot++; if (o.lit) lit++; } });
+          if (lit === tot && tot) torchT += dt;
+          torchLights.forEach(function (l, k) { var a = [-1.4, 0, 1.4][k]; l.position.set(MCAMP[0] + Math.sin(a) * 70, height(MCAMP[0], MCAMP[1]) + 3, MCAMP[1] + Math.cos(a) * 34); l.intensity = lit === tot && tot ? 0.5 + Math.sin(now * 8 + k) * 0.08 : 0; });
+          if (torchT > 2) { flee = Math.min(1, flee + dt * 0.12); midian.forEach(function (m) { m.group.rotation.x = 0; m.group.position.set(m.home[0], height(m.home[0], m.home[1] - flee * 80), m.home[1] - flee * 80); m.group.rotation.y = Math.PI; m.update(dt, 1, now); m.group.visible = flee < 0.85; }); }
         }
         if (springW.update) springW.update(now);
       },

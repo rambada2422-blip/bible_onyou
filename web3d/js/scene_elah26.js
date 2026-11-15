@@ -68,7 +68,7 @@
     var isr = [], phi = [];
     for (i = 0; i < 42; i++) {
       var o = null;
-      try { if (M2.israelite) o = M2.israelite(i * 11 + 7); } catch (e) { o = null; }
+      try { if (M2.israelite) o = M2.israelite(i * 11 + 7, { kind: 'man', carry: 'none' }); } catch (e) { o = null; }   /* 싸움에 나선 군대(17:20-21): 어른 남자 */
       if (!o) o = PR.soldier(i, '#7A6A4A', null);
       o.home = [-46 + (i % 14) * 4.1 + (hash(i, 1) - 0.5) * 1.2, 15 + Math.floor(i / 14) * 3.6 + hash(i, 3)];
       put(o.group, o.home[0], o.home[1]); o.group.rotation.y = Math.PI; o.at = o.home.slice(); isr.push(o);
@@ -81,7 +81,7 @@
     /* 짐 두는 곳과 짐 지키는 사람(삼상 17:22), 이스라엘 진의 장막(17:54의 다윗의 장막은 따로 그리지 않음) */
     var bagM = new T.MeshStandardMaterial({ color: '#B8946A', flatShading: true });
     for (i = 0; i < 9; i++) { var bg = new T.Mesh(new T.DodecahedronGeometry(0.35, 0), bagM); bg.scale.set(1, 0.8, 1.2); put(bg, 10 + (i % 3) * 1.1, 41 + Math.floor(i / 3) * 1.1, 0.25); }
-    var keeper = null; try { keeper = M2.israelite ? M2.israelite(77) : null; } catch (e) { keeper = null; }
+    var keeper = null; try { keeper = M2.israelite ? M2.israelite(77, { kind: 'man' }) : null; } catch (e) { keeper = null; }
     if (keeper) { put(keeper.group, 13.6, 40.6); keeper.group.rotation.y = Math.PI * 0.8; }
     for (i = 0; i < 18; i++) { var tn = PR.tent(i + 70); put(tn, -60 + R() * 120, 46 + R() * 22); tn.rotation.y = R() * 6.28; }
 

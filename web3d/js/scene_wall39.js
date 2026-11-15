@@ -2,10 +2,12 @@
  * 방향: 예루살렘 성벽은 북쪽(-Z)에 동서로 길게 서 있다. 서쪽에 골짜기 문, 동쪽에 수문과 그 앞 광장. 아이들은 성벽 바깥 남쪽 비탈에서만 다닌다.
  * 아이들이 다니는 때: 성벽이 무너져 있을 때(2:13). 재료 1은 밤(2:12-15), 재료 2·3은 그 뒤 낮.
  * 본문에 맞춘 점 (content/ot/OT-39.json design3d)
- *  - 무너진 성벽과 불탄 성문(2:13). 밤에 느헤미야와 몇 사람, 그가 탄 짐승 하나(어떤 짐승인지 정하지 않고 어둠 속 그림자로만).
+ *  - 무너진 성벽과 불탄 성문(2:13). 밤에 느헤미야가 짐승을 타고 몇 사람과 골짜기 문으로 나가 성벽을 살피고 다시 들어온다(2:12-15).
+ *    짐승과 탄 사람은 어떤 짐승인지 정하지 않고 어둠 속 그림자로만.
  *  - 성벽을 쌓는 과정은 보여 주지 않는다(느 3-4장은 범위 밖). 6:15 대목에서 다 쌓은 모습으로 바뀐다.
  *  - 산발랏·도비야·게셈은 멀리서 서 있기만 한다(2:19, 무기·공격 없음).
- *  - 수문 앞 광장에 백성이 모이고(8:1), 에스라가 나무 강단에 선다(8:4). 백성이 일어서고(8:5), 몸을 굽혀 엎드리고(8:6), 돌아가 먹고 마신다(8:12). 모두 멀리서.
+ *  - 수문 앞 광장에 백성이 모이고(8:1), 에스라가 나무 강단에 선다(8:4. 오른쪽에 여섯, 왼쪽에 일곱, 모두 어른 남자). 백성은 서서 듣고(8:5),
+ *    무릎을 꿇어 몸을 굽힌다(8:6. 손을 드는 모습은 멀리서라 그리지 않는다). 그 뒤 돌아가 먹고 마신다(8:12). 모두 멀리서.
  *  - 율법의 구절과 낭독 소리는 지어내지 않는다. 얼굴을 가까이 보이지 않는다.
  * 감수가 필요한 설정: 성벽의 높이·재료·자리, 문과 광장의 생김새, 광장이 성벽 바깥에 있는 것(본문은 말하지 않는다), 사람 수, 강단의 모양.
  */
@@ -80,18 +82,21 @@
     api.person('nehemiah', function (nm) { nm.group.position.copy(neh.group.position); nm.group.rotation.y = neh.group.rotation.y; nm.group.visible = neh.group.visible; scene.remove(neh.group); scene.add(nm.group); neh = nm; });
     var ezra = { group: api.fallback('#6A5E8A', 1.75, 0.27), update: function () {} }; put(ezra.group, STAND[0], STAND[1], 1.6); ezra.group.visible = false;
     api.person('ezra', function (nm) { nm.group.position.copy(ezra.group.position); nm.group.rotation.y = ezra.group.rotation.y; nm.group.visible = ezra.group.visible; scene.remove(ezra.group); scene.add(nm.group); ezra = nm; });
-    var beast = new T.Group(), bm = std('#1E1A18'), bb = new T.Mesh(new T.BoxGeometry(0.55, 0.6, 1.5), bm); bb.position.y = 1.1; beast.add(bb); var bn = new T.Mesh(new T.BoxGeometry(0.3, 0.7, 0.35), bm); bn.position.set(0, 1.5, 0.8); bn.rotation.x = -0.5; beast.add(bn);
+    var beast = new T.Group(), bm = std('#1E1A18'), bb = new T.Mesh(new T.BoxGeometry(0.55, 0.6, 1.5), bm); bb.position.y = 1.1; beast.add(bb);
+    var rb1 = new T.Mesh(new T.CylinderGeometry(0.2, 0.3, 0.9, 8), bm); rb1.position.set(0, 1.85, -0.1); beast.add(rb1); var rb2 = new T.Mesh(new T.SphereGeometry(0.16, 8, 6), bm); rb2.position.set(0, 2.42, -0.1); beast.add(rb2);   /* 짐승을 탄 느헤미야(그림자) */ var bn = new T.Mesh(new T.BoxGeometry(0.3, 0.7, 0.35), bm); bn.position.set(0, 1.5, 0.8); bn.rotation.x = -0.5; beast.add(bn);
     [[-0.18, 0.55], [0.18, 0.55], [-0.18, -0.55], [0.18, -0.55]].forEach(function (q) { var lg = new T.Mesh(new T.BoxGeometry(0.12, 0.85, 0.12), bm); lg.position.set(q[0], 0.42, q[1]); beast.add(lg); });
     scene.add(beast);
     var few = []; for (i = 0; i < 3; i++) { var fo = PR.soldier(i + 1100, '#4E4A44', null); fo.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); scene.add(fo.group); few.push(fo); }
     var foes = []; for (i = 0; i < 3; i++) { var fe = PR.soldier(i + 1200, ['#7A3E3E', '#3E5A6E', '#6E6A3A'][i], null); fe.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); put(fe.group, -58 + i * 2.2, 7 + i * 0.6); fe.group.rotation.y = Math.PI / 2; fe.group.visible = false; foes.push(fe); }
     var people = [];
     for (i = 0; i < 60; i++) {
-      var o = null; try { if (M2.israelite) o = M2.israelite(i * 17 + 9); } catch (e) { o = null; } if (!o) o = PR.soldier(i, '#7A6A54', null);
+      var o = null; try { if (M2.israelite) o = M2.israelite(i * 17 + 9, { carry: 'none' }); } catch (e) { o = null; }   /* 알아들을 만한 모든 사람(8:2): 아기를 안거나 짐을 인 사람은 두지 않는다 */ if (!o) o = PR.soldier(i, '#7A6A54', null);
       o.k = i; o.home = [36 + (i % 10) * 2.0 + (hash(i, 1) - 0.5) * 0.8, SQUARE[1] + 2 + Math.floor(i / 10) * 1.9]; o.away = [76 + hash(i, 3) * 30, o.home[1] + (hash(i, 5) - 0.5) * 12];   /* 8:12 돌아갈 때는 동쪽으로(아이들 쪽이 아닌 곳) */
       put(o.group, o.home[0], o.home[1]); o.group.rotation.order = 'YXZ'; o.group.rotation.y = Math.PI; o.group.visible = false; people.push(o);
     }
-    var side = []; for (i = 0; i < 13; i++) { var sm2 = null; try { sm2 = M2.israelite ? M2.israelite(i * 31 + 300) : null; } catch (e) { sm2 = null; } if (!sm2) sm2 = PR.soldier(i, '#6E5A44', null); sm2.group.visible = false; var lx = i < 6 ? -1 : 1, li = i < 6 ? i : i - 6; put(sm2.group, STAND[0] + lx * (0.9 + li * 0.45), STAND[1] - 0.6, 1.6); sm2.group.rotation.y = 0; side.push(sm2); }
+    /* 8:4: 에스라(남쪽을 봄)의 오른쪽(-X)에 여섯, 왼쪽(+X)에 일곱. 두 줄로 강단 안에 선다 */
+    var side = []; for (i = 0; i < 13; i++) { var sm2 = null; try { sm2 = M2.israelite ? M2.israelite(i * 31 + 300, { kind: 'man', carry: 'none' }) : null; } catch (e) { sm2 = null; } if (!sm2) sm2 = PR.soldier(i, '#6E5A44', null); sm2.group.visible = false;
+      var right = i < 6, li = right ? i : i - 6, per = right ? 3 : 4, sx = STAND[0] + (right ? -1 : 1) * (0.9 + (li % per) * 0.78), sz = STAND[1] - 0.5 - Math.floor(li / per) * 0.9; put(sm2.group, sx, sz, 1.6); sm2.group.rotation.y = 0; side.push(sm2); }
 
     var phase = 'night', tod = 0, todWant = 0, walkT = 0, bowAmt = 0, bowWant = 0, disperse = 0;
     var ca = new T.Color(), cb = new T.Color();
@@ -102,28 +107,37 @@
       ca.set(A[1]); cb.set(B[1]); skyM.color.copy(ca.lerp(cb, t)); hemi.intensity = A[2] + (B[2] - A[2]) * t; sun.intensity = A[3] + (B[3] - A[3]) * t; ca.set(A[4]); cb.set(B[4]); sun.color.copy(ca.lerp(cb, t));
       starM.opacity = Math.max(0, 1 - tod) * 0.9;
     }
-    function nightWalk(t) {
-      /* 2:13-15: 골짜기 문으로 나가 성벽을 따라 동쪽으로 */
-      var x = VGATE[0] - 4 + t * 2.4, z = WALL_Z + 9;
-      beast.visible = true; beast.position.set(x, height(x, z), z); beast.rotation.y = Math.PI / 2;
-      neh.group.visible = true; neh.group.position.set(x - 1.6, height(x - 1.6, z + 1), z + 1); neh.group.rotation.y = Math.PI / 2;
-      few.forEach(function (f, k) { var fx = x - 3.2 - k * 1.6; f.group.visible = true; f.group.position.set(fx, height(fx, z + 0.6 * k), z + 0.6 * k); f.group.rotation.y = Math.PI / 2; });
+    /* 2:13-15: 골짜기 문으로 나가 성벽을 따라 살피고, 돌아와 다시 골짜기 문으로 들어간다(되풀이). 느헤미야는 짐승 위의 그림자 */
+    var NW = [[VGATE[0], WALL_Z - 3], [VGATE[0], WALL_Z + 9], [12, WALL_Z + 9], [VGATE[0] + 2, WALL_Z + 11], [VGATE[0], WALL_Z + 9], [VGATE[0], WALL_Z - 3]], NWL = [], NWT = 0;
+    for (var nw = 0; nw + 1 < NW.length; nw++) { var l2 = Math.hypot(NW[nw + 1][0] - NW[nw][0], NW[nw + 1][1] - NW[nw][1]); NWL.push(l2); NWT += l2; }
+    function nwAt(s) { s = ((s % NWT) + NWT) % NWT; for (var q = 0; q < NWL.length; q++) { if (s <= NWL[q]) { var u = s / NWL[q], a = NW[q], b = NW[q + 1]; return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, Math.atan2(b[0] - a[0], b[1] - a[1])]; } s -= NWL[q]; } return [NW[0][0], NW[0][1], 0]; }
+    function nightWalk(s) {
+      var w = nwAt(s), inside = w[1] < WALL_Z + 0.5;
+      beast.visible = !inside; beast.position.set(w[0], height(w[0], w[1]), w[1]); beast.rotation.y = w[2];
+      neh.group.visible = false;
+      few.forEach(function (f, k) { var v = nwAt(s - 2.2 - k * 1.6), fin = v[1] < WALL_Z + 0.5; f.group.visible = !fin; f.group.position.set(v[0], height(v[0], v[1]), v[1]); f.group.rotation.y = v[2]; });
     }
+    /* 대목마다 모든 상태를 처음부터 정한다('이전'으로 돌아와도 뒤 대목의 것이 남지 않게) */
+    function nehAt(x, z, ry) { neh.group.visible = true; neh.group.position.set(x, height(x, z), z); neh.group.rotation.y = ry; }
     function setPhase(p) {
       phase = p;
       ruin.visible = p !== 'built' && p !== 'square' && p !== 'read' && p !== 'feast'; built.visible = !ruin.visible;
       var sq = p === 'square' || p === 'read' || p === 'feast';
       stand.visible = sq; ezra.group.visible = sq; book.visible = sq; side.forEach(function (o) { o.group.visible = p === 'read' || p === 'feast'; }); people.forEach(function (o) { o.group.visible = sq; });
       foes.forEach(function (f) { f.group.visible = p === 'mock'; });
-      bowWant = 0; if (p !== 'feast') { disperse = 0; people.forEach(function (o) { o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); o.group.rotation.y = Math.PI; }); }
+      beast.visible = false; few.forEach(function (f) { f.group.visible = false; }); neh.group.visible = false;
+      bowWant = 0; bowAmt = 0; disperse = 0; people.forEach(function (o) { o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); o.group.rotation.y = Math.PI; o.group.rotation.x = 0; });
       if (p === 'night') { tod = 0; todWant = 0; applyTod(); walkT = 0; nightWalk(0); }
-      if (p === 'day') { todWant = 1; beast.visible = false; few.forEach(function (f) { f.group.visible = false; }); neh.group.visible = true; neh.group.position.set(NEH0[0], height(NEH0[0], NEH0[1]), NEH0[1]); neh.group.rotation.y = Math.PI; }
-      if (p === 'mock') { todWant = 1; beast.visible = false; }
-      if (p === 'built') { todWant = 1; neh.group.visible = true; }
-      if (p === 'square') { todWant = 2; neh.group.visible = false; }                                       /* 8:1-3 새벽부터 */
-      if (p === 'read') { todWant = 2; }                                                                    /* 8:4-8 */
-      if (p === 'feast') { todWant = 1; neh.group.visible = true; neh.group.position.set(STAND[0] - 6, height(STAND[0] - 6, STAND[1] + 1), STAND[1] + 1); neh.group.rotation.y = 0; }  /* 8:9-12 */
-      if (ezra.group.visible) { ezra.group.position.set(STAND[0], height(STAND[0], STAND[1]) + 1.6, STAND[1]); ezra.group.rotation.y = 0; book.position.set(STAND[0], ezra.group.position.y + 1.02, STAND[1] + 0.42); }   /* 백성(남쪽)을 보고 선다 */
+      if (p === 'day') { todWant = 1; nehAt(NEH0[0], NEH0[1], Math.PI); }                                   /* 2:17-18 */
+      if (p === 'mock') { todWant = 1; nehAt(NEH0[0], NEH0[1], Math.PI); }                                  /* 2:19-20 */
+      if (p === 'built') { todWant = 1; nehAt(NEH0[0], NEH0[1], Math.PI); }                                 /* 6:15-16 */
+      if (p === 'square') { todWant = 2; }                                                                   /* 8:1-3 새벽부터. 에스라는 아직 강단 아래 */
+      if (p === 'read') { todWant = 2; }                                                                     /* 8:4-8 */
+      if (p === 'feast') { todWant = 1; nehAt(STAND[0] - 6, STAND[1] + 1, 0); }                             /* 8:9-12 */
+      if (ezra.group.visible) {
+        var up = p !== 'square', ez = up ? STAND[1] : STAND[1] + 3;   /* 8:4에서 강단에 선다 */
+        ezra.group.position.set(STAND[0], height(STAND[0], ez) + (up ? 1.6 : 0), ez); ezra.group.rotation.y = 0; book.position.set(STAND[0], ezra.group.position.y + 1.02, ez + 0.42);   /* 백성(남쪽)을 보고 선다 */
+      }
     }
     var readT = -1;
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
@@ -158,22 +172,22 @@
         { id: 'square', name: '수문 앞 광장', desc: '모든 백성이 한꺼번에 모인 광장', ref: '느 8:1', hint: '동쪽 성문 앞을 보세요.', range: 80, pos: function () { return v3(SQUARE[0], height(SQUARE[0], SQUARE[1]) + 1, SQUARE[1]); } }
       ],
       reset: function () { setPhase('night'); },
-      partFound: function (i) { if (i === 0) setPhase('day'); },
-      partContinue: function () {},
+      partFound: function () {},
+      partContinue: function (i) { if (i === 0) setPhase('day'); },   /* 밤 대목(2:11-16)을 본 뒤에 낮으로 */
       lookupPose: function () { if (phase === 'night') setPhase('day'); },
       /* 대목 번호(OT-39.json): 0 = 2:11-16(밤), 1 = 2:17-18, 2 = 2:19-20, 3 = 6:15-16, 4 = 8:1-3, 5 = 8:4-8, 6 = 8:9-12 */
       beatPose: function (i) { setPhase(['night', 'day', 'mock', 'built', 'square', 'read', 'feast'][i] || 'day'); readT = i === 5 ? 0 : -1; },
       update: function (dt, now) {
         if (Math.abs(tod - todWant) > 0.003) { tod += (todWant - tod) * Math.min(1, dt * 0.6); applyTod(); }
-        if (phase === 'night') { walkT += dt; nightWalk((walkT * 0.5) % 40); few.forEach(function (f) { f.update(dt, 1, now); }); if (neh.update) neh.update(dt, true); }
-        else if (neh.update) neh.update(dt, false);
+        if (phase === 'night') { walkT += dt; nightWalk(walkT * 2.2); few.forEach(function (f) { f.update(dt, 1, now); }); }
+        if (neh.update) neh.update(dt, false);
         if (ezra.update) ezra.update(dt, false);
-        /* 8:5-6: 책을 펴자 일어서고, 아멘 하며 몸을 굽혀 엎드린다(멀리서) */
+        /* 8:5-6: 책을 펴자 서서 듣고, 무릎을 꿇어 몸을 굽혀 엎드린다(멀리서) */
         if (readT >= 0) { readT += dt; bowWant = readT > 4 && readT < 10 ? 1 : 0; }
         bowAmt += (bowWant - bowAmt) * Math.min(1, dt * 1.2);
         people.forEach(function (o) {
           if (phase === 'feast') { disperse = Math.min(1, disperse + dt * 0.04); var x = o.home[0] + (o.away[0] - o.home[0]) * disperse, z = o.home[1] + (o.away[1] - o.home[1]) * disperse; o.group.position.set(x, height(x, z), z); o.group.rotation.y = Math.atan2(o.away[0] - o.home[0], o.away[1] - o.home[1]); o.group.rotation.x = 0; if (o.update) o.update(dt, disperse < 1 ? 1 : 0); }
-          else { o.group.rotation.x = bowAmt * 1.2; o.group.position.y = height(o.group.position.x, o.group.position.z) - bowAmt * 0.4; if (o.update) o.update(dt, 0); }
+          else { o.group.rotation.x = bowAmt * 0.7; o.group.position.y = height(o.group.position.x, o.group.position.z) - bowAmt * 0.45; if (o.update) o.update(dt, 0); }   /* 무릎 꿇은 높이로 낮추고 몸을 굽힌다(발이 땅에 묻히지 않게 기울기는 작게) */
         });
         foes.forEach(function (f) { f.update(dt, 0, now); });
       },

@@ -21,7 +21,7 @@
       var a = hash(ix, iz), b = hash(ix + 1, iz), c = hash(ix, iz + 1), d = hash(ix + 1, iz + 1);
       return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
     }
-    var TENT = [-6, -8], ALTAR = [-18, -20], ABR = [-1, -2], OAK = [-150, 120];
+    var TENT = [-6, -8], ALTAR = [-16, -4], ABR = [-1, -2], OAK = [-150, 120];   /* 제단은 아이들 자리에서 장막과 함께 보이는 쪽에 */
     var ROAD = [[90, -110], [62, -60], [40, -20], [24, -8], [8, -4]];
     function height(x, z) {
       var r = Math.hypot(x + 4, z + 6), h = 3 - sm(30, 140, r) * 18 + 0.8 * noise(x * 0.05, z * 0.05 + 4);
@@ -76,12 +76,13 @@
     put(abram.group, ABR[0], ABR[1]); abram.group.rotation.y = Math.PI * 0.75;
     api.person('abraham', function (nm) { nm.group.position.copy(abram.group.position); nm.group.rotation.y = abram.group.rotation.y; scene.remove(abram.group); scene.add(nm.group); abram = nm; });
     var party = [];
-    for (i = 0; i < 12; i++) { var o = null; try { if (M2.israelite) o = M2.israelite(i * 29 + 5); } catch (e) { o = null; } if (!o) o = PR.soldier(i, '#7A6A54', null); o.k = i; o.lot = i === 1; o.home = [TENT[0] - 10 + (i % 4) * 3.2, TENT[1] + 5 + Math.floor(i / 4) * 2.4]; put(o.group, o.home[0], o.home[1]); party.push(o); }
+    /* 0 사래(여자), 1 롯(남자), 나머지는 하란에서 얻은 사람들(어른 남녀). 아이와 아기는 넣지 않는다(본문이 말하지 않음) */
+    for (i = 0; i < 12; i++) { var o = null, kd = i === 0 ? 'woman' : i === 1 ? 'man' : (i % 2 ? 'man' : 'woman'); try { if (M2.israelite) o = M2.israelite(i * 29 + 5, { kind: kd, carry: i > 3 && i % 3 === 0 ? 'sack' : 'none' }); } catch (e) { o = null; } if (!o) o = PR.soldier(i, '#7A6A54', null); o.k = i; o.lot = i === 1; o.home = [TENT[0] - 10 + (i % 4) * 3.2, TENT[1] + 12 + Math.floor(i / 4) * 2.4]; put(o.group, o.home[0], o.home[1]); party.push(o); }
     /* 짐(창 12:5의 재산): 단순한 꾸러미. 짐승은 그리지 않는다 */
     var bundles = []; for (i = 0; i < 8; i++) { var bd = new T.Mesh(new T.DodecahedronGeometry(0.35, 0), new T.MeshStandardMaterial({ color: '#B8946A', flatShading: true })); bd.scale.set(1.2, 0.8, 1); put(bd, TENT[0] + 6 + (i % 4) * 1.1, TENT[1] + 2 + Math.floor(i / 4), 0.25); bundles.push(bd); }
 
     function roadAt(s) { var tot = 0, segs = [], k; for (k = 0; k + 1 < ROAD.length; k++) { var l = Math.hypot(ROAD[k + 1][0] - ROAD[k][0], ROAD[k + 1][1] - ROAD[k][1]); segs.push([ROAD[k], ROAD[k + 1], tot, l]); tot += l; } s = Math.max(0, Math.min(tot, s)); for (k = 0; k < segs.length; k++) if (s <= segs[k][2] + segs[k][3]) { var u = (s - segs[k][2]) / segs[k][3]; return [segs[k][0][0] + (segs[k][1][0] - segs[k][0][0]) * u, segs[k][0][1] + (segs[k][1][1] - segs[k][0][1]) * u, Math.atan2(segs[k][1][0] - segs[k][0][0], segs[k][1][1] - segs[k][0][1]), tot]; } return [ROAD[ROAD.length - 1][0], ROAD[ROAD.length - 1][1], 0, tot]; }
-    var phase = 'camp', walkS = 0, night = 0, nightWant = 0;
+    var phase = 'camp', walkS = 0, night = 0, nightWant = 0, JOURNEY = [84, 100];   /* 길 위에서 걷기 시작하는 곳과 멈추는 곳(길의 거리) */
     var ca = new T.Color(), cb = new T.Color();
     function applyNight() {
       /* 0 낮, 0.5 해 질 녘, 1 별이 보이는 하늘 */
@@ -96,14 +97,17 @@
     function showCamp(on) { camp.visible = on; bundles.forEach(function (b) { b.visible = on; }); }
     function setPhase(p) {
       phase = p;
-      if (p === 'camp') { night = 0; nightWant = 0; applyNight(); showCamp(true); altarFar.visible = false; walkS = 0;
-        party.forEach(function (o) { o.group.visible = true; o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); });
-        abram.group.position.set(ABR[0], height(ABR[0], ABR[1]), ABR[1]); }
-      if (p === 'journey') { nightWant = 0; showCamp(false); altarFar.visible = false; walkS = roadAt(0)[3] - 75; }   /* 12:4-5: 길의 끝 쪽에서 들어온다 */
-      if (p === 'moreh') { nightWant = 0; showCamp(false); altarFar.visible = true; }                 /* 12:6-7 */
-      if (p === 'tent') { nightWant = 0; showCamp(true); altarFar.visible = true; party.forEach(function (o) { o.group.visible = true; o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); }); abram.group.position.set(ABR[0], height(ABR[0], ABR[1]), ABR[1]); } /* 12:8-9 */
-      if (p === 'vision') { nightWant = 0.5; showCamp(true); party.forEach(function (o) { o.group.visible = !o.lot && o.k < 6; }); }   /* 15:1-4: 롯은 없다(13:11) */
-      if (p === 'stars') { nightWant = 1; showCamp(true); party.forEach(function (o) { o.group.visible = false; }); abram.group.position.set(ABR[0] + 4, height(ABR[0] + 4, ABR[1] + 4), ABR[1] + 4); abram.group.rotation.y = Math.PI * 0.8; } /* 15:5-6 */
+      /* 사람의 자리와 방향은 대목마다 처음부터 정한다('이전'으로 돌아와도 뒤 대목의 것이 남지 않게) */
+      function home(o) { o.group.visible = true; o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); o.group.rotation.y = Math.PI * 0.75; }
+      function abrAt(x, z, ry) { abram.group.visible = true; abram.group.position.set(x, height(x, z), z); abram.group.rotation.y = ry; }
+      if (p === 'camp') { night = 0; nightWant = 0; applyNight(); showCamp(true); altarFar.visible = false; walkS = 0; party.forEach(home); abrAt(ABR[0], ABR[1], Math.PI * 0.75); }
+      if (p === 'journey') { nightWant = 0; showCamp(false); altarFar.visible = false; walkS = JOURNEY[0]; }   /* 12:4-5: 길을 따라 들어온다(장막 자리까지는 오지 않는다) */
+      if (p === 'moreh') { nightWant = 0; showCamp(false); altarFar.visible = true;                    /* 12:6-7: 일행은 먼 나무 곁에 있다 */
+        party.forEach(function (o) { var x = OAK[0] + 14 + (o.k % 4) * 2.4, z = OAK[1] - 10 + Math.floor(o.k / 4) * 2.2; o.group.visible = true; o.group.position.set(x, height(x, z), z); o.group.rotation.y = -Math.PI * 0.6; });
+        abrAt(OAK[0] + 11, OAK[1] - 7, -Math.PI * 0.6); }
+      if (p === 'tent') { nightWant = 0; showCamp(true); altarFar.visible = true; party.forEach(home); abrAt(ABR[0], ABR[1], Math.PI * 0.75); } /* 12:8-9 */
+      if (p === 'vision') { nightWant = 0.5; showCamp(true); altarFar.visible = false; party.forEach(function (o) { home(o); o.group.visible = !o.lot && o.k < 6; }); abrAt(ABR[0], ABR[1], Math.PI * 0.75); }   /* 15:1-4: 롯은 없다(13:11) */
+      if (p === 'stars') { nightWant = 1; showCamp(true); altarFar.visible = false; party.forEach(function (o) { o.group.visible = false; }); abrAt(ABR[0] + 4, ABR[1] + 4, Math.PI * 0.8); } /* 15:5-6 */
     }
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
     if (FX) FX.sortLayers(scene);
@@ -116,8 +120,8 @@
         return { who: 'hyu', text: '이 언덕 위에서만 다니자.' };
       },
       P: { start: [40, 22], machine: [46, 28], machineRot: -0.9,
-        /* 재료가 놓인 곳(quests[i].found): 일행이 들어온 길 쪽 / 장막 쪽(뒤쪽 비탈, 멀찍이) / 별이 보이는 하늘 아래(아브람에게서 멀리) */
-        parts: [[42, -2], [14, 2], [28, 26]], lookSpot: [28, 26],
+        /* 재료가 놓인 곳(quests[i].found): 일행이 들어온 길가 / 장막이 건너다보이는 언덕 가장자리(멀찍이) / 장막에서 멀리 떨어진 트인 땅 */
+        parts: [[22, -3], [14, 6], [28, 26]], lookSpot: [28, 26],
         look: { focus: TENT, mid: ABR, dy: 1.6, backE: 7, upE: 3 } },
       eventLook: function (i) {
         if (i === 2) { var w = roadAt(walkS); return { focus: [w[0], w[1]], mid: [w[0], w[1]], dy: 1.2, backE: 7, upE: 3.4 }; }
@@ -132,7 +136,7 @@
       },
       beatNote: function (i) { return i === 2 || i === 3 ? '이 대목은 아브람이 이곳에 장막을 치기 전의 일이에요. 장막을 잠시 걷어 내고 보여 줘요.' : null; },
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
-      intro: { text: '타임머신이 언덕 위에 내려앉았어요. 아래쪽에 장막 몇 채가 보여요.', say: { who: 'hyu', text: '장막에서 멀리 떨어진 곳에서만 다니자.' } },
+      intro: { text: '타임머신이 언덕 위에 내려앉았어요. 저쪽에 장막 몇 채가 보여요.', say: { who: 'hyu', text: '장막에서 멀리 떨어진 곳에서만 다니자.' } },
       lookText: '아브람을 부르신 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
       partBeats: [0, 1], eventStart: 2,
       sceneDoneText: '아브람 장면을 끝까지 지켜봐야 떠날 수 있어요.',
@@ -154,11 +158,11 @@
         if (night > 0.6) starGroups.forEach(function (m, k) { m.opacity = Math.max(0, (night - 0.6) / 0.4) * (0.75 + 0.25 * Math.sin(now * (1.3 + k * 0.7) + k)); });
         /* 12:4-5: 일행이 길을 따라 들어온다 */
         if (phase === 'journey') {
-          walkS += dt * 2.2;
+          var moving = walkS < JOURNEY[1]; walkS = Math.min(JOURNEY[1], walkS + dt * 2.2);
           [abram].concat(party).forEach(function (o, k) {
-            var w = roadAt(walkS - k * 1.8), off = (k % 3 - 1) * 0.9;
+            var w = roadAt(walkS - k * 1.8), off = (k % 3 - 1) * 0.9;   /* 멈춘 뒤에도 길 위에 줄지어 선다 */
             o.group.visible = true; o.group.position.set(w[0] + Math.cos(w[2]) * off, height(w[0], w[1]), w[1] - Math.sin(w[2]) * off); o.group.rotation.y = w[2];
-            if (o.update) o.update(dt, walkS - k * 1.8 < w[3] ? 1 : 0);
+            if (o.update) o.update(dt, moving ? 1 : 0);
           });
         } else {
           if (abram.update) abram.update(dt, false);
