@@ -62,7 +62,7 @@
     if (!springW) { var sw = new T.Mesh(new T.PlaneGeometry(9, 7), new T.MeshStandardMaterial({ color: '#4E8FA6', transparent: true, opacity: 0.85 })); sw.rotation.x = -Math.PI / 2; springW = { mesh: sw, update: function () {} }; }
     springW.mesh.position.set(SPRING[0], height(SPRING[0], SPRING[1]) + 0.45, SPRING[1]); scene.add(springW.mesh);
     /* 이스라엘 사람들의 장막(7:8)과 미디안의 장막(6:5), 낙타(7:12) */
-    for (i = 0; i < 26; i++) { var tn = PR.tent(i + 400); put(tn, ICAMP[0] + (R() - 0.5) * 44, ICAMP[1] + R() * 20); tn.rotation.y = R() * 6.28; }
+    var itents = []; for (i = 0; i < 26; i++) { var tn = PR.tent(i + 400); put(tn, ICAMP[0] + (R() - 0.5) * 44, ICAMP[1] + R() * 20); tn.rotation.y = R() * 6.28; itents.push(tn); }
     var mtents = [];
     for (i = 0; i < 46; i++) { var mt = PR.tent(i + 470); mt.scale.setScalar(1.15); put(mt, MCAMP[0] + (R() - 0.5) * 110, MCAMP[1] + (R() - 0.5) * 44); mt.rotation.y = R() * 6.28; mtents.push(mt); }
     var camelM = std('#B08A5E'), camels = new T.Group();
@@ -72,6 +72,8 @@
       var cx2 = MCAMP[0] + (R() - 0.5) * 120, cz2 = MCAMP[1] + (R() - 0.5) * 50; cm.position.set(cx2, height(cx2, cz2), cz2); cm.rotation.y = R() * 6.28; camels.add(cm);   /* 엎드려 누운 낙타 */
     }
     scene.add(camels);
+    /* 두 진의 장막과 누운 낙타는 움직이지 않으므로 재질별로 합친다(그리기 호출 약 380 → 몇 개) */
+    var still = PR.mergeStatic(mtents.concat(itents, [camels])); mtents.concat(itents).forEach(function (t) { scene.remove(t); }); scene.remove(camels); scene.add(still);
     /* 골짜기에 누운 사람들(7:12): 멀리서 보이는 꼴. 달아날 때(7:21) 일어나 북쪽으로 */
     var midian = [];
     for (i = 0; i < 40; i++) { var mm = PR.soldier(i + 700, ['#7A4A3A', '#6E5A3A', '#8A5A3E'][i % 3], null); mm.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; });   /* 창은 본문에 없어 숨긴다 */
@@ -93,6 +95,7 @@
       var jar = new T.Mesh(new T.SphereGeometry(0.13, 6, 5), std('#B88A5A')); jar.position.set(0.3, 1.0, 0.18); jar.visible = false; o.group.add(jar); o.jar = jar;
       var horn = new T.Mesh(new T.ConeGeometry(0.05, 0.42, 5), std('#D8C7A0')); horn.position.set(-0.3, 1.25, 0.2); horn.rotation.x = -1; horn.visible = false; o.group.add(horn); o.horn = horn;
       var fl = new T.Mesh(new T.ConeGeometry(0.1, 0.36, 6), new T.MeshBasicMaterial({ color: '#FFB040', fog: false })); fl.position.set(0.3, 1.75, 0.2); fl.visible = false; o.group.add(fl); o.flame = fl;
+      if (!o.chosen) o.group.traverse(function (m) { if (m.isMesh) m.castShadow = false; });   /* 그리기 호출을 줄이려고 삼백 명(열다섯) 밖의 사람은 그림자를 그리지 않는다 */
       men.push(o);
     }
     /* 기드온(Blender)과 부라 */

@@ -111,5 +111,25 @@
     return g;
   }
 
-  BO3D.props = { tent: tent, chariot: chariot, horse: horse, cloudPillar: cloudPillar, stoneHeap: stoneHeap, soldier: soldier, shield: shield, rng: rng };
+  /* 움직이지 않는 물건 여럿을 재질별로 한 덩어리로 합친다(그리기 호출을 줄인다). 합친 뒤에는 따로 움직일 수 없다 */
+  function mergeStatic(objs) {
+    var byMat = [], out = new T.Group();
+    objs.forEach(function (o) {
+      o.updateMatrixWorld(true);
+      o.traverse(function (m) {
+        if (!m.isMesh || !m.visible) return;
+        var g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone(); g.applyMatrix4(m.matrixWorld);
+        var e = byMat.filter(function (x) { return x.mat === m.material; })[0]; if (!e) { e = { mat: m.material, gs: [] }; byMat.push(e); } e.gs.push(g);
+      });
+    });
+    byMat.forEach(function (e) {
+      var n = 0, k = 0; e.gs.forEach(function (g) { n += g.attributes.position.count; });
+      var pos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
+      e.gs.forEach(function (g) { pos.set(g.attributes.position.array, k * 3); if (g.attributes.normal) nor.set(g.attributes.normal.array, k * 3); k += g.attributes.position.count; g.dispose(); });
+      var bg = new T.BufferGeometry(); bg.setAttribute('position', new T.BufferAttribute(pos, 3)); bg.setAttribute('normal', new T.BufferAttribute(nor, 3)); bg.computeBoundingSphere();
+      var mesh = new T.Mesh(bg, e.mat); mesh.castShadow = true; mesh.receiveShadow = true; out.add(mesh);
+    });
+    return out;
+  }
+  BO3D.props = { tent: tent, chariot: chariot, horse: horse, cloudPillar: cloudPillar, stoneHeap: stoneHeap, soldier: soldier, shield: shield, rng: rng, mergeStatic: mergeStatic };
 })();

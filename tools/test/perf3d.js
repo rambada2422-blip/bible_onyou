@@ -20,18 +20,22 @@ const ids = process.argv.slice(2).length ? process.argv.slice(2) : ['OT-09', 'OT
       await p.evaluate(() => { const o = document.querySelector('.overlay3'); if (o) o.hidden = true; });
       await p.waitForTimeout(1500);
       const a = Object.assign({ fps: await fps() }, await p.evaluate(() => BO3D.debug.render()));
-      await p.evaluate(() => BO3D.debug.lookup());
-      await p.waitForSelector('.panel3:not([hidden])', { timeout: 60000 }); await p.waitForTimeout(3000);
-      const e = Object.assign({ fps: await fps() }, await p.evaluate(() => BO3D.debug.render()));
+      let e = null;
+      try {   /* 지켜보기(호렙 산은 압도 장면 영상을 거쳐 늦게 열린다) */
+        await p.evaluate(() => BO3D.debug.lookup());
+        await p.waitForSelector('.panel3:not([hidden])', { timeout: 90000 }); await p.waitForTimeout(3000);
+        e = Object.assign({ fps: await fps() }, await p.evaluate(() => BO3D.debug.render()));
+      } catch (x) { e = null; }
       rows.push({ id, a, e, errs: errs.length });
-      console.log(id, '도착', JSON.stringify(a), '지켜보기', JSON.stringify(e), '오류', errs.length);
+      console.log(id, '도착', JSON.stringify(a), '지켜보기', e ? JSON.stringify(e) : '(재지 못함)', '오류', errs.length);
     } catch (x) { console.log(id, 'FAIL', x.message.split('\n')[0]); rows.push({ id, fail: x.message.split('\n')[0] }); }
     await p.context().close();
   }
   const base = rows.find((r) => r.id === 'OT-09' && r.a);
   if (base) {
-    console.log('\n호렙 산 대비(지켜보기): 장면, calls 배, tris 배, fps 배');
-    rows.filter((r) => r.e).forEach((r) => console.log(r.id, (r.e.calls / base.e.calls).toFixed(2), (r.e.tris / base.e.tris).toFixed(2), (r.e.fps / base.e.fps).toFixed(2)));
+    const ref = base.e || base.a, at = base.e ? '지켜보기' : '도착';
+    console.log('\n호렙 산(' + at + ') 대비: 장면, calls 배, tris 배, fps 배 (각 장면의 큰 쪽 값)');
+    rows.filter((r) => r.a).forEach((r) => { const w = r.e && r.e.calls > r.a.calls ? r.e : r.a; console.log(r.id, (w.calls / ref.calls).toFixed(2), (w.tris / ref.tris).toFixed(2), (w.fps / ref.fps).toFixed(2)); });
   }
   await b.close();
 })();
