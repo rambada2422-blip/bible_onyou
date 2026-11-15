@@ -24,7 +24,7 @@
     }
     var WALL_Z = -24, VGATE = [-34, WALL_Z], WGATE = [44, WALL_Z], SQUARE = [44, -10], STAND = [44, -16];
     function height(x, z) { return 2.5 * sm(30, -30, z) + 0.6 * noise(x * 0.05 + 2, z * 0.05 + 6) - 1.2 * sm(-2, 10, z) * sm(40, 80, Math.abs(x)) + sm(120, 220, Math.hypot(x, z)) * 12 * noise(x * 0.02, z * 0.02); }
-    function walkable(x, z) { return x >= -42 && x <= 36 && z >= -6 && z <= 30; }
+    function walkable(x, z) { return x >= -42 && x <= 32 && z >= -6 && z <= 30; }
 
     var scene = new T.Scene();
     scene.background = new T.Color('#F1E3C2'); scene.fog = new T.Fog('#EEDDBA', 70, 320);
@@ -84,14 +84,14 @@
     [[-0.18, 0.55], [0.18, 0.55], [-0.18, -0.55], [0.18, -0.55]].forEach(function (q) { var lg = new T.Mesh(new T.BoxGeometry(0.12, 0.85, 0.12), bm); lg.position.set(q[0], 0.42, q[1]); beast.add(lg); });
     scene.add(beast);
     var few = []; for (i = 0; i < 3; i++) { var fo = PR.soldier(i + 1100, '#4E4A44', null); fo.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); scene.add(fo.group); few.push(fo); }
-    var foes = []; for (i = 0; i < 3; i++) { var fe = PR.soldier(i + 1200, ['#7A3E3E', '#3E5A6E', '#6E6A3A'][i], null); fe.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); put(fe.group, -76 + i * 2.2, 12 + i * 0.6); fe.group.rotation.y = Math.PI / 2; fe.group.visible = false; foes.push(fe); }
+    var foes = []; for (i = 0; i < 3; i++) { var fe = PR.soldier(i + 1200, ['#7A3E3E', '#3E5A6E', '#6E6A3A'][i], null); fe.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); put(fe.group, -58 + i * 2.2, 7 + i * 0.6); fe.group.rotation.y = Math.PI / 2; fe.group.visible = false; foes.push(fe); }
     var people = [];
     for (i = 0; i < 60; i++) {
       var o = null; try { if (M2.israelite) o = M2.israelite(i * 17 + 9); } catch (e) { o = null; } if (!o) o = PR.soldier(i, '#7A6A54', null);
-      o.k = i; o.home = [SQUARE[0] - 10 + (i % 10) * 2.1 + (hash(i, 1) - 0.5), SQUARE[1] + 2 + Math.floor(i / 10) * 1.9]; o.away = [SQUARE[0] - 40 + hash(i, 3) * 30, SQUARE[1] + 30 + hash(i, 5) * 20];
+      o.k = i; o.home = [36 + (i % 10) * 2.0 + (hash(i, 1) - 0.5) * 0.8, SQUARE[1] + 2 + Math.floor(i / 10) * 1.9]; o.away = [76 + hash(i, 3) * 30, o.home[1] + (hash(i, 5) - 0.5) * 12];   /* 8:12 돌아갈 때는 동쪽으로(아이들 쪽이 아닌 곳) */
       put(o.group, o.home[0], o.home[1]); o.group.rotation.order = 'YXZ'; o.group.rotation.y = Math.PI; o.group.visible = false; people.push(o);
     }
-    var side = []; for (i = 0; i < 13; i++) { var sm2 = null; try { sm2 = M2.israelite ? M2.israelite(i * 31 + 300) : null; } catch (e) { sm2 = null; } if (!sm2) sm2 = PR.soldier(i, '#6E5A44', null); sm2.group.visible = false; var lx = i < 6 ? -1 : 1, li = i < 6 ? i : i - 6; put(sm2.group, STAND[0] + lx * (0.9 + li * 0.45), STAND[1] - 0.6, 1.6); sm2.group.rotation.y = Math.PI; side.push(sm2); }
+    var side = []; for (i = 0; i < 13; i++) { var sm2 = null; try { sm2 = M2.israelite ? M2.israelite(i * 31 + 300) : null; } catch (e) { sm2 = null; } if (!sm2) sm2 = PR.soldier(i, '#6E5A44', null); sm2.group.visible = false; var lx = i < 6 ? -1 : 1, li = i < 6 ? i : i - 6; put(sm2.group, STAND[0] + lx * (0.9 + li * 0.45), STAND[1] - 0.6, 1.6); sm2.group.rotation.y = 0; side.push(sm2); }
 
     var phase = 'night', tod = 0, todWant = 0, walkT = 0, bowAmt = 0, bowWant = 0, disperse = 0;
     var ca = new T.Color(), cb = new T.Color();
@@ -122,8 +122,8 @@
       if (p === 'built') { todWant = 1; neh.group.visible = true; }
       if (p === 'square') { todWant = 2; neh.group.visible = false; }                                       /* 8:1-3 새벽부터 */
       if (p === 'read') { todWant = 2; }                                                                    /* 8:4-8 */
-      if (p === 'feast') { todWant = 1; neh.group.visible = true; neh.group.position.set(STAND[0] - 6, height(STAND[0] - 6, STAND[1] + 1), STAND[1] + 1); }  /* 8:9-12 */
-      if (ezra.group.visible) { ezra.group.position.set(STAND[0], height(STAND[0], STAND[1]) + 1.6, STAND[1]); ezra.group.rotation.y = Math.PI; book.position.set(STAND[0] + 0.25, ezra.group.position.y + 1.15, STAND[1] + 0.35); }
+      if (p === 'feast') { todWant = 1; neh.group.visible = true; neh.group.position.set(STAND[0] - 6, height(STAND[0] - 6, STAND[1] + 1), STAND[1] + 1); neh.group.rotation.y = 0; }  /* 8:9-12 */
+      if (ezra.group.visible) { ezra.group.position.set(STAND[0], height(STAND[0], STAND[1]) + 1.6, STAND[1]); ezra.group.rotation.y = 0; book.position.set(STAND[0], ezra.group.position.y + 1.02, STAND[1] + 0.42); }   /* 백성(남쪽)을 보고 선다 */
     }
     var readT = -1;
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
@@ -134,17 +134,17 @@
       height: height, walkable: walkable,
       edge: function (x, z) {
         if (z < -6) return { who: 'onwoo', text: '성벽 쪽으로는 더 가지 말자. 우리는 지켜보는 사람이야.' };
-        if (x > 36) return { who: 'hyu', text: '광장 안으로는 들어가지 말자.' };
+        if (x > 32) return { who: 'hyu', text: '광장 안으로는 들어가지 말자.' };
         return { who: 'hyu', text: '이 비탈 위에서만 다니자.' };
       },
       P: { start: [0, 22], machine: [6, 27], machineRot: -0.4,
         /* 재료가 놓인 곳(quests[i].found): 골짜기 문 쪽(길에서 떨어진 땅) / 성벽 쪽 길가 / 수문 앞 광장 가장자리 */
-        parts: [[-38, -2], [6, -4], [34, -2]], lookSpot: [34, -2],
-        look: { focus: STAND, mid: SQUARE, dy: 1.6, backE: 7, upE: 3.4 } },
+        parts: [[-38, -2], [6, -4], [29, -1]], lookSpot: [29, -1],
+        look: { focus: STAND, mid: SQUARE, dy: 1.6, backE: 9, upE: 7 } },
       eventLook: function (i) {
-        if (i === 2) return { focus: [-72, 12], mid: [-72, 12], dy: 1.2, backE: 7, upE: 3 };
+        if (i === 2) return { focus: [-56, 8], mid: [-56, 8], dy: 1.2, backE: 6, upE: 2.6 };
         if (i === 3) return { focus: [0, WALL_Z], mid: [10, WALL_Z], dy: 5, backE: 9, upE: 4 };
-        return { focus: STAND, mid: SQUARE, dy: 1.8, backE: 7, upE: 3.4 };
+        return { focus: STAND, mid: SQUARE, dy: 1.2, backE: 9, upE: 7 };
       },
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 성 밖 비탈에 내려앉았어요. 밤이에요. 성벽이 무너져 있어요.', say: { who: 'hyu', text: '성벽에는 가까이 가지 말자. 이 비탈 위에서만 다니자.' } },
