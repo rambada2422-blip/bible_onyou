@@ -278,7 +278,7 @@
     if (hs.kind === 'watch') {
       setTimeout(ok, 0);
       return head.concat([el('p', { class: 'narr', text: tx(hs.text) }), el('div', { class: 'narr-meta' }, refChip(hs.basis)),
-        el('div', { class: 'note look' }, el('b', { text: '지켜봐요' }), el('span', { text: '이 일은 본문에 적힌 사람이 해요. 우리는 손대지 않고 지켜봐요.' })),
+        el('div', { class: 'note look' }, el('b', { text: '지켜봐요' }), el('span', { text: '우리는 손대지 않고 지켜봐요. 성경에 적힌 일은 성경에 적힌 대로 일어나요.' })),
         hs.say ? U.say(hs.say.who, hs.say.text) : null]);
     }
     if (hs.kind === 'stay') {
