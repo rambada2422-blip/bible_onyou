@@ -167,7 +167,7 @@ function check(file) {
           tri(x.answer, w + '.answer', x.basis);
           ['t1', 't2', 't3'].forEach((t) => question(x.read && x.read[t], `${w}.read.${t}`, t));
           /* 신약 장절은 이 검사기(구약 본문)로 확인하지 않는다. 작성자가 확인하고 감수 전으로 둔다(규칙서 13.6) */
-          if (x.nt) { if (!/^\S+ \d+:\d+(-\d+)?$/.test(String(x.nt.ref || ''))) E(`${w}.nt.ref는 "책 장:절"`); if (!str(x.nt.text)) E(`${w}.nt.text 없음`); else texts.push([`${w}.nt.text`, x.nt.text, null]); }
+          if (x.nt) { if (!/^\S+ \d+:\d+(-\d+)?$/.test(String(x.nt.ref || ''))) E(`${w}.nt.ref는 "책 장:절"`); if (!(d.review && d.review.required && d.review.topics.some((t) => t.includes('신약')))) E(`${w}.nt: 신약 연결이 있으면 review.required true, topics에 "구약 사건의 신약적 의미"(규칙서 3.5)`); if (!str(x.nt.text)) E(`${w}.nt.text 없음`); else texts.push([`${w}.nt.text`, x.nt.text, null]); }
         }
       });
     }

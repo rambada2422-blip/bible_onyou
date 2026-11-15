@@ -5,8 +5,10 @@
   "ref": "출 16:1-36",
   "place": "엘림과 시내 산 사이 신 광야",
   "review": {
-    "required": false,
-    "topics": [],
+    "required": true,
+    "topics": [
+      "구약 사건의 신약적 의미(요 6:31-32)"
+    ],
     "status": "미감수"
   },
   "sources": "없음(성경 본문만 사용)",

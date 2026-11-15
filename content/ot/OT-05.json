@@ -5,8 +5,10 @@
   "ref": "창 12:1-9",
   "place": "하란, 가나안 땅의 세겜 땅 모레 상수리나무, 벧엘 동쪽 산",
   "review": {
-    "required": false,
-    "topics": [],
+    "required": true,
+    "topics": [
+      "구약 사건의 신약적 의미(롬 4:3)"
+    ],
     "status": "미감수"
   },
   "sources": "없음(성경 본문만 사용)",

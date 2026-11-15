@@ -5,8 +5,10 @@
   "ref": "삼상 8:4-22",
   "place": "라마, 미스바",
   "review": {
-    "required": false,
-    "topics": [],
+    "required": true,
+    "topics": [
+      "구약 사건의 신약적 의미(행 13:21)"
+    ],
     "status": "미감수"
   },
   "sources": "없음(성경 본문만 사용)",

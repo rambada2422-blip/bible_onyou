@@ -5,8 +5,10 @@
   "ref": "왕상 8:1-30",
   "place": "예루살렘, 여호와의 전",
   "review": {
-    "required": false,
-    "topics": [],
+    "required": true,
+    "topics": [
+      "구약 사건의 신약적 의미(행 7:47-48)"
+    ],
     "status": "미감수"
   },
   "sources": "없음(성경 본문만 사용)",

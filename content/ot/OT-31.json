@@ -5,8 +5,10 @@
   "ref": "욘 1:1-4:11",
   "place": "욥바, 바다, 니느웨",
   "review": {
-    "required": false,
-    "topics": [],
+    "required": true,
+    "topics": [
+      "구약 사건의 신약적 의미(마 12:41)"
+    ],
     "status": "미감수"
   },
   "sources": "없음(성경 본문만 사용)",

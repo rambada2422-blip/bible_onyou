@@ -5,8 +5,10 @@
   "ref": "신 34:1-12",
   "place": "모압 평지, 느보 산 비스가 산 꼭대기",
   "review": {
-    "required": false,
-    "topics": [],
+    "required": true,
+    "topics": [
+      "구약 사건의 신약적 의미(히 3:5)"
+    ],
     "status": "미감수"
   },
   "sources": "없음(성경 본문만 사용)",
