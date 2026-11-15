@@ -256,6 +256,7 @@
     if (d.id !== 'OT-01') return null;
     if (s.k === 'arrive') return { stage: 0 };
     if (s.k === 'beat') return { stage: s.i };
+    if (s.k === 'help') { var ha = d.mission.help.steps[s.i].after; if (typeof ha === 'number') return { stage: ha }; }   /* 돕기 단계는 그 앞 대목까지 지어진 것만 */
     return { stage: 9 };
   }
   /* 현장 돕기 한 단계(규칙서 13.6). do: 본문에 그 사람들이 했다고 적힌 평범한 일을 누르며 돕는다 / watch: 거룩한 행위는 곁에서 본다
