@@ -75,6 +75,7 @@
     ark.rotation.y = ARK_ROT; scene.add(ark);
     var arkRestY = height(ARK[0], ARK[1]) - 0.8;
     function doorWorld(dz) { var lx = AL * 0.18, lz = AW / 2 + (dz || 0); return [ARK[0] + Math.cos(ARK_ROT) * lx + Math.sin(ARK_ROT) * lz, ARK[1] - Math.sin(ARK_ROT) * lx + Math.cos(ARK_ROT) * lz]; }
+    var ALT = doorWorld(30);
 
     /* 비(창 7:12): 그때로 돌아가 보는 대목에만 */
     var rainG = new T.BufferGeometry(), rp = [];
@@ -105,11 +106,12 @@
     var leaf = new T.Mesh(new T.BoxGeometry(0.12, 0.03, 0.2), std('#6E9A4A')); leaf.position.set(0, -0.02, 0.32); leaf.visible = false; dove.add(leaf);   /* 감람 새 잎사귀(8:11) */
     for (i = 0; i < 12; i++) { var bb = bird(i % 3 ? birdM : ravenM); bb.visible = false; scene.add(bb); birds.push({ g: bb, ph: R() * 6, r: 20 + R() * 40, h: 18 + R() * 20 }); }
     /* 단(창 8:20): 멀리서 단만 */
-    var altar = PR.stoneHeap(820, 14); altar.scale.setScalar(2.2); put(altar, ARK[0] + 44, ARK[1] + 46); altar.visible = false;
+    var altar = PR.stoneHeap(820, 14); altar.scale.setScalar(2.2); altar.visible = false;   /* 자리는 문 앞 멀찍이(doorWorld가 정해진 뒤에 놓는다) */
     /* 구름과 무지개(창 9:13-14): 하늘의 빛깔 띠. 활이나 무기 모양으로 그리지 않는다 */
     var bow = new T.Group(), bands = ['#E85A4A', '#F09A3A', '#F2D24A', '#7EC06A', '#4A9AD8', '#5A62C0', '#8A5AB8'];
     bands.forEach(function (bc, k) { var tor = new T.Mesh(new T.TorusGeometry(260 - k * 7, 3.6, 6, 80, Math.PI), new T.MeshBasicMaterial({ color: bc, transparent: true, opacity: 0, depthWrite: false, fog: false })); bow.add(tor); });
     /* 아이들 자리에서 보아 방주 너머에 선다 */
+    put(altar, ALT[0] + 6, ALT[1]);
     var KID = [24, 0.5], bdx = ARK[0] - KID[0], bdz = ARK[1] - KID[1], bdl = Math.hypot(bdx, bdz), BOW = [ARK[0] + bdx / bdl * 330, ARK[1] + bdz / bdl * 330];
     bow.position.set(BOW[0], -30, BOW[1]); bow.rotation.y = Math.atan2(-bdx, -bdz); scene.add(bow);
     var clouds = new T.Group(), cloudM = new T.MeshStandardMaterial({ color: '#DADCE0', roughness: 1, transparent: true, opacity: 0 });
@@ -156,7 +158,9 @@
         parts: [[12, 6], [50, 4], [24, 0.5]], lookSpot: [24, 0.5],
         look: { focus: ARK, mid: ARK, dy: 6, backE: 9, upE: 5 } },
       eventCam: function (i) {
-        if (i === 2 || i === 3) { var lv = Math.max(level, 0); return { pos: [ARK[0] + 120, lv + 28, ARK[1] + 150], look: [ARK[0], lv + 4, ARK[1]] }; }
+        if (i === 2) { var dw0 = doorWorld(40); return { pos: [dw0[0] + 30, 22, dw0[1] + 20], look: [ARK[0] + 20, 4, ARK[1]] }; }   /* 들어가는 모습: 안개 속에서도 방주와 문이 보이게 가까이 */
+        if (i === 3) { var lv = Math.max(level, 0); return { pos: [ARK[0] + 120, lv + 28, ARK[1] + 150], look: [ARK[0], lv + 4, ARK[1]] }; }
+        if (i === 5) { var c5 = doorWorld(66), l5 = doorWorld(14); return { pos: [c5[0] + 10, height(c5[0] + 10, c5[1]) + 10, c5[1]], look: [l5[0], height(l5[0], l5[1]) + 2, l5[1]] }; }   /* 나온 가족과 짐승, 단을 함께(창 8:18-20) */
         return null;
       },
       kidsHidden: function (i) { return i === 2 || i === 3; },
