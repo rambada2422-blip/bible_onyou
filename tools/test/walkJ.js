@@ -2,6 +2,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
+const enter3d = require('./lib/enter.js');
 const ti = process.argv[2] || '1', out = process.argv[3], dsf = Number(process.argv[4] || '1');
 const url = process.argv[5] || 'file:///home/user/bible_onyou/dist/preview3d.html';
 fs.mkdirSync(out, { recursive: true });
@@ -20,8 +21,8 @@ fs.mkdirSync(out, { recursive: true });
   await p.evaluate(() => document.fonts.ready);
   const { C, C3 } = await p.evaluate(() => ({ C: BO.content, C3: BO.content3d }));
   const tier = C.tiers[Number(ti)].id, JD = C3.jordan, ALT = C.scenes['ALT-02'];
-  await p.click('.tier >> nth=' + ti);
-  await p.click('text=탐험 시작'); await p.waitForTimeout(600);
+  await enter3d(p, ti, 'OT-09');
+  await p.waitForTimeout(600);
   await shot('route');
   await p.click('.route-opts .btn:has-text("여호수아")'); await p.waitForTimeout(900);
   await shot('warp');

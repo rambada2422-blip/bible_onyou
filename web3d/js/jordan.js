@@ -84,7 +84,9 @@ window.BO3D = window.BO3D || {};
     return g;
   }
 
-  function build() {
+  /* opts.staged: OT-18 3D 장면용. 백성은 처음에 진에 서 있고(setCrowd로 'camp' | 'cross' | 'west'), 타임머신은 장면 틀이 따로 둔다 */
+  function build(opts) {
+    opts = opts || {};
     var M2 = BO3D.models2 || {}, M = BO3D.models || {};
     var scene = new T.Scene(), ups = [], i, o;
     scene.background = new T.Color('#F1E7C4');
@@ -124,16 +126,24 @@ window.BO3D = window.BO3D || {};
     /* 마른 땅을 밟고 건너는 백성의 긴 행렬. 궤에서 멀리 떨어진 하류 쪽으로 건넌다. */
     var path = JP.path, segs = [], total = 0;
     for (i = 0; i < path.length - 1; i++) { var dx = path[i + 1][0] - path[i][0], dz = path[i + 1][1] - path[i][1], len = Math.sqrt(dx * dx + dz * dz); segs.push({ a: path[i], dx: dx / len, dz: dz / len, len: len, at: total }); total += len; }
-    var crowd = [], N = 46;
+    var crowd = [], N = 46, crowdMode = opts.staged ? 'camp' : 'cross';
     for (i = 0; i < N; i++) {
       (function (k) {
         var per = safe('israelite', k * 7 + 3, function () { return { group: simplePerson(['#8A6A4A', '#5F7350', '#4E5E7A', '#9A4E3C'][k % 4], 1.4 + (k % 5) * 0.08), update: function () {} }; });
         per.s = (k / N) * total + hash(k, 2) * 2; per.off = (hash(k, 5) - 0.5) * 3.4; per.v = 1.05 + hash(k, 9) * 0.3;
+        /* 진(요단 동쪽 강가, 수 3:1)과 건넌 뒤(서쪽, 수 4:19)에 서 있는 자리 */
+        per.camp = [-74 + hash(k, 11) * 46, 18 + hash(k, 13) * 30]; per.west = [-62 + hash(k, 17) * 34, -30 - hash(k, 19) * 26];
         scene.add(per.group); crowd.push(per);
       })(i);
     }
     ups.push(function (dt) {
       crowd.forEach(function (per) {
+        if (crowdMode !== 'cross') {
+          var st = crowdMode === 'camp' ? per.camp : per.west;
+          per.group.position.set(st[0], height(st[0], st[1]), st[1]); per.group.rotation.y = Math.PI;
+          if (per.update) per.update(dt, 0);
+          return;
+        }
         per.s = (per.s + per.v * dt) % total;
         var sg = segs[0]; for (var q = 0; q < segs.length; q++) if (per.s >= segs[q].at) sg = segs[q];
         var u = per.s - sg.at, x = sg.a[0] + sg.dx * u - sg.dz * per.off, z = sg.a[1] + sg.dz * u + sg.dx * per.off;
@@ -157,7 +167,7 @@ window.BO3D = window.BO3D || {};
     /* 탐험대의 타임머신 */
     var machine = null;
     try { if (M.timeMachine) machine = M.timeMachine(); } catch (e) { console.error(e); }
-    if (machine) { put(machine.group, JP.machine[0], JP.machine[1]); machine.group.rotation.y = 0.6; ups.push(function (dt, t) { if (machine.update) machine.update(t); }); }
+    if (machine && !opts.staged) { put(machine.group, JP.machine[0], JP.machine[1]); machine.group.rotation.y = 0.6; ups.push(function (dt, t) { if (machine.update) machine.update(t); }); }
 
     function v(x, y, z) { return new T.Vector3(x, y, z); }
     var targets = {
@@ -170,6 +180,7 @@ window.BO3D = window.BO3D || {};
     return {
       scene: scene, sun: sun, P: JP, height: height, walkable: walkable, edge: edge, targets: targets,
       priests: priests, leader: leader, ark: ark, poleY: function () { return poleY; }, arkPole: { x: arkPoleX, y: arkPoleY, r: poleR },
+      crowd: crowd, setCrowd: function (m) { crowdMode = m; }, put: put,
       update: function (dt, t) { for (var q = 0; q < ups.length; q++) ups[q](dt, t); },
       addUpdate: function (fn) { ups.push(fn); }
     };

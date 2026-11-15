@@ -103,3 +103,7 @@
 @keyframes eadrift { from { transform: translateX(-14px); } to { transform: translateX(14px); } }
 @keyframes eashim { from { opacity: .25; } to { opacity: .7; } }
 @media (prefers-reduced-motion: reduce) { .ot-sheet.sheet { animation: none; } }
+
+/* 3D 장면 위에 뜨는 조각(동행 문답, 오늘의 물음): 풍경 없이 아래 시트만 */
+.ot3.seg { background: rgba(14, 23, 48, .35); justify-content: flex-end; }
+.ot3.seg .ot-sheet.sheet { top: auto; max-height: 82%; position: relative; }

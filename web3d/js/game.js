@@ -1,16 +1,16 @@
-/* 성경 탐험대 3D 샘플 — 떨기나무 장면 하나.
- * 주인공을 직접 움직여 탐험하고, 말씀 조각 3개를 모으고, 사건을 지켜본 뒤 관문을 지난다.
- * 대본은 2D 시범판과 같은 web/js/content.js(독립 검증을 거친 문장)를 그대로 쓴다.
+/* 성경 탐험대 3D 장면 틀.
+ * 주인공을 직접 움직여 탐험하고, 재료 3개를 모으고(탐험대 이야기), 사건을 지켜본 뒤 관문을 지난다.
+ * 장면마다 다른 것(지형, 인물, 소품, 재료 3곳, 지켜보는 자리, 카메라)은 장면 설정 파일에 있다: BO3D.scene3d['OT-NN'] (예: scene_horeb.js).
+ * 대본(대목, 관문, 물음, 임무)은 content/ot/OT-NN.json(web3d/js/otdata.js로 묶임). 요단 강 시대 추리(jordan.js)는 따로 돈다.
  */
 (function () {
   'use strict';
-  var T = THREE, C = BO.content, IC = BO.icons, W = BO3D.world, M = BO3D.models || {}, AV = BO3D.avatars || {}, FX = BO3D.fx || null;
-  var P = W.P, SC = C.scenes['EX-01'];
+  var T = THREE, C = BO.content, IC = BO.icons, M = BO3D.models || {}, FX = BO3D.fx || null;
   var C3 = BO.content3d || null, JD = C3 ? C3.jordan : null, ALT = C.scenes['ALT-02'];
-  /* 지금 있는 장소: 'horeb'(호렙 산) 또는 'jordan'(요단 강). 높이와 걸을 수 있는 곳은 장소마다 다르다. */
-  var cur = 'horeb', JL = null;
-  function H(x, z) { return cur === 'jordan' && JL ? JL.height(x, z) : W['height'](x, z); }
-  function WALK(x, z) { return cur === 'jordan' && JL ? JL.walkable(x, z) : W['walkable'](x, z); }
+  /* 지금 있는 곳: 'scene'(장면 틀로 만든 3D 장면, SCN) 또는 'jordan'(요단 강 시대 추리). 높이와 걸을 수 있는 곳은 장소마다 다르다. */
+  var cur = 'scene', JL = null, SCN = null, P = null, SC = null;
+  function H(x, z) { return cur === 'jordan' && JL ? JL.height(x, z) : SCN.height(x, z); }
+  function WALK(x, z) { return cur === 'jordan' && JL ? JL.walkable(x, z) : SCN.walkable(x, z); }
   /* 화면 부품은 web3d/js/ui.js에 모았다(이야기 카드 장면과 함께 쓴다). 나이 단계와 고른 아이는 BO3D.S */
   var U = BO3D.ui, S = U.S;
   var root = document.getElementById('game'), canvas = document.getElementById('c'), ui = document.getElementById('ui');
@@ -39,82 +39,90 @@
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = T.PCFSoftShadowMap;
-  var scene = new T.Scene();
   var camera = new T.PerspectiveCamera(58, 1, 0.3, 700);
-  var env = W.build(scene);
   camera.layers.enable(1); camera.layers.enable(2);
   var post = FX ? new FX.Post(renderer) : null;
+  var scene = null, env = null; /* 지금 장면의 THREE.Scene과 해 (useScene이 바꾼다) */
 
   function place(obj, x, z, lift) { obj.position.set(x, H(x, z) + (lift || 0), z); return obj; }
 
-  var machine = mk('timeMachine', null, function () { return { group: fallback('#D9A441', 2.4, 0.9), update: function () {} }; });
-  scene.add(place(machine.group, P.machine[0], P.machine[1]));
-  machine.group.rotation.y = -0.5;
-
-  var bush = mk('bush', null, function () {
-    var g = fallback('#6F8448', 1.6, 1.0); var l = new T.PointLight('#FF9A3C', 1.4, 18); l.position.y = 1.4; g.add(l);
-    return { group: g, update: function () {} };
-  });
-  scene.add(place(bush.group, P.bush[0], P.bush[1]));
-  var bushFx = FX ? FX.upgradeBush(bush.group) : null;
-  /* 떨기나무의 불은 3:2 대목(부품 2를 찾은 뒤)부터 보인다. 그 전에는 초록 덤불이다 */
-  var bushGlow = [];
-  bush.group.traverse(function (o) { if (o !== bush.group && o.visible && (o.isLight || o.isPoints || o.isSprite || (o.material && (o.material.transparent || o.material.isShaderMaterial)))) bushGlow.push(o); });
-  if (bushFx) bushGlow.push(bushFx.group);
-  function setBushLit(on) { bushLit = on; bushGlow.forEach(function (o) { o.visible = on; }); }
-  setBushLit(false);
-
-  var moses = mk('moses', null, function () { return { group: fallback('#8A5A3C', 1.75, 0.27), setPose: function () {}, update: function () {} }; });
-  scene.add(place(moses.group, P.mosesStart[0], P.mosesStart[1]));
-  moses.group.rotation.y = Math.PI * 0.8;
-  if (moses.setPose) moses.setPose('approach');
-
-  /* Blender로 만든 모세(뼈대와 동작이 있는 GLB)가 있으면 읽어서 바꿔 끼운다.
-     2026-11-14 대표 승인으로 인물 품질 실험의 B-2 모세(tools/blender/moses_b2.py + moses_b2_rig.py)가 기본이다. 기존 모세는 web3d/assets/old/ */
-  var mosesKey = 'moses', mosesPose = 'approach';
-  function useMosesGlb(key) {
-    var data = BO3D.glbData && BO3D.glbData[key];
-    if (!data || !T.GLTFLoader) return;
-    try {
-      var bin = atob(data), buf = new Uint8Array(bin.length), i;
-      for (i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-      new T.GLTFLoader().parse(buf.buffer, '', function (gltf) {
-        var g = gltf.scene, mixer = new T.AnimationMixer(g), act = {}, cur = null, pose = 'approach';
-        g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
-        gltf.animations.forEach(function (c) { act[c.name] = mixer.clipAction(c); });
-        if (!act.Idle) return;
-        if (act.HideFace) { act.HideFace.setLoop(T.LoopOnce, 1); act.HideFace.clampWhenFinished = true; }
-        function play(name, fade) {
-          var a = act[name]; if (!a || a === cur) return;
-          a.reset(); a.play();
-          if (cur) cur.crossFadeTo(a, fade, false);
-          cur = a;
-        }
-        play('Idle', 0); mixer.update(0); /* 시작 화면에서는 동작 갱신이 없으므로, 팔 벌린 기본 자세가 보이지 않게 Idle 첫 자세를 바로 적용한다 */
-        var nm = {
-          group: g, key: key,
-          setPose: function (name) { pose = name; mosesPose = name; play(name === 'hideface' ? 'HideFace' : 'Idle', 0.35); },
-          update: function (dt, moving) { if (pose !== 'hideface') play(moving && act.Walk ? 'Walk' : 'Idle', 0.25); mixer.update(dt); }
-        };
-        g.position.copy(moses.group.position); g.rotation.y = moses.group.rotation.y;
-        scene.remove(moses.group); scene.add(g);
-        moses = nm;
-        if (mosesPose !== 'approach') { nm.setPose(mosesPose); mixer.update(1); }
-        if (FX) FX.sortLayers(g);
-      }, function (e) { console.error('moses glb', e); });
-    } catch (e) { console.error('moses glb', e); }
+  /* Blender로 만든 인물(뼈대와 동작이 있는 GLB)을 읽는다. 동작: Idle, Walk, 그리고 장면마다 한 번만 하는 동작(once: {클립 이름: 자세 이름}).
+     읽기가 끝나면 cb({group, key, setPose(name), update(dt, moving)}). 없으면 부르지 않는다(장면은 대체 모형으로 돈다). */
+  function person(key, cb, opts) {
+    opts = opts || {};
+    loadGlb(key, function (gltf) {
+      var g = gltf.scene, mixer = new T.AnimationMixer(g), act = {}, curA = null, pose = 'idle', once = opts.once || {}, byPose = {};
+      g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+      gltf.animations.forEach(function (c) { act[c.name] = mixer.clipAction(c); });
+      if (!act.Idle) { var first = gltf.animations[0]; if (!first) return; act.Idle = mixer.clipAction(first); }
+      Object.keys(once).forEach(function (clip) { if (act[clip]) { act[clip].setLoop(T.LoopOnce, 1); act[clip].clampWhenFinished = true; byPose[once[clip]] = clip; } });
+      function play(name, fade) {
+        var a = act[name]; if (!a || a === curA) return;
+        a.reset(); a.play();
+        if (curA) curA.crossFadeTo(a, fade, false);
+        curA = a;
+      }
+      play('Idle', 0); mixer.update(0); /* 시작 화면에서는 동작 갱신이 없으므로, 팔 벌린 기본 자세가 보이지 않게 Idle 첫 자세를 바로 적용한다 */
+      cb({
+        group: g, key: key,
+        setPose: function (name) { pose = name; play(byPose[name] || 'Idle', 0.35); },
+        update: function (dt, moving) { if (!byPose[pose]) play(moving && act.Walk ? 'Walk' : 'Idle', 0.25); mixer.update(dt); }
+      });
+      if (FX) FX.sortLayers(g);
+    });
   }
-  useMosesGlb(mosesKey);
+  var api = { T: T, M: M, FX: FX, mk: mk, fallback: fallback, person: person, loadGlb: function (k, cb) { loadGlb(k, cb); }, now: function () { return now; } };
 
-  /* 양 떼 (출 3:1). 40마리를 한 번에 그린다 (web3d/js/flock.js) */
-  var flock = null;
-  try { if (BO3D.flock) flock = BO3D.flock.create(scene, W, { count: 40 }); } catch (e) { console.error('flock', e); }
+  /* 장면 만들기: 장면 설정(BO3D.scene3d[id])이 지형·인물·소품을 만들고, 틀이 타임머신·재료·도감을 더한다. 한 번 만든 장면은 다시 쓴다. */
+  var built = {}, machine = null, PARTS = [], partObjs = [], DEX = [], machineY = 0, departGlow = null;
+  function otData(id) {
+    var d = BO3D.ot && BO3D.ot.scenes[id];
+    if (d) return d;
+    if (id === 'OT-09') { var ex = C.scenes['EX-01'], o = {}, k; for (k in ex) o[k] = ex[k]; o.id = 'OT-09'; o.quests = C3 && C3.horeb ? C3.horeb.quests : []; return o; }
+    return null;
+  }
+  function buildScene(id) {
+    if (built[id]) return built[id];
+    var rt = BO3D.scene3d[id](api), sv = SCN, svc = cur; SCN = rt; cur = 'scene';
+    rt.data = otData(id);
+    var mats = (rt.data.mission && rt.data.mission.materials) || [], qs = rt.data.quests || rt.quests || [];
+    rt.PARTS = qs.map(function (q, i) {
+      var m = mats[i];
+      return { id: q.part, name: m ? m.name : q.name, at: rt.P.parts[i], line: m ? m.line : q.line, q: q, mat: m || null };
+    });
+    rt.machine = mk('timeMachine', null, function () { return { group: fallback('#D9A441', 2.4, 0.9), update: function () {} }; });
+    rt.scene.add(place(rt.machine.group, rt.P.machine[0], rt.P.machine[1]));
+    rt.machine.group.rotation.y = rt.P.machineRot || 0;
+    rt.machineY = rt.machine.group.position.y;
+    rt.partObjs = rt.PARTS.map(function (p, i) {
+      var grp = new T.Group(), mesh = p.mat ? matMesh(p.mat) : partMesh(p.id);
+      mesh.position.y = 0.95; grp.add(mesh);
+      var beam = new T.Mesh(new T.CylinderGeometry(0.05, 0.22, 5, 8, 1, true), new T.MeshBasicMaterial({ color: '#8FE3DA', transparent: true, opacity: 0.16, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
+      beam.position.y = 2.7; if (FX) beam.layers.set(FX.GLOW); grp.add(beam);
+      place(grp, p.at[0], p.at[1]); rt.scene.add(grp);
+      if (rt.partRocks && M.rock && i < 2) { var rk = M.rock(40 + i); rk.scale.multiplyScalar(1.7); place(rk, p.at[0] + 1.5, p.at[1] - 1.1, -0.05); rt.scene.add(rk); }
+      return { group: grp, mesh: mesh, taken: false };
+    });
+    rt.departGlow = makeGlow(); rt.departGlow.position.y = 1.3; if (FX) rt.departGlow.layers.set(FX.GLOW); rt.machine.group.add(rt.departGlow);
+    rt.DEX = (rt.dex || []).concat([{ id: 'machine', name: '타임머신', desc: '탐험대가 타고 온 놋쇠 타임머신. 성경에 나오는 물건은 아니다', ref: null, hint: '처음 도착한 자리에 서 있어요.', range: 17,
+      pos: function () { return new T.Vector3(rt.P.machine[0], rt.height(rt.P.machine[0], rt.P.machine[1]) + 1.3, rt.P.machine[1]); } }]);
+    if (FX) FX.sortLayers(rt.scene);
+    built[id] = rt; SCN = sv || rt; cur = svc;
+    return rt;
+  }
+  function useScene(id) {
+    var rt = buildScene(id);
+    SCN = rt; cur = 'scene'; scene = rt.scene; env = { sun: rt.sun }; P = rt.P; SC = rt.data;
+    machine = rt.machine; PARTS = rt.PARTS; partObjs = rt.partObjs; DEX = rt.DEX; machineY = rt.machineY; departGlow = rt.departGlow;
+    dex = rt.dexShots = rt.dexShots || {};
+    return rt;
+  }
 
   var kids = {}, player = null, followers = [];
   function spawnKids() {
     var sc = cur === 'jordan' ? JL.scene : scene, st = cur === 'jordan' ? JL.P.start : P.start;
     ['choeon', 'hyu', 'onwoo'].forEach(function (k) {
-      if (kids[k]) { scene.remove(kids[k].group); if (JL) JL.scene.remove(kids[k].group); }
+      if (kids[k] && kids[k].group.parent) kids[k].group.parent.remove(kids[k].group);
       kids[k] = mkKid(k); sc.add(kids[k].group);
     });
     player = kids[S.ch];
@@ -132,12 +140,11 @@
   var camYaw = Math.PI, camPitchH = 1.45, camDist = 7.4, lastDrag = -9, now = 0;
   var camPos = new T.Vector3(), camLook = new T.Vector3(), camLookT = new T.Vector3();
   var stick = { x: 0, y: 0, id: null, bx: 0, by: 0 }, drag = { id: null, x: 0 }, keys = {};
-  var trail = [], mosesWalking = false, mosesArrived = false, mosesLeg = 0, mosesHold = 0, afterVision = false, bushLit = false, lastToast = -9, evIdx = 2, pspeed = 0, lookT = 0;
+  var trail = [], afterVision = false, lastToast = -9, evIdx = 2, pspeed = 0, lookT = 0;
   var baseFov = 62, viewShift = 0;
-  var HQ = C3 ? C3.horeb : null;
 
   /* ── 화면 위 UI ── */
-  var place_ = el('span', { class: 'place', text: SC.place });
+  var place_ = el('span', { class: 'place', text: '' });
   /* 성능 확인용: 장소 이름을 세 번 빠르게 누르면(또는 주소 끝에 #fps) 화면 왼쪽 아래에 초당 장면 수가 나온다 */
   var fpsEl = el('div', { class: 'fps3', hidden: '' }), fpsOn = /fps/.test(location.hash), fpsN = 0, fpsT = 0, taps = [];
   if (fpsOn) fpsEl.hidden = false;
@@ -146,7 +153,7 @@
   var partCount = el('span', { class: 'count teal', text: '부품 0 / 3' });
   var trackArrow = el('i', {}, icon('arrow')), trackText = el('span', { text: '' });
   var track = el('button', { class: 'track3', hidden: '', on: { click: function () { if (!questOpen && (state === 'explore')) openQuiz(); } } }, trackArrow, trackText);
-  var hudRef = refChip(SC.ref, true), clueCount = el('span', { class: 'count teal', hidden: '', text: '단서 0 / 5' });
+  var hudRef = refChip('', true), clueCount = el('span', { class: 'count teal', hidden: '', text: '단서 0 / 5' });
   var hud = el('div', { class: 'hud3 pad', hidden: '' },
     el('div', { class: 'row' }, place_, hudRef),
     el('div', { class: 'row' }, partCount, clueCount),
@@ -199,26 +206,14 @@
 
   /* ── 사진과 탐험 도감 ──
    * 세 아이는 목격자다. 본 것을 사진으로 담아 도감을 채운다. 설명은 본문에 있는 사실만 적는다. */
-  function v3(x, y, z) { return new T.Vector3(x, y, z); }
-  var DEX = [
-    { id: 'sheep', name: '양 떼', desc: '모세가 치던 장인 이드로의 양 떼', ref: '출 3:1', hint: '출발한 곳에서 가까운 곳에 모여 있어요.', range: 17,
-      pos: function () { if (flock) { var c = flock.center(); return v3(c.x, c.y + 0.6, c.z); } return v3(P.flock[0], H(P.flock[0], P.flock[1]) + 0.6, P.flock[1]); } },
-    { id: 'moses', name: '모세', desc: '미디안 제사장 이드로의 사위. 장인의 양 떼를 치고 있었다', ref: '출 3:1', hint: '양 떼 가까이에서 찾아보세요.', range: 19,
-      pos: function () { var p = moses.group.position; return v3(p.x, p.y + 1.1, p.z); } },
-    { id: 'horeb', name: '하나님의 산 호렙', desc: '모세가 양 떼를 이끌고 이른 산', ref: '출 3:1', hint: '가장 높은 봉우리를 화면 가운데에 담아 보세요.', range: 500, crop: 0.95,
-      pos: function () { return v3(P.mountain[0], H(P.mountain[0], P.mountain[1]) * 0.62, P.mountain[1]); } },
-    { id: 'bush', name: '불붙은 떨기나무', desc: '불이 붙었으나 타서 없어지지 않은 떨기나무', ref: '출 3:2', hint: '모세가 가는 쪽으로 따라가면 보여요.', range: 36,
-      pos: function () { return v3(P.bush[0], H(P.bush[0], P.bush[1]) + 1.3, P.bush[1]); } },
-    { id: 'machine', name: '타임머신', desc: '탐험대가 타고 온 놋쇠 타임머신. 성경에 나오는 물건은 아니다', ref: null, hint: '처음 도착한 자리에 서 있어요.', range: 17,
-      pos: function () { return v3(P.machine[0], H(P.machine[0], P.machine[1]) + 1.3, P.machine[1]); } }
-  ];
+  /* 도감에 담을 것은 장면 설정의 dex와 타임머신이다(buildScene) */
   var dex = {}, wantShot = false;
   function dexCount() { return Object.keys(dex).length; }
   function updateDexBtn() { dexLabel.textContent = '도감 ' + dexCount() + ' / ' + DEX.length; }
   function takeShot() {
     var cw = canvas.width, ch = canvas.height, found = [], best = null;
     DEX.forEach(function (d) {
-      if (d.id === 'bush' && !bushLit) return;
+      if (d.visible && !d.visible()) return;
       var wp = d.pos(), cs = wp.clone().applyMatrix4(camera.matrixWorldInverse);
       if (cs.z > -0.5 || wp.distanceTo(camera.position) > d.range) return;
       var n = wp.clone().project(camera);
@@ -266,9 +261,7 @@
   /* ── 탐험대 이야기: 타임머신 고장과 부품 찾기, 아지트 ──
    * 세 아이만의 이야기이며 성경 내용이 아니다. 화면에 "탐험대 이야기"라고 적어 본문과 구분한다.
    * 원칙: 과거에 아무것도 남기지 않고, 가져오는 것은 사진과 기록뿐이다. */
-  var PARTS = (HQ ? HQ.quests : [{ part: 'gear', name: '톱니바퀴', line: '톱니바퀴를 찾았어!' }, { part: 'needle', name: '나침반 바늘', line: '나침반 바늘이 여기 있었네!' }, { part: 'screw', name: '나사', line: '나사를 찾았어!' }])
-    .map(function (q, i) { return { id: q.part, name: q.name, at: P.parts[i], line: q.line, q: q }; });
-  var partsFound = 0, sceneDone = false, flagColor = null, hatOn = false, flag = null, departT = 0, machineY = machine.group.position.y;
+  var partsFound = 0, sceneDone = false, flagColor = null, hatOn = false, flag = null, departT = 0;
   var brass = new T.MeshStandardMaterial({ color: '#D9A441', metalness: 0.55, roughness: 0.35, flatShading: true });
   function partMesh(kind) {
     var g = new T.Group(), i, m;
@@ -291,41 +284,55 @@
     g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
     return g;
   }
-  var partObjs = PARTS.map(function (p, i) {
-    var grp = new T.Group(), mesh = partMesh(p.id);
-    mesh.position.y = 0.95; grp.add(mesh);
-    var beam = new T.Mesh(new T.CylinderGeometry(0.05, 0.22, 5, 8, 1, true), new T.MeshBasicMaterial({ color: '#8FE3DA', transparent: true, opacity: 0.16, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
-    beam.position.y = 2.7; if (FX) beam.layers.set(FX.GLOW); grp.add(beam);
-    place(grp, p.at[0], p.at[1]); scene.add(grp);
-    if (M.rock && i < 2) { var rk = M.rock(40 + i); rk.scale.multiplyScalar(1.7); place(rk, p.at[0] + 1.5, p.at[1] - 1.1, -0.05); scene.add(rk); }
-    return { group: grp, mesh: mesh, taken: false };
-  });
+  /* 재료(탐험대 이야기)를 바닥에 놓인 작은 물건으로 보여 준다. 이름에 따라 모양만 고른다 */
+  function matMesh(m) {
+    var g = new T.Group(), nm = (m.name || '') + ' ' + (m.key || ''), mat, i, o;
+    function std(c) { return new T.MeshStandardMaterial({ color: c, flatShading: true, roughness: 0.85 }); }
+    if (/돌|stone|pebble|rock/.test(nm)) { o = new T.Mesh(new T.DodecahedronGeometry(0.2, 0), std('#A8A090')); o.scale.set(1.2, 0.8, 1); g.add(o); }
+    else if (/털|wool|깃|feather/.test(nm)) { mat = std(/깃|feather/.test(nm) ? '#3A3A44' : '#F2EBDD'); for (i = 0; i < 5; i++) { o = new T.Mesh(new T.IcosahedronGeometry(0.1 + (i % 2) * 0.03, 0), mat); o.position.set(Math.cos(i * 1.3) * 0.11, Math.sin(i * 2.1) * 0.05, Math.sin(i * 1.3) * 0.11); g.add(o); } }
+    else if (/뿔|horn/.test(nm)) { o = new T.Mesh(new T.ConeGeometry(0.07, 0.42, 7), std('#D8C7A0')); o.rotation.z = 1.1; g.add(o); }
+    else if (/갈대|풀|짚|이삭|reed|straw|grass|stalk/.test(nm)) { mat = std('#C9B46A'); for (i = 0; i < 5; i++) { o = new T.Mesh(new T.CylinderGeometry(0.015, 0.015, 0.5, 4), mat); o.rotation.z = 1.3 + i * 0.06; o.position.y = i * 0.02; g.add(o); } }
+    else if (/가지|나무|막대|장작|stick|twig|branch|wood|bark/.test(nm)) { o = new T.Mesh(new T.CylinderGeometry(0.03, 0.04, 0.5, 5), std('#7A5232')); o.rotation.z = 1.4; g.add(o); o = new T.Mesh(new T.CylinderGeometry(0.015, 0.02, 0.18, 4), std('#7A5232')); o.position.set(0.08, 0.06, 0); o.rotation.z = 0.6; g.add(o); }
+    else if (/벽돌|조각|brick|shard|tile|그릇|potsherd/.test(nm)) { o = new T.Mesh(new T.BoxGeometry(0.3, 0.1, 0.18), std('#B5673E')); o.rotation.y = 0.4; g.add(o); }
+    else if (/흙|모래|진흙|clay|soil|sand|dust/.test(nm)) { o = new T.Mesh(new T.SphereGeometry(0.17, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), std('#8A6A44')); g.add(o); }
+    else if (/줄|끈|실|천|가죽|rope|cord|thread|cloth|leather/.test(nm)) { o = new T.Mesh(new T.TorusGeometry(0.13, 0.04, 5, 12), std('#B89A6A')); o.rotation.x = 1.3; g.add(o); }
+    else if (/씨|열매|seed|fruit|grain|nut/.test(nm)) { mat = std('#7A5A2A'); for (i = 0; i < 6; i++) { o = new T.Mesh(new T.SphereGeometry(0.05, 6, 4), mat); o.position.set(Math.cos(i) * 0.09, (i % 2) * 0.04, Math.sin(i) * 0.09); g.add(o); } }
+    else { o = new T.Mesh(new T.DodecahedronGeometry(0.16, 0), std('#C9A769')); g.add(o); }
+    g.traverse(function (x) { if (x.isMesh) x.castShadow = true; });
+    return g;
+  }
   function takePart(i) {
     var po = partObjs[i]; po.taken = true; po.group.visible = false; partsFound++;
     partCount.textContent = '부품 ' + partsFound + ' / ' + PARTS.length;
     partCount.classList.remove('pulse'); void partCount.offsetWidth; partCount.classList.add('pulse');
     if (FX) FX.audio.chime();
     questOpen = false; track.hidden = true;
-    if (i < 2) {
-      /* 부품을 주운 자리에서 본 것: 장면의 처음 두 대목을 보여 준다 */
+    var pm = PARTS[i].mat;
+    if (pm && BO3D.story) BO3D.story.take(SCN.id, pm.key);
+    if (i < PARTS.length - 1) {
+      /* 재료를 주운 자리에서 본 것: 장면 설정이 정한 대목을 보여 준다 */
       state = 'caption';
-      if (i === 1) setBushLit(true);
-      showPanel([el('div', { class: 'q-kicker', text: '부품 ' + partsFound + ' / ' + PARTS.length + ' · ' + PARTS[i].name }),
+      if (SCN.partFound) SCN.partFound(i);
+      var bi = SCN.partBeats ? SCN.partBeats[i] : null;
+      showPanel([el('div', { class: 'q-kicker', text: (pm ? '재료 ' : '부품 ') + partsFound + ' / ' + PARTS.length + ' · ' + PARTS[i].name }),
         el('div', { class: 'say' }, avatar(S.ch), el('div', { class: 'bubble' }, el('b', { text: C.chars[S.ch].name, style: 'color:' + C.chars[S.ch].color }), PARTS[i].line)),
-        el('div', { class: 'q-kicker', text: '지켜보기' }), beatNodes(SC.beats[i])],
+        pm ? matNote(pm) : null,
+        bi !== null && bi !== undefined && SC.beats[bi] ? [el('div', { class: 'q-kicker', text: '지켜보기' }), beatNodes(SC.beats[bi])] : null],
         btn('계속 탐험하기', function () {
           hidePanel();
-          /* 3:1 뒤에는 언덕 기슭까지만, 3:2-3(보려고 감) 뒤에 언덕에 오른다 */
-          if (i === 0) { mosesWalking = true; mosesLeg = 0; mosesHold = P.mosesFoot; }
-          if (i === 1) { mosesHold = 0; if (mosesLeg < P.mosesPath.length) mosesWalking = true; }
+          if (SCN.partContinue) SCN.partContinue(i);
           quest = i + 1; openQuiz();
         }));
-    } else startLookup();
+    } else { if (SCN.partFound) SCN.partFound(i); startLookup(); }
+  }
+  /* 재료를 얻었을 때 최현 박사의 통신(탐험대 이야기) */
+  function matNote(m) {
+    return el('div', { class: 'note story3 found3' }, icon('compass'), el('span', {}, el('small', { text: '탐험대 이야기 · 최현 박사' }), el('b', { text: m.use })));
   }
   /* ── 부품 탐지기 물음: 이 시대의 성경 이야기로 답하면, 답에 나오는 곳을 가리킨다 ── */
   function companion(pref) { return pref && pref !== S.ch ? pref : (followers.length ? keyOf(followers[0]) : null); }
   /* 잘못 골랐을 때 보여 주는 장절: 8~10세는 장까지, 11~13세는 장절, 14~19세는 장절 없이 주제만 (규칙서 5절) */
-  function quizTier(q) { return U.quizTier(q, '모세가 하나님의 산에 이른 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.'); }
+  function quizTier(q) { return U.quizTier(q, SCN.lookText); }
   function openQuiz() {
     var Q = PARTS[quest].q, q = Q.q[S.tier] || Q.q.t2;
     state = 'quiz'; stick.x = stick.y = 0; stick.id = null; base.hidden = true; track.hidden = true;
@@ -337,15 +344,15 @@
     go.disabled = true;
     var foundBox = el('div', {});
     /* 탐지기는 탐험대 이야기, 물음은 성경 물음이다. 성경 찾기 안내는 나이 단계에 따라 (규칙서 5절) */
-    var where = S.tier === 't1' ? '출애굽기 3장' : (S.tier === 't2' ? bookName(q.ref || '출 3:1') : '출애굽기에서 찾아보세요');
+    var where = S.tier === 't1' ? U.chapterOf(q.ref || SC.ref) : (S.tier === 't2' ? bookName(q.ref || SC.ref) : U.bookOf(SC.ref) + '에서 찾아보세요');
     sheetOverlay([el('div', { class: 'eyebrow', text: '탐험대 이야기' }),
-      el('div', { class: 'q-kicker', text: (HQ ? HQ.detector : '부품 탐지기') + ' ' + (quest + 1) + ' / ' + PARTS.length + ' · ' + PARTS[quest].name }),
+      el('div', { class: 'q-kicker', text: SCN.detector + ' ' + (quest + 1) + ' / ' + PARTS.length + ' · ' + PARTS[quest].name }),
       el('div', { class: 'bibleq3' }, icon('bookline'), el('span', { text: '성경 물음 · ' + where })),
       blockFor(quizTier(q), function () {
         go.disabled = false;
         foundBox.replaceChildren();
         add(foundBox, [
-          q.after ? el('div', { class: 'note good fadein' }, el('b', { text: q.after }), refChip(q.ref || '출 3:1')) : null,
+          q.after ? el('div', { class: 'note good fadein' }, el('b', { text: q.after }), refChip(q.ref || SC.ref)) : null,
           el('div', { class: 'note story3 found3 fadein' }, icon('compass'), el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: Q.found })))]);
         foundBox.scrollIntoView({ block: 'nearest' });
       }, 'q' + quest), foundBox], go);
@@ -356,7 +363,7 @@
     var best = (quest < PARTS.length && !partObjs[quest].taken) ? PARTS[quest] : null;
     if (best && !questOpen) {
       track.hidden = !show; trackArrow.style.transform = 'none'; track.classList.add('ask');
-      trackText.textContent = HQ ? HQ.askLabel : '탐지기 물음 풀기';
+      trackText.textContent = SCN.askLabel;
       return;
     }
     track.classList.remove('ask');
@@ -367,7 +374,7 @@
     track.hidden = false;
     var rel = Math.atan2(target[0] - p.x, target[1] - p.z) - camYaw;
     trackArrow.style.transform = 'rotate(' + (-rel) + 'rad)';
-    trackText.textContent = (best ? (HQ ? HQ.detector : '부품 탐지기') + ' ' : '타임머신까지 ') + Math.round(d) + 'm';
+    trackText.textContent = (best ? SCN.detector + ' ' : '타임머신까지 ') + Math.round(d) + 'm';
   }
   function setFlag(color) {
     flagColor = color;
@@ -391,7 +398,7 @@
       var ready = partsFound === PARTS.length && sceneDone;
       var slots = PARTS.map(function (p, i) {
         var on = partObjs[i].taken;
-        return el('div', { class: 'slot' + (on ? ' on' : '') }, icon(p.id === 'needle' ? 'compass' : p.id), el('b', { text: p.name }), el('span', { text: on ? '끼웠어요' : '아직 못 찾았어요' }));
+        return el('div', { class: 'slot' + (on ? ' on' : '') }, icon(p.mat ? 'gear' : (p.id === 'needle' ? 'compass' : p.id)), el('b', { text: p.name }), el('span', { text: on ? (p.mat ? '얻었어요' : '끼웠어요') : '아직 못 찾았어요' }));
       });
       var frames = DEX.map(function (d) {
         var has = d.id in dex;
@@ -403,16 +410,17 @@
       });
       var hatBtn = el('button', { class: 'tog', 'aria-pressed': String(hatOn), on: { click: function () { setHat(!hatOn); render(); } } }, hatOn ? '쓰고 있어요' : '쓰기');
       if (!sceneDone) hatBtn.disabled = true;
-      var msg = ready ? '부품을 모두 끼웠고 이 시대의 탐험도 마쳤어요. 이제 떠날 수 있어요.'
-        : [partsFound < PARTS.length ? '시간 나침반의 부품이 ' + (PARTS.length - partsFound) + '개 모자라요.' : '부품은 모두 끼웠어요.',
-          sceneDone ? '' : '떨기나무 장면을 끝까지 지켜봐야 떠날 수 있어요.'].join(' ');
+      var mt = PARTS.length && PARTS[0].mat, wd = mt ? '재료' : '부품';
+      var msg = ready ? wd + '를 모두 모았고 이 시대의 탐험도 마쳤어요. 이제 떠날 수 있어요.'
+        : [partsFound < PARTS.length ? (mt ? '수리에 쓸 재료가 ' : '시간 나침반의 부품이 ') + (PARTS.length - partsFound) + '개 모자라요.' : wd + '는 모두 모았어요.',
+          sceneDone ? '' : (SCN.sceneDoneText || '이 장면을 끝까지 지켜봐야 떠날 수 있어요.')].join(' ');
       var go = btn('다음 시대로 출발', depart, 'wide'); go.disabled = !ready;
       overlay.className = 'overlay3 den3ov pad';
       overlay.replaceChildren(
         el('div', { class: 'eyebrow', text: '탐험대 이야기' }),
         el('h1', { class: 'den-title', text: '타임머신 아지트' }),
-        el('p', { class: 'den-lead', text: '과거에는 아무것도 남기지 않고, 가져오는 것은 사진과 기록뿐이에요.' }),
-        el('h2', { text: '시간 나침반 수리' }), el('div', { class: 'slots' }, slots), el('p', { class: 'den-msg', text: msg }),
+        el('p', { class: 'den-lead', text: mt ? '과거에는 아무것도 남기지 않아요. 가져오는 것은 사진과 기록, 수리에 쓸 재료뿐이에요.' : '과거에는 아무것도 남기지 않고, 가져오는 것은 사진과 기록뿐이에요.' }),
+        el('h2', { text: mt ? '타임머신 수리' : '시간 나침반 수리' }), el('div', { class: 'slots' }, slots), el('p', { class: 'den-msg', text: msg }),
         el('h2', { text: '사진 벽' }), el('div', { class: 'frames' }, frames),
         el('h2', { text: '꾸미기' }),
         el('div', { class: 'deco' }, el('span', { text: '타임머신 깃발' }), el('div', { class: 'sws' }, sw)),
@@ -422,15 +430,14 @@
     }
     render();
   }
-  var departGlow = (function () {
+  function makeGlow() {
     var cv = document.createElement('canvas'); cv.width = cv.height = 128;
     var cx = cv.getContext('2d'), gr = cx.createRadialGradient(64, 64, 0, 64, 64, 64);
     gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,236,170,0.55)'); gr.addColorStop(1, 'rgba(255,220,140,0)');
     cx.fillStyle = gr; cx.fillRect(0, 0, 128, 128);
     var sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), transparent: true, opacity: 0, blending: T.AdditiveBlending, depthWrite: false, fog: false }));
     sp.scale.setScalar(5); return sp;
-  })();
-  departGlow.position.y = 1.3; if (FX) departGlow.layers.set(FX.GLOW); machine.group.add(departGlow);
+  }
   function depart() {
     overlay.hidden = true; state = 'depart'; departT = 0;
     hud.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true; hint.hidden = true;
@@ -447,18 +454,18 @@
   }
   function endCard() {
     state = 'end2';
-    if (BO3D.story) BO3D.story.complete3d('OT-09');
+    if (BO3D.story) BO3D.story.complete3d(SCN.id);
     overlay.className = 'overlay3 den3ov pad';
     overlay.replaceChildren(
-      el('div', { class: 'eyebrow', text: '출애굽기 3장 탐험 완료' }),
+      el('div', { class: 'eyebrow', text: SC.title + ' · 탐험 완료' }),
       el('h1', { class: 'den-title', text: '다음 시대로!' }),
       el('p', { class: 'den-lead', text: '타임머신이 다시 떠올랐어요. 과거에는 아무것도 남기지 않았어요.' }),
       el('div', { class: 'slots' },
         el('div', { class: 'slot on' }, icon('book'), el('b', { text: '말씀 카드' }), el('span', { text: SC.cards.length + '장' })),
         el('div', { class: 'slot on' }, icon('camera'), el('b', { text: '탐험 도감' }), el('span', { text: dexCount() + ' / ' + DEX.length })),
-        el('div', { class: 'slot on' }, icon('gear'), el('b', { text: '찾은 부품' }), el('span', { text: partsFound + ' / ' + PARTS.length }))),
+        el('div', { class: 'slot on' }, icon('gear'), el('b', { text: PARTS.length && PARTS[0].mat ? '모은 재료' : '찾은 부품' }), el('span', { text: partsFound + ' / ' + PARTS.length }))),
       el('p', { class: 'den-msg', text: BO3D.story ? '시대 지도에서 다음 장면으로 갈 수 있어요.' : '다음 장면(하나님의 이름과 세 가지 표징, 출 3:13-4:17)은 목사님 감수를 마친 뒤 열립니다.' }),
-      el('div', { class: 'den-foot' }, BO3D.story ? btn('다른 이름으로 가 보기', function () { if (C3 && BO3D.jordan) route(); else menu(); }, 'quiet') : btn('처음부터 다시', menu, 'quiet'),
+      el('div', { class: 'den-foot' }, BO3D.story && SCN.id === 'OT-09' ? btn('다른 이름으로 가 보기', function () { if (C3 && BO3D.jordan) route(); else menu(); }, 'quiet') : btn('처음부터 다시', menu, 'quiet'),
         BO3D.story ? btn('시대 지도로', toMap, 'wide') : btn('다른 이름으로 가 보기', function () { if (C3 && BO3D.jordan) route(); else menu(); }, 'wide')));
     overlay.hidden = false;
   }
@@ -469,6 +476,7 @@
   function hudMode() {
     var j = cur === 'jordan';
     place_.textContent = j ? JD.unknownPlace : SC.place;
+    if (!j && hudRef.lastChild) hudRef.lastChild.textContent = SC.ref;
     hudRef.hidden = j; partCount.hidden = j; clueCount.hidden = !j;
     dedBtn.hidden = true;
     if (j) { track.hidden = true; denBtn.hidden = true; }
@@ -480,7 +488,7 @@
     var opts = C.route.options.map(function (o) {
       var ready = o.to === 'EX-01' || o.to === 'ALT-02';
       var b = btn(ready ? o.label : C3.route.locked, function () {
-        warpTo(C3.route.warpTitle, function () { if (o.to === 'ALT-02') enterJordan(); else begin(); });
+        warpTo(C3.route.warpTitle, function () { if (o.to === 'ALT-02') enterJordan(); else { useScene('OT-09'); begin(); } });
       }, 'wide');
       if (!ready) b.disabled = true;
       return b;
@@ -684,7 +692,7 @@
             el('div', { class: 'vcards' }, ALT.cards.map(function (cd) {
               return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }), el('div', { class: 'm', text: ALT.title + ' · 성경책에서 직접 읽어 보세요' }), el('span', { class: 'tag', text: '돌아가는 길에 찾은 말씀' }));
             }))],
-            btn('모세가 있는 곳으로', function () { warpTo(C3.route.warpTitle, begin); }));
+            btn('모세가 있는 곳으로', function () { warpTo(C3.route.warpTitle, function () { useScene('OT-09'); begin(); }); }));
         }); nb.disabled = true;
         sheetOverlay([el('div', { class: 'q-kicker', text: '타임머신 다시 맞추기' }),
           findBlock({ ref: ALT.back.ref, prompt: ALT.back.prompt, confirm: ALT.back.confirm }, function () { nb.disabled = false; })], nb);
@@ -694,7 +702,7 @@
   /* ── 처음 화면 ── */
   function menu() {
     paused = false; if (BO3D.story) BO3D.story.close();
-    state = 'menu'; cur = 'horeb'; dedBtn.hidden = true; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
+    state = 'menu'; cur = 'scene'; dedBtn.hidden = true; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
     if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); }
     var tier = S.tier, ch = S.ch, picked = false;
     var ids = ['choeon', 'hyu', 'onwoo'];
@@ -727,12 +735,10 @@
     root.className = 'g3 app ' + S.tier;
     overlay.hidden = true;
     if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; }
-    cur = 'horeb'; hudMode();
+    useScene(SCN.id); hudMode(); makeVision();
     spawnKids();
-    quest = 0; questOpen = false; mosesWalking = false; mosesArrived = false; mosesLeg = 0; mosesHold = 0; evIdx = 2; afterVision = false; setBushLit(false);
-    place(moses.group, P.mosesStart[0], P.mosesStart[1]); moses.group.rotation.y = Math.PI * 0.8;
-    if (moses.setPose) moses.setPose('approach');
-    if (flock) flock.reset();
+    quest = 0; questOpen = false; evIdx = SCN.eventStart || 0; afterVision = false;
+    if (SCN.reset) SCN.reset();
     if (hat) { hat.parent && hat.parent.remove(hat); }
     hatOn = false; sceneDone = false; partsFound = 0;
     partObjs.forEach(function (po) { po.taken = false; po.group.visible = true; });
@@ -740,41 +746,51 @@
     for (var kk in kids) kids[kk].group.visible = true;
     machine.group.position.y = machineY; machine.group.rotation.y = -0.5; departGlow.material.opacity = 0; departGlow.scale.setScalar(5);
     camYaw = Math.PI; snapCamera();
-    setObjective(HQ ? HQ.askLabel : '부품을 찾자'); hud.hidden = false;
+    setObjective(SCN.askLabel); hud.hidden = false;
     updateDexBtn();
     state = 'caption';
-    var intro = HQ ? HQ.intro : { text: '', say: { who: 'onwoo', text: '' } }, teller = companion(intro.say.who);
-    showPanel([el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+    /* 도착: 임무가 있으면 최현 박사의 통신, 없으면 장면 설정의 탐험대 이야기 */
+    var mi = SC.mission, intro = SCN.intro || { text: '', say: { who: 'onwoo', text: '' } }, teller = companion(intro.say.who);
+    showPanel(mi && mi.call ? [el('div', { class: 'q-kicker', text: '탐험대 이야기 · ' + SC.title }),
+      el('div', { class: 'note story3 found3' }, icon('compass'), el('span', {}, el('small', { text: '최현 박사의 통신' }), el('b', { text: tx(mi.call) }))),
+      el('div', { class: 'say' }, avatar(teller), el('div', { class: 'bubble' }, el('b', { text: C.chars[teller].name, style: 'color:' + C.chars[teller].color }), '우리는 지켜보는 사람이야. 사건이 일어나는 자리에는 다가가지 말자.'))]
+      : [el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
       el('p', { class: 'narr', text: intro.text }),
       el('div', { class: 'say' }, avatar(teller), el('div', { class: 'bubble' }, el('b', { text: C.chars[teller].name, style: 'color:' + C.chars[teller].color }), intro.say.text))],
       btn('출발하자', function () {
-        hidePanel(); camBtn.hidden = false; dexBtn.hidden = false;
-        hint.hidden = false; setTimeout(function () { hint.hidden = true; }, 9000);
-        openQuiz();
+        hidePanel();
+        seg('before', function () {
+          camBtn.hidden = false; dexBtn.hidden = false;
+          hint.hidden = false; setTimeout(function () { hint.hidden = true; }, 9000);
+          openQuiz();
+        });
       }));
+  }
+  /* 동행 문답·오늘의 물음(story.js의 조각)을 3D 화면 위에 띄운다. 그 동안 아이들은 움직이지 않는다 */
+  function seg(kind, done) {
+    if (!BO3D.story || !BO3D.story.segment) { done(); return; }
+    var prev = state; state = 'seg'; base.hidden = true; stick.x = stick.y = 0; stick.id = null;
+    BO3D.story.segment(SCN.id, kind, function () { state = prev; done(); });
   }
   function keyOf(k) { for (var n in kids) if (kids[n] === k) return n; return null; }
 
   /* ── 올려다보기: 마지막 부품을 주운 뒤, 언덕 위 떨기나무 앞에 선 모세를 올려다본다 ──
    * 아이들 어깨 너머에서 카메라가 천천히 위로 올라간다. 아이들은 화면 아래에 작게 남는다. */
   function lookupPose() {
-    var px = P.lookSpot[0], pz = P.lookSpot[1];
-    var face = Math.atan2(P.bush[0] - px, P.bush[1] - pz);
+    var px = P.lookSpot[0], pz = P.lookSpot[1], fo = P.look.focus;
+    var face = Math.atan2(fo[0] - px, fo[1] - pz);
     place(player.group, px, pz); player.group.rotation.y = face;
     followers.forEach(function (f, k) {
       var side = k ? 1 : -1, x = px + Math.cos(face) * 1.05 * side, z = pz - Math.sin(face) * 1.05 * side;
       place(f.group, x - Math.sin(face) * 0.4, z - Math.cos(face) * 0.4); f.group.rotation.y = face; f.spd = 0;
     });
-    mosesWalking = false; mosesArrived = true;
-    place(moses.group, P.mosesEnd[0], P.mosesEnd[1]);
-    moses.group.rotation.y = Math.atan2(P.bush[0] - P.mosesEnd[0], P.bush[1] - P.mosesEnd[1]);
-    if (flock) flock.settle();
+    if (SCN.lookupPose) SCN.lookupPose();
   }
   function startLookup() {
     state = 'lookup'; lookT = 0; hud.hidden = true; hint.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; track.hidden = true; base.hidden = true;
     stick.x = stick.y = 0; stick.id = null;
     lookupPose();
-    toast(PARTS[2].line, S.ch);
+    toast(PARTS[PARTS.length - 1].line, S.ch);
   }
   function updateLookup(dt) {
     lookT += dt;
@@ -784,24 +800,26 @@
   /* ── 압도 장면: 미리 그린 사실적인 영상 (지시서 6.5) ──
    * 처음에는 끝까지 보고, 다시 볼 때는 건너뛸 수 있다. 하나님의 음성은 소리로 만들지 않는다.
    * 부르시는 순간에는 모든 효과음을 멎게 하고 자막(간접 표현 + 장절)만 띄운다. 영상이 없으면 바로 지켜보기로 간다. */
-  var VS = HQ && HQ.vision, vision = null;
-  function seenKey() { return 'bo3d.vision.bush.seen'; }
+  var VS = null, vision = null, visions = {};
+  function seenKey() { return 'bo3d.vision.' + (SCN.visionKey || SCN.id) + '.seen'; }
   function wasSeen() { try { return localStorage.getItem(seenKey()) === '1'; } catch (e) { return false; } }
   function markSeen() { try { localStorage.setItem(seenKey(), '1'); } catch (e) { /* 무시 */ } }
-  (function makeVision() {
-    if (!VS) return;
+  /* 장면마다 영상이 있으면 한 번 만들어 둔다 */
+  function makeVision() {
+    VS = SCN.vision || null; vision = visions[SCN.id] || null;
+    if (!VS || vision) return;
     var v = el('video', { playsinline: '', 'webkit-playsinline': '', muted: '', preload: 'auto', src: VS.src });
     v.muted = true;
     var cap = el('div', { class: 'vcap3' }), skip = el('button', { class: 'vskip3', hidden: '' }, VS.skip);
     var box = el('div', { class: 'vision3', hidden: '' }, v, cap, skip);
     add(root, box);
-    vision = { v: v, cap: cap, skip: skip, box: box, ok: false, failed: false, cue: -1, silenced: false, music: false, done: false };
-    v.addEventListener('canplay', function () { vision.ok = true; });
-    v.addEventListener('loadeddata', function () { vision.ok = true; });
-    v.addEventListener('error', function () { vision.failed = true; });
+    var V = vision = visions[SCN.id] = { v: v, cap: cap, skip: skip, box: box, ok: false, failed: false, cue: -1, silenced: false, music: false, done: false };
+    v.addEventListener('canplay', function () { V.ok = true; });
+    v.addEventListener('loadeddata', function () { V.ok = true; });
+    v.addEventListener('error', function () { V.failed = true; });
     v.addEventListener('ended', function () { endVision(); });
     skip.addEventListener('click', function () { endVision(); });
-  })();
+  }
   function visionReady() { return !!(vision && !vision.failed && (vision.ok || vision.v.readyState >= 2)); }
   function playVision() {
     state = 'vision';
@@ -844,15 +862,15 @@
     state = 'event'; hud.hidden = true; hint.hidden = true; root.classList.add('ev');
     if (FX) FX.audio.pad(true);
     lookupPose();
-    evIdx = 2; showBeat();
+    evIdx = SCN.eventStart || 0; showBeat();
   }
   function showBeat() {
-    var b = SC.beats[evIdx], last = evIdx === SC.beats.length - 1;
-    /* 영상에서 이미 얼굴을 가렸으면, 대목을 다시 읽는 동안에도 모세는 얼굴을 가린 채로 둔다 */
-    if (moses.setPose && b.state) moses.setPose(afterVision ? 'hideface' : b.state);
-    showPanel([el('div', { class: 'q-kicker', text: '지켜보기 ' + (evIdx - 1) + ' / ' + (SC.beats.length - 2) }), beatNodes(b)],
-      [evIdx > 2 ? btn('이전', function () { evIdx--; showBeat(); }, 'plain') : null,
-        btn(last ? '다음으로 가는 관문' : '다음', function () { if (last) startGates(); else { evIdx++; showBeat(); } })]);
+    var b = SC.beats[evIdx], last = evIdx === SC.beats.length - 1, e0 = SCN.eventStart || 0;
+    /* 인물의 자세는 장면 설정이 정한다(호렙: 영상에서 이미 얼굴을 가렸으면 그대로 둔다) */
+    if (SCN.beatPose) SCN.beatPose(evIdx, afterVision);
+    showPanel([el('div', { class: 'q-kicker', text: '지켜보기 ' + (evIdx - e0 + 1) + ' / ' + (SC.beats.length - e0) }), beatNodes(b)],
+      [evIdx > e0 ? btn('이전', function () { evIdx--; showBeat(); }, 'plain') : null,
+        btn(last ? '다음으로 가는 관문' : '다음', function () { if (last) { hidePanel(); seg('after', startGates); } else { evIdx++; showBeat(); } })]);
   }
 
   /* ── 관문 (2D 시범판과 같은 방식) ── */
@@ -868,7 +886,7 @@
     var gates = SC.gates[S.tier], gi = 0;
     (function show() {
       var q = gates[gi], last = gi === gates.length - 1;
-      var nb = btn(last ? '관문 통과' : '다음 관문', function () { if (last) finish(); else { gi++; show(); } });
+      var nb = btn(last ? '관문 통과' : '다음 관문', function () { if (last) { overlay.hidden = true; seg('today', finish); } else { gi++; show(); } });
       nb.disabled = true;
       sheetOverlay([el('div', { class: 'q-kicker', text: '다음으로 가는 관문 ' + (gi + 1) + ' / ' + gates.length }), blockFor(q, function () { nb.disabled = false; }, gi)], nb);
     })();
@@ -907,10 +925,11 @@
       kids_.push(el('p', { class: 'pending', text: '뜻과 삶의 적용을 묻는 질문은 목사님 감수를 마친 뒤 이 자리에 열립니다.' }));
     }
     kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 도감' }), el('p', { text: '지금까지 ' + dexCount() + ' / ' + DEX.length + '장을 담았어요. 더 둘러보며 남은 사진을 찍을 수 있어요.' })));
-    kids_.push(el('div', { class: 'closebox reward3' }, el('h3', { text: '탐험대 이야기' }), el('p', { text: (partsFound < PARTS.length ? '남은 부품 ' + (PARTS.length - partsFound) + '개를 찾아 타임머신으로 돌아가요. ' : '부품을 다 찾았으니 타임머신으로 돌아가요. ') + '아지트에서 탐험 모자를 쓸 수 있게 됐어요. 믿음의 점수가 아니라, 다녀온 곳을 기념하는 물건이에요.' })));
+    var wd = PARTS.length && PARTS[0].mat ? '재료' : '부품';
+    kids_.push(el('div', { class: 'closebox reward3' }, el('h3', { text: '탐험대 이야기' }), el('p', { text: (partsFound < PARTS.length ? '남은 ' + wd + ' ' + (PARTS.length - partsFound) + '개를 찾아 타임머신으로 돌아가요. ' : wd + '를 다 찾았으니 타임머신으로 돌아가요. ') + '아지트에서 탐험 모자를 쓸 수 있게 됐어요. 믿음의 점수가 아니라, 다녀온 곳을 기념하는 물건이에요.' })));
     sheetOverlay(kids_, [btn('처음부터', menu, 'plain'), btn('계속 탐험하기', function () {
       overlay.hidden = true; sceneDone = true; state = 'free'; hud.hidden = false; camBtn.hidden = false; dexBtn.hidden = false;
-      setObjective(partsFound < PARTS.length ? '남은 부품을 찾아 타임머신으로 돌아가자' : '타임머신으로 돌아가자')
+      setObjective(partsFound < PARTS.length ? '남은 ' + wd + '를 찾아 타임머신으로 돌아가자' : '타임머신으로 돌아가자')
     })]);
   }
 
@@ -963,7 +982,7 @@
     var p = player.group.position, nx = p.x + mx / m * sp * dt, nz = p.z + mz / m * sp * dt;
     if (!WALK(nx, nz)) {
       /* 언덕에는 오르지 않는다 */
-      if (cur === 'horeb' && W.hill(nx, nz) >= 0.75 && now - lastToast > 7) { lastToast = now; toast(HQ ? HQ.edge.text : '여기까지만 가자. 우리는 지켜보는 사람이야.', companion(HQ ? HQ.edge.who : 'onwoo')); }
+      if (cur === 'scene' && SCN.edge && now - lastToast > 7) { var eg0 = SCN.edge(nx, nz); if (eg0) { lastToast = now; toast(eg0.text, companion(eg0.who)); } }
       if (cur === 'jordan' && now - lastToast > 7) { var eg = JL.edge(nx, nz); if (eg !== 'far') { lastToast = now; toast(eg === 'river' ? JD.edgeRiver : JD.edgeCrowd, S.ch === 'onwoo' ? 'hyu' : 'onwoo'); } }
       if (WALK(nx, p.z)) nz = p.z; else if (WALK(p.x, nz)) nx = p.x; else return;
     }
@@ -988,25 +1007,6 @@
       f.spd = st / Math.max(dt, 0.001);
     });
   }
-  /* 모세는 양 떼 곁에서 출발해 언덕의 완만한 서쪽 어깨로 올라가 떨기나무 앞에 선다 */
-  function moveMoses(dt) {
-    if (!mosesWalking) { if (moses.update) moses.update(dt, false); return; }
-    var p = moses.group.position, tg = P.mosesPath[mosesLeg], dx = tg[0] - p.x, dz = tg[1] - p.z, d = Math.sqrt(dx * dx + dz * dz);
-    if (d < 0.25) {
-      mosesLeg++;
-      if (mosesHold && mosesLeg >= mosesHold) { mosesWalking = false; if (moses.update) moses.update(dt, false); return; }
-      if (mosesLeg >= P.mosesPath.length) {
-        mosesWalking = false; mosesArrived = true;
-        moses.group.rotation.y = Math.atan2(P.bush[0] - p.x, P.bush[1] - p.z);
-        if (moses.update) moses.update(dt, false);
-      }
-      return;
-    }
-    var st = Math.min(d, 1.9 * dt);
-    p.x += dx / d * st; p.z += dz / d * st; p.y = H(p.x, p.z);
-    moses.group.rotation.y = lerpAngle(moses.group.rotation.y, Math.atan2(dx, dz), Math.min(1, dt * 5));
-    if (moses.update) moses.update(dt, true);
-  }
   function updateCamera(dt) {
     var p = player.group.position, k = 1 - Math.exp(-dt * 6), want = new T.Vector3();
     if (state === 'depart' || state === 'end2') {
@@ -1015,14 +1015,15 @@
       camLookT.set(mp.x, mp.y + 1.4, mp.z); k = 1 - Math.exp(-dt * 3);
     } else if (state === 'lookup' || state === 'vision' || state === 'event' || state === 'gates' || state === 'end') {
       /* 언덕 아래에서 올려다본다. 처음엔 아이들 어깨 너머, 천천히 위로 올라가며 언덕 위를 담는다 */
-      var bx = P.bush[0], bz = P.bush[1], ax = p.x - bx, az = p.z - bz, al = Math.sqrt(ax * ax + az * az) || 1;
+      /* 지켜보기 동안은 장면 설정이 대목마다 볼 곳을 바꿀 수 있다(eventLook) */
+      var LK = (state === 'event' && SCN.eventLook && SCN.eventLook(evIdx)) || P.look, bx = LK.focus[0], bz = LK.focus[1], ax = p.x - bx, az = p.z - bz, al = Math.sqrt(ax * ax + az * az) || 1;
       ax /= al; az /= al;
       var u = state === 'lookup' ? Math.min(1, Math.max(0, (lookT - 0.8) / 5.5)) : 1, e = u * u * (3 - 2 * u);
-      var back = 2.6 + 8.6 * e, up = 1.5 + 1.9 * e, side = 0.5 * e;
+      var back = 2.6 + (LK.backE || 8.6) * e, up = 1.5 + (LK.upE || 1.9) * e, side = 0.5 * e;
       want.set(p.x + ax * back - az * side, p.y + up, p.z + az * back + ax * side);
-      var top = H(bx, bz), mx = P.mosesEnd[0], mz = P.mosesEnd[1];
+      var top = H(bx, bz), mx = LK.mid[0], mz = LK.mid[1];
       var tx = bx * 0.55 + mx * 0.45, tz = bz * 0.55 + mz * 0.45;
-      camLookT.set(p.x + (tx - p.x) * (0.25 + 0.75 * e), p.y + 1.2 + (top - 0.6 - p.y - 1.2) * e, p.z + (tz - p.z) * (0.25 + 0.75 * e));
+      camLookT.set(p.x + (tx - p.x) * (0.25 + 0.75 * e), p.y + 1.2 + (top + (LK.dy || 0) - p.y - 1.2) * e, p.z + (tz - p.z) * (0.25 + 0.75 * e));
       k = state === 'lookup' ? 1 - Math.exp(-dt * 4) : 1 - Math.exp(-dt * 2.2);
     } else {
       var fx = Math.sin(camYaw), fz = Math.cos(camYaw);
@@ -1059,11 +1060,10 @@
     if (paused) return; /* 이야기 카드·시대 지도가 화면을 덮는 동안은 3D를 그리지 않는다(휴대폰 전지와 시험 속도) */
     now += dt;
     if (fpsOn) { fpsN++; fpsT += rdt; if (fpsT > 0.5) { fpsEl.textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }
-    var horeb = cur === 'horeb' || !JL;
+    var horeb = cur === 'scene' || !JL; /* 장면 틀로 만든 3D 장면 */
     if (horeb) {
-      if (bush.update) bush.update(now);
       if (machine.update) machine.update(now);
-      if (flock) { flock.setAvoid(player ? player.group.position : null); flock.update(dt, now, moses.group.position, mosesWalking, mosesLeg); }
+      if (SCN.update) SCN.update(dt, now, { player: player ? player.group.position : null, state: state });
     } else JL.update(dt, now);
     if (player) {
       if (state === 'explore' || state === 'free') {
@@ -1076,7 +1076,6 @@
           });
         }
       } else { pspeed = 0; followers.forEach(function (f) { f.spd = 0; }); }
-      if (horeb) moveMoses(dt);
       if (player.update) player.update(dt, pspeed);
       followers.forEach(function (f) { if (f.update) f.update(dt, f.spd || 0); });
       if (state === 'depart') updateDepart(dt);
@@ -1085,20 +1084,19 @@
       if (horeb) updateTracker();
       updateCamera(dt);
       var pp2 = player.group.position, sun = horeb ? env.sun : JL.sun;
-      if (horeb) sun.position.set(pp2.x - 38, pp2.y + 46, pp2.z + 30); else sun.position.set(pp2.x + 30, pp2.y + 50, pp2.z + 34);
+      var so = horeb ? (SCN.sunOff || [-38, 46, 30]) : [30, 50, 34];
+      sun.position.set(pp2.x + so[0], pp2.y + so[1], pp2.z + so[2]);
       sun.target.position.copy(pp2);
     } else {
       /* 처음 화면 뒤로 보이는 풍경 */
-      var a = now * 0.05;
-      camera.position.set(P.start[0] + Math.sin(a) * 9, H(P.start[0], P.start[1]) + 5.5, P.start[1] + 10);
-      camera.lookAt(P.bush[0], 6, P.bush[1] - 30);
+      if (SCN.menuCam) SCN.menuCam(camera, now);
+      else { var a = now * 0.05, fo = P.look.focus; camera.position.set(P.start[0] + Math.sin(a) * 9, H(P.start[0], P.start[1]) + 5.5, P.start[1] + 10); camera.lookAt(fo[0], 4, fo[1]); }
     }
-    if (horeb && bushFx && bushLit) bushFx.update(now, camera, renderer.domElement.height);
+    if (horeb && SCN.render) SCN.render(camera, renderer);
     if (FX && player) {
-      if (horeb && flock) { var fcn = flock.center(); FX.audio.setFlock(dist2(player.group.position.x, player.group.position.z, fcn.x, fcn.z)); } else FX.audio.setFlock(999);
-      FX.audio.setFire(horeb && bushLit ? dist2(player.group.position.x, player.group.position.z, P.bush[0], P.bush[1]) : 999);
+      if (horeb && SCN.audio) SCN.audio(FX.audio, player.group.position); else { FX.audio.setFlock(999); FX.audio.setFire(999); }
     }
-    var rs = horeb ? scene : JL.scene;
+    var rs = horeb ? SCN.scene : JL.scene;
     if (post) post.render(rs, camera); else renderer.render(rs, camera);
     if (wantShot) { wantShot = false; if (horeb) takeShot(); else takeClue(); }
   }
@@ -1107,33 +1105,36 @@
   var paused = false;
   function hideAll3d() { hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; dedBtn.hidden = true; track.hidden = true; hint.hidden = true; overlay.hidden = true; root.classList.remove('ev'); }
   function toMap() { if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } BO3D.story.open(); }
-  BO3D.scenes3d = { 'OT-09': true };
+  BO3D.scenes3d = {}; Object.keys(BO3D.scene3d || {}).forEach(function (k) { BO3D.scenes3d[k] = true; });
   BO3D.game = {
     toStory: function () { state = 'story'; paused = true; hideAll3d(); },
     menu: menu,
     start3d: function (id) {
       paused = false; hideAll3d(); root.className = 'g3 app ' + S.tier;
-      if (id === 'OT-09') { if (C3 && BO3D.jordan) route(); else begin(); }
+      if (id === 'OT-09' && C3 && BO3D.jordan) { useScene('OT-09'); route(); }
+      else if (BO3D.scene3d[id]) { useScene(id); begin(); }
     }
   };
 
   /* 자동 점검용 (화면에는 영향 없음) */
   BO3D.debug = {
     level: function () { return cur; },
-    moses: function () { return { key: moses.key || 'code', pose: mosesPose }; },
+    moses: function () { return SCN.debug && SCN.debug.moses ? SCN.debug.moses() : null; },
+    scene: function () { return { id: SCN.id, P: P, parts: PARTS.map(function (p) { return { at: p.at, name: p.name, mat: !!p.mat }; }), eventStart: SCN.eventStart || 0, dex: DEX.map(function (d) { return d.id; }), cur: cur }; },
     clues: function () { return Object.keys(clue); },
     jordan: function () { return JL ? { P: JL.P, targets: Object.keys(JL.targets).map(function (k) { var v = JL.targets[k].pos(); return [k, v.x, v.y, v.z]; }) } : null; },
     parts: function () { return { found: partsFound, at: PARTS.map(function (p) { return p.at; }), done: sceneDone }; },
     dex: function () { return Object.keys(dex); },
     quest: function () { return { quest: quest, open: questOpen, at: P.parts }; },
     vision: function () { return vision ? { ok: visionReady(), t: vision.v.currentTime, seen: wasSeen() } : null; },
-    lookup: function () { overlay.hidden = true; hidePanel(); quest = 2; setBushLit(true); partObjs.forEach(function (po) { po.taken = true; po.group.visible = false; }); partsFound = 3; startLookup(); },
-    flock: function () { return flock ? { n: flock.count, c: flock.center() } : null; },
-    state: function () { return { state: state, quest: quest, x: player && player.group.position.x, z: player && player.group.position.z, mosesArrived: mosesArrived }; },
+    lookup: function () { overlay.hidden = true; hidePanel(); quest = PARTS.length - 1; partObjs.forEach(function (po) { po.taken = true; po.group.visible = false; }); partsFound = PARTS.length; startLookup(); },
+    flock: function () { return SCN.debug && SCN.debug.flock ? SCN.debug.flock() : null; },
+    state: function () { return { state: state, quest: quest, x: player && player.group.position.x, z: player && player.group.position.z, mosesArrived: !!(SCN.debug && SCN.debug.arrived && SCN.debug.arrived()) }; },
     stick: function (x, y) { stick.x = x; stick.y = y; },
     yaw: function (v) { camYaw = v; lastDrag = now + 999; },
     goto: function (x, z) { player.group.position.set(x, H(x, z), z); trail.push([x, z]); }
   };
 
+  useScene('OT-09'); hudMode();
   resize(); menu(); requestAnimationFrame(frame);
 })();

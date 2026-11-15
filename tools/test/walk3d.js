@@ -3,6 +3,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
+const enter3d = require('./lib/enter.js');
 const ti = process.argv[2] || '1', out = process.argv[3], dsf = Number(process.argv[4] || '1');
 fs.mkdirSync(out, { recursive: true });
 (async () => {
@@ -19,8 +20,7 @@ fs.mkdirSync(out, { recursive: true });
   await p.waitForTimeout(2500);
   await p.evaluate(() => document.fonts.ready);
   await shot('menu');
-  await p.click('.tier >> nth=' + ti);
-  await p.click('text=탐험 시작');
+  await enter3d(p, ti, 'OT-09');
   await p.waitForTimeout(600);
   await p.click('.route-opts .btn:has-text("모세")');
   await p.waitForSelector('text=출발하자', { timeout: 40000 });
@@ -130,7 +130,7 @@ fs.mkdirSync(out, { recursive: true });
   await p.click('text=밖으로 나가기'); await p.waitForTimeout(1200); await shot('deco-outside');
   await p.click('.den3'); await p.waitForTimeout(400);
   await p.click('text=다음 시대로 출발'); await p.waitForTimeout(5200); await shot('depart');
-  await p.waitForSelector('text=처음부터 다시', { timeout: 40000 }); await p.waitForTimeout(400); await shot('endcard');
+  await p.waitForSelector('text=/처음부터 다시|시대 지도로/', { timeout: 40000 }); await p.waitForTimeout(400); await shot('endcard');
   console.log(tier, 'shots:', n, JSON.stringify(await st()), errs.length ? '\nERR ' + errs.slice(0, 8).join('\n') : 'no errors');
   await b.close();
 })().catch((e) => { console.error('FAIL', e.message); process.exit(1); });

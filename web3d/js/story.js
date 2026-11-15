@@ -234,6 +234,12 @@
       finish(d); return;
     }
     if (nb && gated) nb.disabled = true;
+    if (cur.screen === 'seg') {
+      var fin = cur.seg;
+      if (!next) nb = btn('계속', function () { closeAll(); if (fin) fin(); });
+      show('seg', null, null, body, [prev, nb]);
+      return;
+    }
     show('play', e.key, topBar('시대 ' + e.era + ' · ' + d.title), body, [prev, nb], { art: artOpts(d, s) });
   }
   /* 창조 장면은 대목마다 지어진 것만 그린다(eraart.js) */
@@ -293,7 +299,18 @@
     box.className = 'ot3 map'; box.hidden = false;
   }
 
-  function closeAll() { box.hidden = true; box.replaceChildren(); cur.screen = 'none'; }
+  function closeAll() { box.hidden = true; box.replaceChildren(); cur.screen = 'none'; cur.seg = null; }
+
+  /* ── 3D 장면 안에서 쓰는 조각: 동행 문답(앞·뒤)과 오늘의 물음을 3D 화면 위의 시트로 보여 준다 ──
+   * kinds: 'before' | 'after' | 'today'. 보여 줄 것이 없으면 바로 done()을 부른다. */
+  function segment(id, kind, done) {
+    var d = sc(id), m = d && d.mission, st = [];
+    if (m && m.companion && (kind === 'before' || kind === 'after') && (m.companion.when === 'after' ? 'after' : 'before') === kind) m.companion.talks.forEach(function (t, i) { st.push({ k: 'talk', i: i }); });
+    if (m && m.today && kind === 'today') m.today.forEach(function (x, i) { st.push({ k: 'today', i: i }); });
+    if (!st.length) { done(); return; }
+    cur.screen = 'seg'; cur.id = id; cur.steps = st; cur.step = 0; cur.seg = done;
+    render();
+  }
 
   /* 3D 장면을 마치면 game.js가 부른다 */
   function complete3d(id) {
@@ -303,7 +320,7 @@
   }
 
   BO3D.story = {
-    open: function () { openMap(); }, openMap: openMap, openScene: openScene, play: play, complete3d: complete3d, close: closeAll,
+    open: function () { openMap(); }, openMap: openMap, openScene: openScene, play: play, complete3d: complete3d, close: closeAll, segment: segment, take: function (id, key) { PG.mats[id + ':' + key] = 1; save(); },
     reset: function () { PG = {}; save(); load(); },
     debug: {
       state: function () { return { screen: cur.screen, id: cur.id, step: cur.step, k: cur.k, n: cur.steps.length, done: doneCount(), mats: matCount(), total: MAT_TOTAL }; },
