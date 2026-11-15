@@ -109,12 +109,17 @@ function check(file) {
   if (!m) { if (NEED_MISSION) E('mission 없음'); }
   else {
     tri(m.call, 'mission.call');
+    if (m.companion === undefined) E('mission.companion 없음(동행 인물이 없으면 null)');
     const want = g3 && g3.build ? 3 : 1;
     if (!Array.isArray(m.materials) || m.materials.length !== want) E(`mission.materials는 ${want}개(3D 장면 3개, 그 밖 1개)`);
-    else m.materials.forEach((x, i) => { ['key', 'name', 'use', 'how'].forEach((k) => { if (!str(x[k])) E(`mission.materials[${i}].${k} 없음`); }); refOk(x.basis, `mission.materials[${i}].basis`); });
+    else m.materials.forEach((x, i) => {
+      ['key', 'name', 'use', 'how', 'line'].forEach((k) => { if (!str(x[k])) E(`mission.materials[${i}].${k} 없음`); else if (k !== 'key') texts.push([`mission.materials[${i}].${k}`, x[k], null]); });
+      refOk(x.basis, `mission.materials[${i}].basis`);
+    });
     if (m.companion !== null) {
       const cp = m.companion || {};
       if (!str(cp.who)) E('mission.companion.who 없음(동행 인물이 없으면 companion: null)');
+      if (cp.when !== 'before' && cp.when !== 'after') E('mission.companion.when은 "before" 또는 "after"(작성규칙 7.1)');
       refOk(cp.ref, 'mission.companion.ref');
       if (!Array.isArray(cp.talks) || cp.talks.length < 2 || cp.talks.length > 3) E('mission.companion.talks는 2~3개');
       else cp.talks.forEach((x, i) => {
@@ -126,7 +131,7 @@ function check(file) {
     if (!Array.isArray(m.today) || m.today.length < 1 || m.today.length > 2) E('mission.today는 1~2개');
     else m.today.forEach((x, i) => {
       const w = `mission.today[${i}]`;
-      if (!str(x.q)) E(`${w}.q 없음`); tri(x.a, w + '.a');
+      if (!str(x.q)) E(`${w}.q 없음`); else texts.push([`${w}.q`, x.q, null]); tri(x.a, w + '.a');
       if (!Array.isArray(x.refs) || !x.refs.length) E(`${w}.refs 없음(근거 장절)`); else x.refs.forEach((r) => refOk(r, w + '.refs'));
     });
   }

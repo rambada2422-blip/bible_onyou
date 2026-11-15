@@ -11,38 +11,13 @@
   var cur = 'horeb', JL = null;
   function H(x, z) { return cur === 'jordan' && JL ? JL.height(x, z) : W['height'](x, z); }
   function WALK(x, z) { return cur === 'jordan' && JL ? JL.walkable(x, z) : W['walkable'](x, z); }
-  var S = { tier: 't2', ch: 'hyu' };
+  /* 화면 부품은 web3d/js/ui.js에 모았다(이야기 카드 장면과 함께 쓴다). 나이 단계와 고른 아이는 BO3D.S */
+  var U = BO3D.ui, S = U.S;
   var root = document.getElementById('game'), canvas = document.getElementById('c'), ui = document.getElementById('ui');
 
   /* ── 작은 도구 ── */
-  function el(tag, props) {
-    var n = document.createElement(tag), i, k;
-    props = props || {};
-    for (k in props) {
-      if (k === 'class') n.className = props[k];
-      else if (k === 'text') n.textContent = props[k];
-      else if (k === 'html') n.innerHTML = props[k];
-      else if (k === 'on') { for (var ev in props.on) n.addEventListener(ev, props.on[ev]); }
-      else if (props[k] !== null && props[k] !== undefined && props[k] !== false) n.setAttribute(k, props[k]);
-    }
-    for (i = 2; i < arguments.length; i++) add(n, arguments[i]);
-    return n;
-  }
-  function add(n, kid) {
-    if (kid === null || kid === undefined || kid === false) return;
-    if (Array.isArray(kid)) kid.forEach(function (x) { add(n, x); });
-    else n.appendChild(typeof kid === 'string' ? document.createTextNode(kid) : kid);
-  }
-  function tx(v) { return typeof v === 'string' ? v : (v[S.tier] || v.t2); }
-  function icon(name) { return el('span', { html: IC[name] || '' }).firstChild; }
-  function refChip(ref, dark) { return el('span', { class: 'ref' + (dark ? ' dark' : '') }, icon('bookline'), ref); }
-  function avatar(key) {
-    if (!AV[key]) return el('span', { class: 'avatar' });
-    return el('img', { class: 'avatar', alt: '', src: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(AV[key]) });
-  }
-  function bookName(ref) {
-    return ref.replace(/^출 /, '출애굽기 ').replace(/^창 /, '창세기 ').replace(/^수 /, '여호수아 ').replace(/(\d+):/, '$1장 ').replace(/$/, '절');
-  }
+  var el = U.el, add = U.add, tx = U.tx, icon = U.icon, refChip = U.refChip, avatar = U.avatar, bookName = U.bookName;
+  var goodNote = U.goodNote, lookNote = U.lookNote, choiceBlock = U.choiceBlock, findBlock = U.findBlock, findrefBlock = U.findrefBlock, orderBlock = U.orderBlock, blockFor = U.blockFor;
   function dist2(ax, az, bx, bz) { var dx = ax - bx, dz = az - bz; return Math.sqrt(dx * dx + dz * dz); }
   function lerpAngle(a, b, t) { var d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; }
 
@@ -350,12 +325,7 @@
   /* ── 부품 탐지기 물음: 이 시대의 성경 이야기로 답하면, 답에 나오는 곳을 가리킨다 ── */
   function companion(pref) { return pref && pref !== S.ch ? pref : (followers.length ? keyOf(followers[0]) : null); }
   /* 잘못 골랐을 때 보여 주는 장절: 8~10세는 장까지, 11~13세는 장절, 14~19세는 장절 없이 주제만 (규칙서 5절) */
-  function quizTier(q) {
-    var c = {}, k; for (k in q) c[k] = q[k];
-    if (S.tier === 't1') c.lookRef = (q.ref || '').replace(/:.*$/, '장');
-    else if (S.tier === 't3') { c.lookRef = ''; c.lookText = '모세가 하나님의 산에 이른 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.'; }
-    return c;
-  }
+  function quizTier(q) { return U.quizTier(q, '모세가 하나님의 산에 이른 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.'); }
   function openQuiz() {
     var Q = PARTS[quest].q, q = Q.q[S.tier] || Q.q.t2;
     state = 'quiz'; stick.x = stick.y = 0; stick.id = null; base.hidden = true; track.hidden = true;
@@ -477,6 +447,7 @@
   }
   function endCard() {
     state = 'end2';
+    if (BO3D.story) BO3D.story.complete3d('OT-09');
     overlay.className = 'overlay3 den3ov pad';
     overlay.replaceChildren(
       el('div', { class: 'eyebrow', text: '출애굽기 3장 탐험 완료' }),
@@ -486,8 +457,9 @@
         el('div', { class: 'slot on' }, icon('book'), el('b', { text: '말씀 카드' }), el('span', { text: SC.cards.length + '장' })),
         el('div', { class: 'slot on' }, icon('camera'), el('b', { text: '탐험 도감' }), el('span', { text: dexCount() + ' / ' + DEX.length })),
         el('div', { class: 'slot on' }, icon('gear'), el('b', { text: '찾은 부품' }), el('span', { text: partsFound + ' / ' + PARTS.length }))),
-      el('p', { class: 'den-msg', text: '다음 장면(하나님의 이름과 세 가지 표징, 출 3:13-4:17)은 목사님 감수를 마친 뒤 열립니다.' }),
-      el('div', { class: 'den-foot' }, btn('처음부터 다시', menu, 'quiet'), btn('다른 이름으로 가 보기', function () { if (C3 && BO3D.jordan) route(); else menu(); }, 'wide')));
+      el('p', { class: 'den-msg', text: BO3D.story ? '시대 지도에서 다음 장면으로 갈 수 있어요.' : '다음 장면(하나님의 이름과 세 가지 표징, 출 3:13-4:17)은 목사님 감수를 마친 뒤 열립니다.' }),
+      el('div', { class: 'den-foot' }, BO3D.story ? btn('다른 이름으로 가 보기', function () { if (C3 && BO3D.jordan) route(); else menu(); }, 'quiet') : btn('처음부터 다시', menu, 'quiet'),
+        BO3D.story ? btn('시대 지도로', toMap, 'wide') : btn('다른 이름으로 가 보기', function () { if (C3 && BO3D.jordan) route(); else menu(); }, 'wide')));
     overlay.hidden = false;
   }
 
@@ -721,6 +693,7 @@
 
   /* ── 처음 화면 ── */
   function menu() {
+    paused = false; if (BO3D.story) BO3D.story.close();
     state = 'menu'; cur = 'horeb'; dedBtn.hidden = true; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
     if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); }
     var tier = S.tier, ch = S.ch, picked = false;
@@ -740,13 +713,13 @@
     sync();
     overlay.className = 'overlay3 menu3 pad';
     overlay.replaceChildren(
-      el('div', { class: 'eyebrow', text: '출애굽기 3장 · 3D 한 장면 샘플' }),
+      el('div', { class: 'eyebrow', text: BO3D.ot ? '구약 전체 · 10개 시대 40장면' : '출애굽기 3장 · 3D 한 장면 샘플' }),
       el('h1', { class: 'game-title', text: '성경 탐험대' }),
       el('p', { class: 'game-sub', text: '직접 걸어가서 그 자리를 지켜봐요' }),
       el('h2', { text: '몇 살 탐험대인가요?' }), el('div', { class: 'tier-list' }, tb),
       el('h2', { text: '누가 되어 탐험할까요?' }), el('div', { class: 'char-row' }, cb),
-      btn('탐험 시작', function () { S.tier = tier; S.ch = ch; if (C3 && BO3D.jordan) route(); else begin(); }, 'wide'),
-      el('p', { class: 'fine', text: '감수 전 샘플입니다. 그래픽은 단순한 3D이며, 탐험하는 구조를 확인하기 위한 것입니다.' }));
+      btn('탐험 시작', function () { S.tier = tier; S.ch = ch; if (BO3D.story) { paused = true; BO3D.story.open(); } else if (C3 && BO3D.jordan) route(); else begin(); }, 'wide'),
+      el('p', { class: 'fine', text: '감수 전 시험판입니다. 목사님 감수를 마치기 전에는 아이들에게 공개하지 않습니다.' }));
     overlay.hidden = false;
   }
 
@@ -883,69 +856,6 @@
   }
 
   /* ── 관문 (2D 시범판과 같은 방식) ── */
-  function goodNote(ref, text) { return el('div', { class: 'note good fadein' }, el('b', { text: text || '성경에 그렇게 기록되어 있어요.' }), ref ? refChip(ref) : null); }
-  function lookNote(ref, text) {
-    return el('div', { class: 'note look fadein' }, el('b', { text: '성경에서 확인해 볼까요?' }), el('span', { text: text || '성경책을 펴서 읽은 뒤 다시 골라 보세요.' }), ref ? refChip(ref) : null);
-  }
-  function choiceBlock(q, ref, onOk) {
-    var pics = q.options.some(function (o) { return o.icon; }), noteBox = el('div', {});
-    var btns = q.options.map(function (o) {
-      var b = el('button', { class: 'opt', on: { click: function () {
-        if (o.ok) { btns.forEach(function (x) { x.disabled = true; if (x !== b) x.classList.add('rest'); }); b.classList.add('ok'); noteBox.replaceChildren(goodNote(ref)); onOk(); }
-        else { b.classList.add('rest'); b.disabled = true; noteBox.replaceChildren(lookNote(q.lookRef !== undefined ? q.lookRef : ref, q.lookText)); }
-        noteBox.scrollIntoView({ block: 'nearest' });
-      } } }, o.icon ? icon(o.icon) : null, el('span', { text: o.label }));
-      return b;
-    });
-    return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' + (pics ? ' pics' : '') }, btns), noteBox];
-  }
-  function findBlock(q, onOk) {
-    var after = el('div', { style: 'display:flex;flex-direction:column;gap:12px' });
-    var rb = el('button', { class: 'btn plain', on: { click: function () { rb.disabled = true; rb.textContent = '읽었어요'; add(after, choiceBlock(q.confirm, q.ref, onOk)); after.scrollIntoView({ block: 'nearest' }); } } }, '찾아서 읽었어요');
-    return [el('div', { class: 'findcard' }, icon('book'), el('div', {}, el('div', { class: 'big', text: bookName(q.ref) }), el('p', { text: tx(q.prompt) }))), rb, after];
-  }
-  function findrefBlock(q, onOk, idp) {
-    var ch = el('input', { id: 'g-ch-' + idp, type: 'text', inputmode: 'numeric', 'aria-label': '장', autocomplete: 'off', maxlength: '3' });
-    var vs = el('input', { id: 'g-vs-' + idp, type: 'text', inputmode: 'numeric', 'aria-label': '절', autocomplete: 'off', maxlength: '3' });
-    var noteBox = el('div', {});
-    var check = el('button', { class: 'btn plain', on: { click: function () {
-      var c0 = parseInt(ch.value, 10), v0 = parseInt(vs.value, 10), v = c0 + ':' + v0;
-      if (!(c0 > 0) || !(v0 > 0)) { noteBox.replaceChildren(el('div', { class: 'note look fadein' }, el('b', { text: '장과 절을 숫자로 적어 보세요.' }), el('span', { text: q.hint }))); return; }
-      if (q.accept.indexOf(v) >= 0) { ch.disabled = vs.disabled = check.disabled = true; noteBox.replaceChildren(goodNote(null, '맞게 찾았어요. ' + q.book + ' ' + ch.value.trim() + '장 ' + vs.value.trim() + '절.')); onOk(); }
-      else noteBox.replaceChildren(el('div', { class: 'note look fadein' }, el('b', { text: '그 장과 절에서는 찾는 내용을 확인하지 못했어요. 다시 찾아볼까요?' }), el('span', { text: q.hint })));
-      noteBox.scrollIntoView({ block: 'nearest' });
-    } } }, '확인');
-    return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'refin' }, el('span', { text: q.book }), ch, el('span', { text: '장' }), vs, el('span', { text: '절' }), check), noteBox];
-  }
-  function orderBlock(q, onOk) {
-    var n = q.items.length, perm = [], i, picked = [], noteBox = el('div', {});
-    for (i = 1; i < n; i += 2) perm.push(i);
-    for (i = n - 1 - ((n - 1) % 2); i >= 0; i -= 2) perm.push(i);
-    var btns = perm.map(function (orig) {
-      var num = el('span', { class: 'num', text: '' });
-      var b = el('button', { class: 'opt', 'aria-pressed': 'false', on: { click: function () {
-        if (picked.indexOf(orig) >= 0) return;
-        picked.push(orig); num.textContent = String(picked.length); b.setAttribute('aria-pressed', 'true');
-        if (picked.length === n) check();
-      } } }, num, el('span', { text: q.items[orig] }));
-      b._num = num; return b;
-    });
-    function reset() { picked = []; btns.forEach(function (b) { b._num.textContent = ''; b.setAttribute('aria-pressed', 'false'); }); }
-    function check() {
-      if (picked.every(function (v, k) { return v === k; })) { btns.forEach(function (b) { b.classList.add('ok'); b.disabled = true; }); rb.disabled = true; noteBox.replaceChildren(goodNote(q.ref, '성경에 기록된 순서예요.')); onOk(); }
-      else { noteBox.replaceChildren(lookNote(q.lookRef !== undefined ? q.lookRef : q.ref, '순서를 다시 살펴볼까요? 성경책을 차례로 읽으며 다시 눌러 보세요.')); reset(); }
-      noteBox.scrollIntoView({ block: 'nearest' });
-    }
-    var rb = el('button', { class: 'btn plain', on: { click: function () { reset(); noteBox.replaceChildren(); } } }, '다시 놓기');
-    return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' }, btns), rb, noteBox];
-  }
-  function blockFor(q, onOk, idp) {
-    if (q.type === 'choice') return choiceBlock(q, q.ref, onOk);
-    if (q.type === 'find') return findBlock(q, onOk);
-    if (q.type === 'findref') return findrefBlock(q, onOk, idp);
-    if (q.type === 'order') return orderBlock(q, onOk);
-    return [];
-  }
   function sheetOverlay(kids_, foot) {
     var body = el('div', { class: 'sheet-body pad' }), ft = el('div', { class: 'sheet-foot pad' });
     add(body, kids_); add(ft, foot);
@@ -1145,7 +1055,9 @@
   var last = performance.now();
   function frame(t) {
     requestAnimationFrame(frame);
-    var rdt = (t - last) / 1000, dt = Math.min(0.05, rdt); last = t; now += dt;
+    var rdt = (t - last) / 1000, dt = Math.min(0.05, rdt); last = t;
+    if (paused) return; /* 이야기 카드·시대 지도가 화면을 덮는 동안은 3D를 그리지 않는다(휴대폰 전지와 시험 속도) */
+    now += dt;
     if (fpsOn) { fpsN++; fpsT += rdt; if (fpsT > 0.5) { fpsEl.textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }
     var horeb = cur === 'horeb' || !JL;
     if (horeb) {
@@ -1190,6 +1102,20 @@
     if (post) post.render(rs, camera); else renderer.render(rs, camera);
     if (wantShot) { wantShot = false; if (horeb) takeShot(); else takeClue(); }
   }
+
+  /* ── 구약 전체 흐름(story.js)과 잇는 곳 ── */
+  var paused = false;
+  function hideAll3d() { hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; dedBtn.hidden = true; track.hidden = true; hint.hidden = true; overlay.hidden = true; root.classList.remove('ev'); }
+  function toMap() { if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } BO3D.story.open(); }
+  BO3D.scenes3d = { 'OT-09': true };
+  BO3D.game = {
+    toStory: function () { state = 'story'; paused = true; hideAll3d(); },
+    menu: menu,
+    start3d: function (id) {
+      paused = false; hideAll3d(); root.className = 'g3 app ' + S.tier;
+      if (id === 'OT-09') { if (C3 && BO3D.jordan) route(); else begin(); }
+    }
+  };
 
   /* 자동 점검용 (화면에는 영향 없음) */
   BO3D.debug = {

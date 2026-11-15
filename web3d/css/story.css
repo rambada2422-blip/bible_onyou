@@ -1,0 +1,105 @@
+/* 구약 전체 흐름(story.js): 시대 지도, 시대 안내, 이야기 카드. 위는 시대 풍경, 아래는 아이보리 시트(2D 시범판과 같은 배치). */
+.ot3 { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; background: var(--ink); color: var(--text); }
+.ot3[hidden] { display: none; }
+.ot-stage { position: absolute; top: 0; left: 0; right: 0; height: 40%; overflow: hidden; background: var(--ink-2); }
+.ot3.intro .ot-stage, .ot3.era .ot-stage, .ot3.pick .ot-stage { height: 46%; }
+.ot-stage svg { width: 100%; height: 100%; display: block; }
+.ot-stage::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14, 23, 48, .35) 0%, rgba(14, 23, 48, 0) 28%); pointer-events: none; }
+.ot-top { position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); left: 0; right: 0; z-index: 3; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ot-top .place { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ot-back { flex: none; display: inline-flex; align-items: center; gap: 6px; background: rgba(14, 23, 48, .78); color: var(--paper); border-radius: 999px; padding: 7px 13px 7px 9px; font-family: var(--f-display); font-size: 14px; backdrop-filter: blur(4px); }
+.ot-back svg { width: 15px; height: 15px; transform: rotate(-90deg); color: var(--brass); }
+.ot-sheet.sheet { position: absolute; left: 0; right: 0; bottom: 0; top: 35%; margin: 0; animation: sheetup .28s ease both; }
+.ot3.intro .ot-sheet.sheet, .ot3.era .ot-sheet.sheet, .ot3.pick .ot-sheet.sheet { top: 40%; }
+.ot3 .sheet-foot { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+.ot3 .eyebrow.dark { color: #2F7C74; }
+.ot-title { font-family: var(--f-display); font-weight: 400; font-size: 25px; line-height: 1.25; color: var(--ink); }
+.t1 .ot-title { font-size: 27px; }
+.ot-h3 { font-family: var(--f-display); font-weight: 400; font-size: 16px; color: var(--warm); margin-top: 4px; }
+.ot-soft { font-size: 14.5px; line-height: 1.55; color: var(--text-soft); }
+.t1 .ot-soft { font-size: 16px; }
+.ot-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.ot-place { font-size: 14px; color: var(--text-soft); line-height: 1.4; }
+.ot-refs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ot-refs .ref { white-space: normal; }
+.ot-rule { color: var(--text-soft) !important; font-size: 14px; }
+
+/* 최현 박사의 통신 */
+.comm3 { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: start; background: #E3F1EE; border-radius: 4px 16px 16px 16px; padding: 10px 12px; }
+.comm3 .doc svg { width: 40px; height: 40px; display: block; }
+.comm3 small { display: block; font-family: var(--f-display); font-size: 12.5px; color: #2F7C74; letter-spacing: .02em; }
+.comm3 p { font-size: 15.5px; line-height: 1.55; color: #16433E; }
+.t1 .comm3 p { font-size: 17px; }
+
+/* 동행 인물의 대답 (성경에 기록된 자기 말만, 간접 서술) */
+.otans { border-left: 4px solid var(--brass); background: #FBF1DA; border-radius: 4px 14px 14px 4px; padding: 10px 13px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.otans b { font-family: var(--f-display); font-weight: 400; font-size: 14px; color: var(--brass-deep); }
+.otans p { font-size: 16px; line-height: 1.6; }
+.t1 .otans p { font-size: 18px; }
+
+/* 재료 */
+.matcard { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 16px; background: var(--paper-2); box-shadow: inset 0 0 0 2px #E2C88E; }
+.matcard .mh { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; }
+.matcard .mi svg, .slot .mi svg { width: 44px; height: 44px; display: block; }
+.slot .mi svg { width: 34px; height: 34px; }
+.matcard small { display: block; font-size: 12px; color: var(--text-soft); }
+.matcard b { font-family: var(--f-display); font-weight: 400; font-size: 19px; color: var(--ink); }
+
+/* 오늘의 물음 */
+.today3 { background: var(--ink); color: var(--paper); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.today3 small { font-size: 12.5px; color: var(--teal); }
+.today3 b { font-family: var(--f-display); font-weight: 400; font-size: 18px; line-height: 1.45; }
+
+/* 시대 지도 */
+.ot3.map { overflow: hidden; }
+.otmap { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-top: calc(18px + env(safe-area-inset-top, 0px)); padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); color: var(--paper); background: linear-gradient(180deg, #16233F, #0E1730); }
+.otmap .den-title { font-family: var(--f-display); font-weight: 400; font-size: 34px; line-height: 1.15; color: var(--brass); }
+.otmap .den-lead { font-size: 14.5px; line-height: 1.5; color: #C9D3EA; }
+.otmap .den-msg { font-size: 14.5px; line-height: 1.5; color: #E6ECFA; }
+.otmap h2 { font-family: var(--f-display); font-weight: 400; font-size: 18px; color: var(--teal); margin-top: 8px; }
+.otstat { display: flex; gap: 8px; flex-wrap: wrap; }
+.otstat .count { font-family: var(--f-display); font-size: 14px; color: var(--ink-3); background: var(--brass); padding: 4px 12px; border-radius: 999px; }
+.otstat .count.teal { background: var(--teal); }
+.ote { display: flex; flex-direction: column; gap: 6px; }
+.ote-h { position: relative; display: block; height: 96px; border-radius: 16px; overflow: hidden; text-align: left; }
+.ote-art, .ote-art svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ote-t { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 14px 9px; display: flex; flex-direction: column; background: linear-gradient(180deg, rgba(14, 23, 48, 0), rgba(14, 23, 48, .82)); }
+.ote-t small { font-family: var(--f-verse); font-size: 12.5px; color: var(--teal); }
+.ote-t b { font-family: var(--f-display); font-weight: 400; font-size: 21px; color: var(--paper); line-height: 1.2; }
+.ote-t em { font-style: normal; font-size: 12.5px; color: #C9D3EA; }
+.otcs { display: flex; flex-direction: column; gap: 6px; }
+.otc { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; text-align: left; padding: 10px 12px; border-radius: 14px; background: rgba(251, 247, 238, .07); box-shadow: inset 0 0 0 1.5px rgba(251, 247, 238, .14); color: var(--paper); }
+.otc:active { background: rgba(251, 247, 238, .14); }
+.otc .n { font-family: var(--f-display); font-size: 15px; color: var(--brass); text-align: center; }
+.otc .tt { display: flex; flex-direction: column; min-width: 0; }
+.otc .tt b { font-weight: 400; font-family: var(--f-display); font-size: 16px; line-height: 1.3; }
+.otc .tt small { font-size: 12.5px; color: #AFBDDF; }
+.otc .bd { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+.otc .bd i { font-style: normal; font-size: 11.5px; line-height: 1; padding: 4px 7px; border-radius: 999px; white-space: nowrap; }
+.otc .b3 { background: var(--teal); color: var(--ink-3); }
+.otc .br { background: rgba(234, 106, 42, .2); color: #F5B089; }
+.otc .bk { background: var(--brass); color: var(--ink-3); }
+.otc.done { box-shadow: inset 0 0 0 1.5px rgba(233, 180, 76, .55); }
+.otmap-foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.otmap-foot .btn { flex: 1 1 140px; min-height: 46px; font-size: 16px; }
+.otmap .slots { grid-template-columns: repeat(3, 1fr); }
+.otmap .slot b { font-size: 13.5px; }
+
+/* 시간 이동 */
+.ot3.warpbox { justify-content: center; }
+.otwarp { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: var(--paper); }
+.otwarp .den-title { font-family: var(--f-display); font-weight: 400; font-size: 30px; line-height: 1.2; color: var(--brass); }
+.otwarp .den-lead { color: #C9D3EA; font-size: 15px; }
+.otwarp-ring { width: 84px; height: 84px; border-radius: 50%; margin-top: 10px; border: 4px solid rgba(122, 208, 200, .25); border-top-color: var(--teal); }
+@media (prefers-reduced-motion: no-preference) {
+  .otwarp-ring { animation: otspin 1s linear infinite; }
+  .ea-tw0 { animation: eatw 3.2s ease-in-out infinite; }
+  .ea-tw1 { animation: eatw 4.1s ease-in-out infinite .8s; }
+  .ea-drift { animation: eadrift 14s ease-in-out infinite alternate; }
+  .ea-shim { animation: eashim 3.6s ease-in-out infinite alternate; }
+}
+@keyframes otspin { to { transform: rotate(360deg); } }
+@keyframes eatw { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes eadrift { from { transform: translateX(-14px); } to { transform: translateX(14px); } }
+@keyframes eashim { from { opacity: .25; } to { opacity: .7; } }
+@media (prefers-reduced-motion: reduce) { .ot-sheet.sheet { animation: none; } }

@@ -24,12 +24,14 @@ fs.writeFileSync(path.join(root, 'web3d/js/glbdata.js'),
 
 const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fonts = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Jua&display=swap';
-const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/models.js', 'web3d/js/models_jordan.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/flock.js', 'web3d/js/jordan.js', 'web3d/js/fx.js', 'web3d/js/game.js'];
+/* 구약 장면 자료를 먼저 묶는다(web3d/js/otdata.js) */
+require('./build_ot.js')();
+const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/otdata.js', 'web3d/js/ui.js', 'web3d/js/eraart.js', 'web3d/js/models.js', 'web3d/js/models_jordan.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/flock.js', 'web3d/js/jordan.js', 'web3d/js/fx.js', 'web3d/js/story.js', 'web3d/js/game.js'];
 const page = [
   '<title>성경 탐험대 3D</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',
   `<link rel="stylesheet" href="${fonts}">`,
-  '<style>\n' + read('web/css/app.css') + '\n' + read('web3d/css/game.css') + '\n</style>',
+  '<style>\n' + read('web/css/app.css') + '\n' + read('web3d/css/game.css') + '\n' + read('web3d/css/story.css') + '\n</style>',
   '<div id="game" class="g3 app"><canvas id="c"></canvas><div id="ui"></div></div>',
   '<script>\n' + esc(read('web3d/vendor/three.min.js')) + '\n</script>',
   '<script>\n' + esc(read('web3d/vendor/GLTFLoader.js')) + '\n</script>',
