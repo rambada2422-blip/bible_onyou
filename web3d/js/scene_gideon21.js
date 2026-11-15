@@ -119,8 +119,8 @@
       if (p === 'water') { nightWant = 0.15; gidTo = [SPRING[0] - 9, SPRING[1] + 2];   /* 아이들이 샘을 보는 시선을 가리지 않게 샘 서쪽에 */ men.forEach(function (o) { o.group.visible = o.keep; o.target = o.keep ? o.water : o.leave; if (o.keep) o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); }); }   /* 7:4-8 */
       if (p === 'down') { nightWant = 1; gidAt(GID[0], GID[1]); gidTo = [MCAMP[0] + 30, MCAMP[1] + 28]; men.forEach(function (o) { o.group.visible = o.chosen; o.target = o.chosen ? o.home : o.leave; if (o.chosen) o.group.position.set(o.home[0], height(o.home[0], o.home[1]), o.home[1]); }); }  /* 7:9-15: 남은 삼백 명은 진에 머문다 */
       if (p === 'jars') { nightWant = 1; gidTo = [ICAMP[0] - 6, ICAMP[1] - 16]; men.forEach(function (o) { o.group.visible = o.chosen; o.target = o.chosen ? o.three : o.leave; o.jar.visible = o.horn.visible = o.chosen; }); } /* 7:16-18 */
-      if (p === 'torches') { nightWant = 1; gidAt(ICAMP[0] - 6, ICAMP[1] - 16); gidTo = [MCAMP[0] + 3, MCAMP[1] + 36];   /* 7:19: 기드온과 백 명은 가운데 무리와 함께 */
-        men.forEach(function (o) { o.group.visible = o.chosen; o.target = o.chosen ? o.ring : o.leave; if (o.chosen) o.group.position.set(o.three[0], height(o.three[0], o.three[1]), o.three[1]); o.jar.visible = o.horn.visible = o.chosen; }); } /* 7:19-22 */
+      if (p === 'torches') { nightWant = 1; gidAt(MCAMP[0] + 3, MCAMP[1] + 52); gidTo = [MCAMP[0] + 3, MCAMP[1] + 36];   /* 7:19: 기드온과 백 명은 가운데 무리와 함께 */
+        men.forEach(function (o) { o.group.visible = o.chosen; o.target = o.chosen ? o.ring : o.leave; if (o.chosen) { var sx = o.three[0] + (o.ring[0] - o.three[0]) * 0.65, sz = o.three[1] + (o.ring[1] - o.three[1]) * 0.65; o.group.position.set(sx, height(sx, sz), sz); } o.jar.visible = o.horn.visible = o.chosen; }); } /* 7:19-22: 진 가까이 내려온 데서부터 보여 준다 */
     }
     var torchT = -1;
     function step(o, to, spd, dt) { var p = o.group.position, dx = to[0] - p.x, dz = to[1] - p.z, d = Math.hypot(dx, dz); if (d < 0.2) return false; var st = Math.min(d, spd * dt); p.x += dx / d * st; p.z += dz / d * st; p.y = height(p.x, p.z); o.group.rotation.y = Math.atan2(dx, dz); return true; }
