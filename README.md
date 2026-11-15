@@ -8,6 +8,7 @@
 - [docs/01_출애굽기_장면목록.md](docs/01_출애굽기_장면목록.md): 장면별 근거 장절과 감수 필수 여부
 - [docs/02_그림_스타일가이드.md](docs/02_그림_스타일가이드.md): 그림 규칙과 파일 규격
 - [docs/05_본제작_지시서.md](docs/05_본제작_지시서.md): 본 제작 작업 순서와 결정 사항
+- [docs/09_구약전체_장면표.md](docs/09_구약전체_장면표.md): 구약 전체 40장면, [docs/10_구약전체_3일작업_지시서.md](docs/10_구약전체_3일작업_지시서.md): 다음 세션 지시서, [docs/11_구약전체_진행표.md](docs/11_구약전체_진행표.md): 진행 상황
 - [docs/08_협업운영지침.md](docs/08_협업운영지침.md): 대표·GPT·Claude Code 협업 방식과 보고 형식
 - [tools/codex_review/README.md](tools/codex_review/README.md): Codex 2차 검토(읽기 전용) 실행 방법
 

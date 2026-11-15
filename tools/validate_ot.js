@@ -1,6 +1,7 @@
 // 구약 장면 자료(content/ot/OT-NN.json)의 형식과 장절을 검사한다.
 //   node tools/validate_ot.js            전체
 //   node tools/validate_ot.js OT-05 ...   고른 장면만
+//   node tools/validate_ot.js --mission    임무(mission)가 없으면 오류로 본다
 // 오류(ERR)가 하나라도 있으면 종료 코드 1. 경고(WARN)는 사람이 확인한다.
 // 장절이 실제로 있는지, 문장이 검증용 본문(개역한글)과 지나치게 같은지도 본다(ref/bible 이 있을 때. tools/bible_ref/fetch.sh).
 const fs = require('fs'), path = require('path');
@@ -103,6 +104,32 @@ function check(file) {
       });
     } else if (d.quests) W('design3d.build가 false인데 quests가 있음');
   }
+  // 임무(mission): 최현 박사 통신, 재료, 동행 문답, 오늘의 물음 (작성규칙 7절)
+  const m = d.mission, tri = (o, w, ref) => ['t1', 't2', 't3'].forEach((t) => { if (!o || !str(o[t])) E(`${w}.${t} 없음`); else texts.push([`${w}.${t}`, o[t], ref || null]); });
+  if (!m) { if (NEED_MISSION) E('mission 없음'); }
+  else {
+    tri(m.call, 'mission.call');
+    const want = g3 && g3.build ? 3 : 1;
+    if (!Array.isArray(m.materials) || m.materials.length !== want) E(`mission.materials는 ${want}개(3D 장면 3개, 그 밖 1개)`);
+    else m.materials.forEach((x, i) => { ['key', 'name', 'use', 'how'].forEach((k) => { if (!str(x[k])) E(`mission.materials[${i}].${k} 없음`); }); refOk(x.basis, `mission.materials[${i}].basis`); });
+    if (m.companion !== null) {
+      const cp = m.companion || {};
+      if (!str(cp.who)) E('mission.companion.who 없음(동행 인물이 없으면 companion: null)');
+      refOk(cp.ref, 'mission.companion.ref');
+      if (!Array.isArray(cp.talks) || cp.talks.length < 2 || cp.talks.length > 3) E('mission.companion.talks는 2~3개');
+      else cp.talks.forEach((x, i) => {
+        const w = `mission.companion.talks[${i}]`;
+        if (!x.ask || !WHO.includes(x.ask.who) || !str(x.ask.text)) E(`${w}.ask: {who, text}`); else texts.push([`${w}.ask`, x.ask.text, null]);
+        refOk(x.ref, w + '.ref'); refOk(x.open, w + '.open'); tri(x.answer, w + '.answer', x.ref);
+      });
+    }
+    if (!Array.isArray(m.today) || m.today.length < 1 || m.today.length > 2) E('mission.today는 1~2개');
+    else m.today.forEach((x, i) => {
+      const w = `mission.today[${i}]`;
+      if (!str(x.q)) E(`${w}.q 없음`); tri(x.a, w + '.a');
+      if (!Array.isArray(x.refs) || !x.refs.length) E(`${w}.refs 없음(근거 장절)`); else x.refs.forEach((r) => refOk(r, w + '.refs'));
+    });
+  }
   // 금지어, 본문과 지나치게 같은 문장
   texts.forEach(([w, t, ref]) => {
     BAN.forEach((b) => { if (String(t).includes(b)) E(`${w}: 쓰지 않는 표현 "${b}" (규칙서 4.2)`); });
@@ -114,7 +141,8 @@ function check(file) {
   });
 }
 
-const want = process.argv.slice(2);
+const NEED_MISSION = process.argv.includes('--mission');
+const want = process.argv.slice(2).filter((x) => !x.startsWith('--'));
 const files = fs.readdirSync(DIR).filter((f) => /^OT-\d\d\.json$/.test(f) && (!want.length || want.includes(f.replace('.json', '')))).sort();
 if (!hasRef) console.log('주의: ref/bible 이 없어 장절이 실제로 있는지는 검사하지 못함 (tools/bible_ref/fetch.sh)');
 files.forEach((f) => check(path.join(DIR, f)));
