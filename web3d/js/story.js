@@ -58,7 +58,7 @@
   function beatNodes(b) {
     return [el('div', { class: 'narr-meta' }, refChip(b.ref), speakBtn(tx(b.text))), el('p', { class: 'narr', text: tx(b.text) }),
       b.say ? U.say(b.say.who, b.say.text) : null,
-      b.open ? el('div', { class: 'openbible' }, icon('book'), el('span', {}, '하나님이 하신 말씀은 성경책에서 직접 읽어요. ', el('b', { text: U.bookName(b.open) }))) : null];
+      b.open ? el('div', { class: 'openbible' }, icon('book'), el('span', {}, '하나님이 하신 말씀은 성경책에서 직접 읽어요. ', el('b', { text: U.bookName(U.openFor ? U.openFor(b, S.tier) : b.open) }))) : null];
   }
 
   /* ── 화면 틀: 위는 시대 풍경, 아래는 아이보리 시트 ── */

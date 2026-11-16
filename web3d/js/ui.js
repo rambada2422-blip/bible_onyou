@@ -64,7 +64,13 @@
   /* 엇나간 바늘(규칙서 13.8, 2절의 "잘못된 선택"을 가볍게): 고른 보기가 성경의 다른 곳에 실제로 있는 내용이면 그곳으로 잠깐 엇나갔다가 돌아온다 */
   /* 지금 장면의 본문 범위(장면을 열 때 setScene). 엇나간 곳이 같은 장면 안이면 안내 글을 달리한다(시대 3·4 독립 대조, 2026-11-16) */
   var sceneRefs = [];
-  function setScene(d) { sceneRefs = d ? [d.ref].concat((d.beats || []).map(function (b) { return b.ref; })).filter(Boolean) : []; }
+  var matchRefs = [];
+  function setScene(d) {
+    sceneRefs = d ? [d.ref].concat((d.beats || []).map(function (b) { return b.ref; })).filter(Boolean) : [];
+    matchRefs = []; ((d && d.gates && d.gates.t3) || []).forEach(function (q) { if (q.type === 'match') q.pairs.forEach(function (p) { matchRefs.push(p.ref); }); });
+  }
+  /* 대목의 '성경책에서 직접 읽어요' 장절: 14~19세 잇기의 구절과 같으면 짝이 드러나므로 대목의 범위를 보여 준다(규칙서 13.9, 독립 대조 2026-11-16) */
+  function openFor(b, tier) { return b.open && tier === 't3' && matchRefs.indexOf(b.open) >= 0 ? b.ref : b.open; }
   function span(ref) {   /* '출 16:1-36', '창 12:4-13:2', '출 16' → {b, s, e} (장*1000+절) */
     var m = /^(\S+) (\d+)(?::(\d+))?(?:-(?:(\d+):)?(\d+))?$/.exec(String(ref || '').trim());
     if (!m) return null;
@@ -212,5 +218,5 @@
 
   BO3D.ui = { S: S, el: el, add: add, tx: tx, icon: icon, refChip: refChip, avatar: avatar, say: say, bookName: bookName, bookOf: bookOf, chapterOf: chapterOf, books: BOOKS,
     goodNote: goodNote, lookNote: lookNote, choiceBlock: choiceBlock, findBlock: findBlock, findrefBlock: findrefBlock, orderBlock: orderBlock, blockFor: blockFor, quizTier: quizTier, btn: btn,
-    setScene: setScene, inScene: inScene };
+    setScene: setScene, inScene: inScene, openFor: openFor };
 })();

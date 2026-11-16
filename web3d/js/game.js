@@ -200,7 +200,7 @@
       el('div', { class: 'narr-meta' }, refChip(b.ref)),
       el('p', { class: 'narr', text: tx(b.text) }),
       b.say ? el('div', { class: 'say' }, avatar(b.say.who), el('div', { class: 'bubble' }, el('b', { text: who.name, style: 'color:' + who.color }), b.say.text)) : null,
-      b.open ? el('div', { class: 'openbible' }, icon('book'), el('span', {}, '하나님이 하신 말씀은 성경책에서 직접 읽어요. ', el('b', { text: bookName(b.open) }))) : null
+      b.open ? el('div', { class: 'openbible' }, icon('book'), el('span', {}, '하나님이 하신 말씀은 성경책에서 직접 읽어요. ', el('b', { text: bookName(U.openFor ? U.openFor(b, U.S.tier) : b.open) }))) : null
     ];
   }
 
