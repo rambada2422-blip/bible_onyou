@@ -153,15 +153,15 @@
       },
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 넓은 산비탈에 내려앉았어요. 많은 사람이 모여 있어요.', say: { who: 'hyu', text: '사람들과 단에서 멀리 떨어진 비탈에서만 다니자.' } },
-      lookText: '갈멜 산 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
+      lookText: '엘리야 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
       partBeats: [0, 1], eventStart: 2,
-      sceneDoneText: '갈멜 산 장면을 끝까지 지켜봐야 떠날 수 있어요.',
-      dex: [
-        { id: 'carmel', name: '갈멜 산', desc: '아합이 이스라엘 자손과 선지자들을 모은 산', ref: '왕상 18:20', hint: '모여 선 사람들 너머를 담아 보세요.', range: 200, crop: 0.7, pos: function () { return v3(-20, height(-20, -40) + 4, -40); } },
+      sceneDoneText: '엘리야 장면을 끝까지 지켜봐야 떠날 수 있어요.',
+      dex: [   /* 도감·안내 글에서 관문·탐지기 물음의 답(산 이름, 백성이 대답하지 않음, 돌 열두 개)은 성경에서 찾게(규칙서 13.9) */
+        { id: 'carmel', name: '선지자들이 모인 산', desc: '아합이 이스라엘 자손과 선지자들을 모은 산. 산 이름은 열왕기상 18장 20절에 있어요.', ref: '왕상 18:20', hint: '모여 선 사람들 너머를 담아 보세요.', range: 200, crop: 0.7, pos: function () { return v3(-20, height(-20, -40) + 4, -40); } },
         { id: 'elijah', name: '엘리야', desc: '백성에게 가까이 가서 둘 사이에서 머뭇거리지 말라고 한 사람', ref: '왕상 18:21', hint: '백성 앞쪽에 서 있어요.', range: 40, crop: 0.36,
           pos: function () { var p = eli.group.position; return v3(p.x, p.y + 1.1, p.z); } },
-        { id: 'people', name: '모든 백성', desc: '엘리야의 물음에 한 마디도 대답하지 않은 백성', ref: '왕상 18:21', hint: '모여 선 사람들을 담아 보세요.', range: 60, pos: function () { return v3(-2, height(-2, 15) + 1, 15); } },
-        { id: 'altar', name: '여호와의 단', desc: '엘리야가 열두 돌로 고쳐 쌓은 단과 둘레의 도랑', ref: '왕상 18:31-32', hint: '단이 고쳐 쌓인 뒤에 찍을 수 있어요.', range: 60, crop: 0.4,
+        { id: 'people', name: '모든 백성', desc: '엘리야의 물음을 들은 백성. 백성이 어떻게 했는지는 열왕기상 18장 21절에 있어요.', ref: '왕상 18:21', hint: '모여 선 사람들을 담아 보세요.', range: 60, pos: function () { return v3(-2, height(-2, 15) + 1, 15); } },
+        { id: 'altar', name: '여호와의 단', desc: '엘리야가 고쳐 쌓은 단과 둘레의 도랑. 돌을 몇 개 썼는지는 열왕기상 18장 31절에 있어요.', ref: '왕상 18:31-32', hint: '단이 고쳐 쌓인 뒤에 찍을 수 있어요.', range: 60, crop: 0.4,
           visible: function () { return yah.group.visible; }, pos: function () { return v3(ALT[0], height(ALT[0], ALT[1]) + 1, ALT[1]); } }
       ],
       reset: function () { setPhase('gather'); },

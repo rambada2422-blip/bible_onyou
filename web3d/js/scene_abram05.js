@@ -135,17 +135,17 @@
         return { pos: [p.x + 6, p.y + 1.2, p.z + 6], look: [p.x - 30, p.y + 40, p.z - 30] };
       },
       beatNote: function (i) { return i === 2 || i === 3 ? '이 대목은 아브람이 이곳에 장막을 치기 전의 일이에요. 장막을 잠시 걷어 내고 보여 줘요.' : null; },
-      helpNote: function (after) { return after === 2 ? '이 돕기도 장막을 치기 전, 일행이 가나안 땅에 막 들어오던 때의 이야기예요. 우리가 재료를 주운 길은 이 일행이 지나간 뒤의 길이에요.' : null; },   /* 3D에서는 재료를 먼저 모으므로 때를 밝힌다(시대 2 독립 대조, 2026-11-16) */
+      helpNote: function (after) { return after === 2 ? '이 돕기도 장막을 치기 전, 일행이 이 땅에 막 들어오던 때의 이야기예요. 우리가 재료를 주운 길은 이 일행이 지나간 뒤의 길이에요.' : null; },   /* 3D에서는 재료를 먼저 모으므로 때를 밝힌다(시대 2 독립 대조, 2026-11-16) */
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 언덕 위에 내려앉았어요. 저쪽에 장막 몇 채가 보여요.', say: { who: 'hyu', text: '장막에서 멀리 떨어진 곳에서만 다니자.' } },
       lookText: '아브람을 부르신 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
       partBeats: [0, 1], eventStart: 2,
       sceneDoneText: '아브람 장면을 끝까지 지켜봐야 떠날 수 있어요.',
       dex: [
-        { id: 'abram', name: '아브람', desc: '여호와의 말씀을 따라 하란을 떠난 사람. 그때 일흔다섯 살이었다', ref: '창 12:4', hint: '장막 가까이에 서 있어요.', range: 50, crop: 0.36, pos: function () { var p = abram.group.position; return v3(p.x, p.y + 1.1, p.z); } },
+        { id: 'abram', name: '아브람', desc: '하나님이 부르신 사람. 몇 살에 무엇을 따라 하란을 떠났는지는 창세기 12장 4절에 있어요.', ref: '창 12:4', hint: '장막 가까이에 서 있어요.', range: 50, crop: 0.36, pos: function () { var p = abram.group.position; return v3(p.x, p.y + 1.1, p.z); } },   /* 관문·뜻 묻기의 답(나이, 말씀을 따름)은 성경에서 찾게(규칙서 13.9) */
         { id: 'tent', name: '장막', desc: '벧엘 동쪽 산에 친 아브람의 장막', ref: '창 12:8', hint: '언덕 아래를 보세요.', range: 70, pos: function () { return v3(TENT[0], height(TENT[0], TENT[1]) + 1.5, TENT[1]); } },
         { id: 'altar', name: '제단', desc: '아브람이 여호와께 쌓은 제단', ref: '창 12:8', hint: '장막 너머를 보세요.', range: 70, crop: 0.4, pos: function () { return v3(ALTAR[0], height(ALTAR[0], ALTAR[1]) + 0.8, ALTAR[1]); } },
-        { id: 'stars', name: '하늘의 뭇별', desc: '셀 수 있는지 보라고 하신 하늘의 별들', ref: '창 15:5', hint: '마지막에 하늘을 보세요.', range: 2000, crop: 0.9,
+        { id: 'stars', name: '우러러본 하늘', desc: '하나님이 아브람을 밖으로 이끌고 나가 우러러보게 하신 하늘. 무엇을 세어 보라고 하셨는지는 창세기 15장 5절에 있어요.', ref: '창 15:5', hint: '마지막에 하늘을 보세요.', range: 2000, crop: 0.9,
           visible: function () { return night > 0.8; }, pos: function () { return v3(0, 300, -300); } }
       ],
       reset: function () { setPhase('camp'); },

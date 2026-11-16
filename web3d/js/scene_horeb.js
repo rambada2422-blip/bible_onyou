@@ -83,12 +83,12 @@
       partBeats: [0, 1], eventStart: 2,
       vision: HQ ? HQ.vision : null, visionKey: 'bush',
       sceneDoneText: '떨기나무 장면을 끝까지 지켜봐야 떠날 수 있어요.',
-      dex: [
-        { id: 'sheep', name: '양 떼', desc: '모세가 치던 장인 이드로의 양 떼', ref: '출 3:1', hint: '출발한 곳에서 가까운 곳에 모여 있어요.', range: 17,
+      dex: [   /* 도감 글: 탐지기 물음의 답(누구의 양 떼, 산의 이름)은 성경에서 찾게(규칙서 13.9) */
+        { id: 'sheep', name: '양 떼', desc: '모세가 치던 양 떼. 누구의 양 떼였는지는 출애굽기 3장 1절에 있어요.', ref: '출 3:1', hint: '출발한 곳에서 가까운 곳에 모여 있어요.', range: 17,
           pos: function () { if (flock) { var c = flock.center(); return v3(c.x, c.y + 0.6, c.z); } return v3(P.flock[0], H(P.flock[0], P.flock[1]) + 0.6, P.flock[1]); } },
-        { id: 'moses', name: '모세', desc: '미디안 제사장 이드로의 사위. 장인의 양 떼를 치고 있었다', ref: '출 3:1', hint: '양 떼 가까이에서 찾아보세요.', range: 19,
+        { id: 'moses', name: '모세', desc: '양 떼를 이끌고 광야를 지나온 사람', ref: '출 3:1', hint: '양 떼 가까이에서 찾아보세요.', range: 19,
           pos: function () { var p = moses.group.position; return v3(p.x, p.y + 1.1, p.z); } },
-        { id: 'horeb', name: '하나님의 산 호렙', desc: '모세가 양 떼를 이끌고 이른 산', ref: '출 3:1', hint: '가장 높은 봉우리를 화면 가운데에 담아 보세요.', range: 500, crop: 0.95,
+        { id: 'horeb', name: '모세가 이른 산', desc: '모세가 양 떼를 이끌고 이른 산. 산의 이름은 출애굽기 3장 1절에 있어요.', ref: '출 3:1', hint: '가장 높은 봉우리를 화면 가운데에 담아 보세요.', range: 500, crop: 0.95,
           pos: function () { return v3(P.mountain[0], H(P.mountain[0], P.mountain[1]) * 0.62, P.mountain[1]); } },
         { id: 'bush', name: '불붙은 떨기나무', desc: '불이 붙었으나 타서 없어지지 않은 떨기나무', ref: '출 3:2', hint: '모세가 가는 쪽으로 따라가면 보여요.', range: 36,
           visible: function () { return bushLit; },

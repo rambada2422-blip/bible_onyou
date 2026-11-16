@@ -166,7 +166,7 @@
       partBeats: [0, 1], eventStart: 2,
       sceneDoneText: '성벽 장면을 끝까지 지켜봐야 떠날 수 있어요.',
       dex: [
-        { id: 'wall', name: '예루살렘 성벽', desc: '무너졌던 성벽. 오십이 일 만에 다 쌓았다', ref: '느 2:13, 6:15', hint: '북쪽 성벽을 담아 보세요.', range: 120, crop: 0.6, pos: function () { return v3(0, height(0, WALL_Z) + 4, WALL_Z); } },
+        { id: 'wall', name: '예루살렘 성벽', desc: '무너졌던 성벽. 며칠 만에 다 쌓았는지는 느헤미야 6장 15절에 있어요.', ref: '느 2:13, 6:15', hint: '북쪽 성벽을 담아 보세요.', range: 120, crop: 0.6, pos: function () { return v3(0, height(0, WALL_Z) + 4, WALL_Z); } },   /* 탐지기 물음의 답(쌓은 날수)은 성경에서 찾게(규칙서 13.9) */
         { id: 'vgate', name: '골짜기 문', desc: '느헤미야가 밤에 나가 성벽을 살핀 문', ref: '느 2:13', hint: '서쪽 성문을 보세요.', range: 80, crop: 0.4, pos: function () { return v3(VGATE[0], height(VGATE[0], WALL_Z) + 3, WALL_Z); } },
         { id: 'nehemiah', name: '느헤미야', desc: '예루살렘에 이르러 성을 다시 쌓자고 한 사람', ref: '느 2:17', hint: '성벽 가까이에서 찾아보세요.', range: 50, crop: 0.36, visible: function () { return neh.group.visible; }, pos: function () { var p = neh.group.position; return v3(p.x, p.y + 1.1, p.z); } },
         { id: 'square', name: '수문 앞 광장', desc: '모든 백성이 한꺼번에 모인 광장', ref: '느 8:1', hint: '동쪽 성문 앞을 보세요.', range: 80, pos: function () { return v3(SQUARE[0], height(SQUARE[0], SQUARE[1]) + 1, SQUARE[1]); } }

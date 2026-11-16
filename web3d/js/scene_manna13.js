@@ -141,12 +141,12 @@
       lookText: '만나 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
       partBeats: [0, 1], eventStart: 2,
       sceneDoneText: '만나 장면을 끝까지 지켜봐야 떠날 수 있어요.',
-      dex: [
-        { id: 'camp', name: '이스라엘의 진', desc: '엘림과 시내 산 사이 신 광야에 친 진', ref: '출 16:1', hint: '장막들을 담아 보세요.', range: 80, pos: function () { return v3(CAMP[0], 1.5, CAMP[1]); } },
-        { id: 'moses', name: '모세와 아론', desc: '백성이 원망한 두 사람. 원망은 여호와를 향한 것이라고 말했다', ref: '출 16:2', hint: '진 동쪽에 서 있어요.', range: 40, crop: 0.4, pos: function () { return v3(MOS[0], height(MOS[0], MOS[1]) + 1.1, MOS[1] + 2); } },
+      dex: [   /* 도감 글: 탐지기·관문 물음의 답(광야 이름, 땅 위의 것의 모양, 원망을 두고 한 말)은 성경에서 찾게(규칙서 13.9) */
+        { id: 'camp', name: '이스라엘의 진', desc: '엘림과 시내 산 사이 광야에 친 진. 광야의 이름은 출애굽기 16장 1절에 있어요.', ref: '출 16:1', hint: '장막들을 담아 보세요.', range: 80, pos: function () { return v3(CAMP[0], 1.5, CAMP[1]); } },
+        { id: 'moses', name: '모세와 아론', desc: '광야에서 백성이 원망한 두 사람', ref: '출 16:2', hint: '진 동쪽에 서 있어요.', range: 40, crop: 0.4, pos: function () { return v3(MOS[0], height(MOS[0], MOS[1]) + 1.1, MOS[1] + 2); } },
         { id: 'cloud', name: '광야 쪽의 구름', desc: '백성이 광야 쪽을 바라보니 구름 속에 여호와의 영광이 나타났다', ref: '출 16:10', hint: '구름이 나타난 뒤 진 너머를 보세요.', range: 600, crop: 0.8,
           visible: function () { return cloudOp > 0.4; }, pos: function () { return v3(cloud.position.x, 26, cloud.position.z); } },
-        { id: 'manna', name: '작고 둥근 것', desc: '이슬이 마른 뒤 광야 땅 위에 있던, 서리처럼 가는 작고 둥근 것', ref: '출 16:14', hint: '아침에 진 둘레의 땅을 보세요.', range: 30, crop: 0.4,
+        { id: 'manna', name: '땅 위에 있던 것', desc: '이슬이 마른 뒤 광야 땅 위에 있던 것. 어떤 모양이었는지는 출애굽기 16장 14절에 있어요.', ref: '출 16:14', hint: '아침에 진 둘레의 땅을 보세요.', range: 30, crop: 0.4,
           visible: function () { return manna.visible; }, pos: function () { return v3(CAMP[0] + 36, height(CAMP[0] + 36, CAMP[1] + 10), CAMP[1] + 10); } }
       ],
       reset: function () { setPhase('camp'); },

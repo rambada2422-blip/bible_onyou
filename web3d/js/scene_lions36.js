@@ -143,7 +143,7 @@
       dex: [
         { id: 'house', name: '다니엘의 집', desc: '위층 방에 예루살렘 쪽으로 열린 창이 있는 집', ref: '단 6:10', hint: '동쪽(오른쪽)을 보세요.', range: 90, crop: 0.5, pos: function () { return v3(HOUSE[0], height(HOUSE[0], HOUSE[1]) + 5, HOUSE[1]); } },
         { id: 'den', name: '사자 굴', desc: '사람을 던져 넣고 어귀를 돌로 막은 굴', ref: '단 6:16-17', hint: '가운데 바위 둔덕을 보세요.', range: 70, crop: 0.4, pos: function () { return v3(DEN[0], height(DEN[0], DEN[1]) + 1, DEN[1]); } },
-        { id: 'king', name: '다리오 왕', desc: '조서에 도장을 찍고, 이튿날 새벽에 급히 사자 굴로 간 왕', ref: '단 6:9, 6:19', hint: '왕궁 앞에서 찾아보세요.', range: 60, crop: 0.36, pos: function () { var p = king.group.position; return v3(p.x, p.y + 1.1, p.z); } }
+        { id: 'king', name: '다리오 왕', desc: '조서에 도장을 찍은 왕. 다니엘이 굴에 있던 밤과 이튿날 새벽에 한 일은 다니엘 6장 18절과 19절에 있어요.', ref: '단 6:9, 6:19', hint: '왕궁 앞에서 찾아보세요.', range: 60, crop: 0.36, pos: function () { var p = king.group.position; return v3(p.x, p.y + 1.1, p.z); } }   /* 탐지기 물음의 답(그 밤과 새벽의 일)은 성경에서 찾게(규칙서 13.9) */
       ],
       reset: function () { setPhase('day'); },
       partFound: function () {},

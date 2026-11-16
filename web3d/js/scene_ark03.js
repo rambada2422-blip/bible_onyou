@@ -182,11 +182,11 @@
       partBeats: [0, 1], eventStart: 2,
       sceneDoneText: '방주 장면을 끝까지 지켜봐야 떠날 수 있어요.',
       dex: [
-        { id: 'ark', name: '방주', desc: '길이 삼백, 너비 오십, 높이 삼십 규빗에 삼 층으로 지은 방주', ref: '창 6:15-16', hint: '등성이 아래쪽을 보세요.', range: 260, crop: 0.7, pos: function () { return v3(ARK[0], ark.position.y + AH * 0.5, ARK[1]); } },
-        { id: 'peaks', name: '산봉우리들', desc: '물이 줄어 드러난 산들의 봉우리', ref: '창 8:5', hint: '멀리 솟은 봉우리를 담아 보세요.', range: 900, crop: 0.8, pos: function () { return v3(PEAKS[0][0], height(PEAKS[0][0], PEAKS[0][1]) - 4, PEAKS[0][1]); } },
+        { id: 'ark', name: '방주', desc: '노아가 지은 방주. 크기와 층수는 창세기 6장 15절과 16절에 있어요.', ref: '창 6:15-16', hint: '등성이 아래쪽을 보세요.', range: 260, crop: 0.7, pos: function () { return v3(ARK[0], ark.position.y + AH * 0.5, ARK[1]); } },   /* 탐지기 물음의 답(층수)은 성경에서 찾게(규칙서 13.9) */
+        { id: 'peaks', name: '산봉우리들', desc: '멀리 솟은 산들의 봉우리. 이 산들 이야기는 창세기 7장 19절과 8장 5절에 있어요.', ref: '창 8:5', hint: '멀리 솟은 봉우리를 담아 보세요.', range: 900, crop: 0.8, pos: function () { return v3(PEAKS[0][0], height(PEAKS[0][0], PEAKS[0][1]) - 4, PEAKS[0][1]); } },
         { id: 'noah', name: '노아', desc: '의인이고 하나님과 동행한 사람', ref: '창 6:9', hint: '방주에서 나온 뒤에 찍을 수 있어요.', range: 70, crop: 0.36,
           visible: function () { return noah.group.visible; }, pos: function () { var p = noah.group.position; return v3(p.x, p.y + 1.1, p.z); } },
-        { id: 'bow', name: '구름 속의 무지개', desc: '하나님이 구름 속에 두신 언약의 증거', ref: '창 9:13', hint: '마지막에 하늘을 보세요.', range: 1200, crop: 0.9,
+        { id: 'bow', name: '무지개', desc: '하나님이 두신 무지개. 어디에 두셨고 무엇이 되게 하셨는지는 창세기 9장 13절에 있어요.', ref: '창 9:13', hint: '마지막에 하늘을 보세요.', range: 1200, crop: 0.9,
           visible: function () { return bowOp > 0.3; }, pos: function () { return v3(bow.position.x, bow.position.y + 180, bow.position.z); } }
       ],
       reset: function () { setPhase('rest'); },

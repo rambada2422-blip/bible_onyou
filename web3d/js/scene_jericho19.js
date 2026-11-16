@@ -205,8 +205,9 @@
       partBeats: [0, 1], eventStart: 2,
       sceneDoneText: '여리고 성 장면을 끝까지 지켜봐야 떠날 수 있어요.',
       dex: [
-        { id: 'jericho', name: '여리고 성', desc: '이스라엘 자손 때문에 굳게 닫혀 드나드는 사람이 없던 성', ref: '수 6:1', hint: '북쪽 멀리 보이는 성을 담아 보세요.', range: 260, crop: 0.7, pos: function () { return v3(CITY[0], height(CITY[0], CITY[1]) + 6, CITY[1]); } },
-        { id: 'horns', name: '양각 나팔을 든 제사장들', desc: '양각 나팔 일곱을 들고 여호와의 궤 앞에서 간 제사장 일곱', ref: '수 6:8', hint: '성을 도는 행렬을 보세요.', range: 120, crop: 0.4,
+        /* 탐지기 물음의 답(닫힌 까닭, 나팔의 종류)은 성경에서 찾게(규칙서 13.9) */
+        { id: 'jericho', name: '여리고 성', desc: '굳게 닫혀 드나드는 사람이 없던 성. 왜 닫혔는지는 여호수아 6장 1절에 있어요.', ref: '수 6:1', hint: '북쪽 멀리 보이는 성을 담아 보세요.', range: 260, crop: 0.7, pos: function () { return v3(CITY[0], height(CITY[0], CITY[1]) + 6, CITY[1]); } },
+        { id: 'horns', name: '나팔을 든 제사장들', desc: '나팔을 들고 여호와의 궤 앞에서 간 제사장 일곱. 어떤 나팔이었는지는 여호수아 6장 8절에 있어요.', ref: '수 6:8', hint: '성을 도는 행렬을 보세요.', range: 120, crop: 0.4,
           pos: function () { var o = order[16], pp = pathPos(lapS + o.s); return v3(pp[0], height(pp[0], pp[1]) + 1.4, pp[1]); } },
         { id: 'ark', name: '여호와의 언약궤', desc: '제사장들이 메고 성을 돈 여호와의 궤', ref: '수 6:6', hint: '나팔 부는 제사장들 뒤를 보세요.', range: 120, crop: 0.4, pos: function () { return v3(ark.position.x, ark.position.y + 0.4, ark.position.z); } },
         { id: 'joshua', name: '여호수아', desc: '제사장들에게 언약궤를 메게 한 사람', ref: '수 6:6', hint: '진 앞에 서 있어요.', range: 40, crop: 0.36, pos: function () { var p = josh.group.position; return v3(p.x, p.y + 1.1, p.z); } }

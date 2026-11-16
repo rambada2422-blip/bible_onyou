@@ -144,12 +144,12 @@
       lookText: '엘라 골짜기 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
       partBeats: [0, 1], eventStart: 2,
       sceneDoneText: '엘라 골짜기 장면을 끝까지 지켜봐야 떠날 수 있어요.',
-      dex: [
+      dex: [   /* 도감 글에서 관문·탐지기 물음의 답(가드, 돌 다섯, 이새의 심부름)은 성경에서 찾게(규칙서 13.9) */
         { id: 'valley', name: '엘라 골짜기', desc: '이스라엘과 블레셋이 두 산에 서서 맞선 사이의 골짜기', ref: '삼상 17:2-3', hint: '두 산 사이를 화면에 담아 보세요.', range: 140, crop: 0.7, pos: function () { return v3(-10, 1, -2); } },
-        { id: 'brook', name: '시내', desc: '다윗이 매끄러운 돌 다섯을 고른 시내', ref: '삼상 17:40', hint: '골짜기 가운데를 보세요.', range: 40, pos: function () { return v3(10, 0, BROOK_Z); } },
-        { id: 'goliath', name: '골리앗', desc: '블레셋 진에서 나와 싸움을 건 가드 사람', ref: '삼상 17:4', hint: '골짜기 건너편을 보세요.', range: 70, crop: 0.4,
+        { id: 'brook', name: '시내', desc: '다윗이 돌을 고른 시내. 몇 개를 골랐는지는 사무엘상 17장 40절에 있어요.', ref: '삼상 17:40', hint: '골짜기 가운데를 보세요.', range: 40, pos: function () { return v3(10, 0, BROOK_Z); } },
+        { id: 'goliath', name: '골리앗', desc: '블레셋 진에서 나와 싸움을 건 사람. 어느 곳 사람인지는 사무엘상 17장 4절에 있어요.', ref: '삼상 17:4', hint: '골짜기 건너편을 보세요.', range: 70, crop: 0.4,
           visible: function () { return gol.group.visible; }, pos: function () { var p = gol.group.position; return v3(p.x, p.y + 2.2, p.z); } },
-        { id: 'david', name: '다윗', desc: '이새의 막내아들. 형들의 안부를 살피러 진에 왔다', ref: '삼상 17:17', hint: '진 쪽에서 찾아보세요.', range: 50, crop: 0.4,
+        { id: 'david', name: '다윗', desc: '이새의 막내아들. 무슨 일로 진에 왔는지는 사무엘상 17장 17절과 18절에 있어요.', ref: '삼상 17:17', hint: '진 쪽에서 찾아보세요.', range: 50, crop: 0.4,
           visible: function () { return dav.group.visible; }, pos: function () { var p = dav.group.position; return v3(p.x, p.y + 1.0, p.z); } }
       ],
       reset: function () { setPhase('arrayed'); },

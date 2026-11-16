@@ -264,6 +264,7 @@ function exposure(d, E) {
   TIERS.forEach((t) => {
     const parts = [];   // [where, text]
     const P = (w, x) => { if (x) parts.push([w, String(x)]); };
+    P('title', d.title); P('place', d.place);   // 장면 제목·장소는 시대 지도와 장면 머리에 먼저 보인다
     P('mission.call.' + t, T(m.call, t));
     ((m.companion || {}).talks || []).forEach((k, i) => { P(`companion.talks[${i}].ask`, k.ask && k.ask.text); P(`companion.talks[${i}].answer.${t}`, T(k.answer, t)); });
     (d.beats || []).forEach((b, i) => { P(`beats[${i}].text.${t}`, T(b.text, t)); P(`beats[${i}].say`, b.say && b.say.text); });
