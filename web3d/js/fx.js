@@ -206,6 +206,7 @@ window.BO3D = window.BO3D || {};
    * 압도 장면에서 하나님이 부르시는 순간에는 효과음 묶음 전체를 멎게 한다(지시서 6.2). 하나님의 음성은 소리로 만들지 않는다. */
   var audio = (function () {
     var ctx = null, master, sfx, music, windG, fireG, crackleG, padG, bleatG, muted = false, nextPop = 0, nextBleat = 0, fireOverride = -1, flockNear = 0;
+    var want = { wind: 0.16, fire: 0 };   /* 마지막으로 맞춘 바람·불 크기(점검용: 3D에서 나간 뒤 장면 소리가 남지 않았는지) */
     function noiseBuf(sec) {
       var b = ctx.createBuffer(1, ctx.sampleRate * sec, ctx.sampleRate), d = b.getChannelData(0), last = 0;
       for (var i = 0; i < d.length; i++) { var wn = Math.random() * 2 - 1; last = (last + 0.02 * wn) / 1.02; d[i] = last * 3.2 + wn * 0.12; }
@@ -246,6 +247,7 @@ window.BO3D = window.BO3D || {};
       if (!ctx) return;
       var v = Math.max(0, Math.min(1, 1 - (dist - 8) / 34)); v = v * v;
       if (fireOverride >= 0) v = fireOverride;
+      want.fire = v;
       fireG.gain.setTargetAtTime(0.02 + v * 0.5, ctx.currentTime, 0.3);
       fireG._roar.gain.setTargetAtTime(v * v * 0.55, ctx.currentTime, 0.4);
       crackleG.gain.setTargetAtTime(v * 0.55, ctx.currentTime, 0.3);
@@ -290,12 +292,12 @@ window.BO3D = window.BO3D || {};
     /* 효과음을 모두 멎게 한다(정적). 음악 묶음은 그대로 */
     function silence(on, sec) { if (!ctx) return; sfx.gain.cancelScheduledValues(ctx.currentTime); sfx.gain.setTargetAtTime(on ? 0 : 1, ctx.currentTime, (sec || 0.6) / 3); }
     /* 압도 장면 뒤의 낮고 조용한 음악: 느린 화음 네 개가 천천히 바뀐다 */
-    var hymn = null;
+    var calm = null;
     function quietMusic(on) {
       if (!ctx) return;
-      if (on && !hymn) {
-        hymn = ctx.createGain(); hymn.gain.value = 0; hymn.connect(music);
-        var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400; lp.connect(hymn);
+      if (on && !calm) {
+        calm = ctx.createGain(); calm.gain.value = 0; calm.connect(music);
+        var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400; lp.connect(calm);
         var chords = [[146.83, 220.0, 293.66, 369.99], [123.47, 185.0, 246.94, 293.66], [98.0, 196.0, 246.94, 293.66], [110.0, 164.81, 220.0, 277.18]];
         var t0 = ctx.currentTime + 0.1, len = 4.0;
         for (var rep = 0; rep < 8; rep++) chords.forEach(function (ch, ci) {
@@ -308,9 +310,9 @@ window.BO3D = window.BO3D || {};
             o.connect(g); g.connect(lp); o.start(ts); o.stop(ts + len + 1.3);
           });
         });
-        hymn.gain.setTargetAtTime(1, ctx.currentTime, 1.2);
-      } else if (!on && hymn) {
-        var h = hymn; hymn = null; h.gain.setTargetAtTime(0, ctx.currentTime, 0.8); setTimeout(function () { try { h.disconnect(); } catch (e) { /* 무시 */ } }, 4000);
+        calm.gain.setTargetAtTime(1, ctx.currentTime, 1.2);
+      } else if (!on && calm) {
+        var h = calm; calm = null; h.gain.setTargetAtTime(0, ctx.currentTime, 0.8); setTimeout(function () { try { h.disconnect(); } catch (e) { /* 무시 */ } }, 4000);
       }
     }
     function shutter() { if (!ctx) return; var t = ctx.currentTime; tone(2100, t, 0.035, 0.1, 'square'); tone(1300, t + 0.055, 0.05, 0.08, 'square'); }
@@ -319,7 +321,7 @@ window.BO3D = window.BO3D || {};
       var f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(3200, t + 3.6);
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t + 4.0);
       o.connect(f); f.connect(g); g.connect(sfx); o.start(t); o.stop(t + 4.1); }
-    function wind(v) { if (ctx) windG.gain.setTargetAtTime(v, ctx.currentTime, 0.8); }
+    function wind(v) { want.wind = v; if (ctx) windG.gain.setTargetAtTime(v, ctx.currentTime, 0.8); }
     /* 3D 절정의 간접 연출(규칙서 13.8): 땅울림(성벽·물), 쿵(쓰러짐), 낮은 고동(긴장되는 밤) */
     function rumble(sec, v) {
       if (!ctx) return; sec = sec || 3; v = v || 0.5;
@@ -340,8 +342,75 @@ window.BO3D = window.BO3D || {};
       if (on && !pulseT) { var nb2 = 0, beat = function () { if (++nb2 > 14) { clearInterval(pulseT); pulseT = null; return; } var t = ctx.currentTime; tone(55, t, 0.18, 0.12, 'sine'); tone(52, t + 0.22, 0.16, 0.08, 'sine'); }; beat(); pulseT = setInterval(beat, 1300); }   /* 열네 번 뒤에는 저절로 멎는다 */
       else if (!on && pulseT) { clearInterval(pulseT); pulseT = null; }
     }
+    /* ── 이야기 카드의 분위기 소리와 단추 소리(play 갈래, 2026-11-16). 모두 합성 소리이고 파일이 없다.
+     * 종류: water(물결) · gale(센 바람) · night(밤 풀벌레) · crowd(멀리 모인 무리의 웅성임. 말소리가 아니고 알아들을 낱말이 없다).
+     * 하나님의 음성, 말씀 낭독, 찬송은 만들지 않는다. 어느 장면에 무엇을 까는지는 story.js의 표(AMB)가 장절 근거와 함께 정한다.
+     * ambBuild는 소리를 재 보는 시험(soundCheck.js)이 화면 없는 소리 장치(OfflineAudioContext)로도 부를 수 있게 따로 두었다. */
+    function ambNoise(c, sec) {
+      var b = c.createBuffer(1, Math.floor(c.sampleRate * sec), c.sampleRate), d = b.getChannelData(0), last = 0;
+      for (var i = 0; i < d.length; i++) { var wn = Math.random() * 2 - 1; last = (last + 0.02 * wn) / 1.02; d[i] = last * 3.2 + wn * 0.12; }
+      return b;
+    }
+    function ambLoop(c, buf, type, freq, q, rate) {
+      var src = c.createBufferSource(); src.buffer = buf; src.loop = true; src.playbackRate.value = rate || 1;
+      var f = c.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q || 0.7;
+      var g = c.createGain(); g.gain.value = 0; src.connect(f); f.connect(g); src.start();
+      return { src: src, filter: f, gain: g };
+    }
+    function ambLfo(c, hz, depth, param) { var o = c.createOscillator(), g = c.createGain(); o.frequency.value = hz; g.gain.value = depth; o.connect(g); g.connect(param); o.start(); return o; }
+    /* 풀벌레 울음을 t0부터 dur초 동안 미리 적어 둔다: 짧은 높은 소리 세 번씩, 1.3초쯤마다 */
+    function ambChirps(c, dest, t0, dur) {
+      for (var t = t0 + 0.3; t < t0 + dur; t += 1.1 + Math.random() * 0.6) for (var k = 0; k < 3; k++) {
+        var o = c.createOscillator(), g = c.createGain(), ts = t + k * 0.07; o.type = 'sine'; o.frequency.value = 4300 + Math.random() * 250;
+        g.gain.setValueAtTime(0.0001, ts); g.gain.exponentialRampToValueAtTime(0.022, ts + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, ts + 0.05);
+        o.connect(g); g.connect(dest); o.start(ts); o.stop(ts + 0.06);
+      }
+    }
+    function ambBuild(c, dest, kind, buf) {
+      var out = c.createGain(); out.gain.value = 0; out.connect(dest); buf = buf || ambNoise(c, 3);
+      var parts = [], level = 1;
+      if (kind === 'water') {   /* 물결: 낮은 물소리가 천천히 밀려왔다 물러간다 */
+        var w1 = ambLoop(c, buf, 'lowpass', 520, 0.6), w2 = ambLoop(c, buf, 'bandpass', 1500, 0.8, 1.3);
+        w1.gain.gain.value = 0.2; w2.gain.gain.value = 0.035; ambLfo(c, 0.13, 0.1, w1.gain.gain); ambLfo(c, 0.21, 0.025, w2.gain.gain); ambLfo(c, 0.09, 120, w1.filter.frequency);
+        parts = [w1, w2];
+      } else if (kind === 'gale') {   /* 센 바람: 휘몰아치듯 높낮이가 바뀐다 */
+        var g1 = ambLoop(c, buf, 'bandpass', 520, 0.9);
+        g1.gain.gain.value = 0.36; ambLfo(c, 0.17, 0.14, g1.gain.gain); ambLfo(c, 0.11, 260, g1.filter.frequency);
+        parts = [g1];
+      } else if (kind === 'night') {   /* 밤: 아주 낮은 바람 위에 풀벌레 */
+        var n1 = ambLoop(c, buf, 'lowpass', 260, 0.5); n1.gain.gain.value = 0.12; parts = [n1];
+      } else if (kind === 'crowd') {   /* 멀리 모인 무리: 세 갈래 소리가 서로 다른 빠르기로 커졌다 작아진다. 낱말은 없다 */
+        var c1 = ambLoop(c, buf, 'bandpass', 430, 1.4, 0.9), c2 = ambLoop(c, buf, 'bandpass', 760, 1.8, 1.15), c3 = ambLoop(c, buf, 'bandpass', 1150, 2.2, 0.8);
+        c1.gain.gain.value = 0.20; c2.gain.gain.value = 0.12; c3.gain.gain.value = 0.05;
+        ambLfo(c, 0.7, 0.07, c1.gain.gain); ambLfo(c, 1.3, 0.05, c2.gain.gain); ambLfo(c, 2.1, 0.02, c3.gain.gain); ambLfo(c, 0.23, 0.06, c1.gain.gain);
+        parts = [c1, c2, c3]; level = 1.5;
+      }
+      parts.forEach(function (x) { x.gain.connect(out); });
+      return { out: out, level: level, kind: kind };
+    }
+    var amb = {}, ambBuf = null, ambTimer = null, ambNow = [];
+    function ambience(kinds) {
+      kinds = kinds || []; ambNow = kinds.slice();
+      if (!ctx) return;
+      if (!ambBuf && kinds.length) ambBuf = noiseBuf(3);
+      kinds.forEach(function (k) { if (!amb[k]) amb[k] = ambBuild(ctx, sfx, k, ambBuf); });
+      Object.keys(amb).forEach(function (k) { amb[k].out.gain.setTargetAtTime(kinds.indexOf(k) >= 0 ? amb[k].level : 0, ctx.currentTime, 0.9); });
+      var night = kinds.indexOf('night') >= 0;
+      if (night && !ambTimer) { var sched = function () { if (ctx.state === 'running') ambChirps(ctx, amb.night.out, ctx.currentTime, 4); }; sched(); ambTimer = setInterval(sched, 4000); }
+      else if (!night && ambTimer) { clearInterval(ambTimer); ambTimer = null; }
+    }
+    /* 단추 소리: 아주 짧고 낮은 '톡'. 소리 장치가 켜진 뒤(장면에 들어간 뒤)에만 난다 */
+    function tick() {
+      if (!ctx || muted || ctx.state !== 'running') return;
+      var t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(340, t + 0.05);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.07, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.08);
+    }
+    try { document.addEventListener('click', function (e) { var b = e.target && e.target.closest ? e.target.closest('#game button') : null; if (b && !b.classList.contains('cam3')) tick(); }, true); } catch (e) { /* 무시 */ }
     function mute(m) { muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); }
-    return { start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, rumble: rumble, thud: thud, pulse: pulse, mute: mute, isMuted: function () { return muted; } };
+    return { levels: function () { return { wind: want.wind, fire: want.fire, flock: flockNear, pulse: !!pulseT, on: !!ctx }; }, start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, rumble: rumble, thud: thud, pulse: pulse, mute: mute, isMuted: function () { return muted; },
+      ambience: ambience, tick: tick, ambBuild: ambBuild, ambChirps: ambChirps, ambState: function () { return { on: ambNow.slice(), built: Object.keys(amb), ctx: ctx ? ctx.state : 'none' }; } };
   })();
 
   BO3D.fx = { fire: fire, upgradeBush: upgradeBush, sortLayers: sortLayers, Post: Post, audio: audio, GLOW: GLOW, SOFT: SOFT };

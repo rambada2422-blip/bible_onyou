@@ -2,17 +2,21 @@
 // 사용: node tools/test/walkOT.js <단계 0~2> <저장 폴더> [첫 장면 번호 1~40] [마지막 장면 번호]
 // 장면마다: 도착 → (동행) → 지켜보기 → (동행) → 관문(첫 관문은 다른 보기를 먼저 눌러 안내 문구 확인) → 재료 → 오늘의 물음 → 마무리 → 다음 장면/다음 시대.
 // 화면마다 글이 옆으로 넘치지 않는지 보고, 시대의 첫 장면과 몇몇 화면을 찍는다. 끝에 오류 목록을 낸다.
+// 휴대폰 화면 전수 점검(phoneAudit.js가 부른다): 환경 변수 BO_W·BO_H로 화면 크기를 바꾸고, BO_AUDIT=1이면 화면마다
+// 작은 단추(44px 미만)·잘린 글·스크롤해야 하는 시트를 <저장 폴더>/audit.json에 적는다(통과·실패에는 넣지 않는다).
 const { chromium } = require('playwright');
 const doHelp = require('./lib/help.js');
+const solveQ = require('./lib/solve.js');
 const path = require('path');
 const fs = require('fs');
 const ti = Number(process.argv[2] || '1'), out = process.argv[3] || '/tmp/walkOT', from = Number(process.argv[4] || '1'), to = Number(process.argv[5] || '40');
 fs.mkdirSync(out, { recursive: true });
 const BAN = ['틀렸', '실패', '감점', '목숨'];
+const VW = Number(process.env.BO_W || '390'), VH = Number(process.env.BO_H || '844'), AUDIT = !!process.env.BO_AUDIT, aud = [];
 (async () => {
   const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const b = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-  const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce' })).newPage();
+  const p = await (await b.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: 1, reducedMotion: 'reduce' })).newPage();
   await p.addInitScript(() => { window.BO3D_TEST = true; });
   const errs = [], probs = []; let n = 0;
   p.on('pageerror', (e) => errs.push('pageerror: ' + e.message));
@@ -32,49 +36,28 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
     if (r.over.length) probs.push(where + ': 옆으로 넘침 ' + r.over.join(','));
     if (r.btns.length) probs.push(where + ': 버튼 글이 넘침 ' + r.btns.join(','));
     BAN.forEach((w) => { if (r.text.includes(w)) probs.push(where + ': 쓰지 않는 표현 "' + w + '"'); });
+    if (AUDIT) {
+      const a = await p.evaluate(() => {
+        const box = document.querySelector('.ot3'), vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+        const small = [...box.querySelectorAll('button, summary, input, textarea')].filter(vis).map((e) => ({ r: e.getBoundingClientRect(), c: (e.className || e.tagName).split(' ')[0], t: (e.getAttribute('aria-label') || e.textContent).trim().slice(0, 16) })).filter((x) => x.r.height < 43.5 || x.r.width < 43.5).map((x) => x.c + '|' + x.t + '|' + Math.round(x.r.width) + '×' + Math.round(x.r.height));
+        const clip = [...box.querySelectorAll('*')].filter((e) => vis(e) && e.children.length === 0 && e.textContent.trim() && (e.scrollWidth > e.clientWidth + 1) && getComputedStyle(e).overflow !== 'visible').map((e) => (e.className || e.tagName) + '|' + e.textContent.trim().slice(0, 24));
+        const out = [...box.querySelectorAll('button, .ref, .vcard, .note, .say, .comm3, .findcard, .matcard, img, svg')].filter(vis).filter((e) => { const r = e.getBoundingClientRect(); return r.right > innerWidth + 1 || r.left < -1; }).map((e) => (e.className && e.className.baseVal !== undefined ? 'svg' : (e.className || e.tagName)));
+        const body = box.querySelector('.sheet-body'), foot = box.querySelector('.sheet-foot'), map = box.querySelector('.otmap');
+        const footOver = foot ? [...foot.querySelectorAll('.btn')].filter((e) => e.getBoundingClientRect().height > 70).map((e) => e.textContent) : [];
+        return { small, clip, out, footOver, scroll: body ? Math.max(0, body.scrollHeight - body.clientHeight) : 0, bodyH: body ? body.clientHeight : (map ? map.clientHeight : 0), full: body ? body.scrollHeight : 0 };
+      });
+      aud.push(Object.assign({ where }, a));
+    }
   };
   // 물음 풀기(페이지 안에서 누른다). wrongFirst면 맞지 않는 보기를 먼저 눌러 안내가 나오는지 본다
   const solve = async (where, wrongFirst) => {
-    const r = await p.evaluate(async ({ wrongFirst }) => {
-      const q = BO3D.story.debug.q(), sheet = document.querySelector('.ot3 .sheet-body');
-      const wait = () => new Promise((res) => setTimeout(res, 30));
-      const opts = () => [...sheet.querySelectorAll('.opt')];
-      const pick = async (label) => { const o = opts().find((x) => x.textContent.trim().endsWith(label.trim())); if (!o) return false; o.click(); await wait(); return true; };
-      let look = null;
-      const choice = async (cq) => {
-        if (wrongFirst) { const w = cq.options.find((o) => !o.ok); await pick(w.label); look = !!sheet.querySelector('.note.look, .note.detour'); }
-        return pick(cq.options.find((o) => o.ok).label);
-      };
-      let ok = false;
-      if (q.type === 'choice') ok = await choice(q);
-      else if (q.type === 'find') { const rb = [...sheet.querySelectorAll('.btn')].find((x) => x.textContent === '찾아서 읽었어요'); rb.click(); await wait(); ok = await choice(q.confirm); }
-      else if (q.type === 'multi') {   /* 여러 개 고르기(13.8): 틀린 것 하나를 섞어 확인을 눌러 안내를 본 뒤, 맞는 것만 */
-        const rb = [...sheet.querySelectorAll('.btn')].find((x) => x.textContent === '찾아서 읽었어요'); rb.click(); await wait();
-        const btn = () => [...sheet.querySelectorAll('.btn')].find((x) => x.textContent === '다 골랐어요');
-        const o = q.confirm.options, setTo = async (want) => { for (const it of o) { const el = opts().find((x) => x.textContent.trim().endsWith(it.label.trim())); if (el && (el.getAttribute('aria-pressed') === 'true') !== want(it)) { el.click(); await wait(); } } };
-        if (wrongFirst) { await setTo((it) => it === o.find((x) => !x.ok)); btn().click(); await wait(); look = !!sheet.querySelector('.note.look, .note.detour'); }
-        await setTo((it) => !!it.ok); btn().click(); await wait(); ok = true;
-      } else if (q.type === 'match') {   /* 잇기(13.8): 구절을 누르고 맞는 내용을 누른다 */
-        const L = () => [...sheet.querySelectorAll('.match3 .mref')], Rt = () => [...sheet.querySelectorAll('.match3 .mtext')];
-        if (wrongFirst && q.pairs.length > 1) { L().find((x) => x.textContent.trim().endsWith(q.pairs[0].ref)).click(); await wait(); Rt().find((x) => x.textContent.trim() === q.pairs[1].text.trim()).click(); await wait(); look = !!sheet.querySelector('.note.look'); }
-        for (const pr of q.pairs) { L().find((x) => x.textContent.trim().endsWith(pr.ref)).click(); await wait(); Rt().find((x) => x.textContent.trim() === pr.text.trim()).click(); await wait(); }
-        ok = true;
-      } else if (q.type === 'order') {
-        if (wrongFirst) { for (const it of [...q.items].reverse()) await pick(it); look = !!sheet.querySelector('.note.look, .note.detour'); }
-        for (const it of q.items) ok = await pick(it);
-      } else if (q.type === 'findref') {
-        const ins = sheet.querySelectorAll('.refin input'), btn = sheet.querySelector('.refin .btn');
-        if (wrongFirst) { ins[0].value = '99'; ins[1].value = '99'; btn.click(); await wait(); look = !!sheet.querySelector('.note.look, .note.detour'); }
-        const cv = q.accept[0].split(':'); ins[0].value = cv[0]; ins[1].value = cv[1]; btn.click(); await wait(); ok = true;
-      }
-      return { type: q.type, ok, good: !!sheet.querySelector('.note.good'), look };
-    }, { wrongFirst });
+    const r = await solveQ(p, wrongFirst);
     if (!r.ok || !r.good) probs.push(where + ': 물음(' + r.type + ')을 풀지 못함');
     if (wrongFirst && r.look === false) probs.push(where + ': 다른 보기를 눌렀는데 안내 문구가 없음');
     return r;
   };
 
-  await p.goto('file:///home/user/bible_onyou/dist/preview3d.html');
+  await p.goto(process.env.BO_PAGE || 'file:///home/user/bible_onyou/dist/preview3d.html');   /* BO_PAGE: 다른 묶음(전·후 비교용 사본)을 볼 때 */
   await p.waitForTimeout(2500);
   await p.evaluate(() => document.fonts.ready);
   await p.click('.tier >> nth=' + ti);
@@ -86,12 +69,18 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
   const meta = await p.evaluate(() => Object.fromEntries(BO3D.ot.order.map((id) => [id, { era: BO3D.ot.scenes[id].era, title: BO3D.ot.scenes[id].title }])));
   const log = [];
   // 첫 장면은 지도에서 고른다
-  if (from > 1) await p.evaluate(() => BO3D.story.debug.unlockAll());   /* 중간부터 볼 때는 시대 잠금을 푼다 */
+  if (from > 1) { await p.evaluate(() => { BO3D.story.debug.unlockAll(); BO3D.story.openMap(); }); await p.waitForTimeout(100); }   /* 중간부터 볼 때는 시대 잠금을 풀고 지도를 다시 그린다(art 갈래 지적: 다시 그리지 않으면 카드가 잠긴 채라 멈춤) */
   await p.click('.otc[data-id="' + order[from - 1] + '"]'); await p.waitForTimeout(100);
   for (let k = from - 1; k < to; k++) {
     const id = order[k], t0 = Date.now(), firstOfEra = k === from - 1 || meta[order[k - 1]].era !== meta[id].era;
     let s = await st();
-    if (s.screen === 'era') { if (firstOfEra) { await shot(id + '-era'); await check(id + ' 시대 안내'); } await p.click('.ot3 .sheet-foot .btn:has-text("첫 장면으로")'); await p.waitForTimeout(80); s = await st(); }
+    if (s.screen === 'era') {
+      if (firstOfEra) {
+        await shot(id + '-era'); await check(id + ' 시대 안내');
+        /* "장면 사이에 성경이 기록한 곳"을 펼친 모습도 본다(전수 점검 숫자가 바뀌지 않게 BO_AUDIT 때는 빼고) */
+        if (!AUDIT && await p.$('.ot3 .betweenfold summary')) { await p.click('.ot3 .betweenfold summary'); await p.waitForTimeout(60); if (!(await p.evaluate(() => document.querySelector('.ot3 .betweenfold').open))) probs.push(id + ' 시대 안내: 장면 사이 기록이 펼쳐지지 않음'); await check(id + ' 시대 안내(펼침)'); await shot(id + '-era-open'); }
+      }
+      await p.click('.ot3 .sheet-foot .btn:has-text("첫 장면으로")'); await p.waitForTimeout(80); s = await st(); }
     if (s.screen === 'pick') { await shot(id + '-pick'); await p.click('.ot3 .sheet-foot .btn:has-text("이야기 카드로")'); await p.waitForTimeout(80); }
     await p.waitForFunction(() => BO3D.story.debug.state().screen === 'play', null, { timeout: 8000 });
     s = await st();
@@ -126,6 +115,7 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
   await shot('map-end'); await check('끝난 뒤 시대 지도');
   const fin = await st();
   fs.writeFileSync(path.join(out, 'log.txt'), log.join('\n') + '\n');
+  if (AUDIT) fs.writeFileSync(path.join(out, 'audit.json'), JSON.stringify({ w: VW, h: VH, tier: ti, items: aud }));
   console.log(log.join('\n'));
   console.log('단계', ti, '· 장면', from + '~' + to, '· 마친 장면', fin.done, '· 재료', fin.mats + '/' + fin.total, '· 화면', n);
   console.log('문제', probs.length, probs.slice(0, 40).join('\n'));

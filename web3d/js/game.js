@@ -116,7 +116,7 @@
     var rt = buildScene(id);
     SCN = rt; cur = 'scene'; scene = rt.scene; env = { sun: rt.sun }; P = rt.P; SC = rt.data; if (U.setScene) U.setScene(SC);
     machine = rt.machine; PARTS = rt.PARTS; partObjs = rt.partObjs; DEX = rt.DEX; machineY = rt.machineY; departGlow = rt.departGlow;
-    dex = rt.dexShots = rt.dexShots || {};
+    dex = rt.dexShots = rt.dexShots || (BO3D.story && BO3D.story.shots ? BO3D.story.shots(id) : {});   /* 전에 찍어 이 기기에 남긴 사진(탐험 일지의 사진 도감) */
     return rt;
   }
 
@@ -168,15 +168,39 @@
   var overlay = el('div', { class: 'overlay3', hidden: '' });
   var touch = el('div', { class: 'touch3' });
   var snd = el('button', { class: 'snd3', hidden: '', 'aria-label': '소리 끄기', 'aria-pressed': 'false', on: { click: function () {
-    var m = !FX.audio.isMuted(); FX.audio.mute(m); snd.setAttribute('aria-pressed', String(m)); snd.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기');
+    var m = !FX.audio.isMuted(); FX.audio.mute(m); U.set.snd = m ? 0 : 1; U.saveSet(); syncSnd();
   } } }, icon('speaker'));
+  function syncSnd() { var m = !U.set.snd; snd.setAttribute('aria-pressed', String(m)); snd.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기'); }   /* 설정·이야기 카드의 소리 끄기와 같은 값 */
   var dexLabel = el('span', { text: '도감 0 / 5' });
   var dexBtn = el('button', { class: 'dex3', hidden: '', on: { click: function () { if (cur === 'jordan') openClues(); else openDex(); } } }, icon('journal'), dexLabel);
   var camBtn = el('button', { class: 'cam3', hidden: '', 'aria-label': '사진 찍기', on: { click: function () { wantShot = true; } } }, icon('camera'));
   var flash = el('div', { class: 'flash3', hidden: '' });
+  /* 3D 장면 도중에 시대 지도로 나가는 길(pack 갈래 2차 검증). 한 번 묻고 나간다. 모은 재료와 사진은 이미 이 기기에 남아 있다 */
+  var mapBtn = el('button', { class: 'map3', hidden: '', 'aria-label': '시대 지도로 나가기', on: { click: function () { askMap(); } } }, icon('arrow'), el('span', { text: '지도' }));
+  var askPrev = null;
+  var NOMAP = { menu: 1, route: 1, lookup: 1, vision: 1, depart: 1, end2: 1, ask: 1 };   /* 올려다보기·영상·출발 같은 연출 중에는 지도 단추를 감춘다 */
+  function askMap() {
+    if (NOMAP[state]) return;
+    stick.x = stick.y = 0; stick.id = null;
+    var prevState = askPrev = state, prevClass = overlay.className, prevKids = Array.prototype.slice.call(overlay.childNodes), wasHidden = overlay.hidden;
+    var done = cur !== 'jordan' && partsFound === PARTS.length && sceneDone;   /* 관문까지 마치고 걷던 중이면 나갈 때 장면을 마친 것으로 남긴다(타임머신 출발과 같게) */
+    state = 'ask';   /* 묻는 동안 걷기·대목 진행을 멈춘다 */
+    sheetOverlay([el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+      el('p', { class: 'q-prompt', text: done ? '이 장면을 마치고 시대 지도로 갈까요?' : '탐험을 멈추고 시대 지도로 갈까요?' }),
+      el('p', { class: 'narr', text: cur === 'jordan' ? '추리 수첩의 단서 사진은 이 탐험 안에서만 써요. 다시 들어오면 처음부터 단서를 찾아요.'
+        : done ? '이 장면을 끝까지 지켜보았어요. 지도로 가면 말씀 카드가 탐험 일지에 들어가요. 모은 재료와 찍은 사진도 이 기기에 남아요.'
+          : '지금까지 모은 재료와 찍은 사진은 이 기기에 남아요. 이 장면은 다시 들어오면 처음부터 지켜봐요.' })],
+      [btn('계속하기', function () { U.stopSpeak(); overlay.className = prevClass; overlay.replaceChildren.apply(overlay, prevKids); overlay.hidden = wasHidden; state = prevState; }, 'plain'),
+        btn('시대 지도로', function () {
+          (U.stopSpeak(), overlay.hidden = true); hidePanel();
+          if (BO3D.story) { if (done) BO3D.story.complete3d(SCN.id); else if (BO3D.story.exit3d) BO3D.story.exit3d('map'); }   /* 마치지 않고 나간 것은 놀이 기록의 "나간 곳"에 */
+          toMap();
+        })]);
+  }
+  function calmAudio() { if (FX) { FX.audio.setFire(999); FX.audio.setFlock(999); FX.audio.wind(0.16); FX.audio.pulse(false); } }   /* 3D 장면의 불·양 떼·센 바람·맥박 소리를 3D 밖으로 가져가지 않는다 */
   var denBtn = el('button', { class: 'den3', hidden: '', on: { click: function () { openDen(); } } }, '타임머신에 타기');
   var dedBtn = el('button', { class: 'den3', hidden: '', on: { click: function () { startDeduce(); } } }, '추리하기');
-  add(ui, [touch, hud, base, hint, toastEl, dexBtn, camBtn, denBtn, dedBtn, snd, flash, panel, overlay, fpsEl]);
+  add(ui, [touch, hud, base, hint, toastEl, dexBtn, camBtn, denBtn, dedBtn, snd, mapBtn, flash, panel, overlay, fpsEl]);
 
   function setObjective(t) { objText.textContent = t; }
   /* 화면 위 장절 표시. 대목을 보여 줄 때는 그 대목의 장절을 따라가고, 탐험 중에는 이 장면에서 다루는 범위를 보여 준다.
@@ -205,16 +229,24 @@
     toastEl.replaceChildren();
     if (who) { add(toastEl, [avatar(who), el('span', {}, el('b', { text: C.chars[who].name + ' ', style: 'color:' + C.chars[who].color }), html)]); }
     else add(toastEl, el('span', { text: html }));
-    toastEl.hidden = false; toastEl.classList.remove('show'); void toastEl.offsetWidth; toastEl.classList.add('show');
-    clearTimeout(toast.t); toast.t = setTimeout(function () { toastEl.hidden = true; }, 4200);
+    toastEl.hidden = false; placeToast(); toastEl.classList.remove('show'); void toastEl.offsetWidth; toastEl.classList.add('show');
+    hint.style.visibility = 'hidden';   /* 말풍선이 떠 있는 동안 조작 안내는 잠시 감춘다(키 작은 화면에서 겹침). 말풍선이 꺼지면 남은 시간 동안 다시 보인다 */
+    clearTimeout(toast.t); toast.t = setTimeout(function () { toastEl.hidden = true; hint.style.visibility = ''; }, S.tier === 't1' ? 7000 : 4200);   /* 8~10세는 읽을 시간을 더 준다 */
   }
-  function showPanel(kids_, foot) {
-    panelBody.replaceChildren(); panelFoot.replaceChildren();
-    add(panelBody, kids_); add(panelFoot, foot);
+  /* 말풍선은 위쪽 안내(글자 크기·거리 단추에 따라 높이가 바뀜) 바로 아래에 둔다. 말풍선이 떠 있는 동안 매 화면 맞춘다 */
+  function placeToast() { if (toastEl.hidden) return; var t = hud.hidden ? 138 : hud.offsetTop + hud.offsetHeight + 6; if (toastEl._top !== t) { toastEl._top = t; toastEl.style.top = t + 'px'; } }
+  /* 위쪽 안내의 높이가 바뀔 때만 다시 맞춘다(매 화면 재지 않게). 이 기능이 없는 옛 브라우저만 매 화면 맞춘다 */
+  var hudRO = window.ResizeObserver ? new ResizeObserver(function () { placeToast(); }) : null;
+  if (hudRO) hudRO.observe(hud);
+  function showPanel(kids_, foot, tall) {
+    panelBody.replaceChildren(); panelFoot.replaceChildren(); panel.classList.toggle('tall', !!tall); ui.classList.toggle('tallp', !!tall);   /* tallp: 키 작은 화면에서 반쯤 가린 위쪽 안내를 감춤(game.css) */
+    U.stopSpeak();
+    add(panelBody, kids_); add(panelFoot, [U.speakBtn(function () { return panelBody; }), foot]);
     panel.hidden = false; panelBody.scrollTop = 0;
+    if (U.moreHint) U.moreHint(panelBody, panelFoot);   /* 재료 창처럼 글이 길면 "아래에 더 있어요"(polish 갈래 부탁: 재료 대목의 긴 글) */
     base.hidden = true; stick.x = stick.y = 0; stick.id = null;
   }
-  function hidePanel() { panel.hidden = true; }
+  function hidePanel() { U.stopSpeak(); panel.hidden = true; ui.classList.remove('tallp'); }
   function btn(label, fn, cls) { return el('button', { class: 'btn ' + (cls || 'onpaper'), on: { click: fn } }, label); }
 
   function beatNodes(b) {
@@ -256,6 +288,8 @@
       var cv = document.createElement('canvas'); cv.width = cv.height = 220;
       try { cv.getContext('2d').drawImage(canvas, sx, sy, size, size, 0, 0, 220, 220); dex[f.d.id] = cv.toDataURL('image/jpeg', 0.82); }
       catch (e) { dex[f.d.id] = ''; }
+      /* 탐험 일지의 사진 도감에 남긴다(이 기기에만). 저장은 작게 줄여서 */
+      if (BO3D.story && BO3D.story.saveShot) { var small = ''; try { var c2 = document.createElement('canvas'); c2.width = c2.height = 176; c2.getContext('2d').drawImage(cv, 0, 0, 176, 176); small = c2.toDataURL('image/jpeg', 0.72); } catch (e2) { small = ''; } BO3D.story.saveShot(SCN.id, f.d, small); }
     });
     updateDexBtn();
     if (fresh.length) {
@@ -348,7 +382,7 @@
           if (SCN.partContinue) SCN.partContinue(i);
           var go2 = function () { quest = i + 1; openQuiz(); };
           if (bi !== null && bi !== undefined && hasHelp(bi)) seg('help:' + bi, go2); else go2();   /* 이 대목 뒤의 현장 돕기(규칙서 13.6) */
-        }));
+        }), true);   /* 재료와 대목을 함께 보여 주는 긴 패널 */
     } else { if (SCN.partFound) SCN.partFound(i); startLookup(); }
   }
   /* 대목 앞에 붙이는 탐험대 이야기 한 줄(예: 그 앞의 일을 타임머신 창으로 봄). 재료를 주울 때 보여 주는 대목에도 쓴다 */
@@ -366,12 +400,13 @@
     var Q = PARTS[quest].q, q = Q.q[S.tier] || Q.q.t2;
     state = 'quiz'; stick.x = stick.y = 0; stick.id = null; base.hidden = true; track.hidden = true;
     var who = companion(Q.say && Q.say.who), go = btn('찾으러 가기', function () {
-      overlay.hidden = true; questOpen = true; state = 'explore';
+      (U.stopSpeak(), overlay.hidden = true); questOpen = true; state = 'explore';
       setObjective(Q.found);
       if (Q.say && who) toast(Q.say.text, who);
     }, 'wide');
     go.disabled = true;
     var foundBox = el('div', {});
+    U.onMiss = BO3D.story && BO3D.story.missFor ? BO3D.story.missFor(SCN.id, 'part' + quest) : null;   /* 엇나간 횟수(부모·교사 화면) */
     /* 탐지기는 탐험대 이야기, 물음은 성경 물음이다. 성경 찾기 안내는 나이 단계에 따라 (규칙서 5절) */
     var where = S.tier === 't1' ? U.chapterOf(q.ref || SC.ref) : (S.tier === 't2' ? bookName(q.ref || SC.ref) : U.bookOf(SC.ref) + '에서 찾아보세요');
     sheetOverlay([el('div', { class: 'eyebrow', text: '탐험대 이야기' }),
@@ -423,6 +458,9 @@
   }
   function openDen() {
     var prev = state; state = 'den'; stick.x = stick.y = 0; stick.id = null; base.hidden = true;
+    U.stopSpeak();
+    var sb = U.speakBtn(function () { return overlay; });   /* 8~10세는 아지트 글도 읽어 준다(일지·설정처럼 오른쪽 위). 깃발 색을 바꿔 다시 그려도 같은 단추라 읽기가 끊기지 않는다 */
+    if (sb) sb.classList.add('float');
     function render() {
       var ready = partsFound === PARTS.length && sceneDone;
       var slots = PARTS.map(function (p, i) {
@@ -431,7 +469,7 @@
       });
       var frames = DEX.map(function (d) {
         var has = d.id in dex;
-        return el('div', { class: 'frame' + (has ? '' : ' empty') }, has && dex[d.id] ? el('img', { src: dex[d.id], alt: d.name }) : el('div', { class: 'ph' }), el('span', { text: has ? d.name : '빈 액자' }));
+        return el('div', { class: 'frame' + (has ? '' : ' empty nospeak') }, has && dex[d.id] ? el('img', { src: dex[d.id], alt: d.name }) : el('div', { class: 'ph' }), el('span', { text: has ? d.name : '빈 액자' }));
       });
       /* 깃발 색은 시대 부속을 고칠 때마다 하나씩 열린다(흥미 개선: 모은 재료가 무엇을 열게) */
       var cols = [null, '#EE7B62', '#2F9C95', '#4E5FB0', '#F7D774', '#9C6ADE', '#E35D8C', '#5BAE5A', '#E8913A', '#3E8FD4', '#C8A15A', '#7A8794'];
@@ -457,9 +495,10 @@
         el('h2', { text: mt ? '타임머신 수리' : '시간 나침반 수리' }), el('div', { class: 'slots' }, slots), el('p', { class: 'den-msg', text: msg }),
         el('h2', { text: '사진 벽' }), el('div', { class: 'frames' }, frames),
         el('h2', { text: '꾸미기' }),
-        el('div', { class: 'deco' }, el('span', { text: '타임머신 깃발 (시대 부속을 고칠 때마다 색이 하나씩 열려요 · ' + Math.min(cols.length - 1, openN - 1) + ' / ' + (cols.length - 1) + ')' }), el('div', { class: 'sws' }, sw)),
+        el('div', { class: 'deco' }, el('span', { text: '타임머신 깃발 (시대 부속을 고칠 때마다 색이 하나씩 열려요 · ' + Math.min(cols.length - 1, openN - 1) + ' / ' + (cols.length - 1) + ')' }), el('div', { class: 'sws nospeak' }, sw)),
         el('div', { class: 'deco' }, el('span', { text: sceneDone ? '탐험 모자' : '탐험 모자 (첫 장면을 마치면 열려요)' }), hatBtn),
-        el('div', { class: 'den-foot' }, btn('밖으로 나가기', function () { overlay.hidden = true; state = prev; }, 'quiet'), go));
+        el('div', { class: 'den-foot' }, btn('밖으로 나가기', function () { (U.stopSpeak(), overlay.hidden = true); state = prev; }, 'quiet'), go));
+      if (sb) overlay.insertBefore(sb, overlay.firstChild);
       overlay.hidden = false;
     }
     render();
@@ -473,7 +512,7 @@
     sp.scale.setScalar(5); return sp;
   }
   function depart() {
-    overlay.hidden = true; state = 'depart'; departT = 0;
+    (U.stopSpeak(), overlay.hidden = true); state = 'depart'; departT = 0;
     hud.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true; hint.hidden = true;
     for (var k in kids) kids[k].group.visible = false;
     if (FX) FX.audio.rise();
@@ -587,11 +626,11 @@
   function clueN() { return Object.keys(clue).length; }
   function enterJordan() {
     if (!JL) { JL = BO3D.jordan.build(); loadJordanGlb(); }
-    cur = 'jordan'; overlay.hidden = true; clue = {}; dedReady = false;
+    cur = 'jordan'; (U.stopSpeak(), overlay.hidden = true); clue = {}; dedReady = false;
     spawnKids(); hudMode();
     camYaw = Math.PI; snapCamera();
     clueCount.textContent = '단서 0 / ' + JD.clues.length; dexLabel.textContent = '추리 수첩 0 / ' + JD.clues.length;
-    setObjective(JD.objective); hud.hidden = false; snd.hidden = false;
+    setObjective(JD.objective); hud.hidden = false; snd.hidden = false; mapBtn.hidden = !BO3D.story; hud.classList.toggle('withmap', !!BO3D.story); U.applySet(); syncSnd();
     state = 'caption';
     var sy = JD.story.say, who = C.chars[sy.who];
     showPanel([el('div', { class: 'q-kicker', text: '탐험대 이야기' }), el('p', { class: 'narr', text: tx(JD.story.text) }),
@@ -647,7 +686,7 @@
     sheetOverlay([el('div', { class: 'q-kicker', text: '추리 수첩 ' + clueN() + ' / ' + JD.clues.length }),
       el('p', { class: 'q-prompt', text: '찍은 사진이 단서예요. 장절을 성경책에서 찾아보면 더 알 수 있어요.' }),
       el('div', { class: 'dexgrid' }, JD.clues.map(clueCell))],
-      btn('닫기', function () { overlay.hidden = true; }));
+      btn('닫기', function () { (U.stopSpeak(), overlay.hidden = true); }));
   }
   function multiBlock(q, onOk) {
     var noteBox = el('div', {});
@@ -668,7 +707,7 @@
     } } }, '확인');
     return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' }, btns), check, noteBox];
   }
-  function backToExplore() { overlay.hidden = true; state = 'explore'; camBtn.hidden = false; dexBtn.hidden = false; dedBtn.hidden = false; }
+  function backToExplore() { (U.stopSpeak(), overlay.hidden = true); state = 'explore'; camBtn.hidden = false; dexBtn.hidden = false; dedBtn.hidden = false; }
   function evidenceBlock(ev, onOk) {
     var noteBox = el('div', {}), have = JD.clues.filter(function (c) { return c.id in clue; });
     if (!have.some(function (c) { return ev.ok.indexOf(c.id) >= 0; })) {
@@ -735,9 +774,9 @@
 
   /* ── 처음 화면 ── */
   function menu() {
-    paused = false; if (BO3D.story) BO3D.story.close();
-    state = 'menu'; cur = 'scene'; dedBtn.hidden = true; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
-    if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); }
+    paused = false; if (BO3D.story) { if (BO3D.story.leave3d) BO3D.story.leave3d(); BO3D.story.close(); }
+    state = 'menu'; cur = 'scene'; dedBtn.hidden = true; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; mapBtn.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
+    if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } calmAudio();
     var tier = S.tier, ch = S.ch, picked = false;
     var ids = ['choeon', 'hyu', 'onwoo'];
     var tb = C.tiers.map(function (t) {
@@ -761,14 +800,15 @@
       el('h2', { text: '몇 살 탐험대인가요?' }), el('div', { class: 'tier-list' }, tb),
       el('h2', { text: '누가 되어 탐험할까요?' }), el('div', { class: 'char-row' }, cb),
       btn('탐험 시작', function () { S.tier = tier; S.ch = ch; if (BO3D.story) { paused = true; BO3D.story.open(); } else if (C3 && BO3D.jordan) route(); else begin(); }, 'wide'),
+      BO3D.story && BO3D.story.openSettings ? btn('설정 (글자 크기 · 소리 · 읽어 주기)', function () { S.tier = tier; BO3D.story.openSettings(function () { BO3D.story.close(); }); }, 'quiet') : null,
       el('p', { class: 'fine', text: '감수 전 시험판입니다. 목사님 감수를 마치기 전에는 아이들에게 공개하지 않습니다.' }));
     overlay.hidden = false;
   }
 
   function begin() {
     root.className = 'g3 app ' + S.tier;
-    overlay.hidden = true;
-    if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; }
+    (U.stopSpeak(), overlay.hidden = true);
+    if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; mapBtn.hidden = !BO3D.story; hud.classList.toggle('withmap', !!BO3D.story); U.applySet(); syncSnd(); }
     useScene(SCN.id); hudMode(); makeVision();
     spawnKids();
     quest = 0; questOpen = false; evIdx = SCN.eventStart || 0; afterVision = false;
@@ -917,10 +957,12 @@
   /* ── 관문 (2D 시범판과 같은 방식) ── */
   function sheetOverlay(kids_, foot) {
     var body = el('div', { class: 'sheet-body pad' }), ft = el('div', { class: 'sheet-foot pad' });
-    add(body, kids_); add(ft, foot);
+    U.stopSpeak();
+    add(body, kids_); add(ft, [U.speakBtn(function () { return body; }), foot]);
     overlay.className = 'overlay3 sheet3';
     overlay.replaceChildren(el('div', { class: 'sheet' }, body, ft));
     overlay.hidden = false;
+    if (U.moreHint) U.moreHint(body, ft);
   }
   function startGates() {
     state = 'gates'; hidePanel(); root.classList.remove('ev'); camBtn.hidden = true; dexBtn.hidden = true; setHudRef(null);
@@ -928,8 +970,9 @@
     var gates = SC.gates[S.tier], gi = 0;
     (function show() {
       var q = gates[gi], last = gi === gates.length - 1;
-      var nb = btn(last ? '관문 통과' : '다음 관문', function () { if (last) { overlay.hidden = true; seg('after', function () { seg('help:gates', function () { seg('today', finish); }); }); } else { gi++; show(); } });
+      var nb = btn(last ? '관문 통과' : '다음 관문', function () { if (last) { (U.stopSpeak(), overlay.hidden = true); seg('after', function () { seg('help:gates', function () { seg('today', finish); }); }); } else { gi++; show(); } });
       nb.disabled = true;
+      U.onMiss = BO3D.story && BO3D.story.missFor ? BO3D.story.missFor(SCN.id, 'gate' + gi) : null;
       sheetOverlay([el('div', { class: 'q-kicker', text: '다음으로 가는 관문 ' + (gi + 1) + ' / ' + gates.length }), blockFor(q, function () { nb.disabled = false; }, gi)], nb);
     })();
   }
@@ -952,25 +995,28 @@
     player.group.add(hat);
   }
   function finish() {
-    state = 'end';
+    state = 'end'; U.onMiss = null;
     if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 1); }
     var c = SC.close[S.tier], kids_ = [
       el('div', { class: 'q-kicker', text: '탐험을 마치며' }),
-      el('p', { class: 'q-prompt', text: '탐험 일지에 말씀 카드가 들어왔어요.' }),
-      el('div', { class: 'vcards' }, SC.cards.map(function (cd) {
-        return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }), el('div', { class: 'm', text: SC.title + ' · 성경책에서 직접 읽어 보세요' }));
-      }))];
+      el('p', { class: 'q-prompt', text: BO3D.story ? '타임머신을 타고 떠나면 탐험 일지에 말씀 카드가 들어와요.' : '탐험 일지에 말씀 카드가 들어왔어요.' }),
+      el('div', { class: 'vcards fin' }, SC.cards.map(function (cd) {   /* 이야기 카드 마침과 같이: 카드는 작게, "성경책에서 직접"은 한 번만(작은 화면 스크롤 줄이기) */
+        return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }));
+      })),
+      el('p', { class: 'vcards-m', text: SC.title + ' · 말씀은 성경책에서 직접 찾아 읽어 보세요.' })];
     if (c.kind === 'prayer') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '한 문장 기도' }), el('p', { text: c.text })));
     if (c.kind === 'practice') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '이번 주 실천 한 가지' }), el('p', { text: c.text })));
     if (c.kind === 'note') {
-      kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 기록' }), el('p', { text: c.prompt }), el('textarea', { id: 'g-note', 'aria-label': '기록', placeholder: '여기에 적어 보세요.' })));
+      var nta = el('textarea', { id: 'g-note', 'aria-label': '기록', placeholder: '여기에 적어 보세요. 이 기기에만 저장돼요.' });
+      if (BO3D.story && BO3D.story.note) { nta.value = BO3D.story.note(SCN.id); nta.addEventListener('input', function () { BO3D.story.note(SCN.id, nta.value); }); }   /* 탐험 일지에서 다시 본다 */
+      kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 기록' }), el('p', { text: c.prompt }), nta));
       kids_.push(el('p', { class: 'pending', text: '뜻과 삶의 적용을 묻는 질문은 목사님 감수를 마친 뒤 이 자리에 열립니다.' }));
     }
     kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 도감' }), el('p', { text: '지금까지 ' + dexCount() + ' / ' + DEX.length + '장을 담았어요. 더 둘러보며 남은 사진을 찍을 수 있어요.' })));
     var wd = PARTS.length && PARTS[0].mat ? '재료' : '부품';
     kids_.push(el('div', { class: 'closebox reward3' }, el('h3', { text: '탐험대 이야기' }), el('p', { text: (partsFound < PARTS.length ? '남은 ' + wd + ' ' + (PARTS.length - partsFound) + '개를 찾아 타임머신으로 돌아가요. ' : wd + '를 다 찾았으니 타임머신으로 돌아가요. ') + '아지트에서 탐험 모자를 쓸 수 있게 됐어요. 믿음의 점수가 아니라, 다녀온 곳을 기념하는 물건이에요.' })));
-    sheetOverlay(kids_, [btn('처음부터', menu, 'plain'), btn('계속 탐험하기', function () {
-      overlay.hidden = true; sceneDone = true; state = 'free'; hud.hidden = false; camBtn.hidden = false; dexBtn.hidden = false;
+    sheetOverlay(kids_, [btn('처음부터', function () { if (BO3D.story && cur !== 'jordan' && partsFound === PARTS.length) BO3D.story.complete3d(SCN.id); menu(); }, 'plain'), btn('계속 탐험하기', function () {   /* 관문까지 마치고 처음 화면으로 가도 장면은 마친 것으로(지도 단추와 같은 기준, 독립 검증 ⑦) */
+      (U.stopSpeak(), overlay.hidden = true); sceneDone = true; state = 'free'; hud.hidden = false; camBtn.hidden = false; dexBtn.hidden = false;
       setObjective(partsFound < PARTS.length ? '남은 ' + wd + '를 찾아 타임머신으로 돌아가자' : '타임머신으로 돌아가자')
     })]);
   }
@@ -1187,7 +1233,9 @@
       if (state === 'lookup') updateLookup(dt);
       if (state === 'vision' && vision) updateVision();
       if (horeb) updateTracker();
-      updateCamera(dt);
+      var mh = snd.hidden || !BO3D.story || !!NOMAP[state] && state !== 'ask'; if (mapBtn.hidden !== mh) { mapBtn.hidden = mh; hud.classList.toggle('withmap', !mh); }
+      if (!hudRO) placeToast();
+      if (state === 'ask') { state = askPrev; updateCamera(dt); state = 'ask'; } else updateCamera(dt);   /* 묻는 동안 카메라는 묻기 전 그대로(독립 검증 ⑦) */
       var pp2 = player.group.position, sun = horeb ? env.sun : JL.sun;
       var so = horeb ? (SCN.sunOff || [-38, 46, 30]) : [30, 50, 34];
       sun.position.set(pp2.x + so[0], pp2.y + so[1], pp2.z + so[2]);
@@ -1199,7 +1247,7 @@
     }
     if (horeb && SCN.render) SCN.render(camera, renderer);
     if (FX && player) {
-      if (horeb && SCN.audio) SCN.audio(FX.audio, player.group.position); else { FX.audio.setFlock(999); FX.audio.setFire(999); }
+      if (horeb && SCN.audio && state !== 'menu') SCN.audio(FX.audio, player.group.position); else { FX.audio.setFlock(999); FX.audio.setFire(999); }   /* 처음 화면 뒤 풍경에서는 장면 소리를 내지 않는다 */
     }
     var rs = horeb ? SCN.scene : JL.scene;
     renderer.info.autoReset = false; renderer.info.reset();   /* 한 화면(후처리 포함)의 그리기 수를 모아 센다(perf3d.js) */
@@ -1209,11 +1257,13 @@
 
   /* ── 구약 전체 흐름(story.js)과 잇는 곳 ── */
   var paused = false;
-  function hideAll3d() { hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; dedBtn.hidden = true; track.hidden = true; hint.hidden = true; overlay.hidden = true; root.classList.remove('ev'); }
-  function toMap() { if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } BO3D.story.open(); }
+  function hideAll3d() { hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; mapBtn.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; dedBtn.hidden = true; track.hidden = true; hint.hidden = true; (U.stopSpeak(), overlay.hidden = true); root.classList.remove('ev'); }
+  function toMap() { if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } calmAudio(); BO3D.story.open(); }
   BO3D.scenes3d = {}; Object.keys(BO3D.scene3d || {}).forEach(function (k) { BO3D.scenes3d[k] = true; });
   BO3D.game = {
-    toStory: function () { state = 'story'; paused = true; hideAll3d(); },
+    toStory: function () { state = 'story'; paused = true; hideAll3d(); calmAudio(); },
+    in3d: function () { return !paused && state !== 'menu' && state !== 'story'; },   /* 3D 장면 안인지(창을 가렸다 돌아올 때 3D 시간을 다시 셀지) */   /* 처음 화면에서 '탐험 시작'으로 지도에 갈 때도 3D 소리를 남기지 않는다(독립 검증 ⑦) */
+    forget: function () { for (var k in built) built[k].dexShots = null; flagColor = null; if (flag && flag.parent) flag.parent.remove(flag); flag = null; hatOn = false; },   /* 진행을 지울 때: 이미 만든 3D 장면이 기억하던 사진·깃발도 잊는다 */
     menu: menu,
     start3d: function (id) {
       paused = false; hideAll3d(); root.className = 'g3 app ' + S.tier;
@@ -1231,9 +1281,10 @@
     jordan: function () { return JL ? { P: JL.P, targets: Object.keys(JL.targets).map(function (k) { var v = JL.targets[k].pos(); return [k, v.x, v.y, v.z]; }) } : null; },
     parts: function () { return { found: partsFound, at: PARTS.map(function (p) { return p.at; }), done: sceneDone }; },
     dex: function () { return Object.keys(dex); },
+    toast: function (t, who) { toast(t, who); },   /* 말풍선 자리 점검용(walkPlay3d.js) */
     quest: function () { return { quest: quest, open: questOpen, at: P.parts }; },
     vision: function () { return vision ? { ok: visionReady(), t: vision.v.currentTime, seen: wasSeen() } : null; },
-    lookup: function () { overlay.hidden = true; hidePanel(); quest = PARTS.length - 1; partObjs.forEach(function (po) { po.taken = true; po.group.visible = false; }); partsFound = PARTS.length; startLookup(); },
+    lookup: function () { (U.stopSpeak(), overlay.hidden = true); hidePanel(); quest = PARTS.length - 1; partObjs.forEach(function (po) { po.taken = true; po.group.visible = false; }); partsFound = PARTS.length; startLookup(); },
     flock: function () { return SCN.debug && SCN.debug.flock ? SCN.debug.flock() : null; },
     phase: function () { return SCN.debug && SCN.debug.phase ? SCN.debug.phase() : null; },
     state: function () { return { state: state, quest: quest, x: player && player.group.position.x, z: player && player.group.position.z, mosesArrived: !!(SCN.debug && SCN.debug.arrived && SCN.debug.arrived()) }; },
