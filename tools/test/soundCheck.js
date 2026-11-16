@@ -4,6 +4,7 @@
 // 귀로 듣는 확인은 아니다. 조용하지 않은지, 찢어지게 크지 않은지(최댓값), 종류마다 높낮이가 다른지만 숫자로 본다.
 const { chromium } = require('playwright');
 const path = require('path');
+const doHelp = require('./lib/help.js');
 const fs = require('fs');
 const out = process.argv[2] || '/tmp/soundCheck';
 fs.mkdirSync(out, { recursive: true });
@@ -54,19 +55,32 @@ function wav(samples, rate) {
   // 2) 장면에 들어가면 표대로 켜지고, 나오면 꺼진다
   const amb = await p.evaluate(() => BO3D.story.debug.amb());
   const known = ['water', 'gale', 'night', 'crowd'];
-  need(Object.values(amb).every((v) => v[0].every((k) => known.includes(k)) && /^\S+ \d+:\d+/.test(v[1])), '분위기 소리 표에 모르는 종류나 장절 없는 줄이 있다');
+  need(Object.values(amb).every((v) => Object.keys(v.on).every((k) => known.includes(k)) && /^\S+ \d+:\d+/.test(v.basis)), '분위기 소리 표에 모르는 종류나 장절 없는 줄이 있다');
+  const nb = await p.evaluate(() => Object.fromEntries(Object.keys(BO3D.story.debug.amb()).map((id) => [id, BO3D.ot.scenes[id].beats.length])));
+  need(Object.keys(amb).every((id) => Object.values(amb[id].on).every((a) => a.every((i) => i >= 0 && i < nb[id]))), '분위기 소리 표에 없는 대목 번호가 있다');
   await p.click('.tier >> nth=1'); await p.click('text=탐험 시작'); await p.waitForTimeout(200);
   while ((await p.evaluate(() => BO3D.story.debug.state().screen)) === 'intro') { await p.click('.ot3 .sheet-foot .btn >> nth=-1'); await p.waitForTimeout(50); }
   await p.evaluate(() => { BO3D.story.debug.unlockAll(); BO3D.story.openMap(); });
-  for (const id of ['OT-11', 'OT-02', 'OT-36']) {
-    await p.evaluate((id) => BO3D.story.play(id), id); await p.waitForTimeout(300);
-    const s = await p.evaluate(() => BO3D.fx.audio.ambState());
-    const want = (amb[id] ? amb[id][0] : []).join();
-    need(s.on.join() === want, id + ': 켜진 분위기 소리가 표와 다르다 (' + s.on.join() + ' ≠ ' + want + ')');
-    console.log(id, '· 분위기 소리', s.on.join('+') || '없음(낮은 바람과 화음만)', '· 소리 장치', s.ctx);
-    await p.click('.ot3 .sheet-foot .btn >> nth=-1'); await p.waitForTimeout(80);   /* 단추 소리가 나도 오류가 없어야 한다 */
+  for (const id of ['OT-11', 'OT-02', 'OT-21']) {
+    await p.evaluate((id) => BO3D.story.play(id), id); await p.waitForTimeout(200);
+    need((await p.evaluate(() => BO3D.fx.audio.ambState())).on.length === 0, id + ': 도착 화면에서 분위기 소리가 켜져 있다');
+    let guard = 0, seen = [];
+    while (guard++ < 40) {
+      const st = await p.evaluate(() => BO3D.story.debug.state());
+      if (st.k !== 'arrive' && st.k !== 'beat' && st.k !== 'talk' && st.k !== 'help') break;
+      const s = await p.evaluate(() => BO3D.fx.audio.ambState());
+      if (st.k === 'beat') {
+        const bi = await p.evaluate(() => { const c = BO3D.story.debug.state(); let n = -1; for (let i = 0; i <= c.step; i++) if (BO3D.story.debug.stepKind(i) === 'beat') n++; return n; });
+        const want = Object.keys((amb[id] || { on: {} }).on).filter((k) => amb[id].on[k].includes(bi)).join();
+        need(s.on.join() === want, id + ' 대목 ' + bi + ': 켜진 소리가 표와 다르다 (' + s.on.join() + ' ≠ ' + want + ')');
+        seen.push(bi + ':' + (s.on.join('+') || '-'));
+      }
+      if (st.k === 'help') await doHelp(p);
+      await p.click('.ot3 .sheet-foot .btn >> nth=-1'); await p.waitForTimeout(60);
+    }
+    need((await p.evaluate(() => BO3D.fx.audio.ambState())).on.length === 0, id + ': 관문에서 분위기 소리가 꺼지지 않는다');
+    console.log(id, '· 대목별 분위기 소리', seen.join(' '));
     await p.evaluate(() => BO3D.story.openMap()); await p.waitForTimeout(80);
-    need((await p.evaluate(() => BO3D.fx.audio.ambState())).on.length === 0, id + ': 지도로 나왔는데 분위기 소리가 꺼지지 않는다');
   }
   // 3) 소리 끄기
   await p.evaluate(() => { BO3D.ui.set.snd = 0; BO3D.ui.saveSet(); });

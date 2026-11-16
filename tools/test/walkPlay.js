@@ -77,7 +77,7 @@ const BAN = ['틀렸', '실패', '감점', '목숨', '점수는', '순위표', '
     const s = await st(); kindsSeen.push(s.k);
     const where = 'OT-01 ' + s.k + ' ' + (s.step + 1) + '/' + s.n;
     const hasSpeak = await p.evaluate(() => !!document.querySelector('.ot3 .sheet-foot .speak3'));
-    if (canSpeak && (ti === 0 || true)) { if (hasSpeak) spoke++; else probs.push(where + ': 읽어 주기 단추가 없음'); }
+    if (canSpeak) { if (hasSpeak) spoke++; else probs.push(where + ': 읽어 주기 단추가 없음'); }
     if (s.k === 'arrive') {
       need(await p.evaluate(() => !!document.querySelector('.ot3 .ot-snd')), where + ': 소리 끄기 단추가 없음');
       await p.click('.ot3 .ot-snd'); need(await p.evaluate(() => BO3D.ui.set.snd === 0 && BO3D.fx.audio.isMuted()), where + ': 소리 끄기 단추가 듣지 않음');

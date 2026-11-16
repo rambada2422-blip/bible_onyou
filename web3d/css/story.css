@@ -138,8 +138,9 @@
 .closefold { border-radius: 14px; box-shadow: inset 0 0 0 2px var(--paper-line); padding: 10px 14px; }
 .closefold summary { cursor: pointer; font-weight: 600; }
 /* 읽어 주기 단추: 시트 아래 왼쪽의 둥근 단추(모든 글 화면). 읽는 동안은 색이 바뀌고, 다시 누르면 멈춘다 */
-.speak3 { flex: none; width: 48px; min-height: 48px; border-radius: 50%; display: grid; place-items: center; background: #FFF6DA; color: #6B4A12; box-shadow: inset 0 0 0 2px #F0D58A; }
+.speak3 { flex: none; width: 62px; min-height: 52px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; background: #FFF6DA; color: #6B4A12; box-shadow: inset 0 0 0 2px #F0D58A; font-family: var(--f-display); font-size: 11.5px; line-height: 1.1; }
 .speak3 svg { width: 24px; height: 24px; }
+.speak3.float { align-self: flex-end; margin-bottom: -44px; }
 .speak3[aria-pressed="true"] { background: var(--teal); color: var(--ink-3); box-shadow: inset 0 0 0 2px #2F7C74; }
 .narr-meta { display: flex; align-items: center; gap: 8px; }
 .logt { width: 100%; border-collapse: collapse; font-size: 13px; }

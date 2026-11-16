@@ -221,7 +221,7 @@
      성경 본문은 화면에 없으므로 읽지 않는다(장절은 "출애굽기 3장 5절"처럼 풀어 읽는다). 하나님의 음성을 소리로 만들지 않는다. */
   function canSpeak() { return !!(window.speechSynthesis && window.SpeechSynthesisUtterance); }
   function speakOn() { return (S.tier === 't1' || SET.read === 1) && canSpeak(); }
-  var REFRE = new RegExp('(^|[^가-힣])((?:' + BOOKS.map(function (b) { return b[0]; }).sort(function (a, b) { return b.length - a.length; }).join('|') + ') \\d+(?::\\d+)?(?:-(?:\\d+:)?\\d+)?)', 'g');
+  var REFRE = new RegExp('(^|[^가-힣])((?:' + BOOKS.map(function (b) { return b[0]; }).sort(function (a, b) { return b.length - a.length; }).join('|') + ') \\d+:\\d+(?:-(?:\\d+:)?\\d+)?)', 'g');   /* 쌍점이 있는 장절만 바꾼다("수 12개" 같은 보통 낱말을 건드리지 않게) */
   function speakText(node) {
     var c = node.cloneNode(true);
     Array.prototype.forEach.call(c.querySelectorAll('.speak3, textarea, input, svg, [hidden], .nospeak'), function (x) { x.remove(); });
@@ -241,7 +241,7 @@
         u.onend = u.onerror = function () { if (speaking === b) { b.setAttribute('aria-pressed', 'false'); speaking = null; } };
         speaking = b; b.setAttribute('aria-pressed', 'true'); speechSynthesis.speak(u);
       } catch (e) { speaking = null; b.setAttribute('aria-pressed', 'false'); }
-    } } }, icon('speaker'));
+    } } }, icon('book'), el('span', { text: '읽어 주기' }));
     return b;
   }
   applySet();
