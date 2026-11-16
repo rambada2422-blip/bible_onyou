@@ -60,12 +60,13 @@
     function box(w, h, d, m, x, z, y0) { var b = new T.Mesh(new T.BoxGeometry(w, h, d), m); b.position.set(x, (y0 === undefined ? height(x, z) : y0) + h / 2, z); return b; }
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
 
-    /* 이스라엘 사람들의 장막(12:16): 빈터 동쪽과 서쪽에 늘어선다 */
-    var st = [];
+    /* 이스라엘 사람들의 장막(12:16): 빈터 동쪽과 서쪽에 늘어선다. 같은 빛깔의 천은 재질 하나로 묶어 한꺼번에 그린다(휴대폰 무게) */
+    var st = [], matCache = {};
+    function shareMat(obj) { obj.traverse(function (m) { if (!m.isMesh) return; var key = m.material.color.getHexString() + '_' + m.material.side; if (!matCache[key]) matCache[key] = m.material; m.material = matCache[key]; }); }
     [-1, 1].forEach(function (sd) {
       for (var cx = 0; cx < 3; cx++) for (var rz = 0; rz < 6; rz++) {
         var tx = sd * (42 + cx * 8 + (hash(cx, rz + sd) - 0.5) * 1.6), tz = -28 + rz * 7 + (hash(rz, cx + sd) - 0.5) * 1.6, tn = PR.tent(2900 + cx * 7 + rz * 3 + (sd > 0 ? 50 : 0));
-        tn.position.set(tx, height(tx, tz), tz); tn.rotation.y = sd * Math.PI / 2 + (hash(cx, rz) - 0.5) * 0.4; st.push(tn);
+        tn.position.set(tx, height(tx, tz), tz); tn.rotation.y = sd * Math.PI / 2 + (hash(cx, rz) - 0.5) * 0.4; shareMat(tn); st.push(tn);
       }
     });
     /* 왕이 머문 집(본문에 없음)과 둘레의 집 몇 채 */
@@ -112,6 +113,7 @@
         o.group.visible = false; crowd.push(o);
       }
     }
+    var ARR_T = Math.max.apply(null, crowd.map(function (o) { return o.wait + o.IN.tot / 2.0; }));
     var JER_OUT = mkPath([JER, [0, 2.4], [CAMP_X, 2.4]]), JER_IN = rev(JER_OUT);   /* 여로보암은 가운데 통로로(백성보다 먼저 오고 나중에 간다) */
     /* 노인들(12:6)과 젊은 사람들(12:8): 왕이 머문 집 앞 */
     function counsel(seed) { var arr = []; for (var n = 0; n < 6; n++) { var cm = man(seed + n * 13, { kind: 'man', carry: 'none' }); cm.spot = [REH_C[0] - 2.6 + (n % 3) * 2.6 + (hash(n, seed) - 0.5) * 0.4, REH_C[1] + 3.2 + Math.floor(n / 3) * 1.5]; cm.group.visible = false; arr.push(cm); } return arr; }
@@ -126,11 +128,16 @@
     var SHEM_IN = mkPath([jp(22, -6), jp(3.4, -6.2)]);
 
     var phase = 'gather', pt = 0, chS = 0;
-    function placeCrowd() { crowd.forEach(function (o) { setAt(o, o.spot[0], o.spot[1], Math.PI); o.group.visible = true; still(o); }); setAt(jer, JER[0], JER[1], Math.PI); jer.group.visible = true; still(jer); }
+    /* 서 있기만 하는 동안의 온 회중은 한 덩어리로 합쳐 그린다(휴대폰 무게). 움직이기 시작하면 한 사람씩으로 바꾼다 */
+    crowd.forEach(function (o) { setAt(o, o.spot[0], o.spot[1], Math.PI); o.group.visible = true; still(o); });
+    var crowdM = C3.merge(crowd.map(function (o) { return o.group; })); scene.add(crowdM); crowdM.visible = false;
+    crowd.forEach(function (o) { o.group.visible = false; });
+    function crowdLoose() { if (!crowdM.visible) return; crowdM.visible = false; crowd.forEach(function (o) { setAt(o, o.spot[0], o.spot[1], Math.PI); o.group.visible = true; still(o); }); }
+    function placeCrowd() { crowdM.visible = true; setAt(jer, JER[0], JER[1], Math.PI); jer.group.visible = true; still(jer); }
     /* 대목마다 모든 상태를 처음부터 정한다('이전'으로 돌아와도 뒤 대목의 것이 남지 않게) */
     function setPhase(p) {
       phase = p; pt = 0; chS = 0;
-      crowd.forEach(function (o) { o.group.visible = false; }); jer.group.visible = false;
+      crowd.forEach(function (o) { o.group.visible = false; }); crowdM.visible = false; jer.group.visible = false;
       elders.concat(youths).forEach(function (o) { o.group.visible = false; });
       army.forEach(function (o) { o.group.visible = false; }); shem.group.visible = false;
       chariot.group.visible = true; chariot.group.position.set(CH_AT[0], height(CH_AT[0], CH_AT[1]), CH_AT[1]); chariot.group.rotation.y = -Math.PI / 2;
@@ -199,10 +206,11 @@
         if (phase === 'gather' || phase === 'return') {   /* 12:1 모여 온다, 12:12 사흘 만에 다시 온다 */
           var t0 = phase === 'return' ? 1 : 3;
           var sj = (pt - t0 + 3) * 2.0; walk(jer, JER_IN, sj, Math.PI, dt);
-          crowd.forEach(function (o) { var s = (pt - t0 - o.wait) * 2.0; if (s > 0) walk(o, o.IN, s, Math.PI, dt); });
+          if (!crowdM.visible) crowd.forEach(function (o) { var s = (pt - t0 - o.wait) * 2.0; if (s > 0) walk(o, o.IN, s, Math.PI, dt); });
+          if (!crowdM.visible && pt > t0 + ARR_T + 0.5) { crowd.forEach(function (o) { o.group.visible = false; }); crowdM.visible = true; }   /* 다 와서 서면 한 덩어리로 */
         }
         if (phase === 'withdraw' || phase === 'tents') {   /* 12:5 장막으로 물러간다, 12:16 장막으로 돌아간다 */
-          var t1 = phase === 'withdraw' ? 6 : 4;
+          var t1 = phase === 'withdraw' ? 6 : 4; if (pt > t1 - 0.2) crowdLoose();
           crowd.forEach(function (o) { var s = (pt - t1 - o.leave) * 1.7; if (s > 0) { if (!walk(o, o.OUT, s, undefined, dt) && s > o.OUT.tot) o.group.visible = false; } });
           var sj2 = (pt - t1 - 26) * 1.7; if (sj2 > 0) { if (!walk(jer, JER_OUT, sj2, undefined, dt) && sj2 > JER_OUT.tot) jer.group.visible = false; }
         }
