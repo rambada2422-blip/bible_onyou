@@ -162,7 +162,7 @@
         { id: 'elijah', name: '엘리야', desc: '백성에게 가까이 가서 둘 사이에서 머뭇거리지 말라고 한 사람', ref: '왕상 18:21', hint: '백성 앞쪽에 서 있어요.', range: 40, crop: 0.36,
           pos: function () { var p = eli.group.position; return v3(p.x, p.y + 1.1, p.z); } },
         { id: 'people', name: '모든 백성', desc: '엘리야의 물음을 들은 백성. 백성이 어떻게 했는지는 열왕기상 18장 21절에 있어요.', ref: '왕상 18:21', hint: '모여 선 사람들을 담아 보세요.', range: 60, pos: function () { return v3(-2, height(-2, 15) + 1, 15); } },
-        { id: 'altar', name: '여호와의 단', desc: '엘리야가 고쳐 쌓은 단과 둘레의 도랑. 돌을 몇 개 썼는지는 열왕기상 18장 31절에 있어요.', ref: '왕상 18:31-32', hint: '단이 고쳐 쌓인 뒤에 찍을 수 있어요.', range: 60, crop: 0.4,
+        { holy: true, id: 'altar', name: '여호와의 단', desc: '엘리야가 고쳐 쌓은 단과 둘레의 도랑. 돌을 몇 개 썼는지는 열왕기상 18장 31절에 있어요.', ref: '왕상 18:31-32', hint: '단이 고쳐 쌓인 뒤에 찍을 수 있어요.', range: 60, crop: 0.4,
           visible: function () { return yah.group.visible; }, pos: function () { return v3(ALT[0], height(ALT[0], ALT[1]) + 1, ALT[1]); } }
       ],
       reset: function () { setPhase('gather'); },

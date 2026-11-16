@@ -91,7 +91,7 @@
           pos: function () { var p = moses.group.position; return v3(p.x, p.y + 1.1, p.z); } },
         { id: 'horeb', name: '모세가 이른 산', desc: '모세가 양 떼를 이끌고 이른 산. 산의 이름은 출애굽기 3장 1절에 있어요.', ref: '출 3:1', hint: '가장 높은 봉우리를 화면 가운데에 담아 보세요.', range: 500, crop: 0.95,
           pos: function () { return v3(P.mountain[0], H(P.mountain[0], P.mountain[1]) * 0.62, P.mountain[1]); } },
-        { id: 'bush', name: '불붙은 떨기나무', desc: '불이 붙었으나 타서 없어지지 않은 떨기나무', ref: '출 3:2', hint: '모세가 가는 쪽으로 따라가면 보여요.', range: 36,
+        { holy: true, id: 'bush', name: '불붙은 떨기나무', desc: '불이 붙었으나 타서 없어지지 않은 떨기나무', ref: '출 3:2', hint: '모세가 가는 쪽으로 따라가면 보여요.', range: 36,
           visible: function () { return bushLit; },
           pos: function () { return v3(P.bush[0], H(P.bush[0], P.bush[1]) + 1.3, P.bush[1]); } }
       ],

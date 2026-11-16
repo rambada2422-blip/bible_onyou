@@ -39,11 +39,11 @@
     var AV = BO3D.avatars || {};
     if (!AV[key]) return el('span', { class: 'avatar' });
     var img = el('img', { class: 'avatar', alt: '', src: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(AV[key]) });
-    /* 탐험대 장비(growth.js): 1단계 모자 배지, 2단계 놋쇠 테두리, 3단계 손목 탐지기 배지. 세 아이가 함께 바뀐다 */
+    /* 탐험대 장비(growth.js): 1단계 모자 배지, 2단계 깃발 배지와 놋쇠 테두리, 3단계 손목 탐지기 배지. 세 아이가 함께 바뀐다 */
     var g = BO3D.growth, n = g ? g.stage() : 0;
     if (!n) return img;
     if (n >= 2) img.className = 'avatar g2';
-    return el('span', { class: 'avw' }, img, el('i', { class: 'av-badge', html: g.svg[n >= 3 ? 'wrist' : n >= 2 ? 'badge' : 'hat'] }));
+    return el('span', { class: 'avw' }, img, el('i', { class: 'av-badge', html: g.svg[n >= 3 ? 'wrist' : n >= 2 ? 'flag' : 'hat'] }));
   }
   /* 보기 섞기(성장 시스템 설계 보완-3·보완2-6): 물음마다 고정된 차례. 보기 객체 사본 하나로 그리기·채점·안내를 모두 한다 */
   function shuffled(arr, key) {

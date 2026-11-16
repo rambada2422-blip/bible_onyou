@@ -18,23 +18,24 @@ window.BO3D = window.BO3D || {};
 
   /* 단계표(보완2-5). ready: 외형과 기능을 모두 구현한 단계만 true */
   var STAGES = [
-    { n: 1, at: 1, key: 'hat', name: '탐험 모자', fn: '탐험 기록장', ready: true,
+    { n: 1, at: 1, key: 'hat', view: 'front', name: '탐험 모자', fn: '탐험 기록장', ready: true,
       d: { t1: '탐험 모자를 썼어요! 탐험 기록장에 말씀 카드가 모여요.',
         t2: '탐험 모자와 탐험 기록장이 생겼어요. 마친 장면과 말씀 카드를 기록장에서 다시 보고, 그 장면으로 다시 갈 수 있어요.',
         t3: '장비 1단계: 탐험 모자 · 탐험 기록장(마친 장면, 말씀 카드 앨범, 다시 가기).' } },
-    { n: 2, at: 4, key: 'badge', name: '어깨 표식', fn: '성경 책갈피', ready: true,
-      d: { t1: '어깨 표식이 생겼어요! 책갈피에서 찾아 읽은 곳을 다시 볼 수 있어요.',
-        t2: '어깨 표식과 성경 책갈피가 생겼어요. 마친 장면에서 찾아 읽은 장절이 성경 차례대로 책갈피에 모여요.',
-        t3: '장비 2단계: 어깨 표식 · 성경 책갈피(마친 장면의 물음 장절을 성경 차례로).' } },
-    { n: 3, at: 8, key: 'wrist', name: '손목 탐지기', fn: '탐지기 스캔 · 도감 탐지', ready: true,
+    { n: 2, at: 4, key: 'flag', view: 'back', name: '탐험대 깃발', fn: '성경 책갈피', ready: true,     /* 보완 3차: 어깨 표식 → 배낭 깃발(윤곽이 바뀌게) */
+      d: { t1: '배낭에 탐험대 깃발을 달았어요! 책갈피에서 찾아 읽은 곳을 다시 볼 수 있어요.',
+        t2: '배낭에 탐험대 깃발을 달았어요. 깃발 색은 기록장에서 골라요. 마친 장면에서 찾아 읽은 장절이 성경 차례대로 책갈피에 모여요.',
+        t3: '장비 2단계: 탐험대 깃발(색은 기록장에서) · 성경 책갈피(마친 장면의 물음 장절을 성경 차례로).' } },
+    { n: 3, at: 8, key: 'wrist', view: 'front', name: '손목 탐지기', fn: '탐지기 스캔 · 도감 탐지', ready: true,
       d: { t1: '손목 탐지기가 생겼어요! 재료 찾기에서 "탐지기 스캔"을 눌러 보세요.',
         t2: '손목 탐지기가 생겼어요. 재료 찾기에서 가까운 세 곳을 알려 주고, 3D에서는 사진에 담을 것이 가까우면 알려 줘요.',
         t3: '장비 3단계: 손목 탐지기 · 재료 찾기 스캔(후보 세 곳), 3D 도감 탐지.' },
       light: '손목 탐지기의 빛은 타임머신 장비에서 나는 빛이에요. 하나님이 주시는 능력이 아니에요.' },
-    { n: 4, at: 14, key: 'lamp', name: '배낭 램프', fn: '시대 연표', ready: false },
-    { n: 5, at: 22, key: 'trail', name: '시간 잔광', fn: '책갈피 모아 보기', ready: false },
-    { n: 6, at: 30, key: 'trim', name: '놋쇠 장식선', fn: '탐험 기록 인쇄본', ready: false },
-    { n: 7, at: 40, key: 'final', name: '완성 장비', fn: '완성 아카이브', ready: false }
+    /* 4~7단계(P1, 보완 3차 대표 결정): 빛 장비(배낭 램프·발밑 잔광)는 빼고 윤곽이 바뀌는 장비로. 구현 전이라 게임에는 보이지 않는다 */
+    { n: 4, at: 14, key: 'maptube', view: 'back', name: '지도 통', fn: '시대 연표', ready: false },
+    { n: 5, at: 22, key: 'pouch', view: 'side', name: '허리 파우치', fn: '책갈피 모아 보기', ready: false },
+    { n: 6, at: 30, key: 'scope', view: 'back', name: '망원경', fn: '탐험 기록 인쇄본', ready: false },
+    { n: 7, at: 40, key: 'final', view: 'front', name: '완성 장비', fn: '완성 아카이브', ready: false }
   ];
   var READY = STAGES.filter(function (s) { return s.ready; });
 
@@ -53,6 +54,9 @@ window.BO3D = window.BO3D || {};
   /* 아직 보여 주지 않은 단계(새 장비 알림·옛 저장 자료의 "그동안 모은 장비") */
   function pending() { var seen = G.seen || 0, st = stage(); return READY.filter(function (x) { return x.n > seen && x.n <= st; }); }
   function markSeen() { var st = stage(); if ((G.seen || 0) < st) { G.seen = st; save(); } }
+  /* 3D 장비 점검(보완 3차 ④): 새 단계를 얻은 뒤 처음 들어간 3D 장면에서 한 번 */
+  function seen3d() { return G.seen3d || 0; }
+  function markSeen3d(n) { if ((G.seen3d || 0) < n) { G.seen3d = n; save(); } }
 
   /* 장면을 마칠 때 그 나이 단계를 덧붙인다(책갈피 이력, 보완2-4) */
   function noteComplete(id, tier) {
@@ -143,13 +147,13 @@ window.BO3D = window.BO3D || {};
   /* 장비 그림(2D 배지·새 장비 카드). 성경의 물건이 아니라 탐험대 장비 */
   var SVG = {
     hat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15c3 1.6 15 1.6 18 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 15c0-4 2-7 5-7s5 3 5 7" fill="currentColor"/></svg>',
-    badge: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M7.5 13.5c1.5-1.6 3-1.6 4.5 0s3 1.6 4.5 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    flag: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 21V4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8 4.5l10 3.6L8 11.7z" fill="currentColor"/></svg>',
     wrist: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="7" width="12" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M9 12h2l1-2 1 4 1-2h1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
   };
 
   BO.growth = {
     STAGES: STAGES, stage: stage, stageAt: stageAt, info: info, next: next, pending: pending, markSeen: markSeen,
-    noteComplete: noteComplete, tiersFor: tiersFor, bookmarks: bookmarks, refKey: refKey,
+    seen3d: seen3d, markSeen3d: markSeen3d, noteComplete: noteComplete, tiersFor: tiersFor, bookmarks: bookmarks, refKey: refKey,
     FLAGS: FLAGS, flagsOpen: flagsOpen, prefs: prefs, scanSet: scanSet, auraRule: auraRule, NEAR_FIGURE: NEAR_FIGURE, svg: SVG,
     summary: summary,
     debug: { raw: function () { return JSON.parse(JSON.stringify(G)); }, reload: load }

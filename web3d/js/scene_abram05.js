@@ -145,7 +145,7 @@
       dex: [
         { id: 'abram', name: '아브람', desc: '하나님이 부르신 사람. 몇 살에 무엇을 따라 하란을 떠났는지는 창세기 12장 4절에 있어요.', ref: '창 12:4', hint: '장막 가까이에 서 있어요.', range: 50, crop: 0.36, pos: function () { var p = abram.group.position; return v3(p.x, p.y + 1.1, p.z); } },   /* 관문·뜻 묻기의 답(나이, 말씀을 따름)은 성경에서 찾게(규칙서 13.9) */
         { id: 'tent', name: '장막', desc: '벧엘 동쪽 산에 친 아브람의 장막', ref: '창 12:8', hint: '언덕 아래를 보세요.', range: 70, pos: function () { return v3(TENT[0], height(TENT[0], TENT[1]) + 1.5, TENT[1]); } },
-        { id: 'altar', name: '제단', desc: '아브람이 여호와께 쌓은 제단', ref: '창 12:8', hint: '장막 너머를 보세요.', range: 70, crop: 0.4, pos: function () { return v3(ALTAR[0], height(ALTAR[0], ALTAR[1]) + 0.8, ALTAR[1]); } },
+        { holy: true, id: 'altar', name: '제단', desc: '아브람이 여호와께 쌓은 제단', ref: '창 12:8', hint: '장막 너머를 보세요.', range: 70, crop: 0.4, pos: function () { return v3(ALTAR[0], height(ALTAR[0], ALTAR[1]) + 0.8, ALTAR[1]); } },
         { id: 'stars', name: '우러러본 하늘', desc: '하나님이 아브람을 밖으로 이끌고 나가 우러러보게 하신 하늘. 무엇을 세어 보라고 하셨는지는 창세기 15장 5절에 있어요.', ref: '창 15:5', hint: '마지막에 하늘을 보세요.', range: 2000, crop: 0.9,
           visible: function () { return night > 0.8; }, pos: function () { return v3(0, 300, -300); } }
       ],

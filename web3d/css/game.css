@@ -152,3 +152,14 @@ button.track3 { border: 0; font: inherit; font-family: var(--f-display); cursor:
 .dexdet3 i { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: var(--teal); color: var(--ink-3); transition: transform .2s; }
 .dexdet3 i svg { width: 13px; height: 13px; }
 @media (prefers-reduced-motion: reduce) { .dexdet3 i { transition: none; } }
+
+/* 보완 3차: 3D 장비 점검(도착 때 1.6초), 도감의 목격 기록(규칙서 13.10) */
+.gcheck3 { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
+.gc-ring { position: absolute; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; box-shadow: 0 0 0 3px #F2C14E, 0 0 0 7px rgba(242, 193, 78, .35); animation: gcRing .8s ease-in-out infinite; }
+.gcheck3.calm .gc-ring { animation: none; }
+@keyframes gcRing { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+.gc-chip { position: absolute; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); pointer-events: auto; padding: 6px 14px; border-radius: 999px; background: #F2C14E; color: var(--ink-3); font-family: var(--f-display); font-size: 15px; }
+.witness { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.witness h3 { font-family: var(--f-display); font-weight: 400; font-size: 16px; }
+.wit-row { display: flex; flex-direction: column; gap: 3px; padding: 8px 12px; border-radius: 12px; background: rgba(0, 0, 0, .05); }
+.wit-row b { font-family: var(--f-display); font-weight: 400; }

@@ -44,8 +44,12 @@
   /* 탐험대 장비 단계(growth.js). 장면을 시작할 때 정하고, 끝 카드에서 저장이 끝난 뒤에만 바뀐다 */
   var gearStage = 0;
   function GW() { return BO3D.growth || null; }
+  /* 모자·깃발도 아이 몸 덩어리에 합쳐 만든다(보완 3차 ①, 그리기 호출을 늘리지 않음). 바꿀 때는 rebuildKids */
+  function kidOpt(key) {
+    return { gear: gearStage, hat: hatOn ? C.chars[key].color : null, flag: gearStage >= 2 ? (flagColor || C.chars[key].color) : null };
+  }
   function mkKid(key) {
-    try { if (M.kid) return M.kid(key, { gear: gearStage }); } catch (e) { console.error('model kid', e); }
+    try { if (M.kid) return M.kid(key, kidOpt(key)); } catch (e) { console.error('model kid', e); }
     return { group: fallback(C.chars[key].color, { choeon: 1.35, hyu: 1.55, onwoo: 1.72 }[key], 0.24), update: function () {} };
   }
 
@@ -155,6 +159,23 @@
     trail = [];
     if (FX) FX.sortLayers(sc);
   }
+  /* 모자를 쓰거나 깃발 색을 바꿀 때: 같은 자리·같은 방향으로 세 아이 모형을 다시 만든다 */
+  function rebuildKids() {
+    if (!player) return;
+    ['choeon', 'hyu', 'onwoo'].forEach(function (k) {
+      var old = kids[k]; if (!old || !old.group.parent) return;
+      var par = old.group.parent, nk = mkKid(k);
+      nk.group.position.copy(old.group.position); nk.group.rotation.copy(old.group.rotation); nk.group.visible = old.group.visible;
+      nk.spd = old.spd || 0;
+      par.remove(old.group); par.add(nk.group);
+      old.group.traverse(function (o) { if (o.geometry) o.geometry.dispose(); });
+      if (nk.wrist) { nk.glow = wristGlow(); nk.wrist.add(nk.glow); }
+      kids[k] = nk;
+    });
+    player = kids[S.ch];
+    followers = ['choeon', 'hyu', 'onwoo'].filter(function (k) { return k !== S.ch; }).map(function (k) { return kids[k]; });
+    if (FX) FX.sortLayers(cur === 'jordan' ? JL.scene : scene);
+  }
 
   /* ── 상태 ── */
   var state = 'menu';         /* menu | caption | quiz | explore | lookup | event | gates | end | free | den | depart */
@@ -232,8 +253,11 @@
    * 세 아이는 목격자다. 본 것을 사진으로 담아 도감을 채운다. 설명은 본문에 있는 사실만 적는다. */
   /* 도감에 담을 것은 장면 설정의 dex와 타임머신이다(buildScene) */
   var dex = {}, wantShot = false;
-  function dexCount() { return Object.keys(dex).length; }
-  function updateDexBtn() { dexLabel.textContent = '도감 ' + dexCount() + ' / ' + DEX.length; }
+  /* 거룩한 사물과 표징(holy)은 채울 칸이 아니라 목격 기록이다(규칙서 13.10). 도감 수·완성·탐지에 넣지 않는다 */
+  function dexGoal() { return DEX.filter(function (d) { return !d.holy; }); }
+  function dexCount() { return dexGoal().filter(function (d) { return d.id in dex; }).length; }
+  function dexTotal() { return dexGoal().length; }
+  function updateDexBtn() { dexLabel.textContent = '도감 ' + dexCount() + ' / ' + dexTotal(); }
   function takeShot() {
     var cw = canvas.width, ch = canvas.height, found = [], best = null;
     DEX.forEach(function (d) {
@@ -249,7 +273,7 @@
     setTimeout(function () { flash.hidden = true; }, 420);
     if (FX) FX.audio.shutter();
     if (!found.length) { toast('사진에 담긴 것이 없어요. 찍고 싶은 것을 화면 가운데에 놓고 다시 찍어 보세요.'); return; }
-    var fresh = found.filter(function (f) { return !dex[f.d.id]; });
+    var fresh = found.filter(function (f) { return !(f.d.id in dex); });
     fresh.forEach(function (f) {
       var size = Math.min(cw, ch) * (f.d.crop || 0.5), sx = (f.n.x * 0.5 + 0.5) * cw - size / 2, sy = (1 - (f.n.y * 0.5 + 0.5)) * ch - size / 2;
       sx = Math.max(0, Math.min(cw - size, sx)); sy = Math.max(0, Math.min(ch - size, sy));
@@ -258,15 +282,18 @@
       catch (e) { dex[f.d.id] = ''; }
     });
     updateDexBtn();
-    if (fresh.length) {
+    var freshGoal = fresh.filter(function (f) { return !f.d.holy; }), freshHoly = fresh.filter(function (f) { return f.d.holy; });
+    if (freshGoal.length) {
       if (FX) FX.audio.chime();
       dexBtn.classList.remove('pulse'); void dexBtn.offsetWidth; dexBtn.classList.add('pulse');
-      toast('도감에 새로 담았어요: ' + fresh.map(function (f) { return f.d.name; }).join(', ') + (dexCount() === DEX.length ? '. 도감을 모두 채웠어요!' : ''));
-    } else toast('이미 도감에 있는 사진이에요: ' + best.d.name);
+      toast('도감에 새로 담았어요: ' + freshGoal.map(function (f) { return f.d.name; }).join(', ') + (dexCount() === dexTotal() ? '. 도감을 모두 채웠어요!' : '')
+        + (freshHoly.length ? ' · 목격 기록에 적었어요: ' + freshHoly.map(function (f) { return f.d.name; }).join(', ') : ''));
+    } else if (freshHoly.length) toast('목격 기록에 적었어요: ' + freshHoly.map(function (f) { return f.d.name; }).join(', '));
+    else toast('이미 도감에 있는 사진이에요: ' + best.d.name);
   }
   function openDex() {
     stick.x = stick.y = 0; stick.id = null; base.hidden = true;
-    var cells = DEX.map(function (d) {
+    var cells = dexGoal().map(function (d) {
       var has = d.id in dex;
       return el('div', { class: 'dexcell' + (has ? '' : ' none') },
         has && dex[d.id] ? el('img', { src: dex[d.id], alt: d.name }) : el('div', { class: 'ph', text: has ? '' : '?' }),
@@ -275,9 +302,16 @@
         has && d.ref ? refChip(d.ref) : null);
     });
     var prevClass = overlay.className, prevKids = Array.prototype.slice.call(overlay.childNodes), wasHidden = overlay.hidden;
-    sheetOverlay([el('div', { class: 'q-kicker', text: '탐험 도감 ' + dexCount() + ' / ' + DEX.length }),
+    /* 목격 기록(규칙서 13.10): 거룩한 사물과 표징은 빈 칸으로 보이지 않고, 본 것만 장절과 함께 적는다 */
+    var seen = DEX.filter(function (d) { return d.holy && d.id in dex; });
+    var holyAll = DEX.some(function (d) { return d.holy; });
+    sheetOverlay([el('div', { class: 'q-kicker', text: '탐험 도감 ' + dexCount() + ' / ' + dexTotal() }),
       el('p', { class: 'q-prompt', text: '본 것을 사진으로 담아 도감을 채워요.' }),
-      el('div', { class: 'dexgrid' }, cells)],
+      el('div', { class: 'dexgrid' }, cells),
+      holyAll ? el('div', { class: 'witness' }, el('h3', { text: '목격 기록' }),
+        el('p', { class: 'fine', text: '하나님께 드린 것과 하나님이 보이신 표징은 모으는 칸이 아니에요. 본 것을 장절과 함께 적어 두고, 성경에서 다시 읽어요.' }),
+        seen.length ? seen.map(function (d) { return el('div', { class: 'wit-row' }, el('b', { text: d.name }), el('span', { text: d.desc }), d.ref ? refChip(d.ref) : null); })
+          : el('p', { class: 'fine', text: '아직 적은 것이 없어요.' })) : null],
       btn('닫기', function () { overlay.className = prevClass; overlay.replaceChildren.apply(overlay, prevKids); overlay.hidden = wasHidden; }));
   }
 
@@ -404,8 +438,9 @@
     trackArrow.style.transform = 'rotate(' + (-rel) + 'rad)';
     trackText.textContent = (best ? SCN.detector + ' ' : '타임머신까지 ') + Math.round(d) + 'm';
   }
-  function setFlag(color) {
-    flagColor = color;
+  function setFlag(color, noKids) {
+    var was = flagColor; flagColor = color;
+    if (!noKids && was !== color && gearStage >= 2) rebuildKids();   /* 2단계부터 아이들 배낭 깃발도 같은 색 */
     if (flag) { machine.group.remove(flag); flag = null; }
     if (!color) return;
     flag = new T.Group();
@@ -415,10 +450,9 @@
     flag.position.set(0.62, 1.75, 0); flag.rotation.z = -0.12;
     machine.group.add(flag);
   }
-  function setHat(on) {
-    hatOn = on;
-    takeOffHats();
-    if (on) wearHat();
+  function setHat(on, noKids) {
+    var was = hatOn; hatOn = !!on;
+    if (!noKids && was !== hatOn) rebuildKids();
   }
   function openDen() {
     var prev = state; state = 'den'; stick.x = stick.y = 0; stick.id = null; base.hidden = true;
@@ -428,7 +462,7 @@
         var on = partObjs[i].taken;
         return el('div', { class: 'slot' + (on ? ' on' : '') }, icon(p.mat ? 'gear' : (p.id === 'needle' ? 'compass' : p.id)), el('b', { text: p.name }), el('span', { text: on ? (p.mat ? '얻었어요' : '끼웠어요') : '아직 못 찾았어요' }));
       });
-      var frames = DEX.map(function (d) {
+      var frames = dexGoal().map(function (d) {
         var has = d.id in dex;
         return el('div', { class: 'frame' + (has ? '' : ' empty') }, has && dex[d.id] ? el('img', { src: dex[d.id], alt: d.name }) : el('div', { class: 'ph' }), el('span', { text: has ? d.name : '빈 액자' }));
       });
@@ -515,20 +549,97 @@
     glows.forEach(function (g) { g.visible = true; g.material.opacity = (base + pulse) * auraLevel; });
   }
   /* 손목 탐지기(3단계) 도감 탐지 */
+  var dexNear = false;
   function updateDexDet(dt) {
     dexDetT -= dt; if (dexDetT > 0) return; dexDetT = 0.3;
     var show = gearStage >= 3 && (cur === 'scene' || !JL) && (state === 'explore' || state === 'free') && player;
+    dexNear = false;
     if (!show) { dexDet.hidden = true; return; }
     var p = player.group.position, cnt = 0, bd = Infinity, bp = null;
-    DEX.forEach(function (d) {
+    dexGoal().forEach(function (d) {
       if (d.id in dex) return; if (d.visible && !d.visible()) return;
       var wp = d.pos(), dd = Math.sqrt((wp.x - p.x) * (wp.x - p.x) + (wp.z - p.z) * (wp.z - p.z));
       if (dd < d.range) { cnt++; if (dd < bd) { bd = dd; bp = wp; } }
     });
     if (!cnt) { dexDet.hidden = true; return; }
-    dexDet.hidden = false;
+    dexDet.hidden = false; dexNear = true;
     dexDetText.textContent = '손목 탐지기 · 사진에 담을 것 ' + cnt + '개';
     var rel = Math.atan2(bp.x - p.x, bp.z - p.z) - camYaw; dexDetArrow.style.transform = 'rotate(' + (-rel) + 'rad)';
+  }
+  /* ── 새 장비 전후 그림(보완 3차 ④): 3D 아이 모형을 작은 그림으로 한 번 그린다 ──
+   * 이야기 카드 마침 화면과 3D 끝 카드가 같은 그림을 쓴다(2D만 하는 아이도 3D와 같은 모양을 본다). 그림 파일은 늘지 않는다.
+   * 동그라미 표시는 그림 위의 화면 표시이고, 아이 몸에서 나는 빛이 아니다 */
+  var shotR = null, shotCache = {}, maskMat = null, KID_H = { choeon: 1.35, hyu: 1.55, onwoo: 1.72 };
+  function gearShot(key, stage, view, opt) {
+    opt = opt || {};
+    var W = opt.w || 240, Hh = opt.h || Math.round(W * 1.25);
+    var flagC = stage >= 2 ? (opt.flag || C.chars[key].color) : null, hatC = opt.hat === false ? null : (stage >= 1 || opt.hat ? C.chars[key].color : null);
+    var ck = [key, stage, view, hatC, flagC, opt.mask ? 1 : 0, W, Hh, opt.part || '', opt.pose || ''].join('|');
+    if (shotCache[ck]) return shotCache[ck];
+    try {
+      if (!shotR) { shotR = new T.WebGLRenderer({ canvas: document.createElement('canvas'), antialias: true, alpha: true, preserveDrawingBuffer: true }); shotR.setPixelRatio(1); }
+      shotR.setSize(W, Hh, false); shotR.setClearColor(0x000000, 0);
+      var sc = new T.Scene();
+      sc.add(new T.HemisphereLight('#FFF6E4', '#8A7A62', 1.0));
+      var dl = new T.DirectionalLight('#FFFFFF', 0.75); dl.position.set(2.5, 4, 3.5); sc.add(dl);
+      var kd = M.kid(key, { gear: stage, hat: hatC, flag: flagC });
+      if (opt.pose === 'look' && kd.look) { kd.look(true); for (var u = 0; u < 12; u++) kd.update(0.1, 0); }   /* 3단계: 손목 탐지기를 들여다보는 모습(쓰는 장비로 보이게) */
+      if (opt.mask) { if (!maskMat) maskMat = new T.MeshBasicMaterial({ color: '#000000' }); kd.group.traverse(function (o) { if (o.isMesh) o.material = maskMat; }); }
+      sc.add(kd.group); kd.group.updateMatrixWorld(true);
+      var hk = KID_H[key] || 1.5, yaw = view === 'back' ? Math.PI * 0.78 : view === 'side' ? Math.PI * 0.5 : 0.32;
+      var cam = new T.PerspectiveCamera(30, W / Hh, 0.1, 30), dist = hk * 2.55;
+      cam.position.set(Math.sin(yaw) * dist, hk * 0.66, Math.cos(yaw) * dist); cam.lookAt(0, hk * 0.56, 0); cam.updateMatrixWorld(true);
+      shotR.render(sc, cam);
+      var out = { w: W, h: Hh, ring: null };
+      var part = opt.part, ap = null;
+      if (part === 'wrist' && kd.wrist) { ap = new T.Vector3(); kd.wrist.getWorldPosition(ap); }
+      else if (part && kd.anchors && kd.anchors[part]) ap = kd.group.localToWorld(kd.anchors[part].clone());
+      if (ap) { var n = ap.project(cam); out.ring = { x: (n.x * 0.5 + 0.5) * 100, y: (1 - (n.y * 0.5 + 0.5)) * 100 }; }
+      if (opt.mask) {
+        var cv2 = document.createElement('canvas'); cv2.width = W; cv2.height = Hh;
+        var c2 = cv2.getContext('2d'); c2.drawImage(shotR.domElement, 0, 0);
+        var px = c2.getImageData(0, 0, W, Hh).data, a = new Uint8Array(W * Hh);
+        for (var i = 0; i < a.length; i++) a[i] = px[i * 4 + 3] > 40 ? 1 : 0;
+        out.mask = a;
+      } else out.url = shotR.domElement.toDataURL('image/png');
+      kd.group.traverse(function (o) { if (o.geometry) o.geometry.dispose(); });
+      shotCache[ck] = out;
+      return out;
+    } catch (e) { console.warn('gearShot', e); return null; }
+  }
+  BO3D.gearShot = gearShot;
+
+  /* ── 3D 장비 점검(보완 3차 ④ 화면 B): 새 단계를 얻은 뒤 처음 들어간 3D 장면의 도착 때 1.6초.
+   * 성경 사건 전(도착 통신 단계)이고, 상태는 caption 그대로라 손목 빛도 켜지지 않는다 */
+  var gcheck = null, gcEl = el('div', { class: 'gcheck3', hidden: '' }), gcRing = el('i', { class: 'gc-ring' }), gcChip = el('button', { class: 'gc-chip' });
+  gcEl.appendChild(gcRing); gcEl.appendChild(gcChip);
+  function startGearCheck() {
+    var gw = GW(); if (!gw || !player || gearStage < 1 || gw.seen3d() >= gearStage) return;
+    var info = gw.info(gearStage), part = info.key === 'hat' ? 'hat' : info.key === 'flag' ? 'flag' : info.key === 'wrist' ? 'wrist' : null;
+    gw.markSeen3d(gearStage);
+    if (!part) return;
+    gcheck = { t: 0, part: part, front: info.view === 'front', ry: player.group.rotation.y };
+    if (gcheck.front) player.group.rotation.y = camYaw + Math.PI;      /* 카메라 쪽으로 돌아서기 */
+    gcChip.textContent = '새 장비 · ' + info.name; gcChip.onclick = endGearCheck;
+    if (!gcEl.parentNode) root.appendChild(gcEl);
+    gcEl.hidden = false; gcEl.classList.toggle('calm', !!calm);
+  }
+  function endGearCheck() {
+    if (!gcheck) return;
+    if (gcheck.front && player) player.group.rotation.y = gcheck.ry;
+    gcheck = null; gcEl.hidden = true;
+  }
+  var _gp = null;
+  function updateGearCheck(dt) {
+    if (!gcheck) return;
+    gcheck.t += dt;
+    if (gcheck.t > 1.6 || state !== 'caption') { endGearCheck(); return; }
+    if (!_gp) _gp = new T.Vector3();
+    if (gcheck.part === 'wrist') { if (player.wrist) player.wrist.getWorldPosition(_gp); else { endGearCheck(); return; } }
+    else if (player.anchors && player.anchors[gcheck.part]) { _gp.copy(player.anchors[gcheck.part]); player.group.localToWorld(_gp); }
+    else { endGearCheck(); return; }
+    var n = _gp.project(camera), r = root.getBoundingClientRect();
+    gcRing.style.left = ((n.x * 0.5 + 0.5) * r.width) + 'px'; gcRing.style.top = ((1 - (n.y * 0.5 + 0.5)) * r.height) + 'px';
   }
   function makeGlow() {
     var cv = document.createElement('canvas'); cv.width = cv.height = 128;
@@ -565,7 +676,7 @@
       el('p', { class: 'den-lead', text: '타임머신이 다시 떠올랐어요. 과거에는 아무것도 남기지 않았어요.' }),
       el('div', { class: 'slots' },
         el('div', { class: 'slot on' }, icon('book'), el('b', { text: '말씀 카드' }), el('span', { text: SC.cards.length + '장' })),
-        el('div', { class: 'slot on' }, icon('camera'), el('b', { text: '탐험 도감' }), el('span', { text: dexCount() + ' / ' + DEX.length })),
+        el('div', { class: 'slot on' }, icon('camera'), el('b', { text: '탐험 도감' }), el('span', { text: dexCount() + ' / ' + dexTotal() })),
         el('div', { class: 'slot on' }, icon('gear'), el('b', { text: PARTS.length && PARTS[0].mat ? '모은 재료' : '찾은 부품' }), el('span', { text: partsFound + ' / ' + PARTS.length }))),
       newGear.length && BO3D.story.gearCard ? BO3D.story.gearCard(newGear) : null,
       el('p', { class: 'den-msg', text: BO3D.story ? '시대 지도에서 다음 장면으로 갈 수 있어요.' : '다음 장면(하나님의 이름과 세 가지 표징, 출 3:13-4:17)은 목사님 감수를 마친 뒤 열립니다.' }),
@@ -660,7 +771,9 @@
   function enterJordan() {
     if (!JL) { JL = BO3D.jordan.build(); loadJordanGlb(); }
     cur = 'jordan'; overlay.hidden = true; clue = {}; dedReady = false;
-    gearStage = GW() ? GW().stage() : 0; spawnKids(); hudMode();
+    gearStage = GW() ? GW().stage() : 0;
+    var gwj = GW(); setHat(!!(gwj && gearStage >= 1 && gwj.prefs.hat()), true); if (gwj) flagColor = gwj.prefs.flag();
+    spawnKids(); hudMode();
     camYaw = Math.PI; snapCamera();
     clueCount.textContent = '단서 0 / ' + JD.clues.length; dexLabel.textContent = '추리 수첩 0 / ' + JD.clues.length;
     setObjective(JD.objective); hud.hidden = false; snd.hidden = false;
@@ -844,13 +957,14 @@
     if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; var m0 = FX.audio.isMuted(); snd.setAttribute('aria-pressed', String(m0)); snd.setAttribute('aria-label', m0 ? '소리 켜기' : '소리 끄기'); }
     useScene(SCN.id); hudMode(); makeVision();
     BGM('play', 'explore');
+    endGearCheck();
     gearStage = GW() ? GW().stage() : 0;
+    var gw0 = GW();   /* 저장한 모자·깃발(bo3d.gear.v1)을 먼저 정하고 아이들을 만든다 */
+    setHat(!!(gw0 && gearStage >= 1 && gw0.prefs.hat()), true); setFlag(gw0 ? gw0.prefs.flag() : null, true);
     spawnKids();
     quest = 0; questOpen = false; evIdx = SCN.eventStart || 0; afterVision = false;
     if (SCN.reset) SCN.reset();
-    takeOffHats();
-    hatOn = false; sceneDone = false; partsFound = 0;
-    var gw0 = GW(); if (gw0) { if (gearStage >= 1 && gw0.prefs.hat()) setHat(true); setFlag(gw0.prefs.flag()); }   /* 저장한 모자·깃발(bo3d.gear.v1) */
+    sceneDone = false; partsFound = 0;
     partObjs.forEach(function (po) { po.taken = false; po.group.visible = true; });
     partCount.textContent = partWord() + ' 0 / ' + PARTS.length;
     for (var kk in kids) kids[kk].group.visible = true;
@@ -859,6 +973,7 @@
     setObjective(SCN.askLabel); hud.hidden = false;
     updateDexBtn();
     state = 'caption';
+    startGearCheck();   /* 새 단계를 얻은 뒤 처음 들어온 3D 장면이면 1.6초 장비 점검 */
     /* 도착: 임무가 있으면 최현 박사의 통신, 없으면 장면 설정의 탐험대 이야기 */
     var mi = SC.mission, intro = SCN.intro || { text: '', say: { who: 'onwoo', text: '' } }, teller = companion(intro.say.who);
     showPanel(mi && mi.call ? [el('div', { class: 'q-kicker', text: '탐험대 이야기 · ' + SC.title }),
@@ -1011,26 +1126,6 @@
   }
 
   /* ── 마무리: 말씀 카드와 꾸미기 보상 ── */
-  var hat = null, hats = [];
-  function makeHat(bandColor) {
-    var g = new T.Group();
-    var khaki = new T.MeshStandardMaterial({ color: '#C9A769', flatShading: true }), band = new T.MeshStandardMaterial({ color: bandColor || C.chars[S.ch].color, flatShading: true });
-    var brim = new T.Mesh(new T.CylinderGeometry(0.3, 0.32, 0.03, 16), khaki), crown = new T.Mesh(new T.CylinderGeometry(0.15, 0.18, 0.15, 14), khaki), bd = new T.Mesh(new T.CylinderGeometry(0.185, 0.185, 0.04, 14), band);
-    crown.position.y = 0.08; bd.position.y = 0.035; brim.castShadow = crown.castShadow = true;
-    g.add(brim); g.add(crown); g.add(bd);
-    return g;
-  }
-  function takeOffHats() { hats.forEach(function (h) { if (h.parent) h.parent.remove(h); }); hats = []; if (hat && hat.parent) hat.parent.remove(hat); hat = null; }
-  /* 탐험 모자: 세 아이가 함께 쓴다(탐험대 장비, 띠는 각자의 색) */
-  function wearHat() {
-    takeOffHats();
-    ['choeon', 'hyu', 'onwoo'].forEach(function (k) {
-      var kd = kids[k]; if (!kd || !kd.group.parent) return;
-      var h = makeHat(C.chars[k].color), box = new T.Box3().setFromObject(kd.group);
-      h.position.y = (box.max.y - kd.group.position.y) - 0.04; kd.group.add(h); hats.push(h);
-    });
-    hat = hats[0] || null;
-  }
   function finish() {
     state = 'end';
     if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 1); }
@@ -1047,7 +1142,7 @@
       kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 기록' }), el('p', { text: c.prompt }), el('textarea', { id: 'g-note', 'aria-label': '기록', placeholder: '여기에 적어 보세요.' })));
       kids_.push(el('p', { class: 'pending', text: '뜻과 삶의 적용을 묻는 질문은 목사님 감수를 마친 뒤 이 자리에 열립니다.' }));
     }
-    kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 도감' }), el('p', { text: '지금까지 ' + dexCount() + ' / ' + DEX.length + '장을 담았어요. 더 둘러보며 남은 사진을 찍을 수 있어요.' })));
+    kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 도감' }), el('p', { text: '지금까지 ' + dexCount() + ' / ' + dexTotal() + '장을 담았어요. 더 둘러보며 남은 사진을 찍을 수 있어요.' })));
     var wd = PARTS.length && PARTS[0].mat ? '재료' : '부품';
     kids_.push(el('div', { class: 'closebox reward3' }, el('h3', { text: '탐험대 이야기' }), el('p', { text: (partsFound < PARTS.length ? '남은 ' + wd + ' ' + (PARTS.length - partsFound) + '개를 찾아 타임머신으로 돌아가요. ' : wd + '를 다 찾았으니 타임머신으로 돌아가요. ') + '아지트에서 탐험 모자를 쓸 수 있게 됐어요. 믿음의 점수가 아니라, 다녀온 곳을 기념하는 물건이에요.' })));
     sheetOverlay(kids_, [btn('처음부터', menu, 'plain'), btn('계속 탐험하기', function () {
@@ -1210,7 +1305,9 @@
       if (state === 'lookup') updateLookup(dt);
       if (state === 'vision' && vision) updateVision();
       if (horeb) updateTracker();
-      updateAura(dt); updateDexDet(dt);
+      updateAura(dt); updateDexDet(dt); updateGearCheck(dt);
+      /* 3단계 사용 연출: 사진에 담을 것이 가까우면 이끄는 아이가 서서 손목 탐지기를 들여다본다(걸으면 모형이 알아서 내린다) */
+      if (player.look) player.look(dexNear && (state === 'explore' || state === 'free'));
       updateCamera(dt);
       var pp2 = player.group.position, sun = horeb ? env.sun : JL.sun;
       var so = horeb ? (SCN.sunOff || [-38, 46, 30]) : [30, 50, 34];
@@ -1270,7 +1367,18 @@
       return { visible: vis, op: op, on: auraLast.on, dim: !!auraLast.dim, reason: auraLast.reason, near: auraLast.near, ready: auraLast.ready, state: state, gear: gearStage, cur: cur, id: SCN && SCN.id,
         paused: !!paused, sa: cur === 'jordan' ? 'dim' : (SCN.aura || 'on'), quiet: player ? quietZones() : [], p: pp ? [pp.x, pp.z] : null, overlay: !overlay.hidden }; },
     figures: function () { return FIGS.map(function (f) { return f.sid; }); }, figreq: function () { return FIGREQ; },
-    dexDet: function () { return dexDet.hidden ? null : dexDetText.textContent; }
+    dexDet: function () { return dexDet.hidden ? null : dexDetText.textContent; },
+    gearCheck: function () { return gcheck ? { part: gcheck.part, t: gcheck.t, ring: [gcRing.style.left, gcRing.style.top] } : null; },
+    look: function () { return dexNear; },
+    kidCalls: function () { var n = 0; ['choeon', 'hyu', 'onwoo'].forEach(function (k) { if (kids[k]) kids[k].group.traverse(function (o) { if (o.isMesh || o.isSprite) n++; }); }); return n; },
+    /* 윤곽 차이(V1): 두 단계의 검은 윤곽을 같은 자리에서 그려, 다른 화소 수 / 두 윤곽을 합친 화소 수 */
+    silhouetteDiff: function (key, s0, s1, view, pose) {
+      var a = gearShot(key, s0, view, { mask: true, w: 96, h: 96, hat: s0 >= 1 }), b = gearShot(key, s1, view, { mask: true, w: 96, h: 96, hat: s1 >= 1, pose: pose });
+      if (!a || !b) return null;
+      var d = 0, u = 0; for (var i = 0; i < a.mask.length; i++) { if (a.mask[i] || b.mask[i]) u++; if (a.mask[i] !== b.mask[i]) d++; }
+      return { diff: d, union: u, ratio: u ? d / u : 0 };
+    },
+    rebuild: function (opt) { if (opt && 'stage' in opt) gearStage = opt.stage; if (opt && 'hat' in opt) hatOn = opt.hat; if (opt && 'flag' in opt) flagColor = opt.flag; rebuildKids(); }
   };
 
   useScene('OT-09'); hudMode();

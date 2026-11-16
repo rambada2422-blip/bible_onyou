@@ -249,7 +249,7 @@
         { id: 'camp', name: '이스라엘 자손의 장막', desc: '바닷가에 친 이스라엘 자손의 진', ref: '출 14:2', hint: '진 가장자리에서 장막들을 보세요.', range: 40, pos: function () { return v3(26, height(26, 34) + 1, 34); } },
         { id: 'moses', name: '모세', desc: '하나님이 지팡이를 들고 손을 바다 위로 내밀라고 하신 사람', ref: '출 14:16', hint: '바닷가에 서 있어요.', range: 40, crop: 0.36,
           pos: function () { var p = moses.group.position; return v3(p.x, p.y + 1.1, p.z); } },
-        { id: 'pillar', name: '구름 기둥', desc: '이스라엘 자손 곁에 있던 구름 기둥. 이 밤에 어디로 옮겼는지는 출애굽기 14장 19절과 20절에 있어요.', ref: '출 14:19', hint: '하늘까지 닿은 구름을 화면 가운데에 담아 보세요.', range: 220, crop: 0.8,
+        { holy: true, id: 'pillar', name: '구름 기둥', desc: '이스라엘 자손 곁에 있던 구름 기둥. 이 밤에 어디로 옮겼는지는 출애굽기 14장 19절과 20절에 있어요.', ref: '출 14:19', hint: '하늘까지 닿은 구름을 화면 가운데에 담아 보세요.', range: 220, crop: 0.8,
           pos: function () { return v3(pilAt[0], height(pilAt[0], pilAt[1]) + 18, pilAt[1]); } },
         { id: 'chariots', name: '애굽의 병거', desc: '바로가 이끌고 뒤쫓아 온 병거', ref: '출 14:7', hint: '진 뒤 멀리 남쪽을 보세요.', range: 260, crop: 0.5,
           visible: function () { return chMode !== 'far' && chMode !== 'gone'; }, pos: function () { return v3(0, height(0, 110) + 1.2, 110); } }

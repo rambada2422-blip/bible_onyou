@@ -186,7 +186,7 @@
         { id: 'peaks', name: '산봉우리들', desc: '멀리 솟은 산들의 봉우리. 이 산들 이야기는 창세기 7장 19절과 8장 5절에 있어요.', ref: '창 8:5', hint: '멀리 솟은 봉우리를 담아 보세요.', range: 900, crop: 0.8, pos: function () { return v3(PEAKS[0][0], height(PEAKS[0][0], PEAKS[0][1]) - 4, PEAKS[0][1]); } },
         { id: 'noah', name: '노아', desc: '의인이고 하나님과 동행한 사람', ref: '창 6:9', hint: '방주에서 나온 뒤에 찍을 수 있어요.', range: 70, crop: 0.36,
           visible: function () { return noah.group.visible; }, pos: function () { var p = noah.group.position; return v3(p.x, p.y + 1.1, p.z); } },
-        { id: 'bow', name: '무지개', desc: '하나님이 두신 무지개. 어디에 두셨고 무엇이 되게 하셨는지는 창세기 9장 13절에 있어요.', ref: '창 9:13', hint: '마지막에 하늘을 보세요.', range: 1200, crop: 0.9,
+        { holy: true, id: 'bow', name: '무지개', desc: '하나님이 두신 무지개. 어디에 두셨고 무엇이 되게 하셨는지는 창세기 9장 13절에 있어요.', ref: '창 9:13', hint: '마지막에 하늘을 보세요.', range: 1200, crop: 0.9,
           visible: function () { return bowOp > 0.3; }, pos: function () { return v3(bow.position.x, bow.position.y + 180, bow.position.z); } }
       ],
       reset: function () { setPhase('rest'); },

@@ -405,6 +405,25 @@
         o.set(x, y + 0.006, (front ? 1 : -1) * (surfZ(x, y) + 0.007));
       }), s > 0 ? LEATHER : LEATHER_SH);
     });
+    /* 탐험대 장비(성장 growth.js, 보완 3차): 모두 이 아이 몸의 덩어리에 합친다 → 그리기 호출이 늘지 않는다 */
+    var gear = opt.gear || 0, anchors = {};
+    var headTopY = H - hy * 0.05;
+    if (gear >= 2) {       // 2단계 탐험대 깃발: 배낭 옆에 꽂은 깃대. 머리 위 가운데가 아니라 머리 옆 뒤로 비켜 세운다(빛고리처럼 보이지 않게). 글자·무늬 없음
+      var fx0 = pk[0] * 1.02, fz0 = pz - pk[2] * 0.2, fy0 = py - pk[1] * 0.55, fLen = (headTopY - fy0) + hy * 1.05;
+      var lean = 0.2, side = 0.36;     // 뒤로·바깥으로 기울여 깃발이 머리 옆으로 비켜 서게(모자 챙 밖, 머리 위 가운데가 아님)
+      var fm = new T.Matrix4().makeRotationFromEuler(new T.Euler(-lean, 0, -side));
+      var tip = new T.Vector3(0, fLen, 0).applyMatrix4(fm).add(new T.Vector3(fx0, fy0, fz0));
+      tor.add(new T.CylinderGeometry(0.009, 0.011, fLen, 6), BRASS_SH, new T.Matrix4().makeTranslation(fx0, fy0, fz0).multiply(fm).multiply(new T.Matrix4().makeTranslation(0, fLen / 2, 0)));
+      tor.add(new T.SphereGeometry(0.018, 8, 5), BRASS_HI, new T.Matrix4().makeTranslation(tip.x, tip.y, tip.z));
+      tor.add(sbox(0.028, 0.03, 0.024, 0.5, 4, 2), LEATHER_SH, TR(fx0, fy0 + 0.02, fz0));      // 배낭에 단 꽂이
+      var pen = new T.CylinderGeometry(1, 1, 1, 3);        // 세모 깃발(얇은 세모 기둥이라 양면이 보인다)
+      var pw = 0.2 * H / 1.55, ph = 0.13 * H / 1.55;
+      var penM = new T.Matrix4().makeTranslation(fx0, fy0, fz0).multiply(fm).multiply(new T.Matrix4().makeTranslation(0, fLen - ph * 0.62, 0))
+        .multiply(new T.Matrix4().makeRotationZ(-PI / 2)).multiply(new T.Matrix4().makeTranslation(0, pw * 0.5, 0)).multiply(new T.Matrix4().makeScale(ph * 0.58, pw * 0.5, 0.006))
+        .multiply(new T.Matrix4().makeRotationX(PI / 2)).multiply(new T.Matrix4().makeRotationY(PI / 6));
+      tor.add(pen, opt.flag || d.top, penM);
+      anchors.flag = new T.Vector3(tip.x, tip.y - ph * 0.6, tip.z);
+    }
     chest.add(tor.mesh(sm, chestO));
 
     /* --- 머리 --- */
@@ -447,6 +466,13 @@
       hb.add(sbox(hx * 0.5, hy * 0.19, hz * 0.16, 1.2, 6, 3), d.hair, ON(-10, 0.6, 0.15, 1, 1, 1).multiply(TR(0, 0, 0, 0, 0, 0.42)));        // 옆으로 넘긴 앞머리
       hb.add(sbox(hx * 0.26, hy * 0.14, hz * 0.14, 1.2, 6, 3), d.hair, ON(34, 0.6, 0.13, 1, 1, 1).multiply(TR(0, 0, 0, 0, 0, -0.5)));
     }
+    if (opt.hat) {          // 탐험 모자: 카키 챙과 몸통, 띠는 아이마다 제 색. 크기는 예전 모자(game.js makeHat)와 같다
+      var hatY = headTopY + hy * 0.08 - 0.05, KH = '#C9A769', KH_SH = '#B08F55';
+      hb.add(new T.CylinderGeometry(0.3, 0.32, 0.03, 16), KH_SH, TR(0, hatY, 0));
+      hb.add(new T.CylinderGeometry(0.15, 0.18, 0.15, 14), KH, TR(0, hatY + 0.08, 0));
+      hb.add(new T.CylinderGeometry(0.185, 0.185, 0.04, 14), opt.hat, TR(0, hatY + 0.035, 0));
+      anchors.hat = new T.Vector3(0, hatY + 0.12, 0);
+    }
     head.add(hb.mesh(sm, headO));
 
     /* --- 팔 --- */
@@ -473,33 +499,28 @@
         lo.add(new T.BoxGeometry(0.05, 0.164, 0.03), '#6B3C20', bm.clone().multiply(TR(0, 0, -0.096)));
         lo.add(new T.BoxGeometry(0.006, 0.05, 0.014), '#D9503F', bm.clone().multiply(TR(0.004, -0.1, 0.05)));
       }
+      var wristA = null;
+      if (s > 0 && gear >= 2) {     // 왼쪽 윗팔 바깥의 작은 놋쇠 표식(원과 물결, 글자 없음)
+        var er = rArm * 1.05, emM = TR(rArm * 1.12, -ua * 0.28, 0, 0, 0, -PI / 2);
+        up.add(new T.CylinderGeometry(er, er, 0.006, 14), BRASS, emM);
+        up.add(new T.TorusGeometry(er * 0.72, er * 0.1, 4, 14), BRASS_HI, emM.clone().multiply(TR(0, 0.004, 0, PI / 2, 0, 0)));
+      }
+      if (s > 0 && gear >= 3) {     // 왼손목의 놋쇠 탐지기(보완 3차: 조금 크게, 짧은 안테나). 빛은 game.js가 wrist 자리에 단다
+        var wy = -fa * 0.72, wr = rArm * 1.28;
+        lo.add(new T.CylinderGeometry(wr, wr, fa * 0.26, 10), BRASS, TR(0, wy, 0));
+        lo.add(new T.BoxGeometry(wr * 1.25, fa * 0.17, 0.02), BRASS_DP, TR(0, wy, wr * 0.98));
+        lo.add(new T.BoxGeometry(wr * 1.05, fa * 0.13, 0.012), '#7FE0D6', TR(0, wy, wr * 1.06));
+        lo.add(new T.CylinderGeometry(0.005, 0.006, 0.075, 5), BRASS_SH, TR(wr * 0.55, wy + fa * 0.06, wr * 0.9, -0.5, 0, -0.35).multiply(TR(0, 0.037, 0)));
+        lo.add(new T.SphereGeometry(0.011, 6, 4), '#7FE0D6', TR(wr * 0.55, wy + fa * 0.06, wr * 0.9, -0.5, 0, -0.35).multiply(TR(0, 0.077, 0)));
+        wristA = new T.Object3D(); wristA.position.set(0, wy, wr * 1.25); el.add(wristA);
+      }
       sh.add(up.mesh(sm));
       el.add(lo.mesh(sm));
       sh.add(el);
       chest.add(sh);
-      return { sh: sh, el: el };
+      return { sh: sh, el: el, wrist: wristA };
     }
-    var armL = makeArm(1), armR = makeArm(-1);
-
-    /* --- 탐험대 장비(성장, growth.js): 2단계 어깨 표식, 3단계 손목 탐지기. 성경의 물건이 아니라 타임머신 탐험대 장비 --- */
-    var gear = opt.gear || 0, wrist = null;
-    var gBrass = new T.MeshStandardMaterial({ color: BRASS, roughness: 0.38, metalness: 0.3 }), gBrassHi = new T.MeshStandardMaterial({ color: BRASS_HI, roughness: 0.35, metalness: 0.3 });
-    if (gear >= 2) {          // 왼쪽 윗팔 바깥의 놋쇠 표식(원과 물결 문양, 글자 없음)
-      var em = new T.Group(), er = rArm * 1.05;
-      em.add(new T.Mesh(new T.CylinderGeometry(er, er, 0.006, 16), gBrass));
-      var ring = new T.Mesh(new T.TorusGeometry(er * 0.72, er * 0.1, 4, 16), gBrassHi); ring.rotation.x = PI / 2; ring.position.y = 0.004; em.add(ring);
-      em.rotation.z = -PI / 2; em.position.set(rArm * 1.12, -ua * 0.28, 0);
-      armL.sh.add(em);
-    }
-    if (gear >= 3) {          // 왼손목의 놋쇠 탐지기와 청록 화면(빛은 game.js가 이 자리에 단다)
-      var dv = new T.Group();
-      dv.add(new T.Mesh(new T.CylinderGeometry(rArm * 1.12, rArm * 1.12, fa * 0.2, 10), gBrass));
-      var scr = new T.Mesh(new T.BoxGeometry(rArm * 1.3, fa * 0.13, 0.008), new T.MeshBasicMaterial({ color: '#7FE0D6' }));
-      scr.position.set(0, 0, rArm * 1.1); dv.add(scr);
-      dv.position.set(0, -fa * 0.74, 0);
-      wrist = new T.Object3D(); wrist.position.set(0, 0, rArm * 1.25); dv.add(wrist);
-      armL.el.add(dv);
-    }
+    var armL = makeArm(1), armR = makeArm(-1), wrist = armL.wrist;
 
     /* --- 다리 --- */
     function makeLeg(s) {
@@ -531,7 +552,7 @@
     var legL = makeLeg(1), legR = makeLeg(-1);
 
     /* --- 움직임 --- */
-    var st = { t: (key === 'hyu' ? 1.3 : key === 'onwoo' ? 2.7 : 0), ph: 0, w: 0, run: 0 };
+    var st = { t: (key === 'hyu' ? 1.3 : key === 'onwoo' ? 2.7 : 0), ph: 0, w: 0, run: 0, lk: 0, lkT: false };
     var legLen = hipY - ankle;
     function legPose(l, s, c, A, Kn, w, r) {      // 다리 하나를 놓고, 엉덩이에서 발목까지의 높이를 돌려준다
       l.hip.rotation.x = -A * s * w - 0.06 * r * w;
@@ -563,6 +584,14 @@
       var B = A * 0.95, bend = lerp(0.22, 1.25, r), splay = 0.13 + 0.015 * br * (1 - w);
       armL.sh.rotation.set(B * s * w, 0, splay);
       armL.el.rotation.x = -(0.12 + (bend + 0.25 * Math.max(0, -s)) * w);
+      /* 손목 탐지기를 들어 들여다보기(성장 3단계 사용 연출): 걸을 때는 하지 않는다 */
+      st.lk += ((st.lkT && wrist ? 1 : 0) * (1 - w) - st.lk) * Math.min(1, dt * 5);
+      if (st.lk > 0.01) {
+        var k = st.lk;
+        armL.sh.rotation.x = lerp(armL.sh.rotation.x, -0.95, k); armL.sh.rotation.z = lerp(armL.sh.rotation.z, -0.32, k); armL.sh.rotation.y = lerp(0, 0.35, k);
+        armL.el.rotation.x = lerp(armL.el.rotation.x, -1.75, k);
+        head.rotation.x += 0.32 * k; head.rotation.y += 0.28 * k;
+      }
       if (key === 'onwoo') {      // 책 든 팔은 덜 흔든다
         armR.sh.rotation.set(-B * 0.4 * s * w + 0.05, 0, -splay);
         armR.el.rotation.x = -(0.3 + 0.1 * w + 0.5 * r * w);
@@ -572,7 +601,9 @@
       }
     }
     update(0, 0);
-    return { group: group, update: update, wrist: wrist, gear: gear };
+    /* anchors: 새 장비 자리(전후 그림의 동그라미 표시용, 몸 좌표). look(true): 손목 탐지기 들여다보기 */
+    return { group: group, update: update, wrist: wrist, gear: gear, anchors: anchors, parts: { head: head, chest: chest, armL: armL },
+      look: function (on) { st.lkT = !!on; } };
   }
 
   /* ================================================================== 모세 */

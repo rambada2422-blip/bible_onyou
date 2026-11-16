@@ -179,10 +179,29 @@
   }
 
   /* 타임머신 수리 막대: 시대마다 부속 하나. 그 시대의 재료를 다 모으면 부속이 고쳐진다(탐험대 이야기) */
+  /* 타임머신 그림(보완 3차 ⑤): 시대 n의 부속이 고쳐지면 n번째 부품이 놋쇠색으로 채워진다. 부품 이름은 탐험대 이야기(창작) */
+  var MACHINE_PARTS = ['계기판 덮개', '시간 나침반 받침', '안테나', '바늘구멍 렌즈 창', '연료관', '다리 받침', '놋쇠 띠', '꼭대기 등 갓', '문 손잡이', '시간 계기판 불'];
+  function machineArt(on) {
+    var P = [
+      '<circle cx="100" cy="84" r="8"/><path d="M100 84 L105 79" class="ln"/>',
+      '<ellipse cx="72" cy="24" rx="10" ry="4.5"/><path d="M67 24 L77 24" class="ln"/>',
+      '<path d="M118 22 L132 5" class="ln w"/><circle cx="133" cy="4" r="3.5"/>',
+      '<circle cx="100" cy="46" r="11"/>',
+      '<path d="M138 68 C154 70 154 96 135 101" class="ln w"/>',
+      '<path d="M82 100 L70 123 M100 107 L100 125 M118 100 L130 123" class="ln w"/><path d="M64 124 L76 124 M94 126 L106 126 M124 124 L136 124" class="ln w"/>',
+      '<rect x="62" y="60" width="76" height="8" rx="3"/>',
+      '<path d="M83 19 Q100 5 117 19 Z"/>',
+      '<path d="M62 50 C49 52 49 76 62 78" class="ln w"/>',
+      '<circle cx="90" cy="96" r="2.6"/><circle cx="100" cy="97" r="2.6"/><circle cx="110" cy="96" r="2.6"/>'
+    ];
+    return '<svg viewBox="0 0 200 130" aria-hidden="true"><ellipse class="body" cx="100" cy="62" rx="38" ry="46"/>'
+      + P.map(function (p, i) { return '<g class="mp' + (on[i] ? ' on' : '') + '">' + p + '</g>'; }).join('') + '</svg>';
+  }
   function repairMeter() {
     var cells = OT.eras.map(function (e) { var em = eraMats(e), r = em.all ? em.got / em.all : 0; return el('span', { class: 'rm-cell' + (r >= 1 ? ' full' : ''), title: '시대 ' + e.era }, el('i', { style: 'height:' + Math.round(r * 100) + '%' })); });
     var fixed = OT.eras.filter(function (e) { var em = eraMats(e); return em.all && em.got === em.all; }).length;
-    return el('div', { class: 'rmeter' }, el('div', { class: 'rm-row' }, cells), el('small', { text: '탐험대 이야기 · 타임머신 부속 ' + fixed + ' / ' + OT.eras.length + ' 고침 (재료 ' + matCount() + ' / ' + MAT_TOTAL + ')' }));
+    var on = OT.eras.map(function (e) { var em = eraMats(e); return !!(em.all && em.got === em.all); });
+    return el('div', { class: 'rmeter' }, el('div', { class: 'rm-machine', role: 'img', 'aria-label': '타임머신 부속 ' + fixed + '개 고침', title: on.map(function (x, i) { return (x ? '✓ ' : '· ') + MACHINE_PARTS[i]; }).join('\n'), html: machineArt(on) }), el('div', { class: 'rm-row' }, cells), el('small', { text: '탐험대 이야기 · 타임머신 부속 ' + fixed + ' / ' + OT.eras.length + ' 고침 (재료 ' + matCount() + ' / ' + MAT_TOTAL + ')' }));
   }
   function lockNote(e) {
     var nb = box.querySelector('.lock-note'); if (nb) nb.remove();
@@ -397,13 +416,21 @@
       return b;
     });
     /* 손목 탐지기(3단계): 스캔 한 번에 숨은 자리를 넣은 세 곳이 빛난다(어느 곳인지는 알려 주지 않는다) */
-    var g = GR(), scanBtn = null;
+    var g = GR(), scanBtn = null, seekBox = el('div', { class: 'seek' }, tiles);
     if (g && g.stage() >= 3) scanBtn = el('button', { class: 'btn plain scanbtn', on: { click: function () {
       scanBtn.disabled = true; var set = g.scanSet(cur.id + mm.key, spot);
-      tiles.forEach(function (b, k) { if (set.indexOf(k) >= 0 && !b.disabled) b.classList.add('scan'); });
-      msg.textContent = '손목 탐지기가 세 곳을 가리켜요. 그 가운데 한 곳에 있어요.'; mark(cur.id + ' seek-scan');
+      var light = function () {
+        tiles.forEach(function (b, k) { if (set.indexOf(k) >= 0 && !b.disabled) b.classList.add('scan'); });
+        msg.textContent = '손목 탐지기가 세 곳을 가리켜요. 그 가운데 한 곳에 있어요.';
+      };
+      mark(cur.id + ' seek-scan');
+      /* 3단계 사용 연출: 손목 탐지기 그림이 여섯 땅 위를 한 번 쓸고 지나간 뒤 세 곳이 빛난다(움직임 줄이기면 바로) */
+      var calm2 = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (calm2) { light(); return; }
+      var sw = el('i', { class: 'scan-sweep', html: g.svg.wrist }); seekBox.appendChild(sw);
+      setTimeout(function () { if (sw.parentNode) sw.parentNode.removeChild(sw); light(); }, 820);
     } } }, '탐지기 스캔');
-    return [el('div', { class: 'eyebrow dark', text: '탐험대 이야기 · 재료 찾기' }), msg, scanBtn, el('div', { class: 'seek' }, tiles), got];
+    return [el('div', { class: 'eyebrow dark', text: '탐험대 이야기 · 재료 찾기' }), msg, scanBtn, seekBox, got];
   }
   function go() { if (cur.step < cur.steps.length - 1) { cur.step++; render(); } }
   function take(mt) { if (mt && mt.key) { PG.mats[cur.id + ':' + mt.key] = 1; save(); } }
@@ -458,9 +485,22 @@
         el('b', { text: '탐험 장비 ' + n + '단계' + (s ? ' · ' + s.name : '') }), el('span', { class: 'gh-pips' }, pips)),
       el('small', { text: nx ? '다음 장비: ' + nx.stage.name + '까지 ' + nx.left + '장면' : '다음 장비는 준비하고 있어요' }));
   }
+  /* 전후 그림(보완 3차 ④): 같은 아이·같은 자세·같은 크기. 새 장비 자리에 동그라미(그림 위의 표시, 몸의 빛이 아님) */
+  function beforeAfter(list) {
+    var g = GR(); if (!g || !BO3D.gearShot || !list.length) return null;
+    var last = list[list.length - 1], n0 = list[0].n - 1, key = S.ch || 'hyu', flag = g.prefs.flag();
+    var part = last.key === 'hat' || last.key === 'flag' || last.key === 'wrist' ? last.key : null;
+    var a = BO3D.gearShot(key, n0, last.view, { flag: flag }), b = BO3D.gearShot(key, last.n, last.view, { flag: flag, part: part, pose: last.key === 'wrist' ? 'look' : null });
+    if (!a || !b || !a.url || !b.url) return null;
+    return el('div', { class: 'gear-ba', role: 'img', 'aria-label': '장비를 얻기 전과 뒤: ' + last.name },
+      el('figure', {}, el('img', { src: a.url, alt: '' }), el('figcaption', { text: '전' })),
+      el('span', { class: 'ba-arrow', 'aria-hidden': 'true' }),
+      el('figure', { class: 'after' }, el('div', { class: 'ba-pic' }, el('img', { src: b.url, alt: '' }),
+        b.ring ? el('i', { class: 'ba-ring', style: 'left:' + b.ring.x.toFixed(1) + '%;top:' + b.ring.y.toFixed(1) + '%' }) : null), el('figcaption', { text: '뒤' })));
+  }
   function gearCard(list, withBtn, title) {
     var g = GR();
-    return el('div', { class: 'closebox gearnew pop' }, el('h3', { text: title || (list.length > 1 ? '새 장비 ' + list.length + '가지' : '새 장비') }),
+    return el('div', { class: 'closebox gearnew pop' }, el('h3', { text: title || (list.length > 1 ? '새 장비 ' + list.length + '가지' : '새 장비') }), beforeAfter(list),
       list.map(function (s) {
         return el('div', { class: 'gear-row' }, el('span', { class: 'gi', html: g.svg[s.key] || '' }),
           el('div', {}, el('b', { text: s.name + ' · ' + s.fn }), el('p', { text: (s.d && (s.d[S.tier] || s.d.t2)) || '' }), s.light ? el('small', { class: 'gear-light', text: s.light }) : null));

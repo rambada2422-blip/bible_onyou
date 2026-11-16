@@ -200,3 +200,28 @@
 .scanbtn { align-self: flex-start; }
 .seek-t.scan { box-shadow: inset 0 0 0 3px #7AD0C8, 0 0 10px rgba(122, 208, 200, .55); }
 .seek-t.scan.miss { box-shadow: inset 0 0 0 2px var(--paper-line); }
+
+/* 보완 3차: 지도 맨 위 타임머신 그림(시대 수리마다 부품 하나), 새 장비 전후 그림, 탐지기 스캔 쓸기 */
+.rm-machine { width: 170px; max-width: 60%; margin: 0 auto 6px; }
+.rm-machine svg { display: block; width: 100%; height: auto; }
+.rm-machine .body { fill: #2C3D66; stroke: #8FA0C8; stroke-width: 2; }
+.rm-machine .mp > * { fill: none; stroke: #8FA0C8; stroke-width: 1.6; stroke-dasharray: 3 3; opacity: .75; }
+.rm-machine .mp .ln { fill: none; }
+.rm-machine .mp .w { stroke-width: 2.4; }
+.rm-machine .mp.on > * { fill: #E9B44C; stroke: #F7D774; stroke-dasharray: none; opacity: 1; }
+.rm-machine .mp.on .ln { fill: none; stroke: #E9B44C; }
+.rm-machine .mp.on .w { stroke-width: 3.2; }
+.gear-ba { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 2px 0 4px; }
+.gear-ba figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 42%; max-width: 150px; }
+.gear-ba img { display: block; width: 100%; height: auto; border-radius: 12px; background: radial-gradient(circle at 50% 40%, #FFFFFF, #EFE3C6); }
+.gear-ba .after img { box-shadow: 0 0 0 2px #E2C88E; }
+.gear-ba figcaption { font-size: 12.5px; color: var(--text-soft); }
+.ba-pic { position: relative; width: 100%; }
+.ba-arrow { width: 0; height: 0; border-top: 9px solid transparent; border-bottom: 9px solid transparent; border-left: 13px solid #C89B3C; flex: none; }
+.ba-ring { position: absolute; width: 30%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; box-shadow: 0 0 0 3px #F2C14E, 0 0 0 6px rgba(242, 193, 78, .35); animation: baRing 1.1s ease-in-out 2; pointer-events: none; }
+@keyframes baRing { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.25); } }
+.seek { position: relative; }
+.scan-sweep { position: absolute; top: 50%; left: 0; width: 46px; height: 46px; margin-top: -23px; border-radius: 50%; display: grid; place-items: center; background: rgba(14, 23, 48, .85); color: #7FE0D6; box-shadow: 0 0 0 2px #7FE0D6; pointer-events: none; animation: scanSweep .8s ease-in-out forwards; z-index: 2; }
+.scan-sweep svg { width: 30px; height: 30px; }
+@keyframes scanSweep { from { left: -4%; } to { left: calc(100% - 42px); } }
+@media (prefers-reduced-motion: reduce) { .ba-ring, .scan-sweep { animation: none; } }

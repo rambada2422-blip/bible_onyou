@@ -140,7 +140,7 @@
       dex: [
         { id: 'river', name: '요단 강', desc: '언덕까지 넘쳐흐르던 요단. 왜 그렇게 넘쳤는지는 여호수아 3장 15절에 있어요.', ref: '수 3:15', hint: '아이들이 선 둑 바로 앞이에요.', range: 60,   /* 넘친 까닭은 성경에서 찾게(규칙서 13.9) */
           pos: function () { return v3(-4, level, -2); } },
-        { id: 'ark', name: '언약궤를 멘 제사장들', desc: '언약궤를 메고 백성보다 앞서 간 제사장들', ref: '수 3:14', hint: '상류 쪽(오른쪽) 강가를 보세요.', range: 80, crop: 0.34,
+        { holy: true, id: 'ark', name: '언약궤를 멘 제사장들', desc: '언약궤를 메고 백성보다 앞서 간 제사장들', ref: '수 3:14', hint: '상류 쪽(오른쪽) 강가를 보세요.', range: 80, crop: 0.34,
           pos: function () { return v3(arkAt[0], H(arkAt[0], arkAt[1]) + 1.4, arkAt[1]); } },
         { id: 'leader', name: '여호수아', desc: '백성을 이끌던 사람. 언제 싯딤을 떠나 요단에 이르렀는지는 여호수아 3장 1절에 있어요.', ref: '수 3:1', hint: '진 가까운 강가에 서 있어요.', range: 40, crop: 0.36,
           pos: function () { var p = JL.leader.group.position; return v3(p.x, p.y + 1.1, p.z); } },
