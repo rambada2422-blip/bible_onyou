@@ -4,11 +4,14 @@
  * 아이들이 다니는 때: 모르드개가 굵은 베를 입고 대궐 문 앞까지 와 있을 때(4:1-2). 재료 2를 주우면 에스더가 보낸 내시와 하닥이 문에서 나온다(4:4-9).
  * 본문에 맞춘 점 (content/ot/OT-38.json design3d)
  *  - 모르드개는 굵은 베(거칠고 어두운 옷)를 입고 재를 무릅쓰고(잿빛 머리쓰개) 대궐 문 앞 광장에 서 있다(4:1-2, 4:6). 대궐 문 안으로 들어가지 않는다(4:2).
- *    아이들 쪽에서는 뒷모습과 고개를 숙인 모습까지만 보인다. 울음소리는 만들지 않는다.
- *  - 4:4: 내시 하나가 입을 옷(작은 보따리)을 들고 나왔다가, 모르드개가 받지 않아 도로 들어간다. 4:6-9: 하닥이 나와 모르드개에게 오고,
+ *    아이들 쪽에서는 뒷모습과 고개를 숙인 모습까지만 보인다(4:17 대목에서는 모은 사람들을 보고 서지만 멀리서). 울음소리는 만들지 않는다.
+ *  - 4:4: 에스더가 보낸 옷(작은 보따리)을 한 사람(누가 가져갔는지는 본문에 없어 내시 모습으로 둠)이 들고 나왔다가, 모르드개가 받지 않아 도로 들어간다.
+ *    4:6-9: 그 사람이 들어간 뒤 하닥이 나와 모르드개에게 오고,
  *    모르드개가 조서 초본(작은 두루마리, 글자 없음)을 건네고(4:8), 하닥이 돌아간다(4:9). 4:10-12: 하닥이 다시 나온다. 4:13-14: 회답을 가지고 돌아간다.
- *  - 4:15-17: 에스더의 회답이 오고, 모르드개가 가서 수산의 유다인을 모은다. 유다인들은 성 안 길에서 광장으로 모여 와 조용히 선다(금식은 먹고 마시는 것이 없는 데까지만).
- *    남쪽 길로 오는 사람들은 아이들 곁(동쪽)을 지나간다(돕기: 길 비켜 주기).
+ *  - 4:15-17: 에스더의 회답이 오고(전한 사람은 본문에 없어 하닥으로 둠), 하닥이 돌아간 뒤에 모르드개가 가서 수산의 유다인을 모은다.
+ *    유다인들은 남쪽 길과 서쪽 길에서 걸어와 광장 서쪽에 대궐 문을 등지지도 마주하지도 않게(동쪽을 보고) 조용히 서고, 모르드개는 그 앞에 선다.
+ *    모인 곳은 본문에 없다. 금식은 먹고 마시는 것이 없는 데까지만. 남쪽 길로 오는 사람들은 아이들 곁(서쪽)을 지나간다(돕기: 길 비켜 주기).
+ *  - 4:4-9는 재료를 주울 때가 아니라 지켜보기 첫 대목으로 본다(광장이 보이는 자리에서).
  *  - 에스더는 궁 안에 있어 모습을 그리지 않는다. 에스더의 말은 대목의 글과 성경책으로만.
  *  - 7:1: 며칠 뒤. 타임머신 창 너머로 담 안을 멀리서 본다(아이들은 화면에 없음). 왕과 하만이 왕궁의 집에서 잔치 자리로 간다. 잔치 자리 안은 그리지 않는다.
  *  - 7:7-8: 왕이 잔치 자리에서 나와 왕궁 후원으로 갔다가 돌아온다. 그 뒤의 일(7:8-10: 걸상, 하만의 얼굴을 쌈, 나무, 하만을 닮)은 그리지 않는다(글로만).
@@ -16,8 +19,9 @@
  * 감수가 필요한 설정: 수산 궁의 담과 대궐 문의 생김새·크기·방향, 광장과 성 안 집과 길의 생김새, 담 안의 집 두 채(왕궁의 집, 잔치 자리)와 후원의 나무(종려),
  *   모르드개의 생김새(tools/blender/people/mordecai.json: 수염, 어두운 굵은 베, 잿빛 머리쓰개. 찢은 옷은 그리지 않음), 모르드개가 선 자리,
  *   내시와 하닥과 하만의 옷(무리 모형), 왕의 모습(다리오 모형을 멀리서 씀), 에스더가 보낸 옷의 꼴(보따리), 조서 초본의 꼴(작은 두루마리),
- *   유다인의 수(40)와 모여 오는 길과 선 자리, 모르드개가 그들 앞에 선 것, 금식하는 모습(조용히 서 있음), 성 안을 오가는 사람들, 날씨와 때(맑은 낮),
- *   재료 재(4:1, 모르드개가 무릅쓴 재가 길에 떨어진 것으로 읽음)와 작은 돌(광장 가장자리).
+ *   유다인의 수(40)와 모여 오는 길·빠르기·선 자리(광장 서쪽, 동쪽을 봄), 모르드개가 그들 앞에 선 것, 금식하는 모습(조용히 서 있음), 성 안을 오가는 사람들, 날씨와 때(맑은 낮),
+ *   모르드개의 서 있는 자세(울음 대신 몸을 조금 앞으로 숙임), 4:4의 옷을 가져간 사람과 4:15의 회답을 전한 사람을 내시·하닥으로 둔 것, 후원의 자리(잔치 자리 앞),
+ *   재료: 굵은 베 실(성 안 길가에 떨어진 것, 누구의 것인지 정하지 않음), 재 한 줌(4:1·4:3에 나오는 재, 길가에 떨어진 재로만 두고 누구의 것인지 정하지 않음), 작은 돌(광장 남쪽 끝).
  */
 (function () {
   'use strict';
@@ -26,7 +30,7 @@
   if (!(BO3D.c3d && BO3D.c3d.on('OT-38'))) return;   /* design3d.build가 false면 이야기 카드로만 간다 */
   BO3D.scene3d['OT-38'] = function (api) {
     var T = THREE, M2 = BO3D.models2 || {}, MO = BO3D.models || {}, PR = BO3D.props, FX = api.FX, C3 = BO3D.c3d, R = PR.rng(3811), sm = C3.sm, noise = C3.noise, hash = C3.hash, i, k;
-    var WALL_Z = -24, GATE = [0, WALL_Z], IN = [0, -29], OUT = [0, -21.5], MOR = [4.5, -15], MEET = [3.2, -16.6], FRONT_M = [0, -21.2];
+    var WALL_Z = -24, GATE = [0, WALL_Z], IN = [0, -29], OUT = [0, -21.5], MOR = [4.5, -15], MEET = [3.2, -16.6], FRONT_M = [-8.5, -13.5];
     var ROYAL = [-6, -62], ROYAL_DOOR = [-6, -56.5], HALL = [8, -62], HALL_DOOR = [8, -56.5], GARDEN = [10, -46];   /* 담 안: 왕궁의 집(서), 잔치 자리(동), 그 앞의 후원 */
     function height(x, z) {
       var inside = sm(-25.5, -27.5, z);                                   /* 담 안은 조금 높은 터 */
@@ -68,6 +72,7 @@
     function block(x0, x1, z0, z1) {
       for (var hx = x0; hx < x1; hx += 7 + hash(hx, z0) * 3) for (var hz = z0; hz < z1; hz += 7 + hash(hz, x0) * 3) {
         var w = 5 + hash(hx, hz) * 2.4, d = 5 + hash(hz, hx) * 2.4, h = 3.2 + hash(hx + 3, hz) * 3.4, m = houseM[Math.floor(hash(hx, hz + 7) * 3)];
+        if (hx + w > x1 || hz + d > z1) continue;   /* 블록 밖(길과 아이들이 걷는 곳)으로 넘지 않게 */
         hs.push(box(w, h, d, m, hx + w / 2, hz + d / 2)); hs.push(box(w + 0.3, 0.3, d + 0.3, roofM, hx + w / 2, hz + d / 2, height(hx + w / 2, hz + d / 2) + h));
       }
     }
@@ -119,19 +124,18 @@
     var jews = [], COLS = 8, ROWS = 5;
     for (i = 0; i < COLS * ROWS; i++) {
       var o = man(i * 23 + 600, { carry: 'none' }), cl = i % COLS, row = Math.floor(i / COLS), src = i % 5;
-      o.spot = [-10.5 + cl * 3 + (hash(i, 1) - 0.5) * 0.8, -19.5 + row * 2 + (hash(i, 2) - 0.5) * 0.5];
+      o.spot = [-12 - row * 2.2 + (hash(i, 1) - 0.5) * 0.5, -19.5 + cl * 1.75 + (hash(i, 2) - 0.5) * 0.6];   /* 광장 서쪽, 동쪽(모르드개)을 보고 선다 */
       var start, mid;
-      if (src <= 2) { start = [3 + hash(i, 3) * 4, 34 + (i % 3) * 1.5]; mid = [[3 + hash(i, 3) * 5, 28], [4 + hash(i, 5) * 4, -2]]; }        /* 남쪽 길: 아이들 동쪽(x 3~9)으로 지난다 */
-      else if (src === 3) { start = [-46 - (i % 4) * 1.4, 13 + (hash(i, 3) - 0.5) * 3]; mid = [[-30, 13], [-18, -6]]; }                        /* 서쪽 길 */
-      else { start = [46 + (i % 4) * 1.4, 5 + (hash(i, 3) - 0.5) * 3]; mid = [[30, 5], [18, -6]]; }                                               /* 동쪽 길 */
+      if (src <= 2) { start = [-2.5 + hash(i, 3) * 2, 18 + (i % 3) * 1.6]; mid = [[-3 + hash(i, 3) * 2, 6], [-8 + hash(i, 5) * 3, -2]]; }       /* 남쪽 길: 아이들 서쪽(x -8~-1)으로 지난다 */
+      else { start = [-40 - (i % 4) * 1.4, 13 + (hash(i, 3) - 0.5) * 3]; mid = [[-30, 13], [-22, -4]]; }                                       /* 서쪽 길 */
       o.P = mkPath([start].concat(mid, [o.spot])); o.wait = (i % 8) * 0.7 + Math.floor(i / 8) * 0.4; o.group.visible = false; jews.push(o);
     }
     /* 성 안을 오가는 사람들(4:1 '성중'): 둘레 길에서만 */
     var walkers = [];
-    for (i = 0; i < 6; i++) { var wk = man(i * 31 + 700, { carry: 'none' }); wk.P = i % 2 ? mkPath([[-75, 12 + i * 0.4], [-34, 12 + i * 0.4], [-34, -4], [-75, -4]]) : mkPath([[75, 4 + i * 0.3], [36, 4 + i * 0.3], [36, 30], [75, 30]]); wk.ph = i * 9; walkers.push(wk); }
+    for (i = 0; i < 6; i++) { var wk = man(i * 31 + 700, { carry: 'none' }); wk.P = i % 2 ? mkPath([[-75, 12 + i * 0.3], [-36, 12 + i * 0.3], [-36, 14.5], [-75, 14.5]]) : mkPath([[75, 4 + i * 0.3], [36, 4 + i * 0.3], [36, 6.5], [75, 6.5]]);   /* 둘레 길에서만 오간다 */ wk.ph = i * 9; walkers.push(wk); }
 
     var OUTP = mkPath([IN, OUT, MEET]), BACKP = mkPath([MEET, OUT, IN]);
-    var MOR_GO = mkPath([MOR, [-3, -12], [-1, -18], FRONT_M]);                                                         /* 4:17 모르드개가 가서 모은다 */
+    var MOR_GO = mkPath([MOR, [-2, -14], FRONT_M]);                                                         /* 4:17 모르드개가 가서 모은다 */
     var K_TO = mkPath([[ROYAL_DOOR[0], ROYAL_DOOR[1] + 0.4], [ROYAL_DOOR[0], -54.2], [HALL_DOOR[0] - 0.5, -54.2], [HALL_DOOR[0] - 0.5, HALL_DOOR[1] + 0.3]]), H_TO = mkPath([[ROYAL_DOOR[0] + 1.2, ROYAL_DOOR[1] + 0.4], [ROYAL_DOOR[0] + 1.2, -53.2], [HALL_DOOR[0] + 0.7, -53.2], [HALL_DOOR[0] + 0.7, HALL_DOOR[1] + 0.3]]);   /* 7:1 왕궁의 집에서 잔치 자리로 */
     var K_OUT = mkPath([[HALL_DOOR[0], HALL_DOOR[1] + 0.4], [HALL_DOOR[0] + 1, -52], GARDEN]), K_BACK = mkPath([GARDEN, [HALL_DOOR[0] + 1, -52], [HALL_DOOR[0], HALL_DOOR[1] + 0.4]]);                    /* 7:7-8 */
 
@@ -153,7 +157,7 @@
       if (p === 'garden') { king.group.visible = true; setAt(king, HALL_DOOR[0], HALL_DOOR[1] + 0.4, 0); }
       still(mor); still(hathach);
     }
-    var D_SERV = 0, D_HATH = 13;   /* 4:4 옷을 가져온 내시 → 4:6 하닥 */
+    var D_SERV = 0, D_HATH = 19.5;   /* 4:4 옷을 가져온 내시 → 4:6 하닥 */
     function clothes(dt) {
       /* 4:4: 내시가 옷을 들고 나왔다가 받지 않으므로 도로 들어간다 */
       var s1 = pt - D_SERV;
@@ -188,37 +192,38 @@
       },
       P: { start: [0, 20], machine: [-8, 26], machineRot: 0.4,
         /* 재료가 놓인 곳(quests[i].found): 성 서쪽 길가 / 광장 동쪽 길가 / 광장 남쪽 가장자리. 모르드개(4.5, -15)와 대궐 문에서 떨어진 곳 */
-        parts: [[-38, 13], [38, 5], [-6, -4.5]], lookSpot: [-6, -4.5],
+        parts: [[-38, 13], [38, 5], [4, -3]], lookSpot: [4, -3],
         look: { focus: [GATE[0], WALL_Z + 2], mid: [2, -16], dy: 3, backE: 9, upE: 5 } },
       eventCam: function (i) {
-        if (i === 4) return { pos: [10, height(10, 34) + 16, 34], look: [0, 1, -15] };                         /* 4:16-17 모여 오는 유다인 */
+        if (i === 4) return { pos: [-4, height(-4, 30) + 15, 30], look: [-14, 1, -14] };                         /* 4:16-17 모여 오는 유다인 */
         if (i === 5 || i === 6) return { pos: [2, 48, 4], look: [2, 0, -56] };                              /* 담 안을 창 너머로 멀리서 */
         return null;
       },
-      eventLook: function (i) { if (i === 2 || i === 3) return { focus: [2, -20], mid: [3, -16], dy: 1.5, backE: 14, upE: 4 }; return null; },   /* 문과 모르드개와 하닥이 함께 보이게 */
+      eventLook: function (i) { if (i >= 1 && i <= 3) return { focus: [2, -20], mid: [3, -16], dy: 1.5, backE: 14, upE: 4 }; return null; },   /* 문과 모르드개와 하닥이 함께 보이게 */
       kidsHidden: function (i) { return i === 5 || i === 6; },
       beatNote: function (i) {
-        if (i === 5) return '시간이 흘렀어요. 며칠 뒤, 왕후 에스더가 잔치를 연 날이에요. 타임머신 창 너머로 궁의 담 안을 멀리서 봐요. 잔치 자리 안의 모습은 성경에 없어서 그리지 않았어요.';
-        if (i === 6) return '왕이 후원으로 나갔다가 돌아온 것까지만 멀리서 봐요. 그 뒤의 일(7:8-10)은 그림으로 만들지 않았어요. 성경책에서 읽어요.';
+        if (i === 5) return '시간이 흘렀어요. 며칠 뒤, 왕후 에스더가 잔치를 연 날이에요. 타임머신 창 너머로 궁의 담 안을 멀리서 봐요. 잔치 자리 안은 그리지 않았어요(에스더의 모습과 7:8의 일을 그리지 않기로 했어요).';
+        if (i === 6) return '왕이 후원으로 나갔다가 잔치 자리로 돌아온 것까지만 멀리서 봐요. 돌아온 뒤의 일(7:8-10)은 그림으로 만들지 않았어요. 하르보나가 말한 나무는 하만의 집에 있었고, 그리지 않았어요. 성경책에서 읽어요.';
         return null;
       },
       helpNote: function (after) {
-        if (after === 4) return '이 일은 탐험대가 광장 남쪽 길가에서 해요. 금식하는 무리 사이로는 들어가지 않아요.';
+        if (after === 1) return '우리는 광장 남쪽 끝에서 기다려요. 모르드개에게 다가가지는 않아요.';
+        if (after === 4) return '이 일은 탐험대가 광장 남쪽 끝에서 해요. 금식하는 무리 사이로는 들어가지 않아요.';
         return null;
       },
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 수산 성 안, 대궐 문 앞 광장 남쪽에 내려앉았어요. 굵은 베를 입은 사람이 대궐 문 앞에 서 있어요.', say: { who: 'hyu', text: '대궐 문 쪽으로는 가지 말자. 광장 남쪽과 길에서만 다니자.' } },
       lookText: '에스더 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
-      partBeats: [0, 1], eventStart: 2,
+      partBeats: [0], eventStart: 1,
       sceneDoneText: '광장의 일을 끝까지 지켜봐야 떠날 수 있어요.',
       dex: [
         { id: 'gate', name: '대궐 문', desc: '굵은 베를 입은 사람은 들어가지 못한 수산 궁의 문', ref: '에 4:2', hint: '북쪽의 큰 문을 담아 보세요.', range: 90, crop: 0.5, pos: function () { return v3(GATE[0], 5, WALL_Z); } },
         { id: 'mordecai', name: '모르드개', desc: '굵은 베를 입고 재를 무릅쓰고 대궐 문 앞까지 온 사람', ref: '에 4:1-2', hint: '광장 북쪽, 문 앞에 선 사람을 보세요.', range: 60, crop: 0.36, visible: function () { return mor.group.visible; }, pos: function () { var p = mor.group.position; return v3(p.x, p.y + 1.1, p.z); } },
-        { id: 'square', name: '대궐 문 앞 광장', desc: '하닥이 모르드개를 만난 곳', ref: '에 4:6', hint: '문 앞의 넓은 곳을 보세요.', range: 80, pos: function () { return v3(0, 0.6, -12); } }
+        { id: 'square', name: '대궐 문 앞 광장', desc: '대궐 문 앞의 넓은 곳(성중 광장)', ref: '에 4:6', hint: '문 앞의 넓은 곳을 보세요.', range: 80, pos: function () { return v3(0, 0.6, -12); } }
       ],
       reset: function () { setPhase('mourn'); },
-      partFound: function (i) { if (i === 1) setPhase('clothes'); },            /* 재료 2: 4:4-9를 보여 준다 */
-      partContinue: function (i) { if (i === 1) setPhase('wait'); },
+      partFound: function () {},
+      partContinue: function () {},
       lookupPose: function () { if (phase !== 'wait') setPhase('wait'); },
       /* 대목 번호(OT-38.json): 0 = 4:1-3, 1 = 4:4-9, 2 = 4:10-12, 3 = 4:13-14, 4 = 4:15-17, 5 = 7:1-6, 6 = 7:7-10 */
       beatPose: function (i) { setPhase(['mourn', 'clothes', 'answer', 'reply', 'gather', 'feast', 'garden'][i] || 'wait'); },
@@ -227,14 +232,14 @@
         if (mor.group.visible && phase !== 'gather') { mor.group.rotation.x = tilt; if (mor.update) mor.update(dt, false); }   /* 고개를 숙인 모습까지만 */
         walkers.forEach(function (o) { if (o.group.visible) { var s = (now * 1.3 + o.ph) % o.P.tot; walk(o, o.P, s < 0.01 ? 0.01 : s, undefined, dt); } });
         if (phase === 'clothes') clothes(dt);
-        if (phase === 'answer') { var ta = OUTP.tot / 1.6; if (pt < ta) walk(hathach, OUTP, pt * 1.6, undefined, dt); else { hathach.group.rotation.y = Math.atan2(MOR[0] - MEET[0], MOR[1] - MEET[1]); still(hathach); } }   /* 4:10-12 */
+        if (phase === 'answer') { var ta = OUTP.tot / 1.6; if (pt < ta) walk(hathach, OUTP, pt * 1.6, undefined, dt); else { setAt(hathach, MEET[0], MEET[1], Math.atan2(MOR[0] - MEET[0], MOR[1] - MEET[1])); still(hathach); } }   /* 4:10-12 */
         if (phase === 'reply') { if (pt > 3) { if (!walk(hathach, BACKP, (pt - 3) * 1.6, undefined, dt) && pt > 3 + BACKP.tot / 1.6) hathach.group.visible = false; } else { hathach.group.rotation.y = Math.atan2(MOR[0] - MEET[0], MOR[1] - MEET[1]); still(hathach); } }   /* 4:13-14 */
         if (phase === 'gather') {
           /* 4:15: 회답이 오고(하닥이 나왔다 들어감), 4:17: 모르드개가 가서 유다인을 모은다 */
           var th = OUTP.tot / 1.6;
           if (pt < th) walk(hathach, OUTP, pt * 1.6, undefined, dt); else if (pt < th + 2.5) still(hathach); else if (pt < th * 2 + 2.5) walk(hathach, BACKP, (pt - th - 2.5) * 1.6, undefined, dt); else hathach.group.visible = false;
-          mor.group.rotation.x = 0; walk(mor, MOR_GO, Math.max(0, pt - 6) * 1.3, 0, dt);
-          jews.forEach(function (o) { if (pt > 7 + o.wait) walk(o, o.P, (pt - 7 - o.wait) * 3.0, Math.PI, dt); });
+          mor.group.rotation.x = 0; walk(mor, MOR_GO, Math.max(0, pt - th - 3) * 1.3, -Math.PI / 2, dt);   /* 회답을 들은 뒤에 간다 */
+          jews.forEach(function (o) { var t0 = th + 5 + o.wait; if (pt > t0) walk(o, o.P, (pt - t0) * 2.0, Math.PI / 2, dt); });
         }
         if (phase === 'feast') { walk(king, K_TO, Math.max(0, pt - 1) * 1.2, 0, dt); walk(haman, H_TO, Math.max(0, pt - 1) * 1.2, 0, dt); if (pt > 1 + K_TO.tot / 1.2 + 0.5) { king.group.visible = false; haman.group.visible = false; } }   /* 7:1 잔치 자리로 */
         if (phase === 'garden') {   /* 7:7 후원으로 나갔다가 7:8 돌아온다 */
