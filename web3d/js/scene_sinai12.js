@@ -107,6 +107,7 @@
       o.far = [FAR[0] + (cn - 5) * 2.3 + jx, FAR[1] + rw * 2.6 + jz];
       o.gather = [MOS[0] + (cn - 5) * 1.9 + jx * 0.6, MOS[1] - 6 - rw * 2.2 + jz * 0.6];
       o.ry = hash(i, 7) * 6.28; put(o.group, o.home[0], o.home[1]); o.group.rotation.order = 'YXZ'; crowd.push(o);
+      o.group.traverse(function (m) { if (m.isMesh) m.castShadow = false; });   /* 그리기 호출을 줄이려고 백성은 그림자를 그리지 않는다(장로와 모세만 그린다) */
     }
     /* 백성의 장로들(19:7): 일곱 사람만. 모세 앞(서쪽)에 둥글게 모여 선다 */
     var elders = [];
