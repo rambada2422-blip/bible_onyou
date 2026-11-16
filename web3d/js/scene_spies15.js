@@ -81,6 +81,7 @@
       if (!o) o = PR.soldier(i, '#7A6A4A', null);
       var cx = -17 + hash(i, 1) * 22, cz = -1 + hash(i, 2) * 24; if (cx > 3 && cz < 9) cx -= 9;     /* 모세와 아론 둘레는 비워 둔다 */
       put(o.group, cx, cz); o.group.rotation.order = 'YXZ'; crowd.push(o);
+      o.group.traverse(function (m) { if (m.isMesh) m.castShadow = false; });   /* 그리기 호출을 줄이려고 멀리 선 회중은 그림자를 그리지 않는다(OT-21과 같은 방법) */
     }
     /* 모세와 아론(Blender) */
     var moses = { group: api.fallback('#9C5438', 1.75, 0.27), update: function () {} }, aaron = { group: api.fallback('#5A6A86', 1.75, 0.27), update: function () {} };

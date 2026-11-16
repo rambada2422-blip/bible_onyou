@@ -35,6 +35,9 @@
     function height(x, z) {
       var r = Math.hypot((x - SUM[0]) / 1.15, (z - SUM[1]) / 1.5), m = sm(105, 6, r);   /* 산의 발치는 x = -61쯤. 그 서쪽은 평지 */
       var h = 58 * Math.pow(m, 1.5) + sm(110, 260, x) * 26 * (1 - m) + 0.7 * noise(x * 0.05 + 2, z * 0.05 + 5) * 0.5 + 9 * (noise(x * 0.035 + 4, z * 0.035) - 0.5) * 4 * m * (1 - m);   /* 산비탈의 굴곡 */
+      var ang = Math.atan2(z - SUM[1], x - SUM[0]), gul = 0.5 + 0.5 * Math.sin(ang * 9 + 3.2 * noise(x * 0.03 + 7, z * 0.03 + 1));
+      h -= 8 * gul * 4 * m * (1 - m) * sm(0.05, 0.3, m);                              /* 산비탈의 골짜기와 등성이(모래 언덕처럼 보이지 않게) */
+      h += (noise(x * 0.16 + 3, z * 0.16 + 6) - 0.5) * 2.2 * sm(0.04, 0.25, m) * sm(0.97, 0.8, m);       /* 바위의 거친 면 */
       h -= 2.6 * sm(16, 5, Math.abs(x - RIVER));                                    /* 요단의 물길 */
       h += sm(-390, -450, x) * (4 + 7 * noise(x * 0.02 + 9, z * 0.02) + 24 * sm(110, 300, Math.abs(z)) * (0.5 + noise(x * 0.015, z * 0.015 + 2))) * sm(-600, -530, x);   /* 강 건너의 산지. 가운데(서해 쪽)는 낮다 */   /* 강 건너의 낮은 산지(유다 쪽) */
       h -= sm(-590, -610, x) * 5;                                                    /* 서해 쪽으로 낮아진다 */
@@ -50,7 +53,7 @@
     skyG.setAttribute('color', new T.BufferAttribute(sc, 3));
     var skyM = new T.MeshBasicMaterial({ vertexColors: true, side: T.BackSide, fog: false, depthWrite: false }), sky = new T.Mesh(skyG, skyM); sky.position.x = -160; scene.add(sky);
     var g = new T.PlaneGeometry(1040, 900, 208, 150); g.rotateX(-Math.PI / 2); g.translate(-200, 0, 0);
-    var pos = g.attributes.position, col = new Float32Array(pos.count * 3), c = new T.Color(), pl1 = new T.Color('#CDB47C'), pl2 = new T.Color('#BFA66E'), rock = new T.Color('#A58C6A'), rockT = new T.Color('#93806A'), grn = new T.Color('#8E9E58'), far = new T.Color('#8C9A5E'), road = new T.Color('#DCC696');
+    var pos = g.attributes.position, col = new Float32Array(pos.count * 3), c = new T.Color(), pl1 = new T.Color('#CDB47C'), pl2 = new T.Color('#BFA66E'), rock = new T.Color('#977F62'), rockT = new T.Color('#7E7062'), rockD = new T.Color('#6E6152'), grn = new T.Color('#8E9E58'), far = new T.Color('#8C9A5E'), road = new T.Color('#DCC696');
     for (i = 0; i < pos.count; i++) {
       var x = pos.getX(i), z = pos.getZ(i), y = height(x, z); pos.setY(i, y);
       c.copy(pl1).lerp(pl2, noise(x * 0.07, z * 0.07));
@@ -58,6 +61,7 @@
       if (x < RIVER - 14) c.lerp(grn, sm(90, 20, Math.hypot(x - JER[0], z - JER[1])) * 0.6);   /* 여리고 둘레의 평지 */
       if (x < RIVER - 30) c.lerp(far, 0.35 + 0.5 * noise(x * 0.03, z * 0.03 + 8));   /* 강 건너의 땅은 푸르다 */
       if (y > 4 && x > -60) c.lerp(rock, sm(4, 22, y)); if (y > 40) c.lerp(rockT, sm(40, 58, y)); if (y > 4 && x > -60) c.lerp(rockT, 0.4 * sm(0.45, 0.8, noise(x * 0.11 + 5, z * 0.11)));
+      if (y > 4 && x > -60) c.lerp(rockD, 0.32 * sm(0.55, 1, 0.5 + 0.5 * Math.sin(y * 0.85 + 3 * noise(x * 0.04, z * 0.04))) * sm(4, 12, y));   /* 바위의 켜 */
       c.lerp(road, sm(3.2, 1.2, pathDist(x, z)) * 0.6);
       col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
     }
@@ -92,6 +96,7 @@
       var o = null; try { if (M2.israelite) o = M2.israelite(i * 19 + 7); } catch (e2) { o = null; }
       if (!o) o = PR.soldier(i, '#7A6A4A', null);
       put(o.group, JOS[0] - 5 - hash(i, 1) * 16, JOS[1] - 11 + hash(i, 2) * 22); o.ry = hash(i, 3) * 6.28; o.group.rotation.y = o.ry; crowd.push(o);
+      o.group.traverse(function (m) { if (m.isMesh) m.castShadow = false; });   /* 그리기 호출을 줄이려고 멀리 선 백성은 그림자를 그리지 않는다 */
     }
     var joshua = { group: api.fallback('#4E6A4A', 1.75, 0.27), update: function () {} }, moses = { group: api.fallback('#9C5438', 1.75, 0.27), update: function () {} };
     put(joshua.group, JOS[0], JOS[1]); joshua.group.rotation.y = -Math.PI / 2; put(moses.group, PATH[0][0], PATH[0][1]);
@@ -139,8 +144,8 @@
         look: { focus: SUM, mid: [10, -12], dy: 3, backE: 7, upE: 2.4 } },
       eventCam: function (i) {
         var hs = height(SUM[0], SUM[1]);
-        if (i === 1) { var u = sm(1.5, 22, panT), zz = -300 + 600 * u, dl = Math.hypot(390, zz), dx = -390 / dl, dz = zz / dl; return { pos: [SUM[0] - dx * 5.5 - dz * 1.2, hs + 2.7, SUM[1] - dz * 5.5 + dx * 1.2], look: [SUM[0] - 390, hs - 56, SUM[1] + zz] }; }   /* 34:1-3: 건너편의 땅을 한쪽 끝에서 다른 쪽 끝까지 천천히 둘러본다 */
-        if (i === 2) return { pos: [SUM[0] + 6.6, hs + 4.3, SUM[1] + 0.9], look: [JER[0] + 30, hs - 62, JER[1] - 6] };   /* 34:4: 모세의 뒷모습 너머로 요단과 건너편의 땅 */                                                                    /* 34:4: 건너편의 땅 */
+        if (i === 1) { var u = sm(1.5, 22, panT), zz = -300 + 600 * u, dl = Math.hypot(390, zz), dx = -390 / dl, dz = zz / dl; return { pos: [SUM[0] - dx * 5.5 - dz * 0.6, hs + 2.7, SUM[1] - dz * 5.5 + dx * 0.6], look: [SUM[0] - 390, hs - 56, SUM[1] + zz] }; }   /* 34:1-3: 건너편의 땅을 한쪽 끝에서 다른 쪽 끝까지 천천히 둘러본다 */
+        if (i === 2) { var jx = JER[0] - SUM[0], jz = JER[1] - SUM[1], jl = Math.hypot(jx, jz); jx /= jl; jz /= jl; return { pos: [SUM[0] - jx * 5.5 - jz * 0.6, hs + 3.1, SUM[1] - jz * 5.5 + jx * 0.6], look: [JER[0], hs - 58, JER[1]] }; }   /* 34:4: 모세의 뒷모습 너머로 요단과 여리고 */
         if (i === 3) return cam([-150, 90], 18, [SUM[0] - 30, 16, SUM[1]]);                                                                                                     /* 34:5-7: 산 아래에서 올려다본다. 꼭대기는 비어 있다 */
         if (i === 4) return cam([JOS[0] + 20, 22], 5, [JOS[0] - 8, 1.2, JOS[1]]);                                                                                                   /* 34:8-9 */
         if (i === 5) return cam([-200, 46], 22, [SUM[0] - 60, 6, SUM[1]]);                                                                                                   /* 34:10-12 */
