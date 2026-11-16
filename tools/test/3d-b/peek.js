@@ -3,6 +3,7 @@
 const { chromium } = require('playwright');
 const path = require('path'), fs = require('fs');
 const enter3d = require('../lib/enter.js');
+const doHelp = require('../lib/help.js');   /* 3D 안 돕기는 마쳐야 "계속"이 눌린다(play 갈래의 잠금, 규칙서 13.6) */
 const id = process.argv[2], out = process.argv[3] || '/tmp/peek', waits = (process.argv[4] || '').split(',').filter(Boolean).map(Number);
 fs.mkdirSync(out, { recursive: true });
 (async () => {
@@ -29,7 +30,7 @@ fs.mkdirSync(out, { recursive: true });
     await p.waitForTimeout(w * 1000); await shot('beat' + (info.eventStart + i) + 'b');
     console.log('beat', info.eventStart + i, JSON.stringify(await p.evaluate(() => BO3D.debug.phase())), JSON.stringify(await p.evaluate(() => BO3D.debug.render())));
     if (i < nb - 1) { await p.click('.panel3 .btn.onpaper'); await p.waitForTimeout(300);
-      for (let k = 0; k < 12; k++) { const on = await p.evaluate(() => !!(BO3D.story && BO3D.story.debug.state().screen === 'seg')); if (!on) break; await p.evaluate(() => { const t = document.querySelectorAll('.ot3 .task3, .ot3 .tasks3 button, .ot3 .opt'); t.forEach((x) => x.click()); }); await p.click('.ot3 .sheet-foot .btn >> nth=-1').catch(() => {}); await p.waitForTimeout(250); } }
+      for (let k = 0; k < 12; k++) { const on = await p.evaluate(() => !!(BO3D.story && BO3D.story.debug.state().screen === 'seg')); if (!on) break; await doHelp(p); await p.click('.ot3 .sheet-foot .btn >> nth=-1').catch(() => {}); await p.waitForTimeout(250); } }
   }
   console.log(id, '화면', n, '오류', errs.length, errs.slice(0, 6).join('\n'));
   await b.close();
