@@ -8,15 +8,17 @@
  *  - 12:1-3: 백성이 모여 있고 여로보암이 맨 앞에 선다. 12:4-5: 사흘 뒤에 다시 오라는 말에 백성이 장막으로 물러간다(뒷줄부터).
  *  - 12:6-11: 왕이 머문 집 앞에서 노인들, 그다음 젊은 사람들과 의논한다(의논한 곳은 본문에 없음. 멀리서, 말은 글로만).
  *  - 12:12-15: 사흘 만에 백성이 다시 온다(앞줄부터). 왕의 거친 대답은 글로만. 사람들이 소리치거나 주먹을 드는 몸짓은 없다.
- *  - 12:16-20: 백성이 장막으로 돌아가고, 르호보암이 수레에 올라 서북쪽 길로 급히 떠난다. 아도니람의 일(12:18)은 그리지 않는다. 12:20은 글로만.
+ *  - 12:16-20: 백성이 장막으로 돌아가고(대부분 떠난 뒤), 르호보암이 수레에 올라 서북쪽 길로 급히 떠난다. 아도니람의 일(12:18)은 그리지 않는다. 12:20은 글로만.
  *  - 12:21-24: 창 너머 예루살렘. 유다와 베냐민의 용사(서른여섯으로 줄임)가 창을 세워 들고 서 있고, 르호보암이 그 앞에, 하나님의 사람 스마야가 곁에 선다.
- *    말씀은 글로만(빛과 소리 없음). 용사들은 각기 집으로 돌아간다. 싸우는 모습은 없다.
+ *    말씀은 글로만(빛과 소리 없음). 스마야가 선 뒤에 용사들이 각기 집으로 돌아간다(12:24 말씀을 듣고). 싸우는 모습은 없다. 사건 뒤에는 수레를 세겜에 두지 않는다.
  *  - 사람들은 무리 사이의 빈 길(통로)로만 오가고, 올 때는 앞줄부터·갈 때는 뒷줄부터, 무리 안에서도 1.2~1.3초씩 사이를 두어 서로 겹치지 않는다.
  * 감수가 필요한 설정: 세겜의 생김새(빈터와 동서의 장막), 왕이 머문 집과 의논한 자리(본문에 없음), 르호보암의 생김새(tools/blender/people/rehoboam.json:
  *   어른, 수염, 청록 겉옷, 왕관 없음)와 선 자리, 여로보암·스마야·노인들·젊은 사람들을 무리 모형으로 둔 것, 온 회중을 열두 무리 마흔여덟 사람(모두 남자)으로 줄인 것,
  *   백성이 장막으로 물러가고 오는 길, 수레(말 두 마리)와 떠나는 길, 예루살렘의 생김새와 용사의 수(서른여섯)와 차림(창), 스마야가 선 자리, 날씨와 때(맑은 낮),
  *   재료(장막 천 조각 12:16 — 서남쪽 길가, 부러진 장막 말뚝 조각 12:16 — 동남쪽 길가, 질그릇 조각 12:1 — 모이는 자리 남쪽 길가. 누구의 것인지 정하지 않음),
- *   예루살렘 사람들에게 그림자가 없는 것(해의 그림자는 아이들 둘레만 그린다).
+ *   예루살렘 사람들에게 그림자가 없는 것(해의 그림자는 아이들 둘레만 그린다), 12:5 '백성이 가니라'를 장막으로 물러가는 것으로 그리고 12:16 '장막으로'를
+ *   말 그대로 장막으로 그린 것(삼하 20:1처럼 '집으로'라는 뜻일 수 있음), 탐지기 물음에 장면 범위 밖의 왕상 11:26-28을 쓴 것, 용사의 투구,
+ *   노인들과 젊은 사람들을 같은 무리 모형으로 둔 것(자리와 대목 글로만 구별), 수레가 이 장면 세계에서 서북쪽으로 떠나는 것(실제 예루살렘은 세겜의 남쪽).
  */
 (function () {
   'use strict';
@@ -25,7 +27,7 @@
   if (!(BO3D.c3d && BO3D.c3d.on('OT-29'))) return;   /* design3d.build가 false면 이야기 카드로만 간다 */
   BO3D.scene3d['OT-29'] = function (api) {
     var T = THREE, M2 = BO3D.models2 || {}, MO = BO3D.models || {}, PR = BO3D.props, FX = api.FX, C3 = BO3D.c3d, R = PR.rng(2911), sm = C3.sm, noise = C3.noise, hash = C3.hash, i, k;
-    var JRS = [210, -170], REH = [0, -27], JER = [0, -22.6], HOUSE = [-26, -46], REH_C = [-26, -40.4], CH_AT = [-7, -31], CAMP_X = 37.5;
+    var JRS = [210, -170], REH = [0, -27], JER = [0, -22.6], HOUSE = [-26, -46], REH_C = [-26, -40.4], CH_AT = [-7, -31], CAMP_X = 41, RT0 = 24;   /* RT0: 12:18 백성이 대부분 장막으로 간 뒤 왕이 수레로 간다 */
     function jp(dx, dz) { return [JRS[0] + dx, JRS[1] + dz]; }
     function height(x, z) {
       var r = Math.hypot(x, z), dr = Math.hypot(x - JRS[0], z - JRS[1]), keepR = 1 - sm(40, 75, dr);
@@ -96,7 +98,7 @@
     api.person('rehoboam', function (nm) { nm.group.rotation.order = 'YXZ'; nm.group.position.copy(reh.group.position); nm.group.rotation.copy(reh.group.rotation); nm.group.visible = reh.group.visible; scene.remove(reh.group); scene.add(nm.group); reh = nm; });
     var jer = man(2971, { kind: 'man', carry: 'none' }), shem = man(2983, { kind: 'man', carry: 'none' });
     var chariot = PR.chariot(2991); chariot.group.position.set(CH_AT[0], height(CH_AT[0], CH_AT[1]), CH_AT[1]); chariot.group.rotation.y = -Math.PI / 2; scene.add(chariot.group);   /* 12:18 르호보암의 수레 */
-    var CH_GO = mkPath([CH_AT, [-36, -34.5], [-140, -40]]), REH_TO_CH = mkPath([REH, [-3, -29.4], [-5.1, -29.6]]);
+    var CH_GO = mkPath([CH_AT, [-36, -34.5], [-140, -40]]), REH_TO_CH = mkPath([REH, [-3, -29.0], [-5.1, -29.9]]);
 
     /* 온 회중(12:1, 12:3): 지파대로 열두 무리, 무리마다 네 사람. 무리 사이의 빈 길로만 동서의 장막과 오간다 */
     var GX = [-13.5, -4.5, 4.5, 13.5], GZ = [-18.5, -12.8, -7.1], crowd = [];
@@ -113,7 +115,7 @@
         o.group.visible = false; crowd.push(o);
       }
     }
-    var ARR_T = Math.max.apply(null, crowd.map(function (o) { return o.wait + o.IN.tot / 2.0; }));
+    var ARR_T = Math.max.apply(null, crowd.map(function (o) { return o.wait + o.IN.tot / 2.0; })), ARR_R = Math.max.apply(null, crowd.map(function (o) { return o.wait * 0.4 + o.IN.tot / 2.8; }));
     var JER_OUT = mkPath([JER, [0, 2.4], [CAMP_X, 2.4]]), JER_IN = rev(JER_OUT);   /* 여로보암은 가운데 통로로(백성보다 먼저 오고 나중에 간다) */
     /* 노인들(12:6)과 젊은 사람들(12:8): 왕이 머문 집 앞 */
     function counsel(seed) { var arr = []; for (var n = 0; n < 6; n++) { var cm = man(seed + n * 13, { kind: 'man', carry: 'none' }); cm.spot = [REH_C[0] - 2.6 + (n % 3) * 2.6 + (hash(n, seed) - 0.5) * 0.4, REH_C[1] + 3.2 + Math.floor(n / 3) * 1.5]; cm.group.visible = false; arr.push(cm); } return arr; }
@@ -145,6 +147,7 @@
       if (p === 'assemble' || p === 'withdraw' || p === 'tents' || p === 'wait') placeCrowd();
       if (p === 'old' || p === 'young') { setAt(reh, REH_C[0], REH_C[1], 0); (p === 'old' ? elders : youths).forEach(function (o) { setAt(o, o.spot[0], o.spot[1], Math.PI); o.group.visible = true; still(o); }); }
       if (p === 'jerusalem') {
+        chariot.group.visible = false;   /* 왕이 타고 떠난 수레는 세겜에 남지 않는다 */
         setAt(reh, jp(-1.2, -5.6)[0], jp(-1.2, -5.6)[1], 0);
         army.forEach(function (o) { setAt(o, o.spot[0], o.spot[1], Math.PI); o.group.visible = true; o.update(0.016, 0, 0); });
         setAt(shem, SHEM_IN.p[0][0], SHEM_IN.p[0][1], -Math.PI / 2);
@@ -175,13 +178,13 @@
       kidsHidden: function (i) { return i === 2 || i === 3 || i === 6; },
       beatNote: function (i) {
         if (i === 2) return '왕이 의논한 곳은 성경에 적혀 있지 않아, 왕이 머문 집 앞으로 두고 멀리서 봐요. 말은 글로만 읽어요.';
-        if (i === 4) return '사흘 만에 백성이 다시 모였어요.';
+        if (i === 4) return '사흘 만에 백성이 다시 모여 와요.';
         if (i === 5) return '아도니람의 일은 그림으로 만들지 않았어요. 성경책에서 읽어요.';
         if (i === 6) return '타임머신 창 너머로 예루살렘을 멀리서 봐요. 스마야가 받은 말씀은 소리나 빛으로 만들지 않았어요.';
         return null;
       },
       helpNote: function (after) {
-        if (after === 1) return '우리는 남쪽 가장자리에서 장막으로 물러가는 사람들에게 길을 비켜 주고, 함께 기다려요.';
+        if (after === 1) return '우리는 남쪽 가장자리에서 물러가는 사람들에게 길을 비켜 주고, 함께 기다려요.';
         if (after === 6) return '우리는 창 너머로 멀리서 봐요.';
         return null;
       },
@@ -191,8 +194,8 @@
       partBeats: [], eventStart: 0,
       sceneDoneText: '예루살렘의 일까지 지켜봐야 떠날 수 있어요.',
       dex: [
-        { id: 'rehoboam', name: '르호보암', desc: '온 이스라엘이 왕으로 세우려고 세겜에 모인 솔로몬의 아들', ref: '왕상 12:1', hint: '모인 사람들 앞(북쪽)에 선 청록 옷의 사람을 보세요.', range: 70, crop: 0.36, visible: function () { return reh.group.visible && Math.hypot(reh.group.position.x, reh.group.position.z) < 80; }, pos: function () { var p = reh.group.position; return v3(p.x, p.y + 1.1, p.z); } },
-        { id: 'tents', name: '이스라엘 사람들의 장막', desc: '온 이스라엘이 돌아간 장막', ref: '왕상 12:16', hint: '빈터 동쪽이나 서쪽의 장막을 보세요.', range: 90, pos: function () { return v3(42, 1.2, -4); } },
+        { id: 'rehoboam', name: '르호보암', desc: '온 이스라엘이 왕으로 세우려고 세겜에 모인 솔로몬의 아들', ref: '왕상 12:1', hint: '모인 사람들 앞(북쪽)에 선 청록 옷의 사람을 보세요. 사건이 끝나면 왕은 떠나요.', range: 70, crop: 0.36, visible: function () { return reh.group.visible && Math.hypot(reh.group.position.x, reh.group.position.z) < 80; }, pos: function () { var p = reh.group.position; return v3(p.x, p.y + 1.1, p.z); } },
+        { id: 'tents', name: '이스라엘 사람들의 장막', desc: '온 이스라엘이 돌아간 장막', ref: '왕상 12:16', hint: '빈터 동쪽의 장막을 보세요.', range: 90, pos: function () { return v3(42, 1.2, -4); } },
         { id: 'shechem', name: '세겜의 모이는 자리', desc: '온 이스라엘이 르호보암을 왕으로 세우려고 모인 곳', ref: '왕상 12:1', hint: '넓은 빈터를 보세요.', range: 90, pos: function () { return v3(0, 0.6, -12); } }
       ],
       reset: function () { setPhase('gather'); },
@@ -204,10 +207,10 @@
       update: function (dt, now) {
         pt += dt;
         if (phase === 'gather' || phase === 'return') {   /* 12:1 모여 온다, 12:12 사흘 만에 다시 온다 */
-          var t0 = phase === 'return' ? 1 : 3;
+          var t0 = phase === 'return' ? 1 : 3, spd = phase === 'return' ? 2.8 : 2.0, wf = phase === 'return' ? 0.4 : 1;   /* 사흘 만에 다시 올 때는 서둘러 온다 */
           var sj = (pt - t0 + 3) * 2.0; walk(jer, JER_IN, sj, Math.PI, dt);
-          if (!crowdM.visible) crowd.forEach(function (o) { var s = (pt - t0 - o.wait) * 2.0; if (s > 0) walk(o, o.IN, s, Math.PI, dt); });
-          if (!crowdM.visible && pt > t0 + ARR_T + 0.5) { crowd.forEach(function (o) { o.group.visible = false; }); crowdM.visible = true; }   /* 다 와서 서면 한 덩어리로 */
+          if (!crowdM.visible) crowd.forEach(function (o) { var s = (pt - t0 - o.wait * wf) * spd; if (s > 0) walk(o, o.IN, s, Math.PI, dt); });
+          if (!crowdM.visible && pt > t0 + (phase === 'return' ? ARR_R : ARR_T) + 0.5) { crowd.forEach(function (o) { o.group.visible = false; }); crowdM.visible = true; }   /* 다 와서 서면 한 덩어리로 */
         }
         if (phase === 'withdraw' || phase === 'tents') {   /* 12:5 장막으로 물러간다, 12:16 장막으로 돌아간다 */
           var t1 = phase === 'withdraw' ? 6 : 4; if (pt > t1 - 0.2) crowdLoose();
@@ -215,20 +218,22 @@
           var sj2 = (pt - t1 - 26) * 1.7; if (sj2 > 0) { if (!walk(jer, JER_OUT, sj2, undefined, dt) && sj2 > JER_OUT.tot) jer.group.visible = false; }
         }
         if (phase === 'tents') {   /* 12:18 르호보암이 급히 수레에 올라 떠난다 */
-          if (pt > 3 && pt < 3 + REH_TO_CH.tot / 2.6) walk(reh, REH_TO_CH, (pt - 3) * 2.6, -Math.PI / 2, dt);
-          else if (pt >= 3 + REH_TO_CH.tot / 2.6) {
-            var tg = pt - 3 - REH_TO_CH.tot / 2.6; var ta = tg - 0.6; chS = ta < 0 ? 0 : ta < 2 ? 2.25 * ta * ta : 9 + 9 * (ta - 2);   /* 올라탄 뒤 2초 동안 빨라져 초당 9로 급히 */
+          var RW = REH_TO_CH.tot / 2.6;
+          if (pt > RT0 && pt < RT0 + RW) walk(reh, REH_TO_CH, (pt - RT0) * 2.6, -Math.PI / 2, dt);
+          else if (pt >= RT0 + RW) {
+            var tg = pt - RT0 - RW, up = Math.min(1, tg / 0.6), ta = tg - 0.9; chS = ta < 0 ? 0 : ta < 2 ? 2.25 * ta * ta : 9 + 9 * (ta - 2);   /* 0.6초 동안 수레에 오르고, 2초 동안 빨라져 초당 9로 급히 */   /* 올라탄 뒤 2초 동안 빨라져 초당 9로 급히 */
             var cw = pathAt(CH_GO, chS), cy = height(cw[0], cw[1]); chariot.group.position.set(cw[0], cy, cw[1]); chariot.group.rotation.y = angTo(cw[2], chariot.group.rotation.y, Math.min(1, dt * 4));
-            var ry = chariot.group.rotation.y; reh.group.position.set(cw[0] - Math.sin(ry) * 1.9, cy + 0.62, cw[1] - Math.cos(ry) * 1.9); reh.group.rotation.y = ry;
+            var ry = chariot.group.rotation.y, bx = cw[0] - Math.sin(ry) * 1.9, bz = cw[1] - Math.cos(ry) * 1.9, e0 = REH_TO_CH.p[REH_TO_CH.p.length - 1], ey = height(e0[0], e0[1]);
+            reh.group.position.set(e0[0] + (bx - e0[0]) * up, ey + (cy + 0.62 - ey) * up, e0[1] + (bz - e0[1]) * up); reh.group.rotation.y = ry; still(reh);
             if (chariot.update) chariot.update(dt, chS < CH_GO.tot ? 6 : 0, now);
             if (chS >= CH_GO.tot) { chariot.group.visible = false; reh.group.visible = false; }
           }
         }
         if (phase === 'jerusalem') {   /* 12:22-24 스마야가 와서 서고, 용사들은 각기 집으로 돌아간다 */
           walk(shem, SHEM_IN, Math.max(0, pt - 1) * 1.6, 0, dt);
-          army.forEach(function (o) { var s = (pt - 10 - o.wait) * 1.6; if (s > 0) { var w = pathAt(o.HOME, s), mv = s < o.HOME.tot; o.group.position.set(w[0], height(w[0], w[1]), w[1]); o.group.rotation.y = w[2]; o.update(dt, mv ? 1 : 0, now); if (!mv) o.group.visible = false; } });
+          army.forEach(function (o) { var s = (pt - 17 - o.wait) * 1.6; if (s > 0) { var w = pathAt(o.HOME, s), mv = s < o.HOME.tot; o.group.position.set(w[0], height(w[0], w[1]), w[1]); o.group.rotation.y = w[2]; o.update(dt, mv ? 1 : 0, now); if (!mv) o.group.visible = false; } });
         }
-        if (reh.group.visible && reh.update && !(phase === 'tents' && pt > 3)) reh.update(dt, false);
+        if (reh.group.visible && reh.update && !(phase === 'tents' && pt > RT0)) reh.update(dt, false);
       },
       audio: function (A) { A.setFlock(999); A.setFire(999); },   /* 거친 말과 외침, 말씀은 소리로 만들지 않는다 */
       menuCam: function (camera, now) { var a = now * 0.05; camera.position.set(Math.sin(a) * 12, 9, 22); camera.lookAt(0, 1.5, -18); },
