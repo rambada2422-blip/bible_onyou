@@ -1,0 +1,1089 @@
+{
+ "018b30936e": {
+  "at": [
+   "beats.1.text.t3",
+   "design3d.props.0"
+  ],
+  "note": ""
+ },
+ "034a620e18": {
+  "at": [
+   "gates.t2.1.prompt",
+   "gates.t2.1.items.0",
+   "gates.t2.1.items.1",
+   "gates.t2.1.items.2",
+   "gates.t2.1.items.3",
+   "gates.t2.1.items.4"
+  ],
+  "note": "뺀 것은 글이 없으므로, 순서 맞추기에 지금 실린 다섯 문장을 실었다."
+ },
+ "09f3aa3ed4": {
+  "at": [
+   "mission.help.steps.2.title",
+   "mission.help.steps.2.answer.t2",
+   "mission.help.steps.2.read.t3.confirm.prompt",
+   "mission.help.steps.2.read.t3.confirm.options.0.label",
+   "mission.help.steps.2.nt.text",
+   "mission.help.steps.2.read.t2.confirm.prompt"
+  ],
+  "note": ""
+ },
+ "0b1b2a1a37": {
+  "at": [
+   "mission.help.steps.0.text.t1",
+   "mission.help.steps.0.text.t2",
+   "mission.help.steps.0.text.t3",
+   "mission.help.steps.0.title",
+   "mission.help.steps.0.done.text"
+  ],
+  "note": ""
+ },
+ "0c7e23be34": {
+  "at": [
+   "mission.help.steps.0.title",
+   "mission.help.steps.0.text.t1",
+   "mission.help.steps.0.text.t2",
+   "mission.help.steps.0.text.t3"
+  ],
+  "note": ""
+ },
+ "11b6257602": {
+  "at": [
+   "cards.0.title",
+   "cards.1.title"
+  ],
+  "note": ""
+ },
+ "14042f391e": {
+  "at": [
+   "gates.t1.1.confirm.prompt",
+   "gates.t1.1.confirm.options.1.label",
+   "gates.t1.1.confirm.options.3.label"
+  ],
+  "note": "틀린 보기 둘은 '목자'(시 23:1)와 '빛'(시 27:1)이다."
+ },
+ "140aa9ef07": {
+  "at": [
+   "mission.help.steps.3.title",
+   "mission.help.steps.3.answer.t1",
+   "mission.help.steps.3.answer.t2",
+   "mission.help.steps.3.answer.t3"
+  ],
+  "note": "검증 기록은 '문답 2'라고 했으나, 지금 이 물음과 답은 돕기 단계의 뜻 묻기 자리에 있다."
+ },
+ "167f197fcd": {
+  "at": [
+   "beats.5.text.t1"
+  ],
+  "note": ""
+ },
+ "16bea5e443": {
+  "at": [
+   "beats.3.text.t2",
+   "beats.3.text.t3",
+   "mission.help.steps.3.answer.t1",
+   "mission.help.steps.3.answer.t2",
+   "mission.help.steps.3.answer.t3",
+   "mission.help.steps.3.read.t2.confirm.options.0.label"
+  ],
+  "note": ""
+ },
+ "1761edd0be": {
+  "at": [
+   "beats.6.text.t2",
+   "beats.6.text.t3",
+   "beats.3.text.t3",
+   "mission.companion.talks.0.answer.t3"
+  ],
+  "note": ""
+ },
+ "1ad3cf708d": {
+  "at": [
+   "mission.help.steps.2.nt.text"
+  ],
+  "note": ""
+ },
+ "1b349ebac3": {
+  "at": [
+   "design3d.props.0",
+   "design3d.props.3",
+   "beats.6.text.t2",
+   "design3d.place"
+  ],
+  "note": "그림 설계 글에 '장막에서 나오는 동선은 설계상의 선택', '본문은 밤이라는 말을 쓰지 않는다'는 설명이 지금 적혀 있다."
+ },
+ "1bced90dc3": {
+  "at": [
+   "mission.today.0.q",
+   "mission.today.0.a.t1",
+   "mission.today.0.a.t2",
+   "mission.today.0.a.t3"
+  ],
+  "note": ""
+ },
+ "1fa8763af8": {
+  "at": [
+   "mission.materials.0.name",
+   "mission.materials.0.how",
+   "mission.materials.0.use"
+  ],
+  "note": ""
+ },
+ "1ffa5530f5": {
+  "at": [
+   "mission.help.steps.0.title",
+   "mission.help.steps.0.text.t1",
+   "mission.help.steps.0.text.t2",
+   "mission.help.steps.0.text.t3",
+   "mission.help.steps.0.tasks.0",
+   "mission.help.steps.0.tasks.1"
+  ],
+  "note": ""
+ },
+ "21eeb82d99": {
+  "at": [
+   "title"
+  ],
+  "note": ""
+ },
+ "222959241c": {
+  "at": [
+   "beats.0.text.t3",
+   "beats.2.text.t3"
+  ],
+  "note": ""
+ },
+ "2469e2ac02": {
+  "at": [
+   "design3d.people.4"
+  ],
+  "note": ""
+ },
+ "25fc06864f": {
+  "at": [
+   "quests.0.q.t2.confirm.prompt",
+   "quests.0.q.t2.confirm.options.0.label"
+  ],
+  "note": ""
+ },
+ "2774ca1d60": {
+  "at": [
+   "beats.5.text.t3",
+   "design3d.people.8"
+  ],
+  "note": ""
+ },
+ "27a9761d12": {
+  "at": [
+   "mission.companion.who",
+   "mission.companion.talks.0.ask.text",
+   "mission.companion.talks.0.answer.t1",
+   "mission.companion.talks.1.ask.text",
+   "mission.companion.talks.1.answer.t1"
+  ],
+  "note": ""
+ },
+ "28f7f182d5": {
+  "at": [
+   "mission.help.steps.2.nt.text"
+  ],
+  "note": ""
+ },
+ "29a8aa0cb6": {
+  "at": [
+   "mission.materials.0.name",
+   "mission.materials.0.how",
+   "mission.materials.0.use",
+   "beats.1.text.t1"
+  ],
+  "note": ""
+ },
+ "2b93078e51": {
+  "at": [
+   "mission.today.0.q",
+   "mission.today.0.a.t1",
+   "mission.today.0.a.t2",
+   "mission.today.0.a.t3"
+  ],
+  "note": ""
+ },
+ "2bc736bf16": {
+  "at": [
+   "mission.help.steps.0.title",
+   "mission.help.steps.0.text.t1",
+   "mission.help.steps.0.text.t2",
+   "mission.help.steps.0.text.t3"
+  ],
+  "note": ""
+ },
+ "2e61554650": {
+  "at": [
+   "OT-30:gates.t1.1.confirm.options.4.label",
+   "OT-30:gates.t1.1.confirm.prompt"
+  ],
+  "note": "이 항목의 글은 OT-30 장면에 있다."
+ },
+ "32336d7e96": {
+  "at": [
+   "beats.6.text.t3"
+  ],
+  "note": ""
+ },
+ "33c9811f32": {
+  "at": [
+   "beats.1.text.t2",
+   "beats.1.text.t3",
+   "beats.0.text.t3"
+  ],
+  "note": ""
+ },
+ "3939dca2be": {
+  "at": [
+   "mission.help.steps.3.nt.text"
+  ],
+  "note": ""
+ },
+ "3b40257b14": {
+  "at": [
+   "beats.6.text.t3",
+   "beats.7.text.t3"
+  ],
+  "note": ""
+ },
+ "3d3eca0f2a": {
+  "at": [
+   "beats.4.text.t3"
+  ],
+  "note": ""
+ },
+ "42c1ab9899": {
+  "at": [
+   "beats.5.text.t1"
+  ],
+  "note": ""
+ },
+ "443354ccd2": {
+  "at": [
+   "title"
+  ],
+  "note": ""
+ },
+ "45a4069e57": {
+  "at": [
+   "cards.1.title"
+  ],
+  "note": ""
+ },
+ "465b83baaa": {
+  "at": [
+   "beats.2.text.t2",
+   "beats.2.text.t3",
+   "beats.6.text.t2",
+   "beats.6.text.t3"
+  ],
+  "note": ""
+ },
+ "47b23ab562": {
+  "at": [
+   "beats.4.text.t3",
+   "beats.4.text.t2",
+   "beats.4.text.t1",
+   "design3d.props.7",
+   "design3d.people.3",
+   "mission.help.steps.3.text.t3"
+  ],
+  "note": ""
+ },
+ "48770344f9": {
+  "at": [
+   "beats.0.text.t1",
+   "beats.3.text.t1"
+  ],
+  "note": ""
+ },
+ "492c9938fd": {
+  "at": [
+   "mission.help.steps.2.answer.t1",
+   "mission.help.steps.2.title",
+   "mission.help.steps.2.ask.text"
+  ],
+  "note": "검증 기록은 '오늘의 물음 1'이라고 했으나, 지금 이 물음과 답은 뜻 묻기 자리에 있다."
+ },
+ "494950e9b7": {
+  "at": [
+   "beats.4.text.t3",
+   "beats.6.text.t3",
+   "design3d.props.3",
+   "design3d.props.4"
+  ],
+  "note": ""
+ },
+ "4d1bdb1394": {
+  "at": [
+   "beats.3.text.t1"
+  ],
+  "note": ""
+ },
+ "4d701eab89": {
+  "at": [
+   "beats.2.text.t2",
+   "beats.2.text.t3"
+  ],
+  "note": "8~10세 글에는 라합이 왕의 사람들에게 한 말이 없다."
+ },
+ "4de939718c": {
+  "at": [
+   "mission.companion.who",
+   "mission.companion.talks.0.ask.text",
+   "mission.companion.talks.0.answer.t1",
+   "mission.companion.talks.1.ask.text",
+   "mission.companion.talks.1.answer.t1"
+  ],
+  "note": "답은 세 나이 단계에 다 있다. 여기에는 8~10세 글만 실었다."
+ },
+ "50dfd4d130": {
+  "at": [
+   "beats.5.text.t3",
+   "beats.5.text.t2"
+  ],
+  "note": ""
+ },
+ "513d812c6b": {
+  "at": [
+   "beats.6.text.t1",
+   "beats.6.text.t2",
+   "beats.6.text.t3",
+   "beats.5.text.t3",
+   "beats.1.text.t3",
+   "beats.1.text.t1"
+  ],
+  "note": ""
+ },
+ "524c300250": {
+  "at": [
+   "mission.help.steps.1.title",
+   "mission.help.steps.1.text.t1",
+   "mission.help.steps.1.text.t2",
+   "mission.help.steps.1.text.t3",
+   "mission.help.steps.0.title",
+   "mission.help.steps.0.text.t1"
+  ],
+  "note": ""
+ },
+ "53faf84ce3": {
+  "at": [
+   "mission.today.1.q",
+   "mission.today.1.a.t1",
+   "mission.today.1.a.t2",
+   "mission.today.1.a.t3"
+  ],
+  "note": ""
+ },
+ "540e590c78": {
+  "at": [
+   "beats.5.text.t1",
+   "beats.6.text.t3"
+  ],
+  "note": ""
+ },
+ "55d6ce55b2": {
+  "at": [
+   "beats.3.text.t2",
+   "beats.3.text.t3",
+   "mission.companion.talks.1.answer.t1",
+   "mission.companion.talks.1.answer.t2",
+   "mission.companion.talks.1.answer.t3"
+  ],
+  "note": ""
+ },
+ "57eb2827f5": {
+  "at": [
+   "beats.1.text.t3"
+  ],
+  "note": ""
+ },
+ "5dae384651": {
+  "at": [
+   "mission.help.steps.0.title",
+   "mission.help.steps.0.text.t1",
+   "mission.help.steps.0.text.t2",
+   "mission.help.steps.0.text.t3",
+   "mission.help.who"
+  ],
+  "note": "설정에 대한 물음이다. 그 설정을 적은 글을 실었다."
+ },
+ "5dd1ebb97c": {
+  "at": [
+   "mission.help.steps.3.read.t3.prompt",
+   "mission.help.steps.3.read.t3.confirm.prompt",
+   "mission.help.steps.3.read.t3.confirm.options.0.label"
+  ],
+  "note": ""
+ },
+ "612c1fb4ed": {
+  "at": [
+   "mission.help.steps.2.title",
+   "mission.help.steps.2.text.t1",
+   "mission.help.steps.2.text.t2",
+   "mission.help.steps.2.text.t3",
+   "mission.help.steps.1.title",
+   "mission.help.steps.1.text.t1"
+  ],
+  "note": ""
+ },
+ "682e5e113e": {
+  "at": [
+   "beats.0.text.t2",
+   "beats.0.text.t3",
+   "beats.4.text.t2",
+   "beats.4.text.t3",
+   "mission.help.steps.2.answer.t3",
+   "design3d.never.4"
+  ],
+  "note": ""
+ },
+ "6d184f1870": {
+  "at": [
+   "beats.0.text.t1",
+   "beats.4.text.t1"
+  ],
+  "note": ""
+ },
+ "6e334c0600": {
+  "at": [
+   "mission.today.0.q",
+   "mission.today.0.a.t1",
+   "mission.today.0.a.t2",
+   "mission.today.0.a.t3"
+  ],
+  "note": ""
+ },
+ "6e4df97086": {
+  "at": [
+   "beats.1.text.t2",
+   "beats.1.text.t3"
+  ],
+  "note": ""
+ },
+ "6edb70a5c7": {
+  "at": [
+   "beats.5.text.t3",
+   "beats.5.text.t2",
+   "beats.5.text.t1"
+  ],
+  "note": "물음은 장면의 감수 필수 설정에 대한 것이다. 판단에 쓰도록 심판 말씀이 실린 대목 글을 붙였다."
+ },
+ "7668c23777": {
+  "at": [
+   "mission.help.steps.2.title",
+   "mission.help.steps.2.text.t1",
+   "mission.help.steps.2.text.t2",
+   "mission.help.steps.2.text.t3"
+  ],
+  "note": ""
+ },
+ "7701e96f8b": {
+  "at": [
+   "mission.materials.0.name",
+   "mission.materials.0.how",
+   "mission.materials.1.name",
+   "mission.materials.1.how",
+   "mission.materials.2.name",
+   "mission.materials.2.how"
+  ],
+  "note": ""
+ },
+ "7879f9bdd2": {
+  "at": [
+   "beats.2.text.t1"
+  ],
+  "note": ""
+ },
+ "7e04db3387": {
+  "at": [
+   "mission.help.steps.2.read.t2.confirm.prompt",
+   "mission.help.steps.2.read.t2.confirm.options.0.label",
+   "mission.help.steps.2.answer.t2"
+  ],
+  "note": ""
+ },
+ "8019d0db56": {
+  "at": [
+   "cards.1.title"
+  ],
+  "note": ""
+ },
+ "887c22a5b8": {
+  "at": [
+   "mission.help.steps.0.title",
+   "mission.help.steps.0.text.t1",
+   "mission.help.steps.0.tasks.0",
+   "mission.help.steps.0.tasks.1"
+  ],
+  "note": ""
+ },
+ "887fa3e7fd": {
+  "at": [
+   "cards.0.title"
+  ],
+  "note": ""
+ },
+ "88f5538846": {
+  "at": [
+   "beats.5.text.t1"
+  ],
+  "note": ""
+ },
+ "890cc3f5b6": {
+  "at": [
+   "beats.4.text.t2"
+  ],
+  "note": "검증 기록은 14~19세 장절 찾기 물음에도 창 3:15가 있다고 했으나, 지금 그 물음들에는 이 절이 없다. 14~19세 대목 글에는 있다."
+ },
+ "8924b3b40e": {
+  "at": [
+   "mission.help.steps.3.ask.text",
+   "mission.help.steps.3.answer.t1",
+   "mission.help.steps.3.answer.t2",
+   "mission.help.steps.3.answer.t3",
+   "mission.help.steps.0.title",
+   "design3d.never.7"
+  ],
+  "note": ""
+ },
+ "89e1136819": {
+  "at": [
+   "beats.4.text.t1",
+   "beats.4.text.t2",
+   "beats.4.text.t3",
+   "gates.t2.0.confirm.prompt",
+   "mission.today.1.a.t2",
+   "mission.today.1.a.t3"
+  ],
+  "note": ""
+ },
+ "8a0a6b8ae4": {
+  "at": [
+   "beats.6.text.t2",
+   "beats.6.text.t3",
+   "cards.1.title",
+   "mission.help.steps.3.answer.t1",
+   "mission.help.steps.3.read.t1.confirm.prompt"
+  ],
+  "note": ""
+ },
+ "8d69268c59": {
+  "at": [
+   "mission.help.steps.0.title",
+   "mission.help.steps.0.text.t1",
+   "mission.help.steps.0.text.t2",
+   "mission.help.steps.0.text.t3"
+  ],
+  "note": ""
+ },
+ "8e9eaf3e70": {
+  "at": [
+   "gates.t3.1.pairs.1.text"
+  ],
+  "note": ""
+ },
+ "8eb8fc00f4": {
+  "at": [
+   "beats.5.text.t3"
+  ],
+  "note": ""
+ },
+ "90ba136971": {
+  "at": [
+   "beats.3.text.t2",
+   "beats.3.text.t3",
+   "beats.4.text.t2",
+   "beats.4.text.t3",
+   "beats.3.text.t1"
+  ],
+  "note": "8~10세 글에는 이스마엘 사람만 나오고 미디안 사람은 나오지 않는다."
+ },
+ "912aef2a7f": {
+  "at": [
+   "beats.2.text.t1",
+   "beats.3.text.t1",
+   "beats.4.text.t3",
+   "gates.t2.0.confirm.options.0.label",
+   "cards.0.title",
+   "mission.help.steps.4.nt.text"
+  ],
+  "note": "검증 기록은 신약과의 연결이 없다고 했지만, 지금은 돕기 마지막 걸음에 고린도전서 5장 7절을 잇는 한 줄이 들어 있다(감수 뒤 확정이라고 적혀 있음)."
+ },
+ "92f976c2c6": {
+  "at": [
+   "mission.help.steps.4.ask.text",
+   "mission.help.steps.4.answer.t1",
+   "mission.help.steps.4.answer.t2",
+   "mission.help.steps.4.answer.t3"
+  ],
+  "note": ""
+ },
+ "93ce430ed3": {
+  "at": [
+   "beats.5.text.t2",
+   "beats.6.text.t2",
+   "beats.5.text.t3",
+   "beats.6.text.t3",
+   "mission.today.1.a.t1",
+   "mission.help.steps.1.answer.t1"
+  ],
+  "note": "8~10세 대목 글에는 이 낱말이 없고, 8~10세의 오늘의 물음 답과 돕기 단계 답에는 있다."
+ },
+ "93f649069b": {
+  "at": [
+   "mission.help.steps.2.answer.t1"
+  ],
+  "note": ""
+ },
+ "94ea76c9a4": {
+  "at": [
+   "mission.help.steps.3.read.t2.confirm.prompt",
+   "mission.help.steps.3.read.t2.confirm.options.0.label",
+   "mission.help.steps.3.read.t2.prompt"
+  ],
+  "note": ""
+ },
+ "97086549a7": {
+  "at": [
+   "beats.6.text.t1",
+   "beats.6.text.t2",
+   "beats.6.text.t3"
+  ],
+  "note": ""
+ },
+ "9925271fc7": {
+  "at": [
+   "beats.0.text.t1",
+   "beats.0.text.t2",
+   "beats.0.text.t3",
+   "beats.0.say.text"
+  ],
+  "note": "검증 기록이 말한 차례 맞추기 첫 항목에는 지금 이 말이 없다. 첫 대목 글과 아이 말에만 있다."
+ },
+ "9a48fc6b66": {
+  "at": [
+   "gates.t2.0.confirm.prompt",
+   "gates.t2.0.confirm.options.0.label",
+   "mission.help.steps.2.read.t2.confirm.prompt"
+  ],
+  "note": "검증 기록이 함께 보라고 한 둘째 관문 물음은 지금 4장 1-5절 차례 맞추기로 되어 있어, 4장 5-6절을 읽는 곳은 성경 읽기 하나다."
+ },
+ "9cb84f6924": {
+  "at": [
+   "mission.help.steps.3.ask.text",
+   "mission.help.steps.3.answer.t1",
+   "mission.help.steps.3.answer.t2",
+   "mission.help.steps.3.answer.t3"
+  ],
+  "note": ""
+ },
+ "a2c5bb2d1b": {
+  "at": [
+   "mission.help.steps.0.title",
+   "mission.help.steps.0.text.t1",
+   "mission.help.steps.0.text.t2",
+   "mission.help.steps.0.text.t3",
+   "mission.help.who",
+   "mission.help.steps.3.answer.t1"
+  ],
+  "note": "마지막 자리는 검증 기록이 함께 보라고 한 창 1:26-28 답(8~10세 글)이다."
+ },
+ "a39f9caab6": {
+  "at": [
+   "beats.1.text.t3"
+  ],
+  "note": ""
+ },
+ "a52b65e1fe": {
+  "at": [
+   "mission.help.steps.1.title",
+   "mission.help.steps.1.text.t1",
+   "mission.help.steps.1.text.t2",
+   "mission.help.steps.1.text.t3"
+  ],
+  "note": ""
+ },
+ "a7c44d3a73": {
+  "at": [
+   "mission.help.steps.1.title",
+   "mission.help.steps.1.text.t1",
+   "mission.help.steps.1.text.t2",
+   "mission.help.steps.1.text.t3"
+  ],
+  "note": ""
+ },
+ "aafc0c169c": {
+  "at": [
+   "mission.help.steps.0.title",
+   "mission.help.steps.0.text.t1",
+   "mission.help.steps.0.text.t2",
+   "mission.help.steps.0.text.t3",
+   "mission.help.steps.0.tasks.0",
+   "mission.help.steps.0.tasks.2"
+  ],
+  "note": ""
+ },
+ "ae1c7b7f78": {
+  "at": [
+   "beats.4.text.t3"
+  ],
+  "note": ""
+ },
+ "aeffae2a6b": {
+  "at": [
+   "mission.companion.talks.1.answer.t1",
+   "mission.companion.talks.2.answer.t1",
+   "mission.today.0.a.t1",
+   "mission.companion.talks.1.answer.t3",
+   "mission.companion.talks.2.answer.t3",
+   "mission.today.0.a.t3"
+  ],
+  "note": "지금 오늘의 물음 답에는 '몸에서 날 자식'만 있고 '영원히'는 없다."
+ },
+ "b134e07bf3": {
+  "at": [
+   "mission.help.steps.3.read.t2.confirm.prompt",
+   "mission.help.steps.3.read.t2.confirm.options.0.label"
+  ],
+  "note": ""
+ },
+ "b40385d4be": {
+  "at": [
+   "beats.0.text.t1",
+   "beats.0.text.t2",
+   "beats.0.text.t3"
+  ],
+  "note": ""
+ },
+ "b5752102ce": {
+  "at": [
+   "beats.4.text.t1",
+   "beats.6.text.t1"
+  ],
+  "note": ""
+ },
+ "b6f38b29e7": {
+  "at": [
+   "cards.0.title"
+  ],
+  "note": ""
+ },
+ "b725ceff69": {
+  "at": [
+   "beats.5.text.t3",
+   "mission.companion.talks.2.answer.t3"
+  ],
+  "note": ""
+ },
+ "b7290162f2": {
+  "at": [
+   "beats.5.text.t3"
+  ],
+  "note": "지금 글은 사하지 않으신다는 말을 용서하지 않으실 것이라고 적는다."
+ },
+ "b7706469f8": {
+  "at": [
+   "beats.6.text.t2",
+   "beats.6.text.t3",
+   "design3d.never.4"
+  ],
+  "note": ""
+ },
+ "b8e29e5142": {
+  "at": [
+   "beats.6.text.t2",
+   "beats.6.text.t3",
+   "design3d.props.3",
+   "design3d.terrain",
+   "mission.help.steps.3.title",
+   "beats.6.say.text"
+  ],
+  "note": ""
+ },
+ "bcf08b98b1": {
+  "at": [
+   "mission.help.steps.3.read.t1.confirm.prompt",
+   "mission.help.steps.3.read.t1.confirm.options.0.label"
+  ],
+  "note": ""
+ },
+ "bfac3c554d": {
+  "at": [
+   "beats.6.text.t3"
+  ],
+  "note": ""
+ },
+ "c2ed4cbaf1": {
+  "at": [
+   "gates.t3.0.confirm.options.1.label",
+   "gates.t3.0.confirm.prompt"
+  ],
+  "note": ""
+ },
+ "c30fc09ade": {
+  "at": [
+   "beats.0.text.t2",
+   "beats.0.text.t3"
+  ],
+  "note": "8~10세 글에는 방향을 적지 않았다. 검증 기록이 말한 11~13세 빈칸 물음은 지금 자료에서 찾지 못했다."
+ },
+ "c60afdb5a1": {
+  "at": [
+   "quests.2.q.t2.confirm.prompt",
+   "beats.3.text.t2",
+   "beats.3.text.t3"
+  ],
+  "note": "지금 백성이 서로 한 말을 묻는 것은 부품 셋째의 11~13세 물음이다. 14~19세 물음은 그것의 생김새와 이름을 묻는다."
+ },
+ "c74a30db6d": {
+  "at": [
+   "beats.3.text.t3",
+   "beats.5.text.t3",
+   "beats.3.text.t2",
+   "beats.5.text.t2",
+   "beats.3.text.t1",
+   "beats.5.text.t1"
+  ],
+  "note": ""
+ },
+ "c8a1504545": {
+  "at": [
+   "quests.1.q.t2.confirm.prompt",
+   "quests.1.q.t2.confirm.options.0.label"
+  ],
+  "note": ""
+ },
+ "caad30ccab": {
+  "at": [
+   "mission.help.steps.2.answer.t3",
+   "mission.help.steps.2.answer.t2",
+   "mission.help.steps.2.title"
+  ],
+  "note": "검증 기록은 '오늘의 물음 1'이라고 했으나, 지금 이 답은 돕기 단계의 뜻 묻기 자리에 있다."
+ },
+ "cb5502925a": {
+  "at": [
+   "beats.1.text.t1",
+   "beats.1.text.t2",
+   "beats.1.text.t3",
+   "design3d.god",
+   "design3d.never.0"
+  ],
+  "note": ""
+ },
+ "cd024cd907": {
+  "at": [
+   "beats.0.text.t1",
+   "beats.0.text.t2"
+  ],
+  "note": ""
+ },
+ "cfc6699c47": {
+  "at": [
+   "beats.5.text.t3",
+   "beats.6.text.t3",
+   "mission.help.steps.3.answer.t3"
+  ],
+  "note": "지금 14~19세 관문 보기에는 이 말이 없고, 돕기 단계 뜻 묻기의 14~19세 답에 있다."
+ },
+ "d195c633a7": {
+  "at": [
+   "beats.1.text.t1",
+   "beats.5.text.t1"
+  ],
+  "note": ""
+ },
+ "d25c967340": {
+  "at": [
+   "mission.help.steps.1.title",
+   "mission.help.steps.1.text.t1",
+   "mission.help.steps.1.text.t2",
+   "mission.help.steps.1.text.t3",
+   "mission.help.who"
+  ],
+  "note": "설정에 대한 물음이다. 그 설정을 적은 글을 실었다."
+ },
+ "d3eb2eb4e9": {
+  "at": [
+   "beats.7.text.t1"
+  ],
+  "note": ""
+ },
+ "d673dab4d1": {
+  "at": [
+   "mission.help.steps.4.nt.text"
+  ],
+  "note": ""
+ },
+ "d763b6b65b": {
+  "at": [
+   "beats.4.text.t1"
+  ],
+  "note": ""
+ },
+ "d7dfcde656": {
+  "at": [
+   "beats.5.text.t2",
+   "beats.5.text.t3",
+   "mission.help.steps.2.read.t2.confirm.options.0.label"
+  ],
+  "note": ""
+ },
+ "d81660ca72": {
+  "at": [
+   "beats.4.text.t2",
+   "beats.6.text.t2",
+   "beats.4.text.t3",
+   "beats.6.text.t3",
+   "beats.4.text.t1",
+   "beats.6.text.t1"
+  ],
+  "note": ""
+ },
+ "db7423c196": {
+  "at": [
+   "beats.5.text.t3"
+  ],
+  "note": ""
+ },
+ "e008d7bff8": {
+  "at": [
+   "mission.help.steps.3.answer.t1",
+   "mission.help.steps.3.answer.t2",
+   "mission.help.steps.3.answer.t3",
+   "mission.help.steps.3.read.t2.confirm.prompt",
+   "mission.help.steps.3.read.t2.confirm.options.0.label",
+   "design3d.never.8"
+  ],
+  "note": ""
+ },
+ "e10a815eff": {
+  "at": [
+   "beats.5.text.t1"
+  ],
+  "note": ""
+ },
+ "e4d751ea08": {
+  "at": [
+   "OT-26:gates.t3.0.confirm.prompt",
+   "OT-26:gates.t3.0.confirm.options.1.label"
+  ],
+  "note": "이 항목의 글은 OT-26 장면에 있다."
+ },
+ "e7520e09d3": {
+  "at": [
+   "beats.3.text.t1",
+   "beats.3.text.t2",
+   "beats.3.text.t3",
+   "cards.1.title"
+  ],
+  "note": ""
+ },
+ "e79ebe0b5e": {
+  "at": [
+   "beats.5.text.t3",
+   "beats.6.text.t3",
+   "beats.5.text.t2",
+   "beats.6.text.t2",
+   "beats.5.text.t1"
+  ],
+  "note": ""
+ },
+ "e888432fdb": {
+  "at": [
+   "beats.1.text.t2",
+   "beats.1.text.t3"
+  ],
+  "note": ""
+ },
+ "eb6f938d90": {
+  "at": [
+   "beats.0.text.t3",
+   "beats.5.text.t3",
+   "beats.0.text.t2",
+   "beats.5.text.t2",
+   "beats.5.text.t1",
+   "gates.t3.1.pairs.2.text"
+  ],
+  "note": ""
+ },
+ "edac35d13d": {
+  "at": [
+   "beats.3.text.t1",
+   "beats.3.text.t2",
+   "beats.3.text.t3",
+   "design3d.never.2"
+  ],
+  "note": "대목 글은 장사되었다고 적고, 관문 글 두 곳은 묻혔다고 적는다."
+ },
+ "f222035e29": {
+  "at": [
+   "cards.0.title",
+   "cards.1.title"
+  ],
+  "note": ""
+ },
+ "f48901c060": {
+  "at": [
+   "beats.3.text.t1",
+   "beats.3.text.t2",
+   "quests.1.q.t2.confirm.prompt"
+  ],
+  "note": "지금 애굽 진·이스라엘 진으로 풀어 묻는 물음은 부품 둘째의 11~13세 물음이다. 14~19세 글은 저편·이편을 본문 낱말대로 적는다."
+ },
+ "f51275329c": {
+  "at": [
+   "beats.6.text.t1",
+   "mission.help.steps.2.answer.t1",
+   "mission.help.steps.2.title",
+   "mission.help.steps.2.ask.text",
+   "beats.6.text.t2",
+   "mission.help.steps.2.read.t3.confirm.options.0.label"
+  ],
+  "note": ""
+ },
+ "f58080e19a": {
+  "at": [
+   "OT-26:mission.help.steps.1.title",
+   "OT-26:mission.help.steps.1.text.t1",
+   "OT-26:mission.help.steps.1.text.t2",
+   "OT-26:mission.help.steps.1.text.t3",
+   "OT-26:mission.help.steps.1.tasks.0"
+  ],
+  "note": "이 항목의 글은 OT-26 장면에 있다."
+ },
+ "f5cb2cfa3b": {
+  "at": [
+   "beats.6.text.t3"
+  ],
+  "note": ""
+ },
+ "f94b581a13": {
+  "at": [
+   "mission.help.steps.1.title",
+   "mission.help.steps.1.text.t1",
+   "mission.help.steps.1.text.t2",
+   "mission.help.steps.1.text.t3",
+   "mission.help.who",
+   "mission.help.steps.1.tasks.0"
+  ],
+  "note": ""
+ },
+ "fe57beabf8": {
+  "at": [
+   "beats.7.text.t1"
+  ],
+  "note": ""
+ },
+ "ffadb37411": {
+  "at": [
+   "beats.2.text.t3"
+  ],
+  "note": "검증 기록의 '대목 3'은 지금 셋째 대목이다."
+ }
+}
