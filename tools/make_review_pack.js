@@ -47,6 +47,27 @@ function ruleSection(no) {
   return { title: lines[s].replace(/^### /, ''), body: lines.slice(s + 1, e).filter((l) => l.trim() !== '') };
 }
 
+/* 코드에 박혀 있는 한국어 글(아이에게 보이는 화면 글). 작은따옴표 글 가운데 한글이 든 것을 차례대로 뽑는다 */
+const KEYNAME = { name: '이름', desc: '설명', hint: '찾는 실마리', title: '제목', label: '보기', prompt: '물음', q: '물음', text: '글', back: '끝난 뒤 글', place: '곳', lookText: '다시 읽기 안내', sceneDoneText: '떠나기 전 안내', why: '풀이', ok: '맞혔을 때', no: '다시 볼 때' };
+function koStrings(src) {
+  const out = [], seen = new Set();
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+  const re = /(?:([A-Za-z_]\w*)\s*:\s*)?'((?:[^'\\\n]|\\.)*)'/g;
+  let m;
+  while ((m = re.exec(code))) {
+    const t = m[2].replace(/\\'/g, "'").replace(/\\n/g, ' ').trim();
+    if (!/[가-힣]/.test(t) || seen.has(t)) continue;
+    seen.add(t); out.push({ key: m[1] || '', text: t });
+  }
+  return out;
+}
+const codeLines = (list, sub) => list.map((x) => G(KEYNAME[x.key] || '', x.text, { sub: sub !== false }));
+function slice(src, from, to) { const a = src.indexOf(from); if (a < 0) throw new Error('코드에서 찾지 못함: ' + from); const b = to ? src.indexOf(to, a + from.length) : -1; return src.slice(a, b < 0 ? undefined : b); }
+function headComment(src) { const end = src.indexOf('*/'); return src.slice(0, end).split('\n').map((l) => l.replace(/^\/\*\s?/, '').replace(/^\s\*\s?/, '').replace(/\s+$/, '')).filter((l) => l !== ''); }
+/* 머리말에서 만드는 사람만 아는 말(파일 이름, 좌표)을 뺀다 */
+const DEV_LINE = /game\.js|GLB|scenes\.md|새 3D 장면은|이 장면만의 것|world\.js|^방향:|단위는 미터|타임머신에 이름을 잘못 넣었을 때/;
+const cleanHead = (lines) => lines.filter((l) => !DEV_LINE.test(l)).map((l) => l.replace(/\s*\(content\/ot\/OT-\d\d\.json design3d\)/, '').replace(/\s*\((?:[+-][XZ]|화면 앞, -Z)\)/g, ''));
+
 /* 3D 장면 설정 파일의 머리말 */
 const scene3d = {};
 fs.readdirSync(path.join(ROOT, 'web3d/js')).filter((f) => /^scene_.*\.js$/.test(f)).sort().forEach((f) => {
@@ -54,7 +75,7 @@ fs.readdirSync(path.join(ROOT, 'web3d/js')).filter((f) => /^scene_.*\.js$/.test(
   const end = src.indexOf('*/');
   const head = src.slice(0, end).split('\n').map((l) => l.replace(/^\/\*\s?/, '').replace(/^\s\*\s?/, '').replace(/\s+$/, '')).filter((l) => l !== '');
   const m = head[0].match(/OT-(\d\d)/);
-  if (m) scene3d['OT-' + m[1]] = { file: 'web3d/js/' + f, head };
+  if (m) scene3d['OT-' + m[1]] = { file: 'web3d/js/' + f, head: cleanHead(head), strings: koStrings(src) };
 });
 
 /* 검증 기록의 "미해결" */
@@ -75,6 +96,7 @@ function parseUnresolved(era) {
       else if (!isUn) scene = om ? 'OT-' + om[1] : null;
       if (!isUn) continue;
       const items = [];
+const byIdLive = (id) => items.find((x) => x.id === id);
       let j = i + 1;
       while (j < lines.length && !/^#{1,4}\s/.test(lines[j])) {
         if (isItem(lines[j])) items.push(strip(lines[j]));
@@ -120,6 +142,7 @@ for (let e = 1; e <= 10; e++) { unresolved = unresolved.concat(parseUnresolved(e
 /* ───────── 2. 항목 만들기 ───────── */
 /* 줄(line): { k: 이름표, v: 글(게임 문장은 글자 그대로), t: 나이 단계, g: true면 게임에 나오는 글, ref: 장절, sub: 작은 글 } */
 const items = [];
+const byIdLive = (id) => items.find((x) => x.id === id);
 function add(it) { it.lines = it.lines.filter(Boolean); items.push(it); return it; }
 const G = (k, v, extra) => Object.assign({ k, v, g: true }, extra || {});
 const N = (k, v, extra) => Object.assign({ k, v, g: false }, extra || {});
@@ -144,6 +167,8 @@ function qLines(q, tier, label) {
 
 /* 원칙(규칙서) */
 const RULE_ITEMS = [
+  ['3.1', '무엇을 근거로 삼는지의 차례입니다: 성경 본문 → 웨스트민스터 표준문서 → 허용 저자 7인. 지금 게임의 글은 성경 본문만 근거로 썼습니다.'],
+  ['3.2', '참고할 수 있는 저자 7인과 그 단서입니다. 지금은 원문을 확인하지 못해 한 곳도 인용하지 않았습니다.'],
   ['3.3', '성경에 없는 것을 만들지 않는다, 하나님을 형상으로 그리지 않는다, 아이들은 목격자다. 이 게임 전체의 울타리입니다. (천사도 그리지 않기로 좁게 정해 두었습니다.)'],
   ['3.5', '아래 주제가 들어간 장면과 물음은 목사님이 보시기 전에는 확정하지 않습니다.'],
   ['13.2', '타임머신이 고장 나 그 시대의 평범한 재료(떨어진 것)를 주워 고친다는 설정입니다. 성경 내용이 아닌 "탐험대 이야기"로 표시합니다. 거룩한 것·기적에 속한 것은 재료로 쓰지 않습니다.'],
@@ -163,9 +188,71 @@ RULE_ITEMS.forEach(([no, sum]) => {
 add({ id: '공통·비상착륙', group: 'rule', kind: 'story', label: '탐험대 이야기', title: '처음 이야기 "' + erasDoc.story.title + '"', refs: '성경 내용 아님(탐험대 이야기)', core: true,
   lines: erasDoc.story.lines.map((l) => G(who(l.who), l.text)).concat([G('화면 아래 안내', erasDoc.story.rule)]) });
 
+/* 공통: 읽어 주기, 마무리, 화면 글, 인물 */
+add({ id: '공통·읽어주기', group: 'rule', kind: 'common', label: '공통', title: '8~10세의 "읽어 주기" 단추', refs: '규칙서 13.8과 견주어', core: true,
+  lines: [N('무엇인가', '8~10세 단계에서는 대목 글 옆에 "읽어 주기" 단추가 있어, 누르면 휴대폰에 들어 있는 한국어 목소리(기계 음성)가 그 글을 읽습니다. 게임이 따로 녹음한 소리는 없습니다.'),
+    N('여쭙는 것', '대목 글에는 하나님이 하신 말씀을 풀어 옮긴 문장("하나님은 …라고 하셨어요")도 있습니다. 이런 글을 기계 목소리가 읽는 것이 원칙 13.8의 "하나님의 음성은 소리로 만들지 않는다"에 어긋나지 않는다고 보아도 될까요? (지금 기본값: 읽어 줌. 해설자가 글을 읽는 것으로 봄)')] });
+(function () {
+  const t3 = scenes.map((d) => d.close.t3.prompt.replace(d.ref, '(본문 범위)'));
+  const same = new Set(t3).size === 1;
+  add({ id: '공통·마무리', group: 'rule', kind: 'common', label: '공통', title: '장면의 마무리: 기도 · 실천 · 기록 (규칙서 3.5의 "14~19세 삶에 적용 질문")', refs: '규칙서 3.5, 5절', core: true,
+    lines: [N('지금 상태', '14~19세의 "삶에 적용" 질문은 **아직 쓰지 않았습니다.** 지금 들어 있는 것은 사실을 적는 기록 물음 한 가지뿐이며' + (same ? ' 40장면이 같은 문장입니다(본문 범위만 다름).' : ' 장면마다 조금씩 다릅니다.') + ' 그 아래에 "뜻과 삶의 적용을 묻는 질문은 목사님 감수를 마친 뒤 이 자리에 열립니다."라는 글이 보입니다.'),
+      G('14~19세 기록 물음(40장면 공통 꼴)', same ? t3[0] : scenes[0].close.t3.prompt, { t: 't3' }),
+      N('8~10세', '한 문장 기도. 장면마다 다른 문장은 시대별 "마무리" 항목에 모았습니다.'),
+      N('11~13세', '한 주 실천 한 가지(대개 그 장면의 몇 절을 소리 내어 읽기). 시대별 "마무리" 항목에 모았습니다.'),
+      N('보이는 때', '마무리는 장면의 맨 끝, 말씀 카드 아래에 나옵니다. 시대의 마지막 장면에서만 펼쳐져 있고 다른 장면에서는 "마무리 펼치기"를 눌러야 보입니다.'),
+      N('여쭙는 것', '① 기도문과 실천의 꼴을 이대로 써도 될까요? ② 14~19세의 적용 질문을 넣을지, 넣는다면 어떤 방향으로 할지 의견을 적어 주세요(지금 기본값: 넣지 않고 기록 물음만).')] });
+})();
+(function () {
+  const dir = path.join(ROOT, 'tools/blender/people');
+  const lines = [N('무엇인가', '3D 장면에 나오는 성경 인물의 생김새 설정입니다. 수염과 옷 색은 본문이 말하지 않아 정한 것입니다. 색 이름 옆의 네모가 실제 색입니다(인쇄하면 흐릴 수 있습니다). 모세·여호수아·제사장은 이 방식보다 먼저 만들어져 설정 글이 따로 없습니다.')];
+  const CN = { ROBE: '겉옷', TUNIC: '속옷', BEARD: '수염', HAIR: '머리', BELT: '띠', STAFF: '지팡이' };
+  fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort().forEach((f) => {
+    const j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+    lines.push(G('', j.note, {}));
+    const sw = Object.keys(CN).filter((k) => j.colors && j.colors[k]).map((k) => CN[k] + ' ' + j.colors[k]).join(' · ');
+    lines.push(N('색', sw + (j.beard ? ' · 수염 모양 ' + ({ full: '긴 수염', short: '짧은 수염', none: '없음' }[j.beard] || j.beard) : ''), { sub: true, swatch: true }));
+  });
+  add({ id: '공통·인물', group: 'rule', kind: 'common', label: '공통', title: '3D 인물의 옷 색·수염·소품 (본문에 없는 생김새)', refs: 'tools/blender/people', core: true, lines });
+})();
+(function () {
+  const KEYW = /성경|하나님|여호와|감수|믿음|기도|말씀|지켜|바늘|기록|본문|구절|절에|목사|사건|평범한|손대지|실천|기념/;
+  const files = [['web3d/js/ui.js', '물음에 답할 때 뜨는 글'], ['web3d/js/story.js', '이야기 카드 화면의 글'], ['web3d/js/game.js', '3D 탐험 화면의 글']];
+  const a = [N('무엇인가', '장면 자료가 아니라 게임 틀에 들어 있어 **모든 장면에서 똑같이 뜨는 글**입니다. 틀린 보기를 골랐을 때의 안내("타임머신 바늘이 엇나갔어요"), 동행·돕기·뜻 묻기의 안내, "감수 전" 표시, 보상 설명 등입니다. 글 가운데가 끊긴 곳은 그 자리에 장절이나 이름이 들어갑니다.'),
+    N('여쭙는 것', '① 틀렸을 때의 말투가 아이에게 맞는지 ② "감수 전" 표시 글은 감수를 마친 뒤 지울지, 다른 글로 바꿀지.')], b = [];
+  files.forEach(([f, name]) => {
+    const st = koStrings(rd(f));
+    a.push(N(name, '', { head: true })); b.push(N(name, '', { head: true }));
+    st.forEach((x) => (KEYW.test(x.text) ? a : b).push(G('', x.text, { sub: true })));
+  });
+  add({ id: '공통·화면글', group: 'rule', kind: 'common', label: '공통', title: '모든 장면에 똑같이 뜨는 글(성경·신앙에 닿는 것)', refs: '규칙서 4.2, 13.5, 13.8', core: true, fold: true, lines: a });
+  add({ id: '공통·화면글참고', group: 'rule', kind: 'rest', label: '그 밖의 글(참고)', title: '단추 이름, 조작 안내, 탐험대 이야기의 고정 글', refs: '', core: false, fold: true, lines: b });
+})();
+/* 시대 추리(요단 강): 호렙 장면 뒤 "다른 이름으로 가 보기"에서 갈 수 있는 곳 */
+(function () {
+  const c3 = rd('web3d/js/content3d.js'), c2 = rd('web/js/content.js');
+  const L = [N('무엇인가', '호렙 산 장면(OT-09)을 마친 뒤 "다른 이름으로 가 보기"를 누르면, 타임머신에 넣을 이름을 고르는 물음이 나옵니다. 모세가 아닌 이름을 고르면 요단 강을 건너는 장면(수 3:1-17)에 도착하고, 아이는 단서를 사진으로 찍어 "여기가 언제 어디인지"를 추리한 뒤 돌아옵니다. 규칙서 2절 "잘못된 선택"의 방식이며, 구약 40장면과는 따로 있는 길입니다.'),
+    N('여쭙는 것', '① "잘못 간 길"이라는 틀로 성경의 다른 장면을 보여 주는 방식 ② 언약궤를 덮개로 덮은 모습으로 그린 것(민 4:5-6) ③ 아래 글과 배치. 이 길을 공개판에서 닫는 것이 낫다고 보시면 "뺌"으로 표시해 주세요.'),
+    N('3D 배치 메모', '', { head: true })];
+  cleanHead(headComment(rd('web3d/js/jordan.js'))).forEach((h) => L.push(N('', h, { sub: true })));
+  L.push(N('이름 고르기 물음', '', { head: true })); codeLines(koStrings(slice(c2, '  route: {', '  scenes: {'))).forEach((x) => L.push(x));
+  L.push(N('요단 강 장면의 글(3D)', '', { head: true })); codeLines(koStrings(slice(c3, '  jordan: {'))).forEach((x) => L.push(x));
+  L.push(N('돌아오는 관문과 말씀 카드(시범판 자료 ALT-02를 함께 씀)', '', { head: true })); codeLines(koStrings(slice(c2, "'ALT-02': {", "'ALT-03': {"))).forEach((x) => L.push(x));
+  L.push(N('이름 고르기 앞에 보여 주는 배경(시범판 자료 EX-00. 3D 게임은 이 가운데 넷째 대목을 씀)', '', { head: true })); codeLines(koStrings(slice(c2, "'EX-00': {", "'EX-01': {"))).forEach((x) => L.push(x));
+  add({ id: '추리·요단강', group: 'rule', kind: 'common', label: '시대 추리', title: '요단 강 시대 추리 (이름을 잘못 넣으면 가는 곳)', refs: '수 3:1-17, 출 2:23-25, 3:10', core: true, fold: true, lines: L });
+})();
+
 const eraName = {};
 erasDoc.eras.forEach((e) => { eraName[e.era] = e.name; });
 
+/* 검증 기록의 글에서 자료 이름(영어)을 우리말로 푼다. 뜻은 바꾸지 않는다 */
+const JARGON = [[/`/g, ''], [/\bt1\b/g, '8~10세 글'], [/\bt2\b/g, '11~13세 글'], [/\bt3\b/g, '14~19세 글'], [/\bfindref\b/g, '장절 찾기 물음'], [/\bfind\b/g, '찾아 읽고 고르기'], [/\bmulti\b/g, '여러 개 고르기'], [/\border\b/g, '순서 맞추기'], [/\bmatch\b/g, '구절과 내용 잇기'],
+  [/design3d\.never/g, '그리지 않는 것 목록'], [/design3d\.people/g, '화면 설계의 사람 목록'], [/design3d\.props/g, '화면 설계의 물건 목록'], [/design3d\.god/g, '하나님 표현 메모'], [/design3d/g, '화면 설계 메모'], [/review\.required/g, '감수 필수 표시'], [/review\.topics|\btopics\b/g, '감수 주제'],
+  [/\bbasis\b/g, '근거 장절'], [/\bquests\b(\[\d\])?/g, '탐지기 물음'], [/\bgates\b/g, '관문'], [/mission\.today|\btoday\b/g, '오늘의 물음'], [/\bcompanion\b/g, '동행 인물'], [/\bmaterials\b/g, '재료'], [/\bbeats\b/g, '대목'], [/help\.steps|\bhelp\b/g, '현장 돕기'], [/\bwatch\b/g, '곁에서 보기'], [/\bstay\b/g, '함께 머물기'], [/\bask\b/g, '뜻 묻기'], [/\bdo\b/g, '손으로 하는 돕기'], [/\bnt\b/g, '신약 연결'], [/\bcall\b/g, '박사의 통신'], [/\bcards\b/g, '말씀 카드'], [/\bclose\b/g, '마무리'], [/\bsay\b/g, '아이의 말'], [/\bfound\b/g, '있는 곳 글'], [/\bafter\b/g, '뒤 글'], [/\bopen\b/g, '펼 곳'], [/\bref\b/g, '장절']];
+const plain = (t) => JARGON.reduce((a, [re, to]) => a.replace(re, to), t);
+function openLines(u, sid) {
+  return [N('검증 기록(' + u.h2.replace(/\s*\(.*$/, '') + ')', plain(u.text))];
+}
 function sceneItems(d) {
   const sid = d.id, base = { scene: sid, era: d.era, group: 'scene' };
   const req = !!d.review.required;
@@ -192,19 +279,29 @@ function sceneItems(d) {
       lines: [G(who(s.ask.who) + '의 물음', s.ask.text), N('답하는 사람', s.by)].concat(tierLines(s.answer, '답'))
         .concat([N('성경을 펴서 뜻 확인하기', '', { head: true })]).concat([].concat.apply([], TIERS.map((t) => qLines(s.read[t], t, '')))) }));
     if (s.nt) add(Object.assign({}, base, { id: idOf('신약'), kind: 'nt', label: '신약 연결', title: '14~19세에게만 보임 · 화면에 "감수 전" 표시', refs: s.nt.ref, core: true,
-      lines: [G('14~19세', s.nt.text, { t: 't3' })] }));
+      lines: [G('14~19세', s.nt.text, { t: 't3' }), N('보이는 때', '뜻 묻기의 성경 읽기 물음을 맞힌 뒤에 뜹니다. 위 글은 문장 전체가 화면에 그대로 나옵니다("…감수를 마친 뒤 확정한다" 같은 문장이 들어 있으면 그것도 보입니다).')] }));
   });
   /* 오늘의 물음 */
   m.today.forEach((t, i) => add(Object.assign({}, base, { id: idOf('오늘' + (i + 1)), kind: 'today', label: '오늘의 물음', title: '최현 박사가 답함', refs: t.refs.join(' · '), core: true,
     lines: [G('물음', t.q)].concat(tierLines(t.a, '답')) })));
-  /* 마무리(적용) */
-  add(Object.assign({}, base, { id: idOf('적용'), kind: 'close', label: '마무리(기도·실천·적용)', title: '14~19세 적용 물음은 감수 필수(규칙서 3.5)', refs: d.ref, core: true,
-    lines: [G('8~10세 한 문장 기도', d.close.t1.text, { t: 't1' }), G('11~13세 한 주 실천', d.close.t2.text, { t: 't2' }), G('14~19세 적용·기록 물음', d.close.t3.prompt, { t: 't3' })] }));
   /* 화면 설정 */
   const s3 = scene3d[sid];
   const scr = [G('하나님 표현', d.design3d.god)].concat(d.design3d.never.map((x) => G('그리지 않는 것', x, { sub: true })));
-  if (s3) s3.head.forEach((h, i) => scr.push(N(i === 0 ? '3D 장면 설정 파일 머리말' : '', h, { sub: i > 0 })));
-  add(Object.assign({}, base, { id: idOf(s3 ? '3D' : '화면'), kind: s3 ? 'scene3d' : 'screen', label: s3 ? '3D 설정' : '화면 원칙', title: s3 ? '3D로 만든 장면: 본문에 없는 배치·생김새' : '이야기 카드 장면: 하나님 표현과 그리지 않는 것', refs: d.ref, core: !!s3 || req, fold: !s3,
+  if (s3) {
+    scr.push(N('3D 장면을 만들며 정한 것(본문에 맞춘 점, 감수가 필요한 설정)', '', { head: true }));
+    s3.head.forEach((h) => scr.push(N('', h, { sub: true })));
+    if (sid === 'OT-09') {
+      const w = rd('web3d/js/world.js');
+      (w.slice(0, w.indexOf('function rng')).match(/\/\*[\s\S]*?\*\//g) || []).forEach((c) => c.replace(/^\/\*\s*|\s*\*\/$/g, '').split('\n').map((l) => l.replace(/^\s*\*\s?/, '').trim()).filter((l) => l && !DEV_LINE.test(l)).forEach((l) => scr.push(N('', l, { sub: true }))));
+      scr.push(N('', '본문에 없어 정한 것: 떨기나무와 언덕의 자리, 모세가 올라가는 길(완만한 서쪽 어깨), 떨기나무 앞에 선 모세의 뒷모습, 양 떼의 수(40마리), 압도 장면 영상(불붙은 떨기나무를 올려다보는 영상에 자막 두 줄, 효과음이 멎고 낮은 음악).', { sub: true }));
+      scr.push(N('호렙 산 3D에만 나오는 글(영상 자막 포함)', '', { head: true }));
+      const c3 = rd('web3d/js/content3d.js');
+      codeLines(koStrings(c3.slice(0, c3.indexOf('  jordan: {')))).forEach((x) => scr.push(x));
+    }
+    scr.push(N('3D 화면에만 나오는 글(도착 글, 사진 도감의 이름·설명, 안내)', '', { head: true }));
+    codeLines(s3.strings).forEach((x) => scr.push(x));
+  }
+  add(Object.assign({}, base, { id: idOf(s3 ? '3D' : '화면'), kind: s3 ? 'scene3d' : 'screen', label: s3 ? '3D 설정' : '화면 원칙', title: s3 ? '3D로 만든 장면: 본문에 없는 배치·생김새' : '이야기 카드 장면: 하나님 표현과 그리지 않는 것', refs: d.ref, core: !!s3 || req, fold: true,
     lines: scr }));
   /* 나머지 글(참고): 통신, 재료, 관문, 탐지기 물음, 곁에서 보기·머물기, 말씀 카드, 장소 */
   const rest = [];
@@ -242,20 +339,28 @@ function sceneItems(d) {
   if (d.design3d.epic) rest.push(G('절정 장면', d.design3d.epic.why, { sub: true }));
   add(Object.assign({}, base, { id: idOf('기타'), kind: 'rest', label: '그 밖의 글(참고)', title: '통신·재료·관문·탐지기 물음·곁에서 보기·말씀 카드', refs: d.ref, core: false, fold: true, lines: rest }));
   /* 미해결 */
+  const pastorOpen = [];
+  unresolved.filter((u) => u.scene === sid).forEach((u, i) => {
+    const c0 = CLASS[u.key]; if (c0 && c0.to === '목회자') pastorOpen.push([idOf('미해결' + (i + 1)), c0.ask]);
+  });
+  const beatsIt = byIdLive(idOf('대목'));
+  if (pastorOpen.length) { beatsIt.lines.unshift(N('', '이 장면에서 검증자가 여쭌 것 ' + pastorOpen.length + '가지는 아래 "검증자가 남긴 것" 항목에 따로 있습니다. 대목 글을 고치실 때는 "대목 몇, 몇 세 글"인지 적어 주세요.')); beatsIt.asks = pastorOpen; }
   unresolved.filter((u) => u.scene === sid).forEach((u, i) => {
     const c = CLASS[u.key] || { to: '미분류', ask: '', why: '' };
     add(Object.assign({}, base, { id: idOf('미해결' + (i + 1)), kind: 'open', label: '검증자가 남긴 것', title: c.ask || '검증자가 감수 때 확인해 달라고 남긴 것', refs: '', core: c.to === '목회자' || c.to === '미분류', to: c.to, same: c.same || '', why: c.why || '', ukey: u.key,
-      lines: [N('검증 기록(' + u.h2.replace(/\s*\(.*$/, '') + ')', u.text)] }));
+      lines: openLines(u, sid) }));
   });
 }
 erasDoc.eras.forEach((e) => {
   add({ id: '시대' + e.era + '·안내', group: 'era', era: e.era, kind: 'era', label: '시대 안내', title: e.era + '. ' + e.name, refs: '', core: true,
     lines: [G('최현 박사의 통신(탐험대 이야기)', e.intro), N('"이 사이에 성경이 기록한 곳"으로 보여 주는 장절(요약 없이 장절만)', e.between.join(' · '))].concat(e.between.map((b) => G('', b, { hide: true }))) });
+  add({ id: '시대' + e.era + '·마무리', group: 'era', era: e.era, kind: 'close', label: '마무리(기도·실천)', title: '이 시대 장면들의 한 문장 기도(8~10세)와 한 주 실천(11~13세). 꼴은 "공통·마무리"에서', refs: '', core: true,
+    lines: [].concat.apply([], scenes.filter((d) => d.era === e.era).map((d) => [N(d.id + ' ' + d.title, '', { head: true, ref: d.ref }), G('8~10세 기도', d.close.t1.text, { t: 't1', sub: true }), G('11~13세 실천', d.close.t2.text, { t: 't2', sub: true }), G('14~19세 기록 물음', d.close.t3.prompt, { t: 't3', sub: true })])) });
   scenes.filter((d) => d.era === e.era).forEach(sceneItems);
   unresolved.filter((u) => !u.scene && u.era === e.era).forEach((u, i) => {
     const c = CLASS[u.key] || { to: '미분류', ask: '', why: '' };
     add({ id: '시대' + e.era + '·미해결' + (i + 1), group: 'era', era: e.era, kind: 'open', label: '검증자가 남긴 것', title: c.ask || '검증자가 남긴 것(시대 공통)', refs: '', core: c.to === '목회자' || c.to === '미분류', to: c.to, same: c.same || '', why: c.why || '', ukey: u.key,
-      lines: [N('검증 기록(' + u.h2.replace(/\s*\(.*$/, '') + ')', u.text)] });
+      lines: openLines(u, null) });
   });
 });
 
@@ -265,33 +370,20 @@ const byId = {}; items.forEach((it) => { if (byId[it.id]) throw new Error('항�
 const sceneById = {}; scenes.forEach((d) => { sceneById[d.id] = d; });
 
 /* ───────── 3. 먼저 볼 30항목 ───────── */
-/* 급한 순서: ① 신약 연결(규칙서 3.5·13.6, 16) ② 독립 대조에서 높음 지적이 있었던 곳 ③ 주권과 책임·장자의 죽음이 걸린 장면의 대목 글
- *            ④ 신약적 의미가 주제인데 신약 연결 항목이 따로 없는 장면(OT-02·27·40)의 오늘의 물음 ⑤ 주권과 책임 장면의 오늘의 물음. 같은 점수면 장면 번호 순서. */
-function highTarget(h) {
-  const t = h.text;
-  let m;
-  if ((m = t.match(/동행 문답 (\d)/))) return h.scene + '·동행' + m[1];
-  if (/^\(높음\)\s*do|돕기가|do의 자리/.test(t)) return h.scene + '·돕기1';
-  return h.scene + '·대목';
-}
-const highIds = {};
-highs.forEach((h) => { const id = highTarget(h); if (byId[id]) highIds[id] = h.text; });
-items.forEach((it) => {
-  let p = 0, why = '';
-  const d = it.scene ? sceneById[it.scene] : null;
-  const topics = d ? (d.review.topics || []).join(' ') : '';
-  const hasNt = d ? d.mission.help.steps.some((s) => s.nt) : false;
-  if (it.kind === 'nt') { p = 100; why = '구약 사건과 그리스도·신약의 연결(규칙서 3.5, 13.6)'; }
-  else if (highIds[it.id]) { p = 90; why = '독립 대조에서 높음 지적이 있어 고친 곳'; }
-  else if (it.kind === 'beats' && /장자의 죽음/.test(topics)) { p = 85; why = '재앙과 심판, 장자의 죽음(8~10세 글 포함)'; }
-  else if (it.kind === 'beats' && /주권과 사람의 책임/.test(topics)) { p = 80; why = '하나님의 주권과 사람의 책임'; }
-  else if (it.kind === 'today' && /신약적 의미/.test(topics) && !hasNt) { p = 70; why = '신약적 의미가 걸린 장면의 오늘의 물음'; }
-  else if (it.kind === 'today' && /주권과 사람의 책임/.test(topics)) { p = 60; why = '주권과 책임이 걸린 장면의 오늘의 물음'; }
-  else if (it.kind === 'ask' && /신약적 의미/.test(topics) && !hasNt) { p = 50; why = '신약적 의미가 걸린 장면의 뜻 묻기'; }
-  it.pscore = p; it.pwhy = why;
-});
+/* 급한 순서(독립 검증 A-5·A-6 반영): ① 신약 연결 16곳(규칙서 3.5·13.6) ② 검증자가 목회자 판단이 필요하다고 남긴 것 가운데 규칙서 3.5의 주제
+ *  (어린 나이의 글에 둔 심판·죽음, 주권과 책임, 신약적 의미, 범죄한 아담의 동행, 창조를 지켜보는 틀)에 닿는 14가지. 손으로 고른 목록이며, 항목이 없어지면 멈춘다. */
+const FIRST_OPEN = [
+  ['OT-10·미해결1', '장자의 죽음을 8~10세 글에 둔 것'], ['OT-10·미해결2', '주권과 책임(출 11:10)'], ['OT-11·미해결2', '심판 장면을 어린 나이 글에 둔 것'],
+  ['OT-02·미해결2', '죽음과 저주의 말씀을 8~10세 글에 둔 것'], ['OT-02·미해결1', '창 3:15(신약적 의미)'], ['OT-02·미해결3', '범죄한 아담을 동행 인물로 둔 것'],
+  ['OT-03·미해결1', '홍수의 죽음을 8~10세 글에 둔 것'], ['OT-29·미해결1', '주권과 책임(왕상 12:15)'], ['OT-29·미해결5', '주권과 책임(왕상 12:24)'],
+  ['OT-31·미해결1', '하나님이 뜻을 돌이키셨다는 표현'], ['OT-32·미해결1', '진노를 8~10세 글에 둔 것'], ['OT-35·미해결5', '진노를 8~10세에게 묻는 것'],
+  ['OT-37·미해결3', '하나님의 주권(다른 나라 왕의 마음)'], ['OT-01·미해결2', '창조를 "지켜보기" 틀에 넣은 것']];
+items.forEach((it) => { it.pscore = 0; it.pwhy = ''; if (it.kind === 'nt') { it.pscore = 100; it.pwhy = '구약 사건과 그리스도·신약의 연결(규칙서 3.5, 13.6)'; } });
+FIRST_OPEN.forEach(([id, why], i) => { const it = byId[id]; if (!it || !it.core) throw new Error('먼저 볼 항목이 없거나 목회자 항목이 아님: ' + id); it.pscore = 90 - i; it.pwhy = why; });
 const first30 = items.filter((it) => it.pscore > 0).sort((a, b) => b.pscore - a.pscore || items.indexOf(a) - items.indexOf(b)).slice(0, 30);
 first30.forEach((it, i) => { it.pri = i + 1; });
+/* 감수 범위를 먼저 정할 것: "이 장면을 감수 필수로 할지"를 묻는 검증자의 물음 */
+const scopeItems = items.filter((it) => it.kind === 'open' && it.core && /감수 필수/.test(it.title) && !it.pri);
 
 /* ───────── 4. 숫자 대조 ───────── */
 const REQ_N = scenes.filter((d) => d.review.required).length;
@@ -303,7 +395,9 @@ const COUNTS = [
   ['뜻 묻기', String(cnt('ask')), '40', cnt('ask') === 40, ''],
   ['신약 연결', String(cnt('nt')), '16', cnt('nt') === 16, ''],
   ['손으로 하는 돕기', String(cnt('do')), '42', cnt('do') === 42, ''],
-  ['14~19세 적용 물음(마무리)', String(cnt('close')), '40(장면마다 하나)', cnt('close') === 40, '진행표에 수가 따로 없다. 장면마다 기도·실천·적용 한 묶음'],
+  ['마무리(기도·실천·기록 물음)', scenes.length + '장면(시대별 ' + cnt('close') + '항목으로 모음)', '40(장면마다 하나)', cnt('close') === 10, '진행표에 수가 따로 없다'],
+  ['14~19세 "삶에 적용" 질문(규칙서 3.5)', '0', '—', true, '아직 쓰지 않았다. 지금은 사실을 적는 기록 물음 한 가지뿐이다("공통·마무리" 항목에서 방향을 여쭘)'],
+  ['코드에 들어 있는 화면 글', (byId['공통·화면글'].lines.length + byId['공통·화면글참고'].lines.length + byId['추리·요단강'].lines.length) + '줄 + 3D 장면 12개의 도감·안내', '—', true, '장면 자료가 아니라 게임 코드에 있는 글. 독립 검증의 지적으로 더함'],
   ['동행 인물 문답', scenesWith('talk') + '장면 / 문답 ' + cnt('talk') + '개', '—', true, '진행표에 수가 없다. 동행 인물이 없는 장면 ' + (40 - scenesWith('talk')) + '개(본문에 그 장면에서 말한 사람이 없음)'],
   ['3D 설정', String(cnt('scene3d')), '12(3D 장면)', cnt('scene3d') === 12, '호렙 산(OT-09) 포함'],
   ['검증자가 남긴 것(미해결)', String(cnt('open')), '—', true, '검증 기록 10개에서 뽑은 전체. 분류는 아래'],
@@ -324,19 +418,22 @@ function printCounts() {
 
 /* ───────── 5. 글(md) ───────── */
 const KIND_ORDER = ['beats', 'talk', 'do', 'ask', 'nt', 'today', 'close', 'scene3d', 'screen', 'open', 'rest'];
+const RULE_N = RULE_ITEMS.length;
+const pastorView = (it) => it.kind !== 'open' || it.core;
 const refTxt = (l) => (l.ref ? ' (' + l.ref + ')' : '');
+/* 표시 칸의 이름: 검증자의 물음은 "지금대로 / 바꿈 / 의논", 나머지는 "그대로 / 고침 / 뺌" */
+const marks = (it) => (it.kind === 'open' ? ['지금대로', '바꿈', '의논 필요'] : ['그대로', '고침', '뺌']);
 function mdItem(it) {
   const o = [];
   o.push('#### ' + it.id + ' · ' + it.label + (it.pri ? ' · ★먼저 볼 ' + it.pri : '') + (it.core ? '' : ' · 참고'));
   o.push('');
   if (it.title) o.push('*' + it.title + '*' + (it.refs ? ' — ' + it.refs : ''));
-  if (it.kind === 'open' && it.to !== '목회자' && it.to !== '미분류') o.push('- 분류: ' + it.to + (it.same ? '(' + it.same + ')' : '') + (it.why ? ' — ' + it.why : ''));
   it.lines.forEach((l) => {
     if (l.hide) return;
     if (l.head) { o.push('- **' + l.k + '**' + refTxt(l)); return; }
     o.push((l.sub ? '  - ' : '- ') + (l.k ? l.k + ': ' : '') + l.v + refTxt(l));
   });
-  if (it.core) { o.push(''); o.push('표시: ☐ 그대로 ☐ 고침 ☐ 뺌 　적을 칸: '); }
+  if (it.core) { o.push(''); o.push('표시: ' + marks(it).map((x) => '☐ ' + x).join(' ') + ' 　적을 칸: '); }
   o.push('');
   return o.join('\n');
 }
@@ -345,53 +442,70 @@ function sceneHead(d) {
 }
 function eraMd(e) {
   const o = ['# 감수 자료 · 시대 ' + e.era + '. ' + e.name, '', '자료 판 `' + VERSION + '` · `node tools/make_review_pack.js`가 만든 파일입니다(손으로 고치지 않습니다). 게임에 나오는 문장은 글자 그대로이고, 성경 본문은 싣지 않았습니다(장절만).', ''];
-  items.filter((it) => it.group === 'era' && it.era === e.era && it.kind === 'era').forEach((it) => o.push(mdItem(it)));
+  items.filter((it) => it.group === 'era' && it.era === e.era && it.kind !== 'open').forEach((it) => o.push(mdItem(it)));
   scenes.filter((d) => d.era === e.era).forEach((d) => {
     o.push(sceneHead(d));
-    const list = items.filter((it) => it.scene === d.id).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
+    const list = items.filter((it) => it.scene === d.id && pastorView(it)).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
     list.forEach((it) => o.push(mdItem(it)));
   });
-  const eo = items.filter((it) => it.group === 'era' && it.era === e.era && it.kind === 'open');
+  const eo = items.filter((it) => it.group === 'era' && it.era === e.era && it.kind === 'open' && it.core);
   if (eo.length) { o.push('### 시대 ' + e.era + ' 공통으로 검증자가 남긴 것\n'); eo.forEach((it) => o.push(mdItem(it))); }
   return o.join('\n');
 }
 
 const GUIDE = {
   what: [
-    '이 게임은 8~19세 아이들이 구약 40장면을 탐험하며 **자기 성경책을 직접 펴서** 답을 찾게 만든 게임입니다. 아직 아이들에게 공개하지 않았고, 목사님 감수를 마치기 전에는 공개하지 않습니다.',
-    '글은 모두 성경 본문(개역개정·개역한글)과 두 차례 이상 대조했지만, **신학 판단은 하지 않고 목사님께 남겨 두었습니다.** 이 자료가 그 목록입니다.'
+    '이 게임은 8~19세 아이들이 구약 40장면을 탐험하며 **자기 성경책을 직접 펴서** 답을 찾게 만든 게임입니다. 아직 아이들에게 공개하지 않았고, 목사님 감수를 마치기 전에는 공개하지 않습니다. 기준은 성경과 웨스트민스터 표준문서(신앙고백, 대·소요리문답)입니다.',
+    '글은 성경 본문과 두 차례 이상 대조했습니다. 다만 대조한 본문은 **개역한글과 KJV**이고, **개역개정과는 대조하지 못했습니다**(사용 허락 전이라 본문을 갖고 있지 않습니다). 아이들이 펴는 책은 개역개정이니, 낱말이나 표기가 목사님 성경과 다르면 알려 주세요.',
+    '**신학 판단은 하지 않고 목사님께 남겨 두었습니다.** 이 자료가 그 목록입니다.'
   ],
   how: [
     '항목마다 **그대로 / 고침 / 뺌** 가운데 하나를 골라 주세요. "고침"과 "뺌"에는 한 줄만 적어 주셔도 됩니다(어떻게 고칠지, 왜 빼는지).',
     '**그대로**: 이대로 아이들에게 보여도 된다. **고침**: 적어 주신 대로 고친 뒤 쓴다. **뺌**: 아이들에게 보이지 않는다.',
+    '"검증자가 남긴 것" 항목은 물음의 꼴이라 표시가 다릅니다: **지금대로**(지금 되어 있는 대로 둔다) / **바꿈**(적어 주신 대로 바꾼다) / **의논 필요**.',
+    '"검증자가 남긴 것"의 아래 글은 검증 기록을 옮긴 것입니다(자료 이름만 우리말로 풀었습니다). 그 장면의 글은 같은 장면의 "대목 글"과 다른 항목에 그대로 있습니다. 기록 속의 "위·아래 …"는 검증 기록 안의 다른 곳을 가리키고, "대목 0"처럼 0부터 센 곳도 있으니 **장절로 찾아 주세요.**',
     '원칙(규칙) 항목에서는 **그대로 = 이 원칙에 동의, 고침 = 조건을 달아 동의, 뺌 = 이 방식은 쓰지 않는다**는 뜻입니다. 원칙에서 "뺌"이 나오면 그 원칙에 딸린 장면 항목은 보실 필요가 없습니다.',
-    '휴대폰·컴퓨터에서는 `감수자료.html`을 열면 표시한 것이 그 기기에 저장되고, "내보내기"로 글로 뽑아 보내실 수 있습니다. 종이가 편하시면 `감수자료_인쇄용.html`을 인쇄해 주세요(전체는 A4 약 190쪽으로 많습니다. `먼저볼30_인쇄용.html`은 약 20쪽).',
-    '성경 본문은 싣지 않았습니다(사용 허락 전). 장절을 보시고 성경책에서 확인해 주세요.'
+    '휴대폰·컴퓨터에서는 `감수자료.html`을 열면 표시한 것이 그 기기에 저장되고, "내보내기"로 글로 뽑아 보내실 수 있습니다. 종이가 편하시면 `감수자료_인쇄용.html`을 인쇄해 주세요(전체는 A4 약 200쪽으로 많습니다. `먼저볼30_인쇄용.html`은 훨씬 짧습니다).',
+    '성경 본문은 싣지 않았습니다(사용 허락 전). 장절을 보시고 성경책에서 확인해 주세요.',
+    '화면 사진은 아직 넣지 못했습니다. 3D 장면과 인물의 생김새는 글과 색 네모로만 실었으니, 직접 보셔야 판단되는 것은 "의논 필요"나 메모로 남겨 주세요(대표가 미리보기 화면을 보여 드릴 수 있습니다).'
   ],
   order: [
-    '① **원칙 9가지와 처음 이야기**: 여기서 방향이 정해집니다.',
-    '② **먼저 볼 30항목**: 가장 급한 것만 모았습니다. 시간이 넉넉하지 않으시면 ①과 ②를 먼저 보시고, 나머지는 나누어 보셔도 됩니다.',
-    '③ **시대별 10묶음**: 감수 필수 장면부터, 나머지는 여유 있을 때.'
+    '① **원칙과 공통 항목**: 여기서 방향이 정해집니다.',
+    '② **감수 범위**: 지금 "감수 필수 아님"으로 둔 장면을 필수로 올릴지 묻는 물음 몇 가지.',
+    '③ **먼저 볼 30항목**: 가장 급한 것만 모았습니다. 시간이 넉넉하지 않으시면 ①②③을 먼저 보시고, 나머지는 나누어 보셔도 됩니다.',
+    '④ **시대별 10묶음**: 감수 필수 장면부터, 나머지는 여유 있을 때.'
+  ],
+  flow: [
+    '도착: 최현 박사의 통신(탐험대 이야기). 무엇이 고장 났고 무엇을 도울지.',
+    '(동행 인물의 말이 사건보다 앞이면 여기서 동행 문답)',
+    '대목: 사건을 차례로 지켜봄. 대목 사이에 **곁에서 보기 · 함께 머물기 · 손으로 하는 돕기**가 끼어 있음. 하나님의 말씀이 나오는 대목에는 "성경책에서 직접 읽어요"와 펼 장절이 뜸.',
+    '관문: 성경을 펴야 답할 수 있는 물음 둘. 틀리면 "틀렸습니다" 대신 읽을 곳을 다시 보여 줌(다른 곳의 내용을 고르면 "타임머신 바늘이 엇나갔어요").',
+    '(동행 인물의 말이 사건 중이나 뒤이면 여기서 동행 문답)',
+    '뜻 묻기: 그 일의 뜻을 묻고, 성경 읽기 물음을 맞히면 14~19세에게만 **신약 연결**이 뜸("목사님 감수 전" 표시와 함께).',
+    '수리 재료를 얻음(탐험대 이야기) → **오늘의 물음**(최현 박사가 답함, "감수 전" 표시) → 말씀 카드 → **마무리**(기도·실천·기록. 시대의 마지막 장면이 아니면 접혀 있음).',
+    '3D 장면(12개)은 같은 내용을 걸어 다니며 봅니다. 차례가 조금 달라, 탐지기 물음(재료 찾기)이 사건을 지켜보기보다 먼저 나옵니다. 사진을 찍으면 도감 설명이 뜹니다.'
   ]
 };
 
 function readmeMd() {
   const o = [];
   o.push('# 목회자 감수 자료 (바이블 온유 · 구약 40장면)', '');
-  o.push('자료 판 `' + VERSION + '` · 이 폴더의 파일은 `node tools/make_review_pack.js`가 장면 자료에서 뽑아 만듭니다. 내용이 바뀌면 다시 돌리면 됩니다(손으로 고치지 않습니다). 검사: `node tools/test/check_review_pack.js`.', '');
   o.push('## 한 장 안내 (목사님께)', '');
   GUIDE.what.forEach((x) => o.push(x, ''));
   o.push('### 무엇을, 얼마나', '');
   o.push('| 묶음 | 항목 수 | 걸리는 시간(어림) |', '|---|---|---|');
   const row = (name, list) => o.push('| ' + name + ' | ' + list.length + ' | 약 ' + fmtMin(mins(list)) + ' |');
-  row('① 원칙 9가지와 처음 이야기', items.filter((it) => it.group === 'rule'));
-  row('② 먼저 볼 30항목', first30);
-  row('③ 감수 필수 장면 ' + REQ_N + '개의 표시 항목(②와 겹치는 것 포함)', coreItems.filter((it) => it.scene && sceneById[it.scene].review.required));
-  row('④ 나머지 장면 ' + (40 - REQ_N) + '개의 표시 항목', coreItems.filter((it) => it.scene && !sceneById[it.scene].review.required));
+  row('① 원칙 ' + RULE_N + '가지와 공통 항목', items.filter((it) => it.group === 'rule' && it.core));
+  row('② 감수 범위를 정하는 물음', scopeItems);
+  row('③ 먼저 볼 30항목', first30);
+  row('④ 감수 필수 장면 ' + REQ_N + '개의 표시 항목(③과 겹치는 것 포함)', coreItems.filter((it) => it.scene && sceneById[it.scene].review.required));
+  row('⑤ 나머지 장면 ' + (40 - REQ_N) + '개의 표시 항목', coreItems.filter((it) => it.scene && !sceneById[it.scene].review.required));
   row('전체(표시할 항목)', coreItems);
-  o.push('', '시간은 1분에 ' + CPM + '자를 꼼꼼히 읽는다고 보고 글자 수로 어림한 것입니다(성경을 펴 보시는 시간은 넣지 않았습니다). 실제로는 더 걸릴 수 있습니다.', '');
+  o.push('', TIME_NOTE, '');
   o.push('### 표시하는 방법', ''); GUIDE.how.forEach((x) => o.push('- ' + x)); o.push('');
   o.push('### 보시는 순서(권함)', ''); GUIDE.order.forEach((x) => o.push('- ' + x)); o.push('');
+  o.push('### 한 장면이 흘러가는 차례 (그 글이 언제 보이는지)', ''); GUIDE.flow.forEach((x, i) => o.push((i + 1) + '. ' + x)); o.push('');
+  o.push('글 앞의 "8~10세 / 11~13세 / 14~19세"는 그 나이 단계의 아이에게 보이는 글입니다. 세 단계의 사실은 같고 깊이만 다릅니다.', '');
   o.push('### 항목의 종류', '');
   o.push('| 종류 | 무엇인가 | 수 |', '|---|---|---|');
   [['대목 글(장면 전체)', '장면의 사건을 나이 단계별로 풀어 쓴 글. 감수 필수 장면만 표시 항목이고, 나머지는 참고로 실었습니다', cnt('beats')],
@@ -400,7 +514,8 @@ function readmeMd() {
     ['뜻 묻기', '도운 뒤 그 일의 뜻을 본문으로 깨닫는 단계', cnt('ask')],
     ['신약 연결', '구약 사건을 신약 장절과 잇는 글(14~19세만)', cnt('nt')],
     ['오늘의 물음', '지금 아이가 궁금해할 물음과 최현 박사의 답', cnt('today')],
-    ['마무리(기도·실천·적용)', '8~10세 기도, 11~13세 실천, 14~19세 적용 물음', cnt('close')],
+    ['마무리(기도·실천)', '8~10세 기도, 11~13세 실천, 14~19세 기록 물음. 시대별로 모았습니다', cnt('close')],
+    ['공통 · 시대 추리', '읽어 주기, 마무리의 꼴, 3D 인물의 생김새, 모든 장면에 똑같이 뜨는 글, 요단 강 시대 추리', items.filter((it) => it.kind === 'common').length],
     ['3D 설정 / 화면 원칙', '하나님을 어떻게 표현하는지, 무엇을 그리지 않는지, 본문에 없는 배치', cnt('scene3d') + ' / ' + cnt('screen')],
     ['검증자가 남긴 것', '본문 대조를 한 검증자가 "감수 때 정해 달라"고 남긴 것', (openBy['목회자'] || 0) + (openBy['미분류'] || 0)],
     ['그 밖의 글(참고)', '관문 물음, 탐지기 물음, 재료, 곁에서 보기 등. 표시 항목은 아니지만 빠짐없이 실었습니다', cnt('rest')]
@@ -415,20 +530,29 @@ function readmeMd() {
   o.push('| `md/시대01.md` ~ `md/시대10.md` | 같은 내용의 글 파일(시대별, 참고 글 포함) |');
   o.push('| `항목목록.json` | 항목 번호와 그 글이 장면 자료의 어디에 있는지(감수 결과를 반영할 때 씁니다) |');
   o.push('| `미해결_분류.json` · `미해결_전체.md` | 검증자가 남긴 것 ' + cnt('open') + '건을 목회자/대표/코드/이미 풀림으로 나눈 것과 그 까닭 |');
+  o.push('| `대표_결재지.md` · `.html` | 대표가 정할 것(검증자가 대표에게 넘긴 것 포함) |');
+  o.push('| `개역개정_신청_준비.md` | 성경 본문 사용 허락 신청 준비(보내지 않음) |');
+  o.push('', '이번 감수의 범위는 구약 40장면(3D 게임, `web3d/`)과 거기서 갈 수 있는 요단 강 시대 추리입니다. 출애굽기 시범판(`web/`, 2D)은 범위가 아니며 아이들에게 공개하지 않습니다.');
   o.push('');
   o.push('## 뽑은 수와 진행표의 수 대조', '');
   o.push('| 항목 | 뽑은 수 | 진행표(`docs/11`)의 수 | 맞는가 | 까닭 |', '|---|---|---|---|---|');
   COUNTS.forEach((c) => o.push('| ' + c[0] + ' | ' + c[1] + ' | ' + c[2] + ' | ' + (c[3] ? '맞음' : '**다름**') + ' | ' + c[4] + ' |'));
   o.push('', '검증자가 남긴 것 ' + cnt('open') + '건의 분류: ' + Object.keys(openBy).sort().map((k) => k + ' ' + openBy[k]).join(' · ') + '. "목회자"와 "미분류"만 표시 항목으로 실었고, "대표"는 `대표_결재지.md`로, "코드"·"풀림"·"같음"은 `미해결_전체.md`에 까닭과 함께 적었습니다.', '');
+  o.push('만드는 방법(만드는 사람용): 이 폴더의 파일은 `node tools/make_review_pack.js`가 장면 자료와 게임 코드에서 뽑아 만듭니다(자료 판 `' + VERSION + '`). 내용이 바뀌면 다시 돌리면 되고 손으로 고치지 않습니다. 검사는 `node tools/test/check_review_pack.js`, 화면 점검은 `node tools/test/shot_review_pack.js`.', '');
+  o.push('## 감수 범위를 먼저 정할 것', '', '지금 "감수 필수 아님"으로 둔 장면 가운데, 검증자가 필수로 올릴지 물은 것입니다. 글은 그 장면의 시대 묶음에 있습니다.', '');
+  scopeItems.forEach((it) => o.push('- **' + it.id + '** ' + it.title));
+  o.push('');
   o.push('## 먼저 볼 30항목', '');
-  o.push('뽑은 기준(급한 순서): ① 신약 연결 16곳(규칙서 3.5·13.6) ② 독립 대조에서 **높음** 지적이 있었던 곳 ③ 장자의 죽음, 주권과 책임이 걸린 장면의 대목 글 ④ 신약적 의미가 주제인데 신약 연결 항목이 따로 없는 장면(OT-02·27·40)의 오늘의 물음 ⑤ 주권과 책임 장면의 오늘의 물음.', '');
+  o.push(FIRST_NOTE, '');
   o.push('| 순서 | 항목 번호 | 장면 | 종류 | 왜 먼저인가 |', '|---|---|---|---|---|');
   first30.forEach((it) => o.push('| ' + it.pri + ' | ' + it.id + ' | ' + sceneById[it.scene].title + ' (' + sceneById[it.scene].ref + ') | ' + it.label + ' | ' + it.pwhy + ' |'));
   o.push('');
-  o.push('## 원칙 9가지와 처음 이야기', '', '규칙서(`docs/00_공통규칙서.md`) 3절과 13절(대표 결정, 목회자 감수 전)에서 목사님이 먼저 보실 것을 옮겼습니다. "규칙서" 줄은 규칙서의 글 그대로입니다.', '');
+  o.push('## 원칙 ' + RULE_N + '가지와 공통 항목', '', '규칙서(`docs/00_공통규칙서.md`) 3절과 13절(대표 결정, 목회자 감수 전)에서 목사님이 먼저 보실 것을 옮겼습니다. "규칙서" 줄은 규칙서의 글 그대로입니다. 그 뒤는 모든 장면에 걸치는 공통 항목입니다.', '');
   items.filter((it) => it.group === 'rule').forEach((it) => o.push(mdItem(it)));
   return o.join('\n');
 }
+const TIME_NOTE = '시간은 1분에 ' + CPM + '자를 읽는다고 보고 글자 수로만 어림한 것입니다. **성경을 펴 보시는 시간은 넣지 않았으니 실제로는 두세 배가 걸릴 수 있습니다.**';
+const FIRST_NOTE = '뽑은 기준: ① 신약 연결 16곳(규칙서 3.5·13.6. 구약 사건을 신약 장절과 잇는 한두 문장) ② 검증자가 목회자의 판단이 필요하다고 남긴 것 가운데 규칙서 3.5의 주제에 닿는 14가지(어린 나이의 글에 둔 심판·죽음, 주권과 책임, 창 3:15, 범죄한 아담의 동행, 뜻을 돌이키심, 창조를 지켜보는 틀).';
 function fmtMin(m) { return m < 60 ? m + '분' : Math.floor(m / 60) + '시간 ' + (m % 60 ? (m % 60) + '분' : ''); }
 
 function unresolvedMd() {
@@ -457,14 +581,15 @@ function htmlLines(it) {
     const ref = l.ref ? ' <span class="rf">' + esc(l.ref) + '</span>' : '';
     if (l.head) return '<p class="hd">' + esc(l.k) + ref + '</p>';
     const cls = ['ln', l.sub ? 'sub' : '', l.g ? 'g' : 'n', l.t || '', l.opt || ''].filter(Boolean).join(' ');
-    return '<p class="' + cls + '">' + (l.k ? '<span class="k">' + esc(l.k) + '</span> ' : '') + '<span class="v">' + esc(l.v) + '</span>' + ref + '</p>';
+    const v = l.swatch ? esc(l.v).replace(/#[0-9A-Fa-f]{6}/g, (c) => '<i class="sw" style="background:' + c + '"></i>') : (l.g ? esc(l.v) : inl(l.v));
+    return '<p class="' + cls + '">' + (l.k ? '<span class="k">' + esc(l.k) + '</span> ' : '') + '<span class="v">' + v + '</span>' + ref + '</p>';
   }).join('\n');
 }
 function htmlItem(it, mode) {
   const print = mode === 'print';
   const mark = !it.core ? '' : print
-    ? '<div class="pm"><span>☐ 그대로</span><span>☐ 고침</span><span>☐ 뺌</span><span class="wr">적을 칸</span></div>'
-    : '<div class="mk" data-id="' + esc(it.id) + '"><label><input type="radio" name="m-' + esc(it.id) + '" value="ok"><span>그대로</span></label><label><input type="radio" name="m-' + esc(it.id) + '" value="fix"><span>고침</span></label><label><input type="radio" name="m-' + esc(it.id) + '" value="del"><span>뺌</span></label><button type="button" class="clr" title="표시 지우기">지움</button><textarea rows="1" placeholder="적을 칸(고칠 말, 빼는 까닭)"></textarea></div>';
+    ? '<div class="pm">' + marks(it).map((x) => '<span>☐ ' + x + '</span>').join('') + '<span class="wr">적을 칸</span></div>'
+    : '<div class="mk" data-id="' + esc(it.id) + '" data-lab="' + marks(it).join('|') + '"><label><input type="radio" name="m-' + esc(it.id) + '" value="ok"><span>' + marks(it)[0] + '</span></label><label><input type="radio" name="m-' + esc(it.id) + '" value="fix"><span>' + marks(it)[1] + '</span></label><label><input type="radio" name="m-' + esc(it.id) + '" value="del"><span>' + marks(it)[2] + '</span></label><button type="button" class="clr" title="표시 지우기">지움</button><textarea rows="1" placeholder="적을 칸(고칠 말, 빼는 까닭)"></textarea></div>';
   const body = htmlLines(it);
   const cls = ['it', 'k-' + it.kind, it.core ? 'core' : 'ref', it.pri ? 'pri' : ''].filter(Boolean).join(' ');
   const head = '<header><span class="code">' + esc(it.id) + '</span><span class="kd">' + esc(it.label) + '</span>' + (it.pri && !print ? '<span class="star">먼저 볼 ' + it.pri + '</span>' : '') + (it.refs ? '<span class="rf">' + esc(it.refs) + '</span>' : '') + '</header>' + (it.title ? '<p class="tt">' + esc(it.title) + '</p>' : '');
@@ -486,6 +611,7 @@ h1{font-size:1.45rem;margin:.2em 0}h2{font-size:1.25rem;margin:1.6em 0 .5em;padd
 .tt{margin:.15em 0 .3em;color:var(--mut);font-size:.9em}
 .ln{margin:.3em 0}.ln.sub{margin-left:1em;font-size:.95em}.ln .k{color:var(--mut);font-size:.82em;margin-right:2px}
 .ln.g .v{font-weight:500}.ln.n .v{color:#3b4350}.ln.ok .k{color:var(--acc);font-weight:700}
+.sw{display:inline-block;width:1.1em;height:1.1em;border:1px solid #888;border-radius:3px;vertical-align:-.2em;margin:0 2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .hd{margin:.7em 0 .1em;font-weight:700;font-size:.9em;border-bottom:1px dashed var(--line)}
 table{border-collapse:collapse;width:100%;font-size:.92em}th,td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top}th{background:var(--soft)}
 code{background:var(--soft);padding:0 4px;border-radius:4px;font-size:.9em}
@@ -549,14 +675,14 @@ count();
 var sel=document.getElementById('flt');
 sel.addEventListener('change',function(){document.body.className=sel.value?('f-'+sel.value):'';window.scrollTo(0,0)});
 /* 내보내기 */
-var LAB={ok:'그대로',fix:'고침',del:'뺌'};
+var LAB={ok:'그대로',fix:'고침',del:'뺌'},IX={ok:0,fix:1,del:2};function lab(mk,m){var a=(mk.getAttribute('data-lab')||'').split('|');return a[IX[m]]||LAB[m]}
 function exportText(){var r=count(),L=[];L.push('바이블 온유 감수 표시');L.push('자료 판: '+document.body.getAttribute('data-version'));
   L.push('표시 '+r.n+' / 전체 '+total+' (그대로 '+r.c.ok+' · 고침 '+r.c.fix+' · 뺌 '+r.c.del+')');
-  ['fix','del'].forEach(function(m){L.push('');L.push('== '+LAB[m]+' ==');mks.forEach(function(mk){var id=mk.getAttribute('data-id'),s=st[id];if(s&&s.m===m)L.push('['+id+'] '+LAB[m]+' | '+(s.n||'').replace(/\\n/g,' / '))})});
+  ['fix','del'].forEach(function(m){L.push('');L.push('== '+{fix:'고침 · 바꿈',del:'뺌 · 의논 필요'}[m]+' ==');mks.forEach(function(mk){var id=mk.getAttribute('data-id'),s=st[id];if(s&&s.m===m)L.push('['+id+'] '+lab(mk,m)+' | '+(s.n||'').replace(/\\n/g,' / '))})});
   L.push('');L.push('== 표시 없이 적기만 한 것 ==');mks.forEach(function(mk){var id=mk.getAttribute('data-id'),s=st[id];if(s&&!s.m&&s.n)L.push('['+id+'] 메모 | '+s.n.replace(/\\n/g,' / '))});
-  L.push('');L.push('== 그대로 ==');var ok=[];mks.forEach(function(mk){var id=mk.getAttribute('data-id'),s=st[id];if(s&&s.m==='ok')ok.push('['+id+'] 그대로 | '+(s.n||'').replace(/\\n/g,' / '))});L=L.concat(ok);
+  L.push('');L.push('== 그대로 · 지금대로 ==');var ok=[];mks.forEach(function(mk){var id=mk.getAttribute('data-id'),s=st[id];if(s&&s.m==='ok')ok.push('['+id+'] '+lab(mk,'ok')+' | '+(s.n||'').replace(/\\n/g,' / '))});L=L.concat(ok);
   return L.join('\\n')}
-function importText(t){var n=0,REV={'그대로':'ok','고침':'fix','뺌':'del','메모':''};t.split(/\\r?\\n/).forEach(function(line){var m=line.match(/^\\[([^\\]]+)\\]\\s*(그대로|고침|뺌|메모)\\s*\\|?\\s*(.*)$/);if(!m)return;var id=m[1];if(!document.getElementById(id))return;st[id]={};if(REV[m[2]])st[id].m=REV[m[2]];if(m[3])st[id].n=m[3].replace(/ \\/ /g,'\\n');n++});save();mks.forEach(paint);count();return n}
+function importText(t){var n=0,REV={'그대로':'ok','고침':'fix','뺌':'del','지금대로':'ok','바꿈':'fix','의논 필요':'del','메모':''};t.split(/\\r?\\n/).forEach(function(line){var m=line.match(/^\\[([^\\]]+)\\]\\s*(그대로|고침|뺌|지금대로|바꿈|의논 필요|메모)\\s*\\|?\\s*(.*)$/);if(!m)return;var id=m[1];if(!document.getElementById(id))return;st[id]={};if(REV[m[2]])st[id].m=REV[m[2]];if(m[3])st[id].n=m[3].replace(/ \\/ /g,'\\n');n++});save();mks.forEach(paint);count();return n}
 var dlg=document.getElementById('dlg'),box=document.getElementById('box'),msg=document.getElementById('msg');
 document.getElementById('exp').addEventListener('click',function(){box.value=exportText();msg.textContent='';if(dlg.showModal)dlg.showModal();else dlg.setAttribute('open','')});
 document.getElementById('cpy').addEventListener('click',function(){box.select();var ok=false;try{ok=document.execCommand('copy')}catch(e){}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(box.value).then(function(){msg.textContent='복사했습니다. 문자나 메일에 붙여 넣어 보내 주세요.'},function(){msg.textContent=ok?'복사했습니다.':'복사가 안 되면 글상자를 길게 눌러 전체 선택 후 복사해 주세요.'})}else msg.textContent=ok?'복사했습니다.':'글상자를 길게 눌러 전체 선택 후 복사해 주세요.'});
@@ -573,23 +699,29 @@ function guideHtml(print) {
   GUIDE.what.forEach((x) => o.push('<p>' + inl(x) + '</p>'));
   o.push('<h3>무엇을, 얼마나</h3><table><tr><th>묶음</th><th>항목 수</th><th>걸리는 시간(어림)</th></tr>');
   const row = (name, list) => o.push('<tr><td>' + name + '</td><td>' + list.length + '</td><td>약 ' + fmtMin(mins(list)) + '</td></tr>');
-  row('① 원칙 9가지와 처음 이야기', items.filter((it) => it.group === 'rule'));
-  row('② 먼저 볼 30항목', first30);
-  row('③ 감수 필수 장면 ' + REQ_N + '개의 표시 항목(②와 겹침)', coreItems.filter((it) => it.scene && sceneById[it.scene].review.required));
-  row('④ 나머지 장면 ' + (40 - REQ_N) + '개의 표시 항목', coreItems.filter((it) => it.scene && !sceneById[it.scene].review.required));
+  row('① 원칙 ' + RULE_N + '가지와 공통 항목', items.filter((it) => it.group === 'rule' && it.core));
+  row('② 감수 범위를 정하는 물음', scopeItems);
+  row('③ 먼저 볼 30항목', first30);
+  row('④ 감수 필수 장면 ' + REQ_N + '개의 표시 항목(③과 겹침)', coreItems.filter((it) => it.scene && sceneById[it.scene].review.required));
+  row('⑤ 나머지 장면 ' + (40 - REQ_N) + '개의 표시 항목', coreItems.filter((it) => it.scene && !sceneById[it.scene].review.required));
   row('전체(표시할 항목)', coreItems);
-  o.push('</table><p class="sm">시간은 1분에 ' + CPM + '자를 꼼꼼히 읽는다고 보고 글자 수로 어림했습니다. 성경을 펴 보시는 시간은 넣지 않았습니다.</p>');
+  o.push('</table><p class="sm">' + inl(TIME_NOTE) + '</p>');
   o.push('<h3>표시하는 방법</h3><ul>');
-  GUIDE.how.filter((x, i) => !(print && i === 3)).forEach((x) => o.push('<li>' + inl(x) + '</li>'));
+  GUIDE.how.filter((x, i) => !(print && i === 5)).forEach((x) => o.push('<li>' + inl(x) + '</li>'));
   if (print) o.push('<li>종이에서는 항목 아래의 ☐에 표시하고 "적을 칸"에 적어 주세요. 항목 번호(예: OT-10·오늘1)만 불러 주셔도 됩니다.</li>');
   o.push('</ul><h3>보시는 순서(권함)</h3><ul>');
   GUIDE.order.forEach((x) => o.push('<li>' + inl(x) + '</li>'));
-  o.push('</ul><p class="sm">글 앞의 "8~10세 / 11~13세 / 14~19세"는 그 나이 단계의 아이에게 보이는 글입니다. 굵은 글은 게임에 나오는 문장 그대로이고, 옅은 글은 설명입니다. 초록 글자는 근거 장절입니다.</p></section>');
+  o.push('</ul><h3>한 장면이 흘러가는 차례 (그 글이 언제 보이는지)</h3><ol>');
+  GUIDE.flow.forEach((x) => o.push('<li>' + inl(x) + '</li>'));
+  o.push('</ol><p class="sm">글 앞의 "8~10세 / 11~13세 / 14~19세"는 그 나이 단계의 아이에게 보이는 글입니다. 굵은 글은 게임에 나오는 문장 그대로이고, 옅은 글은 설명입니다. 초록 글자는 근거 장절입니다.</p></section>');
   return o.join('\n');
 }
 function first30Html(print) {
-  const o = ['<section id="first30"><h2' + (print ? '' : ' class="first"') + '>먼저 볼 30항목</h2><p class="sm">① 신약 연결 16곳 ② 독립 대조에서 높음 지적이 있었던 곳 ③ 장자의 죽음, 주권과 책임이 걸린 장면의 대목 글 ④ 신약적 의미가 주제인데 신약 연결 항목이 따로 없는 장면의 오늘의 물음 ⑤ 주권과 책임 장면의 오늘의 물음.</p>'];
-  if (print) first30.forEach((it) => { o.push('<p class="sm"><b>' + it.pri + '.</b> ' + esc(sceneById[it.scene].id + ' ' + sceneById[it.scene].title) + ' · ' + esc(it.pwhy) + '</p>'); o.push(htmlItem(it, 'print')); });
+  const mode = print ? 'print' : 'screen';
+  const o = ['<section id="scope" class="noprisec"><h2' + (print ? '' : ' class="first"') + '>감수 범위를 먼저 정할 것</h2><p class="sm">지금 "감수 필수 아님"으로 둔 장면 가운데, 검증자가 필수로 올릴지 물은 것입니다. 표시는 그 항목에서 합니다.</p><ul>' +
+    scopeItems.map((it) => '<li>' + (print ? '<b>' + esc(it.id) + '</b>' : '<a href="#' + esc(it.id) + '">' + esc(it.id) + '</a>') + ' ' + esc(it.title) + '</li>').join('') + '</ul></section>',
+    '<section id="first30"><h2>먼저 볼 30항목</h2><p class="sm">' + inl(FIRST_NOTE) + '</p>'];
+  if (print) first30.forEach((it) => { o.push('<p class="sm"><b>' + it.pri + '.</b> ' + esc(sceneById[it.scene].id + ' ' + sceneById[it.scene].title + ' (' + sceneById[it.scene].ref + ')') + ' · ' + esc(it.pwhy) + '</p>'); o.push(htmlItem(it, mode)); });
   else {
     o.push('<table><tr><th>순서</th><th>항목</th><th>장면</th><th>왜 먼저인가</th></tr>');
     first30.forEach((it) => o.push('<tr><td>' + it.pri + '</td><td><a href="#' + esc(it.id) + '">' + esc(it.id) + '</a><br>' + esc(it.label) + '</td><td>' + esc(sceneById[it.scene].title) + '</td><td>' + esc(it.pwhy) + '</td></tr>'));
@@ -599,14 +731,14 @@ function first30Html(print) {
   return o.join('\n');
 }
 function rulesHtml(mode) {
-  return '<section id="rules" class="noprisec"><h2>원칙 9가지와 처음 이야기</h2><p class="sm">규칙서 3절과 13절(대표 결정, 목회자 감수 전)에서 먼저 보실 것을 옮겼습니다. "규칙서" 줄은 규칙서의 글 그대로입니다.</p>' + items.filter((it) => it.group === 'rule').map((it) => htmlItem(it, mode)).join('\n') + '</section>';
+  return '<section id="rules" class="noprisec"><h2>원칙 ' + RULE_N + '가지와 공통 항목</h2><p class="sm">규칙서 3절과 13절(대표 결정, 목회자 감수 전)에서 먼저 보실 것을 옮겼습니다. "규칙서" 줄은 규칙서의 글 그대로입니다. 그 뒤는 모든 장면에 걸치는 공통 항목과 요단 강 시대 추리입니다.</p>' + items.filter((it) => it.group === 'rule').map((it) => htmlItem(it, mode)).join('\n') + '</section>';
 }
 function erasHtml(mode, filter) {
   const print = mode === 'print';
   const o = [];
   erasDoc.eras.forEach((e) => {
     o.push('<section class="era" id="era' + e.era + '"><h2>시대 ' + e.era + '. ' + esc(e.name) + '</h2>');
-    items.filter((it) => it.group === 'era' && it.era === e.era && it.kind === 'era' && filter(it)).forEach((it) => o.push(htmlItem(it, mode)));
+    items.filter((it) => it.group === 'era' && it.era === e.era && it.kind !== 'open' && filter(it)).forEach((it) => o.push(htmlItem(it, mode)));
     scenes.filter((d) => d.era === e.era).forEach((d) => {
       const list = items.filter((it) => it.scene === d.id && filter(it)).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
       if (!list.length) return;
@@ -629,13 +761,13 @@ function page(title, css, body, js) {
   return '<!doctype html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>' + esc(title) + '</title><style>' + css + '</style></head>\n<body data-version="' + VERSION + '">\n' + body + (js ? '\n<script>' + js + '</script>' : '') + '\n</body></html>\n';
 }
 /* 표시 항목이면서 감수 대상(목회자)인 것만. 화면용은 참고 글도 접어서 함께 */
-const screenFilter = (it) => it.kind !== 'open' || it.core;
+const screenFilter = pastorView;
 const printFilter = (it) => it.core;
 const refFilter = (it) => it.kind === 'beats' || it.kind === 'rest' || (it.kind === 'screen' && !it.core);
 
 function screenHtml() {
   const top = '<div class="top"><div class="row"><b id="cnt">표시 0 / 0</b><span class="bar"><i id="bari"></i></span><select id="flt" aria-label="걸러 보기"><option value="">전체</option><option value="pri">먼저 볼 30</option><option value="req">감수 필수 장면만</option><option value="todo">아직 표시 안 한 것</option></select><button type="button" class="pr" id="exp">내보내기</button></div></div>';
-  const toc = '<nav class="toc"><a href="#guide">안내</a><a href="#rules">원칙</a><a href="#first30">먼저 볼 30</a>' + erasDoc.eras.map((e) => '<a href="#era' + e.era + '">' + e.era + '. ' + esc(e.name) + '</a>').join('') + '<a href="#counts">숫자 대조</a></nav>';
+  const toc = '<nav class="toc"><a href="#guide">안내</a><a href="#rules">원칙</a><a href="#scope">감수 범위</a><a href="#first30">먼저 볼 30</a>' + erasDoc.eras.map((e) => '<a href="#era' + e.era + '">' + e.era + '. ' + esc(e.name) + '</a>').join('') + '<a href="#counts">숫자 대조</a></nav>';
   const dlg = '<dialog id="dlg"><h3 style="margin-top:0">표시 내보내기 · 불러오기</h3><p class="sm">아래 글을 복사해 문자·메일로 보내 주세요. 다른 기기에서 이어 하시려면 그 기기의 이 창에 글을 붙여 넣고 "불러오기"를 누르세요.</p><textarea id="box" spellcheck="false"></textarea><p id="msg" class="sm" role="status"></p><p><button type="button" class="pr" id="cpy">글 복사</button> <button type="button" id="dwn">파일로 저장</button> <button type="button" id="imp">불러오기</button> <button type="button" id="rst">모두 지우기</button> <button type="button" id="cls">닫기</button></p></dialog>';
   const body = top + '<main>' + guideHtml(false) + '<p class="note" id="savewarn" hidden>이 기기에서는 표시가 저장되지 않습니다(사생활 보호 모드 등). 창을 닫기 전에 "내보내기"로 글을 복사해 두세요.</p><p class="note">표시는 <b>이 기기의 이 브라우저에만</b> 저장됩니다. 서버로 보내지 않습니다. 다 하셨거나 중간에라도 "내보내기"로 글을 뽑아 보내 주세요.</p>' + toc + rulesHtml('screen') + first30Html(false) + erasHtml('screen', screenFilter) + countsHtml() + '</main>' + dlg;
   return page('바이블 온유 · 목회자 감수 자료', CSS_COMMON + CSS_SCREEN, body, JS_SCREEN);
@@ -649,14 +781,14 @@ function first30PrintHtml() {
   return page('바이블 온유 · 먼저 볼 30항목(인쇄용)', CSS_COMMON + CSS_PRINT, '<main>' + guideHtml(true) + first30Html(true).replace('<h2>', '<h2 class="first">') + '</main>', '');
 }
 function refPrintHtml() {
-  const body = '<main><section class="cover"><h1>바이블 온유 · 참고: 장면 전체 글</h1><p class="sm">자료 판 ' + VERSION + '</p><p>감수 자료의 표시 항목에 넣지 않은 글을 빠짐없이 실었습니다: 대목 글(8~10세·11~13세·14~19세), 최현 박사의 통신, 수리 재료, 관문 물음, 3D 탐지기 물음, 곁에서 보기·함께 머물기, 말씀 카드, 화면 원칙. <b>감수 필수 장면의 대목 글</b>은 표시 항목입니다(☐가 있습니다).</p></section>' + erasHtml('print', refFilter) + '</main>';
+  const body = '<main><section class="cover"><h1>바이블 온유 · 참고: 장면 전체 글</h1><p class="sm">자료 판 ' + VERSION + '</p><p>감수 자료의 표시 항목에 넣지 않은 글을 빠짐없이 실었습니다: 대목 글(8~10세·11~13세·14~19세), 최현 박사의 통신, 수리 재료, 관문 물음, 3D 탐지기 물음, 곁에서 보기·함께 머물기, 말씀 카드, 화면 원칙. <b>감수 필수 장면의 대목 글</b>은 표시 항목입니다(☐가 있습니다).</p></section>' + items.filter((it) => it.group === 'rule' && !it.core).map((it) => htmlItem(it, 'print')).join('\n') + erasHtml('print', refFilter) + '</main>';
   return page('바이블 온유 · 참고: 장면 전체 글(인쇄용)', CSS_COMMON + CSS_PRINT, body, '');
 }
 
 /* ───────── 7. 쓰기 ───────── */
 function itemsJson() {
   return JSON.stringify({ version: VERSION, note: '감수 자료의 항목 목록. node tools/make_review_pack.js 가 만든다. core=목회자가 표시하는 항목, src=그 글이 있는 곳', counts: COUNTS.map((c) => ({ name: c[0], got: c[1], expect: c[2], ok: c[3] })),
-    items: items.map((it) => ({ id: it.id, kind: it.kind, label: it.label, scene: it.scene || null, era: it.era || null, core: !!it.core, first30: it.pri || 0, to: it.to || undefined, chars: it.chars,
+    items: items.map((it) => ({ id: it.id, kind: it.kind, label: it.label, scene: it.scene || null, era: it.era || null, core: !!it.core, first30: it.pri || 0, to: it.to || undefined, ukey: it.ukey || undefined, ask: it.kind === 'open' ? it.title : undefined, chars: it.chars,
       src: it.scene ? 'content/ot/' + it.scene + '.json' : it.group === 'rule' ? (it.kind === 'story' ? 'content/ot/eras.json' : 'docs/00_공통규칙서.md') : 'content/ot/eras.json' })) }, null, 1) + '\n';
 }
 fs.mkdirSync(path.join(OUT, 'md'), { recursive: true });

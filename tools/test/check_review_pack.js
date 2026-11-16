@@ -43,6 +43,15 @@ const eras = JSON.parse(fs.readFileSync(path.join(ROOT, 'content/ot/eras.json'),
 walk({ story: eras.story, eras: eras.eras.map((e) => ({ intro: e.intro, between: e.between })) }, '', '', 'eras');
 ['screen', 'print', 'md'].forEach((k) => ok(miss[k].length === 0, '장면 자료의 글 ' + leaves + '개가 ' + { screen: '화면용 HTML', print: '인쇄용 HTML(감수자료 + 참고)', md: 'md' }[k] + '에 글자 그대로 있다' + (miss[k].length ? ' — 빠진 것 ' + miss[k].length + '개: ' + miss[k].slice(0, 8).join(', ') : '')));
 
+/* 게임 코드에 박혀 있는 한국어 글(작은따옴표 글)도 자료에 있는가 — 생성기와 따로 뽑는다 */
+const codeFiles = fs.readdirSync(path.join(ROOT, 'web3d/js')).filter((f) => /^scene_.*\.js$/.test(f)).map((f) => 'web3d/js/' + f).concat(['web3d/js/content3d.js', 'web3d/js/ui.js', 'web3d/js/story.js', 'web3d/js/game.js']);
+let codeN = 0; const codeMiss = [];
+codeFiles.forEach((f) => {
+  const src = fs.readFileSync(path.join(ROOT, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  (src.match(/'(?:[^'\\\n]|\\.)*'/g) || []).forEach((q) => { const t = q.slice(1, -1).replace(/\\'/g, "'").replace(/\\n/g, ' ').trim(); if (!/[가-힣]/.test(t)) return; codeN++; if (!screen.includes(t)) codeMiss.push(f + ': ' + t.slice(0, 30)); });
+});
+ok(codeMiss.length === 0, '게임 코드(3D 장면 12개, content3d, ui, story, game)의 한국어 글 ' + codeN + '개가 화면용 HTML에 있다' + (codeMiss.length ? ' — 빠진 것 ' + codeMiss.length + '개: ' + codeMiss.slice(0, 6).join(' / ') : ''));
+ok(/개역개정과는 대조하지 못했습니다/.test(A('README.md')) && !/개역개정·개역한글\)과 두 차례/.test(A('README.md')), '안내가 대조한 본문(개역한글·KJV)을 사실대로 적는다');
 const list = JSON.parse(A('항목목록.json'));
 ok(list.counts.every((c) => c.ok), '뽑은 수가 진행표·장면표의 수와 맞다 (' + list.counts.filter((c) => c.expect !== '—').map((c) => c.name + ' ' + c.got).join(', ') + ')');
 const core = list.items.filter((x) => x.core).length;
