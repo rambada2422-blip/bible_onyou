@@ -8,7 +8,7 @@
  *    언약궤와 회막의 기구, 지성소 안은 그리지 않는다(행렬까지만. 무엇을 메었는지는 글로). 8:5의 양과 소의 제사는 그리지 않는다.
  *  - 8:10-11: 제사장들이 성소에서 나오자 구름이 전에 가득하다. 하나님의 영광은 전의 몸체와 지붕을 덮는 흰 구름으로만(사람 모양·얼굴·빛줄기 없음, 불 없음).
  *  - 8:12-14: 솔로몬이 전 쪽을 보다가 얼굴을 돌려 서 있는 온 회중을 축복한다. 8:22: 단 앞에서 회중을 마주 서서 하늘을 향해 손을 편다.
- *    8:54-55: 무릎을 꿇고 손을 편 모습에서 일어나 서서 축복한다. 언제 꿇었는지는 본문에 없어 8:54 대목 처음에만 꿇은 모습으로 둔다.
+ *    대하 6:13처럼 서서 손을 편 뒤 무릎을 꿇고, 8:27-30 동안 꿇은 채 손을 펴고 기도한다(8:54). 8:54-55: 일어나 서서 축복한다.
  *    기도하는 말과 축복의 말은 소리로 만들지 않는다(대목 글로만).
  *  - 하나님의 형상·음성 없음. 하늘에서 내리는 불 없음.
  * 감수가 필요한 설정: 전이 남쪽을 보게 둔 것(왕상 7:39는 전의 오른쪽을 동남쪽이라 해 앞이 동쪽), 전의 높은 터·뜰·단의 생김새와 자리와 크기(대하 4:1은 단을 20×20×10규빗,
@@ -111,6 +111,9 @@
       cp.home = [-12.25 + cl * 3.5 + (hash(i, 1) - 0.5) * 0.8, -17 + row * 2.3 + (hash(i, 2) - 0.5) * 0.5];
       cong.push(cp);
     }
+    /* 회중은 서 있기만 하므로 한 덩어리로 합친다(휴대폰 무게: 그리기 호출을 줄인다) */
+    cong.forEach(function (o) { setAt(o, o.home[0], o.home[1], Math.PI); if (o.update) o.update(0.016, 0); });
+    var congM = C3.merge(cong.map(function (o) { return o.group; })); cong.forEach(function (o) { scene.remove(o.group); }); scene.add(congM); congM.visible = false;
     /* 8:2 길로 모여 오는 사람들(보따리를 진 사람도 있다) */
     var comers = [];
     for (i = 0; i < 14; i++) {
@@ -124,12 +127,12 @@
     gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
     var CN = 170, cloudG = new T.BufferGeometry(), cp0 = new Float32Array(CN * 3), cpos = new Float32Array(CN * 3), cseed = [];
     for (i = 0; i < CN; i++) {
-      var ox = (R() - 0.5) * (HW * 2 + 3), oy = TERR + R() * (HH + 2), oz = HZ0 + PORCH - 0.5 - R() * (HL + PORCH + 1.5);   /* 전의 몸체와 지붕을 덮는 만큼만(옆으로 치솟는 기둥처럼 보이지 않게, 문 앞은 비움) */
+      var ox = (R() - 0.5) * (HW * 2 + 1), oy = TERR + R() * (HH + 2), oz = HZ0 + PORCH - 0.5 - R() * (HL + PORCH + 1.5);   /* 전의 몸체와 지붕을 덮는 만큼만(옆으로 치솟는 기둥처럼 보이지 않게, 문 앞은 비움) */
       cp0[i * 3] = ox; cp0[i * 3 + 1] = oy; cp0[i * 3 + 2] = oz; cseed.push(R() * 6.28);
       cpos[i * 3] = 0; cpos[i * 3 + 1] = TERR + 3; cpos[i * 3 + 2] = DOOR[1];
     }
     cloudG.setAttribute('position', new T.BufferAttribute(cpos, 3));
-    var cloudM = new T.PointsMaterial({ size: 9, map: new T.CanvasTexture(cv), transparent: true, opacity: 0, depthWrite: false, color: '#FFFFFF' }), cloud = new T.Points(cloudG, cloudM);
+    var cloudM = new T.PointsMaterial({ size: 8, map: new T.CanvasTexture(cv), transparent: true, opacity: 0, depthWrite: false, color: '#FFFFFF' }), cloud = new T.Points(cloudG, cloudM);
     cloud.frustumCulled = false; scene.add(cloud);
     var cloudAmt = 0, cloudWant = 0;
     function placeCloud(now) {
@@ -143,8 +146,8 @@
     }
 
     var phase = 'gather', pt = 0, kneel = 0, kneelWant = 0, raise = 0, raiseWant = 0;
-    function hideAll() { [sol].concat(priests, cong, comers).forEach(function (o) { o.group.visible = false; o.group.rotation.x = 0; }); arms(sol, 0, 0, 0); }
-    function standCong() { cong.forEach(function (o) { setAt(o, o.home[0], o.home[1], Math.PI); o.group.visible = true; if (o.update) o.update(0.016, 0); }); }
+    function hideAll() { [sol].concat(priests, comers).forEach(function (o) { o.group.visible = false; o.group.rotation.x = 0; }); congM.visible = false; arms(sol, 0, 0, 0); }
+    function standCong() { congM.visible = true; }
     function setPhase(p) {
       phase = p; pt = 0; hideAll(); kneel = 0; kneelWant = 0; raise = 0; raiseWant = 0;
       cloudWant = p === 'cloud' || p === 'bless' || p === 'pray' || p === 'kneel' || p === 'rise' ? 1 : 0; cloudAmt = p === 'cloud' ? 0 : cloudWant;
@@ -155,8 +158,8 @@
         standCong();
         priests.forEach(function (o) { setAt(o, o.out[0], o.out[1], 0); o.group.visible = true; if (o.update) o.update(0.016, 0); });
         setAt(sol, SOL[0], SOL[1], p === 'cloud' || p === 'bless' ? Math.PI : 0); sol.group.visible = true; if (sol.update) sol.update(0.016, 0);   /* 8:14 얼굴을 돌이켜 회중을 본다 */
-        if (p === 'pray') raiseWant = 1;                                                                  /* 8:22 손을 편다 */
-        if (p === 'kneel') raiseWant = 1;                                                                /* 8:27-30 손을 편 채 기도한다 */
+        if (p === 'pray') raiseWant = 1;                                                                  /* 8:22 서서 손을 편 뒤 무릎을 꿇는다(대하 6:13) */
+        if (p === 'kneel') { kneel = 1; kneelWant = 1; raise = 1; raiseWant = 1; }                        /* 8:27-30 무릎을 꿇고 손을 편 채 기도한다(8:54) */
         if (p === 'rise') { kneel = 1; kneelWant = 0; raise = 1; raiseWant = 0; }                        /* 8:54-55 일어나 서서 축복한다 */
         if (p === 'cloud') priests.forEach(function (o) { if (!o.lev) o.group.visible = false; });         /* 8:10 제사장이 성소에서 나오는 때부터 */
       }
@@ -203,7 +206,7 @@
       dex: [
         { id: 'house', name: '여호와의 전', desc: '솔로몬이 지은 전. 길이 60규빗, 너비 20규빗, 높이 30규빗', ref: '왕상 6:2', hint: '북쪽 높은 터 위를 담아 보세요.', range: 120, crop: 0.6, pos: function () { return v3(0, TERR + 7, HOUSE_C[1]); } },
         { id: 'altar', name: '여호와의 단', desc: '솔로몬이 그 앞에 서서 손을 편 단', ref: '왕상 8:22', hint: '전 앞쪽을 보세요.', range: 90, crop: 0.4, pos: function () { return v3(ALTAR[0], 2, ALTAR[1]); } },
-        { id: 'cong', name: '온 회중', desc: '칠월 절기에 솔로몬 앞에 모인 이스라엘', ref: '왕상 8:2', hint: '뜰에 선 사람들을 보세요.', range: 70, visible: function () { return cong[0].group.visible; }, pos: function () { return v3(0, 1, -10); } }
+        { id: 'cong', name: '온 회중', desc: '칠월 절기에 솔로몬 앞에 모인 이스라엘', ref: '왕상 8:2', hint: '뜰에 선 사람들을 보세요.', range: 70, visible: function () { return congM.visible; }, pos: function () { return v3(0, 1, -10); } }
       ],
       reset: function () { setPhase('gather'); },
       partFound: function () {},
@@ -217,11 +220,12 @@
         if (phase === 'ark') priests.forEach(function (o, n) { var s = Math.max(0, pt - 1) * 2.6; if (s < o.P.tot || o.lev) walk(o, o.P, s, Math.PI, dt); else o.group.visible = false; });   /* 8:3-6 */
         if (phase === 'cloud') {
           cloudWant = pt > 2 ? 1 : 0;                                                                         /* 8:10 제사장이 나올 때에 구름이 가득하다 */
-          priests.forEach(function (o, n) { var s = (pt - n * 0.25) * 1.8; if (s > 0 && !o.lev) { if (!o.Q) o.Q = mkPath([[0, DOOR[1] - 1], [0, DOOR[1] + 1.5], o.out]); walk(o, o.Q, s, 0, dt); } });
+          priests.forEach(function (o, n) { var s = (pt - n * 0.25) * 1.8; if (s > 0 && !o.lev) { if (!o.Q) o.Q = mkPath([[0, DOOR[1] - 1], [0, DOOR[1] + 1.5], [o.out[0] > 0 ? 5.6 : -5.6, DOOR[1] + 1], o.out]);   /* 낭실 모서리를 돌아간다 */ walk(o, o.Q, s, 0, dt); } });
         }
         if (cloudAmt !== cloudWant) { cloudAmt += (cloudWant - cloudAmt) * Math.min(1, dt * 0.35); if (Math.abs(cloudAmt - cloudWant) < 0.002) cloudAmt = cloudWant; }
         if (cloudAmt > 0.001) { placeCloud(now); cloudM.opacity = 0.55 * cloudAmt; } else cloudM.opacity = 0;
         if (sol.group.visible) {
+          if (phase === 'pray') kneelWant = pt > 3.5 ? 1 : 0;
           if (phase === 'rise') { kneelWant = pt > 1.5 ? 0 : 1; raiseWant = pt > 1.5 ? 0.35 : 1; }
           if (phase === 'bless') sol.group.rotation.y = Math.PI * (1 - sm(1.5, 3, pt));   /* 8:12-13을 말한 뒤 얼굴을 돌이킨다(8:14) */
           kneel += (kneelWant - kneel) * Math.min(1, dt * 1.5); raise += (raiseWant - raise) * Math.min(1, dt * 1.5);

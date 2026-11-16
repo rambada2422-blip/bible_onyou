@@ -90,7 +90,7 @@
       var isCow = i < 5, fx = PAST[0] - 20 + (i % 6) * 7.5 + (hash(i, 2) - 0.5) * 3, fz = PAST[1] - 8 + Math.floor(i / 6) * 7 + (hash(i, 4) - 0.5) * 3, ry = hash(i, 6) * 6.28, o;
       if (isCow) o = cow(1.2, i % 4); else { o = MO.sheep ? MO.sheep(3150 + i).group : cow(0.6, 2); o.traverse(function (q) { if (q.isGroup && Math.abs(q.position.y - 0.5) < 0.01 && Math.abs(q.position.z - 0.2) < 0.01) q.rotation.x = 0.05; }); }   /* 3:7 풀을 뜯지 않는다: 고개를 든다 */
       o.position.set(fx, height(fx, fz), fz); o.rotation.y = ry; flockL.push(o);
-      var bw = isCow ? 0.84 : 0.66, bl = isCow ? 1.3 : 0.84, by = isCow ? 1.48 : 0.5, bt = isCow ? 0.07 : 0.14;   /* 등에 덮은 굵은 베(3:8) */
+      var bw = isCow ? 0.84 : 0.56, bl = isCow ? 1.3 : 0.8, by = isCow ? 1.48 : 0.6, bt = isCow ? 0.07 : 0.08;   /* 등에 덮은 굵은 베(3:8) */
       var bk = new T.Mesh(new T.BoxGeometry(bw, bt, bl), sackM); bk.position.set(fx, height(fx, fz) + by, fz); bk.rotation.y = ry; blankL.push(bk);
     }
     scene.add(C3.merge(flockL)); var blankets = PR.mergeStatic(blankL); scene.add(blankets); blankets.visible = false;
@@ -219,6 +219,7 @@
         if (i === 2) return { pos: [SEA[0] + 34, 13, SEA[1] + 46], look: [SEA[0], 1.5, SEA[1]] };                 /* 창 너머: 바다 위의 배 */
         if (i === 3) return { pos: [SHORE_J[0] + 9, 6.5, SHORE_J[1] - 30], look: [SHORE_J[0], 1.4, SHORE_J[1]] };   /* 창 너머: 바닷가 */
         if (i === 5) return { pos: [-16, height(-16, 22) + 9, 22], look: [0, 0.8, 46] };   /* 3:7-8 굵은 베를 덮은 소 떼와 양 떼 */
+        if (i === 6 && phase === 'booth' && pt < 1.5 + J_OUT.tot / 3.4) { var jp = jonah.group.position, cx = jp.x + 11, cz = jp.z + 13; return { pos: [cx, Math.max(height(cx, cz), jp.y) + 8, cz], look: [jp.x - 2, jp.y + 1.2, jp.z - 4] }; }   /* 4:5 성에서 나와 걷는 요나를 따라간다 */
         if (i === 6 || i === 7) return { pos: [-2, height(-2, -16) + 6, -16], look: [BOOTH[0], height(BOOTH[0], BOOTH[1]) + 1.4, BOOTH[1]] };   /* 성 동쪽 언덕의 초막 */
         return null;
       },
@@ -285,7 +286,7 @@
           grow = Math.min(1, pt / 6); leaves.forEach(function (q) { q.scale.setScalar(Math.max(0.001, grow * (1 - 0.4 * wither))); });                    /* 4:6 박 넝쿨이 자라 그늘이 된다 */
           if (pt > 8 && lightKey === 'day') lightKey = 'dawn';                                                   /* 4:7 이튿날 새벽 */
           if (pt > 10) { wither = Math.min(1, (pt - 10) / 4); vineM.color.copy(LEAF0).lerp(LEAF1, wither); }
-          SUNOFF[0] = pt > 13 ? 50 : -30; SUNOFF[1] = pt > 13 ? 16 : 50; SUNOFF[2] = pt > 13 ? 0 : 30;   /* 4:8 해가 동쪽에서 뜬다 */
+          if (pt > 8) { SUNOFF[0] = 50; SUNOFF[1] = 5 + 11 * sm(8, 15, pt); SUNOFF[2] = 0; }   /* 4:7 새벽부터 해는 동쪽 낮은 곳, 4:8 해가 떠오른다 */
           if (pt > 15) { if (lightKey !== 'hot') lightKey = 'hot'; dustM.opacity = Math.min(0.55, (pt - 15) * 0.2); slump = Math.min(0.32, (pt - 15) * 0.1); }   /* 4:8 해와 뜨거운 동풍 */
           jonah.group.rotation.x = slump;
           if (dustM.opacity > 0) { for (var n = 0; n < DN; n++) { var px = dp[n * 3] - dt * (9 + (n % 7)); if (px < BOOTH[0] - 40) px += 70; dp[n * 3] = px; } dustG.attributes.position.needsUpdate = true; }
