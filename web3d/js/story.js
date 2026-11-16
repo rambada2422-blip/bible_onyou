@@ -128,7 +128,7 @@
 
   /* ── 시대 지도 ── */
   function openMap(scrollTo) {
-    stop3d(); U.stopSpeak(); U.onMiss = null; mark(null);
+    stop3d(); U.stopSpeak(); U.onMiss = null; mark(null); ambience(null);
     enterStory();
     if (!PG.seenIntro) { intro(function () { openMap(); }); return; }
     cur.screen = 'map'; cur.id = null;
@@ -239,6 +239,30 @@
     warp(d.title, U.bookName(d.ref), function () { play(id); });
   }
 
+  /* ── 이야기 카드의 분위기 소리(합성 소리, fx.js). 본문이 그 자리에 있다고 말하는 것만 깐다: 물·센 바람·밤·모인 무리.
+   * 표에 없는 장면은 낮은 바람과 화음만 난다. 하나님의 음성, 말씀 낭독, 찬송, 우레·나팔처럼 하나님이 나타나심에 속한 소리, 싸움·우상 잔치의 소리는 만들지 않는다.
+   * [소리 종류들, 근거 장절]. 독립 대조를 받는다(진행 파일). ── */
+  var AMB = {
+    'OT-01': [['water'], '창 1:9-10'],            /* 물이 한곳으로 모여 바다가 됨 */
+    'OT-03': [['water', 'gale'], '창 7:17-18'],   /* 물이 불어남. 바람은 창 8:1 */
+    'OT-04': [['crowd'], '창 11:1-4'],            /* 사람들이 시날 평지에 모여 서로 말함 */
+    'OT-07': [['night'], '창 28:11'],             /* 해가 져서 거기서 밤을 지냄 */
+    'OT-11': [['water', 'gale'], '출 14:21'],     /* 큰 동풍이 밤새도록 바닷물을 물러가게 함 */
+    'OT-13': [['gale'], '출 16:1'],               /* 신 광야 */
+    'OT-15': [['gale'], '민 13:26'],              /* 바란 광야 가데스 */
+    'OT-16': [['gale'], '신 34:1'],               /* 느보 산 비스가 꼭대기 */
+    'OT-17': [['night'], '수 2:2-5'],             /* 이 밤에, 어두워 성문을 닫을 때 */
+    'OT-18': [['water'], '수 3:15'],              /* 요단이 언덕에 넘침 */
+    'OT-20': [['crowd'], '수 24:1'],              /* 모든 지파를 세겜에 모음 */
+    'OT-21': [['night'], '삿 7:19'],              /* 이경 초 */
+    'OT-25': [['crowd'], '삼상 10:17'],           /* 백성을 미스바로 불러 모음 */
+    'OT-29': [['crowd'], '왕상 12:3'],            /* 이스라엘의 온 회중이 옴 */
+    'OT-31': [['water', 'gale'], '욘 1:4'],       /* 바다 위의 큰 바람과 큰 폭풍 */
+    'OT-36': [['night'], '단 6:18'],              /* 왕이 밤이 새도록 */
+    'OT-39': [['crowd'], '느 8:1']                /* 모든 백성이 수문 앞 광장에 모임 */
+  };
+  function ambience(id) { var f = FX(); if (f && f.audio && f.audio.ambience) { try { f.audio.ambience(id && AMB[id] ? AMB[id][0] : []); } catch (e) { /* 소리 없이 진행 */ } } }
+
   /* ── 이야기 카드 재생 ── */
   function buildSteps(d) {
     var m = d.mission || null, st = [{ k: 'arrive' }], cp = m && m.companion;
@@ -262,6 +286,7 @@
     var d = sc(id);
     cur.screen = 'play'; cur.id = id; cur.steps = buildSteps(d); cur.step = 0;
     var f = FX(); if (f && f.audio) { try { f.audio.start(); f.audio.pad(true); } catch (e) { /* 무시 */ } }
+    ambience(id);
     render();
   }
   var KICK = { talk: '동행', beat: '지켜보기', help: '현장 돕기', gate: '다음으로 가는 관문', quest: '재료 찾기', mat: '재료 얻기', today: '오늘의 물음' };
@@ -328,7 +353,7 @@
       show('seg', null, null, body, [prev, nb]);
       return;
     }
-    show('play', e.key, topBar('시대 ' + e.era + ' · ' + d.title), body, [prev, nb], { art: artOpts(d, s) });
+    show('play', e.key, topBar(d.title), body, [prev, nb], { art: artOpts(d, s) });
   }
   /* 창조 장면은 대목마다 지어진 것만 그린다(eraart.js) */
   function artOpts(d, s) {
@@ -383,7 +408,7 @@
         if (b.disabled) return; tries++;
         if (k === spot) {
           tiles.forEach(function (x) { x.disabled = true; }); b.classList.add('hit');
-          msg.textContent = tries === 1 ? '한 번에 찾았어요!' : tries + '번 만에 찾았어요!';
+          msg.textContent = '찾았어요!';   /* 몇 번 만에 찾았는지는 말하지 않는다(운을 칭찬하거나 횟수를 점수처럼 보이지 않게, 6절 점검) */
           take(mm); got.replaceChildren(matCard(mm, null)); ok(); got.scrollIntoView({ block: 'nearest' }); mark(cur.id + ' seek-found');
         } else {
           b.disabled = true; b.classList.add('miss');
@@ -407,7 +432,7 @@
   }
   function finish(d) {
     var c = d.close[S.tier] || d.close.t2, e = eraOf(d.era), nx = nextOf(d.id);
-    setDone(d.id);
+    setDone(d.id); ambience(null);
     var kids_ = [el('div', { class: 'q-kicker', text: '탐험을 마치며' }),
       el('p', { class: 'q-prompt', text: '탐험 일지에 말씀 카드가 들어왔어요.' }),
       el('div', { class: 'vcards' }, d.cards.map(function (cd) {
@@ -430,7 +455,7 @@
       el('p', { text: (got.length ? '이 장면에서 재료 ' + got.length + '가지(' + got.map(function (x) { return x.name; }).join(', ') + ')를 얻었어요. ' : '') + '모은 재료 ' + matCount() + ' / ' + MAT_TOTAL + '. 과거에는 아무것도 남기지 않았어요.' })));
     var nextBtn = nx ? btn(sc(nx).era !== d.era ? '다음 시대로' : '다음 장면', function () { if (sc(nx).era !== d.era) openEra(sc(nx).era); else openScene(nx); }) : btn('시대 지도', function () { openMap(); });
     cur.k = 'finish';
-    show('play', e.key, topBar('시대 ' + e.era + ' · ' + d.title), kids_, [btn('시대 지도', function () { openMap(d.era); }, 'plain'), nextBtn]);
+    show('play', e.key, topBar(d.title), kids_, [btn('시대 지도', function () { openMap(d.era); }, 'plain'), nextBtn]);
   }
 
   /* ── 수리 현황: 모은 재료 (탐험대 이야기) ── */
@@ -684,7 +709,7 @@
       /* 지금 화면의 물음(관문·재료 찾기). 자동 시험이 답을 고를 때 쓴다 */
       seek: function () { var s = cur.steps[cur.step], d = cur.id && sc(cur.id); return s && s.k === 'mat' ? seekSpot(d.mission.materials[s.i]) : null; },
       unlockAll: function () { PG.unlockAll = true; save(); },
-      adultAnswer: function () { return adultQ; }, pg: function () { return JSON.parse(JSON.stringify(PG)); }, exportCode: exportCode, parseCode: parseCode, dex: function () { return DX; },
+      amb: function () { return AMB; }, adultAnswer: function () { return adultQ; }, pg: function () { return JSON.parse(JSON.stringify(PG)); }, exportCode: exportCode, parseCode: parseCode, dex: function () { return DX; },
       log: function () { return LOG; },
       help: function () { var s = cur.steps[cur.step], d = cur.id && sc(cur.id); return s && s.k === 'help' ? d.mission.help.steps[s.i] : null; },
       q: function () {

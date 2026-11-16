@@ -2,6 +2,8 @@
 // 사용: node tools/test/walkOT.js <단계 0~2> <저장 폴더> [첫 장면 번호 1~40] [마지막 장면 번호]
 // 장면마다: 도착 → (동행) → 지켜보기 → (동행) → 관문(첫 관문은 다른 보기를 먼저 눌러 안내 문구 확인) → 재료 → 오늘의 물음 → 마무리 → 다음 장면/다음 시대.
 // 화면마다 글이 옆으로 넘치지 않는지 보고, 시대의 첫 장면과 몇몇 화면을 찍는다. 끝에 오류 목록을 낸다.
+// 휴대폰 화면 전수 점검(phoneAudit.js가 부른다): 환경 변수 BO_W·BO_H로 화면 크기를 바꾸고, BO_AUDIT=1이면 화면마다
+// 작은 단추(44px 미만)·잘린 글·스크롤해야 하는 시트를 <저장 폴더>/audit.json에 적는다(통과·실패에는 넣지 않는다).
 const { chromium } = require('playwright');
 const doHelp = require('./lib/help.js');
 const solveQ = require('./lib/solve.js');
@@ -10,10 +12,11 @@ const fs = require('fs');
 const ti = Number(process.argv[2] || '1'), out = process.argv[3] || '/tmp/walkOT', from = Number(process.argv[4] || '1'), to = Number(process.argv[5] || '40');
 fs.mkdirSync(out, { recursive: true });
 const BAN = ['틀렸', '실패', '감점', '목숨'];
+const VW = Number(process.env.BO_W || '390'), VH = Number(process.env.BO_H || '844'), AUDIT = !!process.env.BO_AUDIT, aud = [];
 (async () => {
   const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const b = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-  const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce' })).newPage();
+  const p = await (await b.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: 1, reducedMotion: 'reduce' })).newPage();
   await p.addInitScript(() => { window.BO3D_TEST = true; });
   const errs = [], probs = []; let n = 0;
   p.on('pageerror', (e) => errs.push('pageerror: ' + e.message));
@@ -33,6 +36,18 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
     if (r.over.length) probs.push(where + ': 옆으로 넘침 ' + r.over.join(','));
     if (r.btns.length) probs.push(where + ': 버튼 글이 넘침 ' + r.btns.join(','));
     BAN.forEach((w) => { if (r.text.includes(w)) probs.push(where + ': 쓰지 않는 표현 "' + w + '"'); });
+    if (AUDIT) {
+      const a = await p.evaluate(() => {
+        const box = document.querySelector('.ot3'), vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+        const small = [...box.querySelectorAll('button, summary, input, textarea')].filter(vis).map((e) => ({ r: e.getBoundingClientRect(), c: (e.className || e.tagName).split(' ')[0], t: (e.getAttribute('aria-label') || e.textContent).trim().slice(0, 16) })).filter((x) => x.r.height < 43.5 || x.r.width < 43.5).map((x) => x.c + '|' + x.t + '|' + Math.round(x.r.width) + '×' + Math.round(x.r.height));
+        const clip = [...box.querySelectorAll('*')].filter((e) => vis(e) && e.children.length === 0 && e.textContent.trim() && (e.scrollWidth > e.clientWidth + 1) && getComputedStyle(e).overflow !== 'visible').map((e) => (e.className || e.tagName) + '|' + e.textContent.trim().slice(0, 24));
+        const out = [...box.querySelectorAll('button, .ref, .vcard, .note, .say, .comm3, .findcard, .matcard, img, svg')].filter(vis).filter((e) => { const r = e.getBoundingClientRect(); return r.right > innerWidth + 1 || r.left < -1; }).map((e) => (e.className && e.className.baseVal !== undefined ? 'svg' : (e.className || e.tagName)));
+        const body = box.querySelector('.sheet-body'), foot = box.querySelector('.sheet-foot'), map = box.querySelector('.otmap');
+        const footOver = foot ? [...foot.querySelectorAll('.btn')].filter((e) => e.getBoundingClientRect().height > 70).map((e) => e.textContent) : [];
+        return { small, clip, out, footOver, scroll: body ? Math.max(0, body.scrollHeight - body.clientHeight) : 0, bodyH: body ? body.clientHeight : (map ? map.clientHeight : 0), full: body ? body.scrollHeight : 0 };
+      });
+      aud.push(Object.assign({ where }, a));
+    }
   };
   // 물음 풀기(페이지 안에서 누른다). wrongFirst면 맞지 않는 보기를 먼저 눌러 안내가 나오는지 본다
   const solve = async (where, wrongFirst) => {
@@ -42,7 +57,7 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
     return r;
   };
 
-  await p.goto('file:///home/user/bible_onyou/dist/preview3d.html');
+  await p.goto(process.env.BO_PAGE || 'file:///home/user/bible_onyou/dist/preview3d.html');   /* BO_PAGE: 다른 묶음(전·후 비교용 사본)을 볼 때 */
   await p.waitForTimeout(2500);
   await p.evaluate(() => document.fonts.ready);
   await p.click('.tier >> nth=' + ti);
@@ -94,6 +109,7 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
   await shot('map-end'); await check('끝난 뒤 시대 지도');
   const fin = await st();
   fs.writeFileSync(path.join(out, 'log.txt'), log.join('\n') + '\n');
+  if (AUDIT) fs.writeFileSync(path.join(out, 'audit.json'), JSON.stringify({ w: VW, h: VH, tier: ti, items: aud }));
   console.log(log.join('\n'));
   console.log('단계', ti, '· 장면', from + '~' + to, '· 마친 장면', fin.done, '· 재료', fin.mats + '/' + fin.total, '· 화면', n);
   console.log('문제', probs.length, probs.slice(0, 40).join('\n'));
