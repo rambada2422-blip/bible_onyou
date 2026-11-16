@@ -4,7 +4,7 @@
    "beats.1.text.t3",
    "design3d.props.0"
   ],
-  "note": ""
+  "note": "지금 3D의 골리앗은 단창을 그리지 않는다(\"공통·인물\" 항목의 설정과 인물 사진). 단창은 위의 14~19세 대목 글과 3D 설계의 물건 목록에만 있다."
  },
  "034a620e18": {
   "at": [
@@ -69,7 +69,7 @@
    "mission.help.steps.3.answer.t2",
    "mission.help.steps.3.answer.t3"
   ],
-  "note": "검증 기록은 '문답 2'라고 했으나, 지금 이 물음과 답은 돕기 단계의 뜻 묻기 자리에 있다."
+  "note": "검증 기록은 '문답 2'라고 했으나, 지금 이 물음과 답은 뜻 묻기 자리에 있다."
  },
  "167f197fcd": {
   "at": [
@@ -610,9 +610,12 @@
    "beats.4.text.t3",
    "gates.t2.0.confirm.options.0.label",
    "cards.0.title",
-   "mission.help.steps.4.nt.text"
+   "mission.help.steps.4.nt.text",
+   "mission.help.steps.4.answer.t1",
+   "mission.help.steps.4.answer.t2",
+   "mission.help.steps.4.answer.t3"
   ],
-  "note": "검증 기록은 신약과의 연결이 없다고 했지만, 지금은 돕기 마지막 걸음에 고린도전서 5장 7절을 잇는 한 줄이 들어 있다(감수 뒤 확정이라고 적혀 있음)."
+  "note": "검증 기록은 신약과의 연결이 없다고 했지만, 지금은 뜻 묻기 단계에 고린도전서 5장 7절을 잇는 신약 연결 한 줄이 들어 있다(감수 뒤 확정이라고 적혀 있음). 유월절 제사(12:27)는 뜻 묻기 답에 있다."
  },
  "92f976c2c6": {
   "at": [
@@ -630,9 +633,16 @@
    "beats.5.text.t3",
    "beats.6.text.t3",
    "mission.today.1.a.t1",
-   "mission.help.steps.1.answer.t1"
+   "mission.help.steps.1.answer.t1",
+   "mission.today.1.a.t2",
+   "mission.today.1.a.t3",
+   "mission.help.steps.1.answer.t2",
+   "mission.help.steps.1.answer.t3",
+   "mission.help.steps.1.read.t1.confirm.options.0.label",
+   "mission.help.steps.1.read.t2.confirm.options.0.label",
+   "mission.help.steps.1.read.t3.confirm.options.0.label"
   ],
-  "note": "8~10세 대목 글에는 이 낱말이 없고, 8~10세의 오늘의 물음 답과 돕기 단계 답에는 있다."
+  "note": "8~10세 대목 글에는 이 낱말이 없고, 8~10세의 오늘의 물음 답과 뜻 묻기 답에는 있다."
  },
  "93f649069b": {
   "at": [
@@ -689,9 +699,11 @@
    "mission.help.steps.0.text.t2",
    "mission.help.steps.0.text.t3",
    "mission.help.who",
-   "mission.help.steps.3.answer.t1"
+   "mission.help.steps.3.answer.t1",
+   "mission.help.steps.3.answer.t2",
+   "mission.help.steps.3.answer.t3"
   ],
-  "note": "마지막 자리는 검증 기록이 함께 보라고 한 창 1:26-28 답(8~10세 글)이다."
+  "note": "마지막 세 자리는 검증 기록이 함께 보라고 한 창 1:26-28의 뜻 묻기 답이다. 형상이 무엇인지는 이 본문이 더 풀어 말하지 않는다는 말은 11~13세·14~19세 답에 있다."
  },
  "a39f9caab6": {
   "at": [
@@ -836,7 +848,8 @@
   "at": [
    "quests.2.q.t2.confirm.prompt",
    "beats.3.text.t2",
-   "beats.3.text.t3"
+   "beats.3.text.t3",
+   "quests.2.q.t2.confirm.options.0.label"
   ],
   "note": "지금 백성이 서로 한 말을 묻는 것은 부품 셋째의 11~13세 물음이다. 14~19세 물음은 그것의 생김새와 이름을 묻는다."
  },
@@ -864,7 +877,7 @@
    "mission.help.steps.2.answer.t2",
    "mission.help.steps.2.title"
   ],
-  "note": "검증 기록은 '오늘의 물음 1'이라고 했으나, 지금 이 답은 돕기 단계의 뜻 묻기 자리에 있다."
+  "note": "검증 기록은 '오늘의 물음 1'이라고 했으나, 지금 이 답은 뜻 묻기 자리에 있다."
  },
  "cb5502925a": {
   "at": [
@@ -889,7 +902,7 @@
    "beats.6.text.t3",
    "mission.help.steps.3.answer.t3"
   ],
-  "note": "지금 14~19세 관문 보기에는 이 말이 없고, 돕기 단계 뜻 묻기의 14~19세 답에 있다."
+  "note": "지금 14~19세 관문 보기에는 이 말이 없고, 뜻 묻기의 14~19세 답에 있다."
  },
  "d195c633a7": {
   "at": [
@@ -1091,7 +1104,9 @@
    "mission.help.steps.0.text.t2",
    "mission.help.steps.0.tasks.0",
    "mission.help.steps.0.tasks.1",
-   "mission.help.steps.0.tasks.2"
+   "mission.help.steps.0.tasks.2",
+   "mission.help.steps.0.text.t1",
+   "mission.help.steps.0.text.t3"
   ],
   "note": ""
  }

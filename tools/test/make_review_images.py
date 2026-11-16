@@ -20,8 +20,12 @@ for d in sorted(os.listdir(src)):
             im = Image.open(os.path.join(p, f)).convert('RGB'); w, h = im.size
             im = im.crop((0, 0, w, int(h * 0.5))).resize((97, 105))
             px = list(getattr(im, 'get_flattened_data', im.getdata)()); cream = sum(1 for r, g, b in px if r > 235 and g > 228 and b > 215 and r - b < 30) / len(px)
-            return cream < 0.25 and ImageStat.Stat(im.convert('L')).stddev[0] >= 15
-        ev = [f for f in ev if usable(f)] or ev
+            return cream < 0.05 and ImageStat.Stat(im.convert('L')).stddev[0] >= 15  # 0.05: 말풍선(OT-09 온우의 말 0.09)도 뺀다
+        ok = [f for f in ev if usable(f)]
+        if len(ok) < 3:  # 쓸 만한 지켜보기 화면이 셋보다 적으면 걸어가는 화면(…-walking.png)으로 채운다
+            walk = [f for f in sorted(os.listdir(p)) if f.endswith('-walking.png') and 'help' not in f and usable(f)]
+            ok = sorted(ok + walk[:3 - len(ok)])
+        ev = ok or ev
         pick = []
         for i in ([0, len(ev) // 2, len(ev) - 1] if len(ev) >= 3 else range(len(ev))):
             if ev[i] not in pick: pick.append(ev[i])

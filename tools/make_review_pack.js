@@ -285,7 +285,7 @@ function pathLabel(pth) {
     else if (p[1] === 'companion') w = p[2] === 'talks' ? '동행 문답 ' + num(3) + (p[4] === 'ask' ? ' · 아이의 물음' : ' · 답') : '동행 인물';
     else if (p[1] === 'materials') w = '재료 ' + num(2) + ({ name: '', how: ' · 얻는 방법', use: ' · 박사의 말', line: ' · 아이의 말' }[p[3]] || '');
     else if (p[1] === 'call') w = '박사의 통신';
-    else if (p[1] === 'help') w = p[2] === 'steps' ? '현장 돕기 단계 ' + num(3) + (p[4] === 'nt' ? ' · 신약 연결' : p[4] === 'answer' ? ' · 뜻 묻기의 답' : p[4] === 'read' ? ' · 성경 읽기 물음' : p[4] === 'ask' ? ' · 아이의 물음' : p[4] === 'title' ? ' · 제목' : p[4] === 'tasks' ? ' · 누르는 일' : p[4] === 'done' ? ' · 마친 뒤 말' : '') : '돕는 상대';
+    else if (p[1] === 'help') w = p[2] === 'steps' ? '현장 돕기 단계 ' + num(3) + (p[4] === 'nt' ? ' · 신약 연결' : p[4] === 'answer' ? ' · 뜻 묻기의 답' : p[4] === 'read' ? (p.includes('options') ? ' · 성경 읽기 물음의 보기' : ' · 성경 읽기 물음') : p[4] === 'ask' ? ' · 아이의 물음' : p[4] === 'title' ? ' · 제목' : p[4] === 'tasks' ? ' · 누르는 일' : p[4] === 'done' ? ' · 마친 뒤 말' : '') : '돕는 상대';
     else w = '임무';
   } else w = pth;
   return w + (tier ? ' · ' + tier : '');
@@ -521,12 +521,12 @@ const GUIDE = {
   how: [
     '항목마다 **그대로 / 고침 / 뺌** 가운데 하나를 골라 주세요. "고침"과 "뺌"에는 한 줄만 적어 주셔도 됩니다(어떻게 고칠지, 왜 빼는지).',
     '**그대로**: 이대로 아이들에게 보여도 된다. **고침**: 적어 주신 대로 고친 뒤 쓴다. **뺌**: 아이들에게 보이지 않는다.',
-    '"검증자가 남긴 것" 항목은 물음의 꼴이라 표시가 다릅니다: **지금대로**(지금 되어 있는 대로 둔다) / **바꿈**(적어 주신 대로 바꾼다) / **의논 필요**.',
-    '"검증자가 남긴 것"의 아래 글은 검증 기록을 옮긴 것입니다(자료 이름만 우리말로 풀었습니다). 그 장면의 글은 같은 장면의 "대목 글"과 다른 항목에 그대로 있습니다. 기록 속의 "위·아래 …"는 검증 기록 안의 다른 곳을 가리키고, "대목 0"처럼 0부터 센 곳도 있으니 **장절로 찾아 주세요.**',
+    '"검증자가 남긴 것"과 "대표가 여쭙는 것" 항목은 물음의 꼴이라 표시가 다릅니다: **지금대로**(지금 되어 있는 대로 둔다) / **바꿈**(적어 주신 대로 바꾼다) / **의논 필요**.',
+    '"검증자가 남긴 것"의 아래 글은 검증 기록을 옮긴 것입니다(자료 이름만 우리말로 풀었습니다). 그 장면의 글은 같은 장면의 "대목 글"과 다른 항목에 그대로 있습니다. 기록 속의 "위·아래 …"는 검증 기록 안의 다른 곳을 가리키고, "대목 0"처럼 0부터 센 곳도 있으니 **장절로 찾아 주세요.** 그 아래 "지금 게임의 글"은 그 물음이 가리키는 지금 게임의 문장을 자동으로 찾아 붙인 것이라 일부만 실렸을 수 있습니다. 검증 기록과 지금 자료가 다르면 "덧붙임"이 지금 상태를 알려 드립니다.',
     '원칙(규칙) 항목에서는 **그대로 = 이 원칙에 동의, 고침 = 조건을 달아 동의, 뺌 = 이 방식은 쓰지 않는다**는 뜻입니다. 원칙에서 "뺌"이 나오면 그 원칙에 딸린 장면 항목은 보실 필요가 없습니다.',
-    '휴대폰·컴퓨터에서는 `감수자료.html`을 열면 표시한 것이 그 기기에 저장되고, "내보내기"로 글로 뽑아 보내실 수 있습니다. 종이가 편하시면 `감수자료_인쇄용.html`을 인쇄해 주세요(전체는 A4 약 200쪽으로 많습니다. `먼저볼30_인쇄용.html`은 훨씬 짧습니다).',
+    '휴대폰·컴퓨터에서는 `감수자료.html`을 열면 표시한 것이 그 기기에 저장되고, "내보내기"로 글로 뽑아 보내실 수 있습니다. 종이가 편하시면 `감수자료_인쇄용.html`을 인쇄해 주세요(전체는 A4 약 240쪽으로 많습니다. `먼저볼30_인쇄용.html`은 원칙과 먼저 볼 30항목만으로 약 30쪽입니다).',
     '성경 본문은 싣지 않았습니다(사용 허락 전). 장절을 보시고 성경책에서 확인해 주세요.',
-    '3D 장면과 인물은 화면 사진을 몇 장씩 실었습니다(컴퓨터에서 휴대폰 크기로 찍은 것). 움직임과 소리는 사진으로 알 수 없으니, 직접 보셔야 판단되는 것은 메모로 남겨 주세요(대표가 미리보기 화면을 보여 드릴 수 있습니다).'
+    '3D 장면과 인물의 화면 사진은 전체 감수 자료(`감수자료.html`, `감수자료_인쇄용.html`)에 몇 장씩 실었습니다(컴퓨터에서 휴대폰 크기로 찍은 것). 움직임과 소리는 사진으로 알 수 없으니, 직접 보셔야 판단되는 것은 메모로 남겨 주세요(대표가 미리보기 화면을 보여 드릴 수 있습니다).'
   ],
   order: [
     '① **원칙과 공통 항목**: 여기서 방향이 정해집니다.',
@@ -559,7 +559,8 @@ function readmeMd() {
   row('③ 먼저 볼 30항목', first30);
   row('④ 감수 필수 장면 ' + REQ_N + '개의 표시 항목(③과 겹치는 것 포함)', coreItems.filter((it) => it.scene && sceneById[it.scene].review.required));
   row('⑤ 나머지 장면 ' + (40 - REQ_N) + '개의 표시 항목', coreItems.filter((it) => it.scene && !sceneById[it.scene].review.required));
-  row('전체(표시할 항목)', coreItems);
+  row('⑥ 시대 안내·마무리 등 시대마다 하나씩인 항목', coreItems.filter((it) => !it.scene && it.group !== 'rule'));
+  row('전체(표시할 항목, ①④⑤⑥을 더한 수. ②③은 그 안에서 고른 것)', coreItems);
   o.push('', TIME_NOTE, '');
   o.push('### 표시하는 방법', ''); GUIDE.how.forEach((x) => o.push('- ' + x)); o.push('');
   o.push('### 보시는 순서(권함)', ''); GUIDE.order.forEach((x) => o.push('- ' + x)); o.push('');
@@ -574,7 +575,8 @@ function readmeMd() {
     ['신약 연결', '구약 사건을 신약 장절과 잇는 글(14~19세만)', cnt('nt')],
     ['오늘의 물음', '지금 아이가 궁금해할 물음과 최현 박사의 답', cnt('today')],
     ['마무리(기도·실천)', '8~10세 기도, 11~13세 실천, 14~19세 기록 물음. 시대별로 모았습니다', cnt('close')],
-    ['공통 · 시대 추리', '읽어 주기, 마무리의 꼴, 3D 인물의 생김새, 모든 장면에 똑같이 뜨는 글, 요단 강 시대 추리', items.filter((it) => it.kind === 'common').length],
+    ['공통 · 시대 추리', '읽어 주기, 마무리의 꼴, 3D 인물의 생김새, 모든 장면에 똑같이 뜨는 글, 요단 강 시대 추리', items.filter((it) => it.kind === 'common' && !it.id.startsWith('여쭘·')).length],
+    ['대표가 여쭙는 것', '대표 결재지에서 목사님 판단이 섞여 넘긴 것(원칙과 공통 항목 묶음 안. 표시는 지금대로 / 바꿈 / 의논 필요)', items.filter((it) => it.id.startsWith('여쭘·')).length],
     ['3D 설정 / 화면 원칙', '하나님을 어떻게 표현하는지, 무엇을 그리지 않는지, 본문에 없는 배치', cnt('scene3d') + ' / ' + cnt('screen')],
     ['검증자가 남긴 것', '본문 대조를 한 검증자가 "감수 때 정해 달라"고 남긴 것', (openBy['목회자'] || 0) + (openBy['미분류'] || 0)],
     ['그 밖의 글(참고)', '관문 물음, 탐지기 물음, 재료, 곁에서 보기 등. 표시 항목은 아니지만 빠짐없이 실었습니다', cnt('rest')]
@@ -766,7 +768,8 @@ function guideHtml(print) {
   row('③ 먼저 볼 30항목', first30);
   row('④ 감수 필수 장면 ' + REQ_N + '개의 표시 항목(③과 겹침)', coreItems.filter((it) => it.scene && sceneById[it.scene].review.required));
   row('⑤ 나머지 장면 ' + (40 - REQ_N) + '개의 표시 항목', coreItems.filter((it) => it.scene && !sceneById[it.scene].review.required));
-  row('전체(표시할 항목)', coreItems);
+  row('⑥ 시대 안내·마무리 등 시대마다 하나씩인 항목', coreItems.filter((it) => !it.scene && it.group !== 'rule'));
+  row('전체(표시할 항목, ①④⑤⑥을 더한 수. ②③은 그 안에서 고른 것)', coreItems);
   o.push('</table><p class="sm">' + inl(TIME_NOTE) + '</p>');
   o.push('<h3>표시하는 방법</h3><ul>');
   GUIDE.how.filter((x, i) => !(print && i === 5)).forEach((x) => o.push('<li>' + inl(x) + '</li>'));
@@ -778,9 +781,9 @@ function guideHtml(print) {
   o.push('</ol><p class="sm">글 앞의 "8~10세 / 11~13세 / 14~19세"는 그 나이 단계의 아이에게 보이는 글입니다. 굵은 글은 게임에 나오는 문장 그대로이고, 옅은 글은 설명입니다. 초록 글자는 근거 장절입니다.</p></section>');
   return o.join('\n');
 }
-function first30Html(print) {
+function first30Html(print, fullScope) {
   const mode = print ? 'print' : 'screen';
-  const o = ['<section id="scope" class="noprisec"><h2' + (print ? '' : ' class="first"') + '>감수 범위를 먼저 정할 것</h2><p class="sm">지금 "감수 필수 아님"으로 둔 장면 가운데, 검증자가 필수로 올릴지 물은 것입니다. 표시는 그 항목에서 합니다.</p><ul>' +
+  const o = [fullScope ? '<section id="scope" class="noprisec"><h2>감수 범위를 먼저 정할 것</h2><p class="sm">지금 "감수 필수 아님"으로 둔 장면 가운데, 검증자가 필수로 올릴지 물은 것입니다. 여기서 표시해 주세요.</p>' + scopeItems.map((it) => htmlItem(it, mode)).join('\n') + '</section>' : '<section id="scope" class="noprisec"><h2' + (print ? '' : ' class="first"') + '>감수 범위를 먼저 정할 것</h2><p class="sm">지금 "감수 필수 아님"으로 둔 장면 가운데, 검증자가 필수로 올릴지 물은 것입니다. 표시는 그 항목에서 합니다.</p><ul>' +
     scopeItems.map((it) => '<li>' + (print ? '<b>' + esc(it.id) + '</b>' : '<a href="#' + esc(it.id) + '">' + esc(it.id) + '</a>') + ' ' + esc(it.title) + '</li>').join('') + '</ul></section>',
     '<section id="first30"><h2>먼저 볼 30항목</h2><p class="sm">' + inl(FIRST_NOTE) + '</p>'];
   if (print) first30.forEach((it) => { o.push('<p class="sm"><b>' + it.pri + '.</b> ' + esc(sceneById[it.scene].id + ' ' + sceneById[it.scene].title + ' (' + sceneById[it.scene].ref + ')') + ' · ' + esc(it.pwhy) + '</p>'); o.push(htmlItem(it, mode)); });
@@ -792,8 +795,8 @@ function first30Html(print) {
   o.push('</section>');
   return o.join('\n');
 }
-function rulesHtml(mode) {
-  return '<section id="rules" class="noprisec"><h2>원칙 ' + RULE_N + '가지와 공통 항목</h2><p class="sm">규칙서 3절과 13절(대표 결정, 목회자 감수 전)에서 먼저 보실 것을 옮겼습니다. "규칙서" 줄은 규칙서의 글 그대로입니다. 그 뒤는 모든 장면에 걸치는 공통 항목과 요단 강 시대 추리입니다.</p>' + items.filter((it) => it.group === 'rule').map((it) => htmlItem(it, mode)).join('\n') + '</section>';
+function rulesHtml(mode, coreOnly) {
+  return '<section id="rules" class="noprisec"><h2>원칙 ' + RULE_N + '가지와 공통 항목</h2><p class="sm">규칙서 3절과 13절(대표 결정, 목회자 감수 전)에서 먼저 보실 것을 옮겼습니다. "규칙서" 줄은 규칙서의 글 그대로입니다. 그 뒤는 모든 장면에 걸치는 공통 항목과 요단 강 시대 추리입니다.</p>' + items.filter((it) => it.group === 'rule' && (!coreOnly || it.core)).map((it) => htmlItem(it, mode)).join('\n') + (coreOnly ? '<p class="sm">참고 항목(공통·화면글참고)은 전체 감수 자료에 있습니다.</p>' : '') + '</section>';
 }
 function erasHtml(mode, filter) {
   const print = mode === 'print';
@@ -840,7 +843,7 @@ function printHtml() {
   return page('바이블 온유 · 목회자 감수 자료(인쇄용)', CSS_COMMON + CSS_PRINT, body, '');
 }
 function first30PrintHtml() {
-  return page('바이블 온유 · 먼저 볼 30항목(인쇄용)', CSS_COMMON + CSS_PRINT, '<main>' + guideHtml(true) + first30Html(true).replace('<h2>', '<h2 class="first">') + '</main>', '');
+  return page('바이블 온유 · 먼저 볼 30항목(인쇄용)', CSS_COMMON + CSS_PRINT, '<main>' + guideHtml(true) + rulesHtml('print', true).replace('<h2>', '<h2 class="first">') + first30Html(true, true) + '</main>', '');
 }
 function refPrintHtml() {
   const body = '<main><section class="cover"><h1>바이블 온유 · 참고: 장면 전체 글</h1><p class="sm">자료 판 ' + VERSION + '</p><p>감수 자료의 표시 항목에 넣지 않은 글을 빠짐없이 실었습니다: 대목 글(8~10세·11~13세·14~19세), 최현 박사의 통신, 수리 재료, 관문 물음, 3D 탐지기 물음, 곁에서 보기·함께 머물기, 말씀 카드, 화면 원칙. <b>감수 필수 장면의 대목 글</b>은 표시 항목입니다(☐가 있습니다).</p></section>' + items.filter((it) => it.group === 'rule' && !it.core).map((it) => htmlItem(it, 'print')).join('\n') + erasHtml('print', refFilter) + '</main>';

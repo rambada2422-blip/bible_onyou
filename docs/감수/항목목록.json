@@ -1,5 +1,5 @@
 {
- "version": "aa452a59",
+ "version": "a4be56af",
  "note": "감수 자료의 항목 목록. node tools/make_review_pack.js 가 만든다. core=목회자가 표시하는 항목, src=그 글이 있는 곳",
  "counts": [
   {
@@ -298,7 +298,7 @@
    "era": null,
    "core": true,
    "first30": 0,
-   "chars": 247,
+   "chars": 221,
    "src": "docs/00_공통규칙서.md"
   },
   {
@@ -309,7 +309,7 @@
    "era": null,
    "core": true,
    "first30": 0,
-   "chars": 295,
+   "chars": 408,
    "src": "docs/00_공통규칙서.md"
   },
   {
@@ -320,7 +320,18 @@
    "era": null,
    "core": true,
    "first30": 0,
-   "chars": 211,
+   "chars": 198,
+   "src": "docs/00_공통규칙서.md"
+  },
+  {
+   "id": "여쭘·마26",
+   "kind": "common",
+   "label": "대표가 여쭙는 것",
+   "scene": null,
+   "era": null,
+   "core": true,
+   "first30": 0,
+   "chars": 303,
    "src": "docs/00_공통규칙서.md"
   },
   {
@@ -458,7 +469,7 @@
    "to": "목회자",
    "ukey": "a2c5bb2d1b",
    "ask": "창조(창 1:9)를 아이들이 타임머신 안에서 '지켜보기' 단계로 보게 해도 될까요?",
-   "chars": 771,
+   "chars": 1249,
    "src": "content/ot/OT-01.json"
   },
   {
@@ -2129,7 +2140,7 @@
    "to": "목회자",
    "ukey": "912aef2a7f",
    "ask": "어린 양의 피(출 12:7, 12:13, 12:22-23)와 유월절 제사(12:27)를 본문대로만 싣고 그대로 둘까요?",
-   "chars": 920,
+   "chars": 1329,
    "src": "content/ot/OT-10.json"
   },
   {
@@ -2660,7 +2671,7 @@
    "to": "목회자",
    "ukey": "c60afdb5a1",
    "ask": "출 16:15에서 백성이 서로 한 말을 한국어 성경 읽기대로 물어도 될까요?",
-   "chars": 551,
+   "chars": 567,
    "src": "content/ot/OT-13.json"
   },
   {
@@ -4293,7 +4304,7 @@
    "to": "목회자",
    "ukey": "93ce430ed3",
    "ask": "'기업 무를 사람'(룻 2:20, 4:14)을 풀이 없이 낱말로만 둔 것을 그대로 둘까요?",
-   "chars": 1268,
+   "chars": 2003,
    "src": "content/ot/OT-23.json"
   },
   {
@@ -4307,7 +4318,7 @@
    "to": "목회자",
    "ukey": "e471a6c8a1",
    "ask": "아이들이 룻이 떤 보리(룻 2:17-18)를 모아 성읍까지 함께 나르는 돕기를 그대로 둘까요?",
-   "chars": 295,
+   "chars": 539,
    "src": "content/ot/OT-23.json"
   },
   {
@@ -4732,7 +4743,7 @@
    "to": "목회자",
    "ukey": "018b30936e",
    "ask": "골리앗이 어깨 사이에 멘 것(삼상 17:6)을 개역한글대로 놋 단창으로 그릴까요?",
-   "chars": 464,
+   "chars": 550,
    "src": "content/ot/OT-26.json"
   },
   {
@@ -5272,7 +5283,7 @@
    "to": "목회자",
    "ukey": "140aa9ef07",
    "ask": "'이 일이 여호와께로부터 났다'(왕상 12:24)를 뜻 묻기의 답으로 두는 것을 그대로 둘까요?",
-   "chars": 350,
+   "chars": 343,
    "src": "content/ot/OT-29.json"
   },
   {
@@ -5582,7 +5593,7 @@
    "to": "목회자",
    "ukey": "cfc6699c47",
    "ask": "'하나님이 뜻을 돌이키셨다'(욘 3:10, 4:2)를 14~19세 글에 풀이 없이 그대로 둘까요?",
-   "chars": 932,
+   "chars": 926,
    "src": "content/ot/OT-31.json"
   },
   {
@@ -5760,7 +5771,7 @@
    "to": "목회자",
    "ukey": "caad30ccab",
    "ask": "여호와께서 이스라엘을 그 앞에서 제하셨다(왕하 17:23)는 말을 뜻 묻기 답에 그대로 둘까요?",
-   "chars": 604,
+   "chars": 597,
    "src": "content/ot/OT-32.json"
   },
   {
