@@ -186,8 +186,8 @@
     toastEl.hidden = false; toastEl.classList.remove('show'); void toastEl.offsetWidth; toastEl.classList.add('show');
     clearTimeout(toast.t); toast.t = setTimeout(function () { toastEl.hidden = true; }, 4200);
   }
-  function showPanel(kids_, foot) {
-    panelBody.replaceChildren(); panelFoot.replaceChildren();
+  function showPanel(kids_, foot, tall) {
+    panelBody.replaceChildren(); panelFoot.replaceChildren(); panel.classList.toggle('tall', !!tall);
     U.stopSpeak();
     add(panelBody, kids_); add(panelFoot, [U.speakBtn(function () { return panelBody; }), foot]);
     panel.hidden = false; panelBody.scrollTop = 0;
@@ -328,7 +328,7 @@
           if (SCN.partContinue) SCN.partContinue(i);
           var go2 = function () { quest = i + 1; openQuiz(); };
           if (bi !== null && bi !== undefined && hasHelp(bi)) seg('help:' + bi, go2); else go2();   /* 이 대목 뒤의 현장 돕기(규칙서 13.6) */
-        }));
+        }), true);   /* 재료와 대목을 함께 보여 주는 긴 패널 */
     } else { if (SCN.partFound) SCN.partFound(i); startLookup(); }
   }
   /* 대목 앞에 붙이는 탐험대 이야기 한 줄(예: 그 앞의 일을 타임머신 창으로 봄). 재료를 주울 때 보여 주는 대목에도 쓴다 */

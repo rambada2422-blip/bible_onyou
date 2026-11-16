@@ -146,3 +146,13 @@ button.track3 { border: 0; font: inherit; font-family: var(--f-display); cursor:
 .note.story3 small { font-size: 12px; letter-spacing: .04em; color: #2F7C74; }
 /* 잠긴 깃발 색(시대 부속을 고치면 열림) */
 .sw.locked { opacity: .35; font-size: 12px; }
+/* 휴대폰 화면 전수 점검에서 고친 것(play 갈래, 2026-11-16): 누르는 곳을 44px 이상으로, 재료 패널의 긴 글 */
+.sw { width: 44px; height: 44px; }
+.tog { min-height: 44px; }
+.dex3 { min-height: 44px; }
+.track3 { min-height: 44px; }
+.vskip3 { min-height: 44px; padding: 0 16px; }
+.snd3 { width: 48px; height: 48px; }
+/* 재료를 주운 자리의 패널(재료 + 지켜본 대목)은 글이 길다. 아이들이 멈춰 선 동안이므로 패널을 더 키워 스크롤을 줄인다 */
+.panel3.sheet.tall { max-height: 70%; }
+@media (max-height: 700px) { .panel3.sheet { max-height: 58%; } .panel3.sheet.tall { max-height: 78%; } .overlay3.sheet3 .sheet { max-height: 88%; } }
