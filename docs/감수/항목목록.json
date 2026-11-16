@@ -1,5 +1,5 @@
 {
- "version": "b6fa7210",
+ "version": "32f936f1",
  "note": "감수 자료의 항목 목록. node tools/make_review_pack.js 가 만든다. core=목회자가 표시하는 항목, src=그 글이 있는 곳",
  "counts": [
   {

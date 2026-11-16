@@ -102,7 +102,7 @@
 
 검증자가 남긴 것 200건의 분류: 같음 15 · 대표 25 · 목회자 134 · 코드 9 · 풀림 17. "목회자"와 "미분류"만 표시 항목으로 실었고, "대표"는 `대표_결재지.md`로, "코드"·"풀림"·"같음"은 `미해결_전체.md`에 까닭과 함께 적었습니다.
 
-만드는 방법(만드는 사람용): 이 폴더의 파일은 `node tools/make_review_pack.js`가 장면 자료와 게임 코드에서 뽑아 만듭니다(자료 판 `b6fa7210`). 내용이 바뀌면 다시 돌리면 되고 손으로 고치지 않습니다. 검사는 `node tools/test/check_review_pack.js`, 화면 점검은 `node tools/test/shot_review_pack.js`.
+만드는 방법(만드는 사람용): 이 폴더의 파일은 `node tools/make_review_pack.js`가 장면 자료와 게임 코드에서 뽑아 만듭니다(자료 판 `32f936f1`). 내용이 바뀌면 다시 돌리면 되고 손으로 고치지 않습니다. 검사는 `node tools/test/check_review_pack.js`, 화면 점검은 `node tools/test/shot_review_pack.js`.
 
 ## 감수 범위를 먼저 정할 것
 

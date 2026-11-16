@@ -4,7 +4,20 @@
 (마감 때 채운다)
 
 ## ▶ 다음
-화면 사진 넣기 마무리(`.venv-bpy/bin/python tools/test/make_review_images.py <찍은 폴더>` → `node tools/make_review_pack.js` → 검사·화면 점검) → 감수 자료 3차 독립 검증(사진과 붙인 문장) → 마감 무렵 다른 갈래 진행 파일을 다시 읽어 결재지 '마' 묶음 갱신 → 최종 보고.
+**인계(2026-11-16 15:00 KST쯤, 총괄 요청으로 이 세션을 멈추고 새 세션이 이어받음).** 새 세션은 `docs/auto/00_공통지시.md`와 `docs/auto/pack_지시.md`를 읽고 `bash tools/setup_env.sh`를 돌린 뒤 아래 차례로 한다. 지시서의 1~5번과 여력 3건은 모두 만들어져 있고 독립 검증을 두 번 반영했다. 남은 것은 아래 다섯 가지뿐이다.
+
+1. **화면 사진 마저 넣기(1차 독립 검증 A-10, 중간 저장 상태).** 지금 `docs/감수/화면/`에는 3D 12장면 가운데 7장면(OT-03·05·11·13·18·19·21, 3장씩)과 인물 1명(다윗)만 있다. 남은 것: OT-09·26·30·36·39와 인물 13명. 찍은 원본은 앞 세션의 임시 폴더에 있어 사라졌으니 다시 찍는다(장면 하나에 3~8분, **한 번에 하나씩**):
+   - `D=/tmp/pack_shots; mkdir -p $D`
+   - `for id in OT-26 OT-30 OT-36 OT-39; do node tools/test/walk3dScene.js $id 1 $D/$id; done` · 호렙은 `node tools/test/walk3d.js 1 $D/OT-09`
+   - `for n in aaron abraham daniel darius elijah ezra gideon goliath nehemiah noah joshua moses priest david; do node tools/test/view_person.js $n $D/p_$n.png; done`
+   - `.venv-bpy/bin/python tools/test/make_review_images.py $D` (지켜보기 화면에서 처음·가운데·끝 석 장을 골라 위쪽 절반을 잘라 `docs/감수/화면/`에 둔다. 이미 있는 7장면 사진은 그대로 남는다. **호렙(walk3d.js)은 화면 파일 이름이 달라 사진이 안 뽑힐 수 있다**: `ls $D/OT-09`로 이름을 보고 스크립트의 고르는 규칙(`event`·`watch`·`vision`)에 맞는지 확인, 안 맞으면 스크립트에 그 이름을 더한다)
+   - `node tools/make_review_pack.js` → `node tools/test/check_review_pack.js` → `node tools/test/shot_review_pack.js /tmp/rs`(화면을 직접 열어 사진이 맞는 장면에 들어갔는지 본다) → 커밋·푸시.
+2. **감수 자료 3차 독립 검증**(아직 하지 않음): 작성 과정을 보지 않은 하위 에이전트에게 `docs/감수/README.md`, `md/시대03.md`, `먼저볼30_인쇄용.html`을 주고 ① 검증자 항목 아래 붙인 "지금 게임의 글"이 그 물음이 말하는 문장이 맞는지 표본 30건(자리는 `docs/감수/미해결_자리.json`, 하위 에이전트가 찾은 것이라 틀릴 수 있다) ② 화면 사진이 그 장면의 것인지 ③ 1차 지적 가운데 남긴 것(아래 "실패·주의")을 다시 보게 한다. 높음·중간을 고치고 지적 수와 반영 수를 "끝난 것"에 적는다.
+3. **마감 무렵(11/17 12:00~13:00 KST) 결재지의 '마' 묶음 갱신.** `git fetch origin 'refs/heads/claude/auto-*:refs/remotes/origin/claude/auto-*'` 뒤 갈래마다 `git show origin/claude/auto-<갈래>:docs/auto/<갈래>_진행.md`의 "대표 결정 대기"를 읽어 `docs/감수/대표_결재_자료.json`의 `"sec": "E"` 줄을 고친다(지금 것은 11/16 14:45에 읽은 10가지). **아직 옮기지 않은 것**(2차 독립 검증 낮음 7): play의 분위기 소리 크기, verify의 장면 머리 장절(첫 범위만)·11~13세 "왜" 물음 2곳·10~15글자 같은 곳 622곳, art의 OT-08 약대·OT-16 요단 강·OT-20 풍경·OT-22 낮밤, 3d-a의 갈렙 생김새, 그리고 그 뒤 새로 생긴 줄. 신학 판단이 섞인 것은 그 줄의 `pastor`에 적고, 목사님께 따로 여쭐 것은 `"pastorItem": true`를 달면 감수 자료에 `여쭘·마N` 항목으로 실린다. 고친 뒤 `node tools/make_review_pack.js` → 검사 → 커밋·푸시. `sections`의 E 묶음 `lead`에 적힌 "옮긴 때"도 고친다.
+4. **1차 독립 검증에서 남긴 낮은 지적**(시간이 남으면): A-12 `OT-32·미해결7`은 OT-29의 일인데 OT-32 아래에 실림(검증 기록의 자리 그대로) / A-17 검증 기록 글이 지금 자료와 다른 2건(OT-32·미해결6, OT-31·미해결1)에 "지금은 ~" 한 줄 붙이기(`미해결_자리.json`의 `note`에 적으면 실린다) / A-22 대표로 뺀 돕기 물음(OT-09·미해결3, OT-14·미해결8, OT-36·미해결7)을 그 돕기 항목 아래에도 붙이기. 2차의 낮음 2건: 낮음 3(한 아이의 두 구간이 모두 "첫 10분"으로 들어가면 표본 경고가 엉뚱함, `docs/아이시험/집계도구.html`의 sampleWarnings), 낮음 2는 관찰지에 단추 이름을 적어 반영함.
+5. **마감(11/17 14:00 KST)**: 모든 검사(`node tools/make_review_pack.js --check`, `check_review_pack.js`, `check_kidtest.js`, `shot_review_pack.js`, `shot_kidtest.js`)를 다시 돌리고, 이 파일 맨 위 "최종 보고"를 쓴다(한 일 / 시험 결과 / 안 된 것 / 합칠 때 주의). 합칠 때 주의에 꼭 적을 것: 이 갈래는 `docs/감수/`, `docs/아이시험/`, `tools/make_review_pack.js`, `tools/test/`의 새 파일 6개(`check_review_pack.js`, `shot_review_pack.js`, `check_kidtest.js`, `shot_kidtest.js`, `make_review_images.py`)와 `docs/auto/pack_진행.md`만 더했고 게임 코드와 장면 자료는 고치지 않았다 / 다른 갈래가 장면 자료나 게임 글을 고쳤으면 합친 뒤 `node tools/make_review_pack.js`를 다시 돌려야 감수 자료가 맞는다(자료 판이 바뀐다. `미해결_분류.json`·`미해결_자리.json`은 검증 기록의 글 해시와 장면 자료의 자리에 기대므로, 검증 기록이나 자료가 바뀌면 "미분류"나 "자리 없음(건너뜀)" 경고가 나온다 → 그 항목만 다시 분류) / `docs/아이시험/집계도구.html`의 돕기 단계 번호표(HELPMAP)도 장면 자료가 바뀌면 `check_kidtest.js`가 알려 준다.
+
+**자료를 고치는 방법(꼭 지킬 것)**: `docs/감수/` 안에서 손으로 고치는 파일은 `대표_결재_자료.json`, `미해결_분류.json`, `미해결_자리.json`, `개역개정_신청_준비.md`, `감수결과_반영순서.md`, `공개전_점검표.md`, `출처_사용조건.md`, `전달_안내와_편지초안.md`뿐이다. 나머지(`README.md`, `감수자료*.html`, `먼저볼30_인쇄용.html`, `참고_장면전체글_인쇄용.html`, `md/`, `항목목록.json`, `미해결_전체.md`, `대표_결재지.md`·`.html`)는 `node tools/make_review_pack.js`가 만든다. 손으로 고치면 다음에 덮어쓴다. `docs/아이시험/`은 모두 손으로 쓴 파일이다.
 
 ## 끝난 것
 - 시작 점검(2026-11-16 14:20 KST): `setup_env.sh` 끝, `validate_ot.js --v3` 40장면 오류 0 경고 0, `build3d.js` 통과. 이 갈래는 게임 코드를 고치지 않으므로 3D 시험은 돌리지 않았다.
@@ -25,7 +38,9 @@
   - 검사: `check_kidtest.js` 44가지 통과, `shot_kidtest.js` 통과(관찰지 1쪽 유지), `check_review_pack.js` 통과.
 
 ## 하는 중
-- 화면 사진 찍기(배경).
+- (인계로 멈춤) 화면 사진: 7장면과 다윗까지만 들어간 **중간 저장** 상태. 사진이 없는 장면과 인물은 글과 색 네모만 실린다(생성기가 사진이 있으면 싣고 없으면 건너뛴다). 감수 자료의 안내 글은 "화면 사진을 몇 장씩 실었습니다"라고 적혀 있으니, 사진을 다 넣기 전에는 목사님께 드리지 않는다.
+- 돌고 있던 하위 에이전트는 없다. 배경에서 돌던 화면 찍기는 멈췄다.
+- 마지막 검사(인계 직전): `check_review_pack.js` 모두 통과, `check_kidtest.js` 44가지 통과. 숫자: 표시할 항목 468, 전체 601, 미해결 200건 분류(목회자 134·대표 25·코드 9·같음 15·풀림 17), 결재지 39가지.
 
 ## 대표 결정 대기
 | 무엇 | 왜 대표가 정해야 하나 | 그동안 쓴 기본값 |
