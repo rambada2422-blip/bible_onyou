@@ -9,8 +9,9 @@ for m in re.finditer(r'/\* ── (OT-\d\d[^\n]*?) ──\n(.*?)\*/(.*?)(?=/\* �
     out.append('### '+m.group(1))
     head=' '.join(x.strip().lstrip('*').strip() for x in m.group(2).strip().split('\n'))
     out.append(head); out.append('')
-    for c in re.findall(r'\n  /\* (\d+[^\n]*?) \*/\n',m.group(3)):
-        out.append('- '+c)
+    seen=set()
+    for c in re.findall(r'/\* (\d[\d·]*\)[^\n]*?) \*/',m.group(3)):   # 그림 함수 위의 줄 주석과 beats 줄 끝의 주석 모두
+        if c not in seen: seen.add(c); out.append('- '+c)
     out.append('')
 p=root+'docs/auto/art_진행.md'; t=io.open(p,encoding='utf8').read()
 a=t.index('## 그린 것과 근거 장절'); b=t.index('## 그리는 법 요약')
