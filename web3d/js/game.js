@@ -780,7 +780,7 @@
   function seg(kind, done) {
     if (!BO3D.story || !BO3D.story.segment) { done(); return; }
     var prev = state; state = 'seg'; base.hidden = true; stick.x = stick.y = 0; stick.id = null;
-    BO3D.story.segment(SCN.id, kind, function () { state = prev; done(); });
+    BO3D.story.segment(SCN.id, kind, function () { state = prev; done(); }, SCN.helpNote || null);
   }
   /* 현장 돕기(규칙서 13.6): 이 대목 뒤에 돕기 단계가 있는가. 3D에서도 이야기 카드 조각(seg)으로 보여 준다 */
   function hasHelp(i) { var h = SC && SC.mission && SC.mission.help; return !!(h && h.steps.some(function (x) { return x.after === i; })); }

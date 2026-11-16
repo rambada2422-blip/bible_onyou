@@ -267,7 +267,7 @@
       body = [el('div', { class: 'q-kicker', text: kick }), beatNodes(d.beats[s.i])];
     } else if (s.k === 'help') {
       body = helpNodes(m.help, m.help.steps[s.i], kick, ok); gated = true;
-      var hn = cur.screen === 'seg' && BO3D.scene3d && BO3D.scene3d[cur.id] && BO3D.scene3d[cur.id].helpNote ? BO3D.scene3d[cur.id].helpNote(m.help.steps[s.i].after) : null;
+      var hn = cur.screen === 'seg' && cur.helpNote ? cur.helpNote(m.help.steps[s.i].after) : null;
       if (hn) body.splice(2, 0, el('div', { class: 'note story3' }, el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: hn }))));   /* 3D에서 때가 앞선 돕기(되돌아보는 대목 뒤)를 밝힌다 */
     } else if (s.k === 'gate') {
       var q = (d.gates[S.tier] || d.gates.t2)[s.i];
@@ -423,8 +423,9 @@
 
   /* ── 3D 장면 안에서 쓰는 조각: 동행 문답(앞·뒤)과 오늘의 물음을 3D 화면 위의 시트로 보여 준다 ──
    * kinds: 'before' | 'after' | 'today'. 보여 줄 것이 없으면 바로 done()을 부른다. */
-  function segment(id, kind, done) {
+  function segment(id, kind, done, helpNote) {
     var d = sc(id), m = d && d.mission, st = [];
+    cur.helpNote = helpNote || null;   /* 3D 장면 설정의 helpNote(돕기의 때 안내) */
     if (m && m.companion && (kind === 'before' || kind === 'after') && (m.companion.when === 'after' ? 'after' : 'before') === kind) m.companion.talks.forEach(function (t, i) { st.push({ k: 'talk', i: i }); });
     if (m && m.today && kind === 'today') m.today.forEach(function (x, i) { st.push({ k: 'today', i: i }); });
     if (m && m.help && /^help:/.test(kind)) m.help.steps.forEach(function (h, i) { if (String(h.after) === kind.slice(5)) st.push({ k: 'help', i: i }); });   /* 3D의 현장 돕기 */
