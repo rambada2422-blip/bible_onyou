@@ -407,7 +407,7 @@
       var b = el('button', { class: 'seek-t ' + SEEK_ICONS[k], 'aria-label': (k + 1) + '번 땅', on: { click: function () {
         if (b.disabled) return; tries++;
         if (k === spot) {
-          tiles.forEach(function (x) { x.disabled = true; }); b.classList.add('hit');
+          tiles.forEach(function (x) { x.disabled = true; }); b.classList.add('hit'); grid.classList.add('found');
           msg.textContent = '찾았어요!';   /* 몇 번 만에 찾았는지는 말하지 않는다(운을 칭찬하거나 횟수를 점수처럼 보이지 않게, 6절 점검) */
           take(mm); got.replaceChildren(matCard(mm, null)); ok(); got.scrollIntoView({ block: 'nearest' }); mark(cur.id + ' seek-found');
         } else {
@@ -418,7 +418,8 @@
       } } });
       return b;
     });
-    return [el('div', { class: 'eyebrow dark', text: '탐험대 이야기 · 재료 찾기' }), msg, el('div', { class: 'seek' }, tiles), got];
+    var grid = el('div', { class: 'seek' }, tiles);
+    return [el('div', { class: 'eyebrow dark', text: '탐험대 이야기 · 재료 찾기' }), msg, grid, got];
   }
   function go() { if (cur.step < cur.steps.length - 1) { cur.step++; render(); } }
   function take(mt) { if (mt && mt.key) { PG.mats[cur.id + ':' + mt.key] = 1; save(); } }

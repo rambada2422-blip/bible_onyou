@@ -203,3 +203,9 @@ html.fs1 .setsample.sheet-body, html.fs2 .setsample.sheet-body { zoom: 1; }
   .ot3.intro .ot-sheet.sheet, .ot3.era .ot-sheet.sheet, .ot3.pick .ot-sheet.sheet { top: 27%; }
   .ot3 .sheet-body { padding-top: 14px; gap: 10px; }
 }
+/* 맞힌 뒤에는 고르지 않은 보기를 접는다: 작은 화면에서 고른 답과 "성경에 그렇게 기록되어 있어요"가 스크롤 없이 함께 보이게 */
+.opts.solved:not(.pics) .opt.rest { display: none; }
+/* 재료를 찾은 뒤에는 찾던 땅을 한 줄로 줄인다(재료 카드가 한 화면에 들어오게) */
+.seek.found .seek-t:not(.hit) { display: none; }
+.seek.found { grid-template-columns: 1fr; }
+.seek.found .seek-t { height: 44px; }

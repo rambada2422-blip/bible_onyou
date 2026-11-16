@@ -91,7 +91,7 @@
     var pics = q.options.some(function (o) { return o.icon; }), noteBox = el('div', {});
     var btns = q.options.map(function (o) {
       var b = el('button', { class: 'opt', on: { click: function () {
-        if (o.ok) { btns.forEach(function (x) { x.disabled = true; if (x !== b) x.classList.add('rest'); }); b.classList.add('ok'); noteBox.replaceChildren(goodNote(ref)); onOk(); }
+        if (o.ok) { btns.forEach(function (x) { x.disabled = true; if (x !== b) x.classList.add('rest'); }); b.classList.add('ok'); if (b.parentNode) b.parentNode.classList.add('solved'); noteBox.replaceChildren(goodNote(ref)); onOk(); }
         else { miss(); b.classList.add('rest'); b.disabled = true; noteBox.replaceChildren(realBasis(o) ? detourNote(o.basis, ref) : lookNote(q.lookRef !== undefined ? q.lookRef : ref, q.lookText)); }
         noteBox.scrollIntoView({ block: 'nearest' });
       } } }, o.icon && IC[o.icon] ? icon(o.icon) : null, el('span', { text: o.label }));
@@ -102,7 +102,7 @@
   /* 읽을 곳을 먼저 보여 주고, 찾아 읽은 뒤에 묻는다(규칙서 13.5). refs가 있으면 떨어진 여러 곳을 함께 읽는다 */
   function findBlock(q, onOk) {
     var refs = q.refs || [q.ref], after = el('div', { style: 'display:flex;flex-direction:column;gap:12px' });
-    var rb = el('button', { class: 'btn plain', on: { click: function () { rb.disabled = true; rb.textContent = '읽었어요'; add(after, choiceBlock(q.confirm, q.refs ? refs : q.ref, onOk)); after.scrollIntoView({ block: 'nearest' }); } } }, '찾아서 읽었어요');
+    var rb = el('button', { class: 'btn plain', on: { click: function () { rb.disabled = true; rb.textContent = '읽었어요'; rb.hidden = true; add(after, choiceBlock(q.confirm, q.refs ? refs : q.ref, onOk)); after.scrollIntoView({ block: 'nearest' }); } } }, '찾아서 읽었어요');
     return [el('div', { class: 'findcard' }, icon('book'), el('div', {}, refs.map(function (r) { return el('div', { class: 'big', text: bookName(r) }); }), el('p', { text: tx(q.prompt) }))), rb, after];
   }
   function findrefBlock(q, onOk, idp) {
@@ -123,7 +123,7 @@
   function multiBlock(q, onOk) {
     var after = el('div', { style: 'display:flex;flex-direction:column;gap:12px' }), cq = q.confirm;
     var rb = el('button', { class: 'btn plain', on: { click: function () {
-      rb.disabled = true; rb.textContent = '읽었어요';
+      rb.disabled = true; rb.textContent = '읽었어요'; rb.hidden = true;
       var noteBox = el('div', {});
       var btns = cq.options.map(function (o) {
         var b = el('button', { class: 'opt', 'aria-pressed': 'false', on: { click: function () { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); } } },
