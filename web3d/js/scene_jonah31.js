@@ -293,7 +293,7 @@
           if (jonah.update) jonah.update(dt, false);
         }
       },
-      audio: function (A) { A.setFlock(999); A.setFire(999); },   /* 외치는 소리, 바람의 음성 같은 것은 만들지 않는다 */
+      audio: function (A, pp) { var dx = Math.max(0, Math.abs(pp.x + 1) - 19), dz = Math.max(0, Math.abs(pp.z - PAST[1]) - 7); A.setFlock(Math.sqrt(dx * dx + dz * dz)); A.setFire(999); },   /* 3:7 남쪽 들의 떼: 가까이 가면 양 울음이 가끔 들린다(호렙 산과 같은 합성음). 외치는 소리, 바람의 음성 같은 것은 만들지 않는다 */
       menuCam: function (camera, now) { var a = now * 0.05; camera.position.set(10 + Math.sin(a) * 8, 8, 16); camera.lookAt(WALL_X, 4, 0); },
       debug: { phase: function () { return { phase: phase, pt: pt, amp: amp, grow: grow, wither: wither }; }, arrived: function () { return phase !== 'wait'; } }
     };
