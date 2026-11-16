@@ -233,13 +233,30 @@ function toks(label) {
     let x = w.replace(JOSA2, ''); if (x.length >= 3) x = x.replace(JOSA1, ''); return x;
   }).filter((x) => x.length >= 2 || /\d/.test(x));
 }
+const NUM = /^(\d+|([일이삼사오육칠팔구]?[십백천만])+[일이삼사오육칠팔구]?|한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|열두|스물|스무|서른|마흔|쉰|예순|일흔|여든|아흔)(명|개|날|해|년|번|째|살|세|일|마리|사람)?$/;
 const STOP = new Set(['하나님', '하나님이', '여호와', '여호와께서', '이스라엘', '사람', '사람들', '백성', '모두', '그리고', '그는', '그가', '그들', '그들이', '자기', '했다', '하셨다', '말했다', '하였다', '있었다', '때문에', '위해', '하려고', '것을', '것이', '그것', '모든', '함께', '다시', '이미']);
 function seen(label, story, prompt) {          // 보기의 낱말(물음에 이미 있는 낱말·흔한 낱말 빼고)이 이야기 글에 얼마나 있나
   const pt = new Set(toks(prompt || ''));
   const t = toks(label).filter((x) => !STOP.has(x) && !pt.has(x)); if (!t.length) return null;
   const hit = t.filter((x) => story.includes(x));
+  const num = hit.filter((x) => NUM.test(x));            // 수(삼백, 이만, 일곱, 40)는 하나만 겹쳐도 답을 말한 것
+  if (num.length && t.length <= 3) return num;      // 짧은 답에서만(긴 답의 수는 다른 낱말과 함께 본다)
   const need = t.length <= 2 ? t.length : Math.ceil(t.length * 0.7);
   return hit.length >= need ? hit : null;
+}
+const S3DC = {};
+function S3D(id) {           // 3D 장면 설정 파일(web3d/js/scene_*.js)에 적힌 한글 글
+  if (S3DC[id]) return S3DC[id];
+  const dir = path.join(__dirname, '..', 'web3d', 'js'); let out = [];
+  try {
+    fs.readdirSync(dir).filter((f) => /^scene_.*\.js$/.test(f)).forEach((f) => {
+      const src = fs.readFileSync(path.join(dir, f), 'utf8');
+      if (!src.includes(`scene3d['${id}']`)) return;
+      const re = /'([^'\n]*[가-힣][^'\n]*)'/g; let mm;
+      while ((mm = re.exec(src))) { const line = src.slice(src.lastIndexOf('\n', mm.index) + 1, src.indexOf('\n', mm.index)); if (!/^\s*(\/\/|\*|\/\*)/.test(line)) out.push(mm[1]); }
+    });
+  } catch (e) { out = []; }
+  return (S3DC[id] = out);
 }
 function exposure(d, E) {
   const m = d.mission || {}, TIERS = ['t1', 't2', 't3'], AGE = { t1: '8~10세', t2: '11~13세', t3: '14~19세' };
@@ -258,6 +275,7 @@ function exposure(d, E) {
     });
     (d.quests || []).forEach((q, i) => { P(`quests[${i}].line`, q.line); P(`quests[${i}].found`, q.found); P(`quests[${i}].say`, q.say && q.say.text); });
     (m.materials || []).forEach((x, i) => { ['name', 'how', 'line', 'use'].forEach((k) => P(`materials[${i}].${k}`, x[k])); });
+    S3D(d.id).forEach((x, i) => P(`3D글[${i}]`, x));   // 3D 장면 설정 파일의 글(도감·처음 말·경계 말): 3D에서는 대목보다 먼저 보인다
     const qs = [];
     ((d.gates || {})[t] || []).forEach((q, i) => qs.push([`gates.${t}[${i}]`, q, -1]));
     (d.quests || []).forEach((x, i) => { if (x.q && x.q[t]) qs.push([`quests[${i}].q.${t}`, x.q[t], -1]); });

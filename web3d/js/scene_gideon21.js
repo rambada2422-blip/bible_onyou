@@ -135,14 +135,14 @@
       height: height, walkable: walkable,
       edge: function (x, z) {
         if (x < 18) return { who: 'onwoo', text: '진과 샘 쪽으로는 가지 말자. 우리는 지켜보는 사람이야.' };
-        if (z < -6) return { who: 'hyu', text: '골짜기 아래로는 내려가지 말자.' };
+        if (z < -6) return { who: 'hyu', text: '아래로는 내려가지 말자.' };
         return null;
       },
       P: { start: [44, 30], machine: [50, 36], machineRot: -0.8,
         /* 재료가 놓인 곳(quests[i].found): 하롯 샘 쪽(물가에서 떨어진 땅) / 골짜기가 내려다보이는 쪽 / 장막이 모인 이스라엘 진 쪽(진 바깥 빈 땅) */
         parts: [[20, 10], [36, -4], [22, 30]], lookSpot: [22, 30],
         look: { focus: SPRING, mid: ICAMP, dy: 1.2, backE: 7, upE: 3.4 } },
-      beatNote: function (i) { return i <= 1 ? '그 앞의 일이에요. 오브라에서 있었던 일이라 이 골짜기에서는 보이지 않아요.' : null; },
+      beatNote: function (i) { return i <= 1 ? '그 앞의 일이에요. 오브라에서 있었던 일이라 이곳에서는 보이지 않아요.' : null; },
       eventLook: function (i) {
         if (i === 2) return { focus: ICAMP, mid: [ICAMP[0] - 20, ICAMP[1] + 20], dy: 1.2, backE: 8, upE: 4 };
         if (i === 3) return { focus: SPRING, mid: SPRING, dy: 0.6, backE: 6, upE: 3 };
@@ -151,14 +151,14 @@
         return { focus: MCAMP, mid: MCAMP, dy: 1, backE: 9, upE: 5 };
       },
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
-      intro: { text: '타임머신이 높은 비탈에 내려앉았어요. 아래쪽 골짜기에 장막이 가득해요.', say: { who: 'hyu', text: '비탈 위에서만 다니자. 골짜기로는 내려가지 말자.' } },
+      intro: { text: '타임머신이 높은 비탈에 내려앉았어요. 아래쪽에 장막이 가득해요.', say: { who: 'hyu', text: '비탈 위에서만 다니자. 아래로는 내려가지 말자.' } },   /* 탐지기 물음의 답(진의 자리)은 성경에서 찾게(규칙서 13.9) */
       lookText: '기드온 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
       partBeats: [0, 1], eventStart: 2,
       sceneDoneText: '기드온 장면을 끝까지 지켜봐야 떠날 수 있어요.',
       dex: [
-        { id: 'spring', name: '하롯 샘', desc: '기드온과 백성이 진을 친 곳 곁의 샘', ref: '삿 7:1', hint: '진 아래쪽을 보세요.', range: 60, pos: function () { return v3(SPRING[0], height(SPRING[0], SPRING[1]) + 0.6, SPRING[1]); } },
-        { id: 'midian', name: '미디안의 진', desc: '모레 산 앞 골짜기에 메뚜기 떼처럼 많이 누운 사람들과 셀 수 없는 낙타', ref: '삿 7:12', hint: '북쪽 골짜기를 담아 보세요.', range: 200, crop: 0.7, pos: function () { return v3(MCAMP[0], height(MCAMP[0], MCAMP[1]) + 1, MCAMP[1]); } },
-        { id: 'gideon', name: '기드온', desc: '요아스의 아들. 삼백 명을 세 무리로 나눈 사람', ref: '삿 7:16', hint: '진 앞쪽에서 찾아보세요.', range: 50, crop: 0.36, pos: function () { var p = gid.group.position; return v3(p.x, p.y + 1.1, p.z); } }
+        { id: 'spring', name: '진 곁의 샘', desc: '기드온과 백성이 진을 친 곳 곁의 샘. 샘의 이름은 사사기 7장 1절에 있어요.', ref: '삿 7:1', hint: '진 아래쪽을 보세요.', range: 60, pos: function () { return v3(SPRING[0], height(SPRING[0], SPRING[1]) + 0.6, SPRING[1]); } },
+        { id: 'midian', name: '미디안의 진', desc: '미디안 사람들이 누운 진. 어디에 있었고 얼마나 많았는지는 사사기 7장 8절과 12절에 있어요.', ref: '삿 7:12', hint: '북쪽 아래쪽을 담아 보세요.', range: 200, crop: 0.7, pos: function () { return v3(MCAMP[0], height(MCAMP[0], MCAMP[1]) + 1, MCAMP[1]); } },
+        { id: 'gideon', name: '기드온', desc: '요아스의 아들. 남은 사람들을 세 무리로 나눈 사람', ref: '삿 7:16', hint: '진 앞쪽에서 찾아보세요.', range: 50, crop: 0.36, pos: function () { var p = gid.group.position; return v3(p.x, p.y + 1.1, p.z); } }
       ],
       reset: function () { setPhase('camp'); },
       partFound: function () {},

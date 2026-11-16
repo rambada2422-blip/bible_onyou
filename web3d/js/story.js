@@ -339,10 +339,11 @@
     }
     /* ask: 아이가 묻고 → 본문에 기록된 말로 답을 듣고 → 성경을 펴서 뜻을 확인한다 */
     var nt = hs.nt && S.tier === 't3' ? el('div', { class: 'note story3' }, el('span', {}, el('small', { text: '신약과 이어 읽기 · 목사님 감수 전' }), el('b', { text: hs.nt.text }), el('div', { class: 'ot-refs' }, refChip(hs.nt.ref)))) : null;
+    /* 성경을 읽어야 답이 나온다(규칙서 13.9): 먼저 성경을 펴서 물음에 답하고, 그다음에 본문에 기록된 말로 뜻을 듣는다 */
+    var ans = el('div', { class: 'otans fadein' }, el('b', { text: hs.by || h.who }), el('p', { text: tx(hs.answer) }), refChip(hs.basis));
     return head.concat([U.say(hs.ask.who, hs.ask.text),
-      el('div', { class: 'otans' }, el('b', { text: hs.by || h.who }), el('p', { text: tx(hs.answer) }), refChip(hs.basis)),
-      doctor('그 뜻을 성경에서 직접 확인해 보자. 성경책을 펴서 읽어 봐.', '탐험대 이야기 · 최현 박사'),
-      U.blockFor(hs.read[S.tier] || hs.read.t2, function () { if (nt) got.replaceChildren(nt); ok(); got.scrollIntoView({ block: 'nearest' }); }, 'oh' + hs.title.length), got]);
+      doctor('먼저 성경책을 펴서 직접 찾아보자. 찾은 다음에 그 뜻을 함께 볼게.', '탐험대 이야기 · 최현 박사'),
+      U.blockFor(hs.read[S.tier] || hs.read.t2, function () { if (nt) got.replaceChildren(ans, nt); else got.replaceChildren(ans); ok(); got.scrollIntoView({ block: 'nearest' }); }, 'oh' + hs.title.length), got]);
   }
   /* 숨은 재료 찾기(탐험대 이야기): 탐지기가 가까우면 빠르게, 멀면 느리게 울린다. 여섯 곳 가운데 하나에 숨어 있다 */
   var SEEK_ICONS = ['rock', 'sand', 'grass', 'rock', 'grass', 'sand'];
