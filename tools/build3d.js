@@ -36,6 +36,7 @@ scripts.splice(scripts.indexOf('web3d/js/game.js'), 0, ...[
   'web3d/js/scene_jonah31.js',
   'web3d/js/scene_dedication28.js',
   'web3d/js/scene_covenant27.js',
+  'web3d/js/scene_king25.js',
 ]);
 const page = [
   '<title>성경 탐험대 3D</title>',
