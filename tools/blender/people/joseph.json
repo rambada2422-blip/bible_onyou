@@ -1,0 +1,7 @@
+{
+  "name": "Joseph",
+  "note": "요셉(창 37:2-3, 37:23). 열일곱 살 소년(37:2)이라 수염 없음. 아버지가 지어 준 채색옷(37:3, 37:23)을 입었다. 본문은 채색옷의 색과 무늬의 생김새를 말하지 않는다. 겉옷·속옷·띠의 색을 서로 다르게 밝게 한 것뿐이고 무늬는 넣지 않았다(감수 대상). 지팡이 없음. 게임에서 키를 조금 줄여 쓴다(소년).",
+  "beard": "none", "staff": false,
+  "colors": { "ROBE": "#4F7FB5", "ROBE_SH": "#3A6292", "ROBE_HI": "#6A98C8", "TUNIC": "#E8C65A", "STRIPE": "#E8C65A", "CLOTH": "#F0E6CC", "CLOTH_SH": "#DDD0B0", "CLOTH_STRIPE": "#F0E6CC",
+              "BROW": "#3A2A1E", "BEARD": "#3A2A1E", "BEARD_SH": "#2E2018", "HAIR": "#3A2A1E", "BELT": "#B8433A", "BELT_SH": "#93342C", "SKIN": "#C98A60", "SKIN_SH": "#A86E48" }
+}

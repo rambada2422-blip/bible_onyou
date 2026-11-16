@@ -77,3 +77,49 @@
   }
   BO3D.props3da = { tabernacle: tabernacle, grapePole: grapePole, fruitCloth: fruitCloth, handFruit: handFruit, M: M, box: box, stake: stake, puffs: puffs };
 })();
+
+/* OT-08(요셉, 도단의 들)에서 더한 소품. 위의 것은 고치지 않고 더하기만 한다.
+ *   BO3D.props3da.camel(seed)    짐을 싣고 걷는 낙타(창 37:25). { group, update(dt, 속도, now) }. 정면이 +Z. 짐은 싸맨 꾸러미로만(향품·유향·몰약의 생김새는 본문에 없다)
+ *   BO3D.props3da.pit(r)         땅에 뚫린 어두운 구멍(창 37:24). 안은 보이지 않는다(검은 면과 낮은 흙 둔덕뿐). 크기와 깊이는 본문에 없다
+ *   BO3D.props3da.coatOnGround() 땅에 놓인 채색옷(창 37:23). 요셉 인물(joseph.json)과 같은 세 가지 색의 천 조각. 무늬 없음
+ */
+(function () {
+  'use strict';
+  var T = THREE, P = BO3D.props3da, M = P.M;
+  function bx(w, h, d, c, x, y, z, rx) { var m = new T.Mesh(new T.BoxGeometry(w, h, d), M(c)); m.position.set(x, y, z); if (rx) m.rotation.x = rx; m.castShadow = true; return m; }
+  function camel(seed) {
+    var g = new T.Group(), still = new T.Group(), fur = seed % 2 ? '#B08A5E' : '#A67E54', legs = [], i;
+    still.add(bx(0.62, 0.62, 1.55, fur, 0, 1.42, 0));                                                  /* 몸통 */
+    var hump = new T.Mesh(new T.SphereGeometry(0.36, 7, 5), M(fur)); hump.position.set(0, 1.82, -0.05); hump.scale.set(0.8, 1, 1.1); hump.castShadow = true; still.add(hump);
+    still.add(bx(0.2, 0.95, 0.24, fur, 0, 1.92, 0.92, 0.5));                                           /* 목 */
+    still.add(bx(0.24, 0.24, 0.5, fur, 0, 2.3, 1.22));                                                 /* 머리 */
+    still.add(bx(0.06, 0.5, 0.06, fur, 0, 1.3, -0.8, -0.2));                                           /* 꼬리 */
+    [-1, 1].forEach(function (s) {                                                                    /* 양옆에 실은 꾸러미 */
+      still.add(bx(0.34, 0.55, 0.85, seed % 3 ? '#8E7450' : '#9A6E4A', s * 0.5, 1.5, -0.05));
+      still.add(bx(0.36, 0.08, 0.1, '#5E4A34', s * 0.5, 1.56, -0.05));
+    });
+    still.add(bx(0.7, 0.06, 0.9, '#7A5A42', 0, 1.76, -0.05));                                          /* 짐을 덮은 깔개 */
+    g.add(BO3D.props && BO3D.props.mergeStatic ? BO3D.props.mergeStatic([still]) : still);
+    for (i = 0; i < 4; i++) {
+      var lg = new T.Group(), m = new T.Mesh(new T.BoxGeometry(0.14, 1.15, 0.14), M(fur)); m.position.y = -0.575; m.castShadow = true; lg.add(m);
+      lg.position.set(i % 2 ? 0.2 : -0.2, 1.15, i < 2 ? 0.58 : -0.58); g.add(lg); legs.push(lg);
+    }
+    var ph = (seed * 1.7) % 6.28;
+    return { group: g, update: function (dt, sp) { ph += dt * 3.2 * (sp || 0); var a = Math.sin(ph) * 0.3 * Math.min(1, sp || 0); legs[0].rotation.x = a; legs[3].rotation.x = a; legs[1].rotation.x = -a; legs[2].rotation.x = -a; } };
+  }
+  function pit(r) {
+    r = r || 1.3;
+    var g = new T.Group(), hole = new T.Mesh(new T.CircleGeometry(r, 18), new T.MeshBasicMaterial({ color: '#0C0A08' })); hole.rotation.x = -Math.PI / 2; hole.position.y = 0.09; g.add(hole);
+    var rim = new T.Mesh(new T.TorusGeometry(r + 0.2, 0.3, 5, 16), M('#A08A62')); rim.rotation.x = Math.PI / 2; rim.scale.z = 0.45; rim.position.y = 0.02; rim.receiveShadow = true; g.add(rim);
+    return g;
+  }
+  function coatOnGround() {
+    var g = new T.Group();
+    var a = bx(1.0, 0.05, 0.62, '#4F7FB5', 0, 0.05, 0); a.rotation.y = 0.2; g.add(a);
+    var b = bx(0.6, 0.05, 0.4, '#4F7FB5', 0.5, 0.06, 0.3); b.rotation.y = -0.5; g.add(b);
+    var c = bx(0.5, 0.05, 0.26, '#E8C65A', -0.1, 0.085, 0.02); c.rotation.y = 0.2; g.add(c);
+    var d = bx(0.42, 0.04, 0.06, '#B8433A', 0.1, 0.11, -0.12); d.rotation.y = 0.5; g.add(d);
+    return g;
+  }
+  P.camel = camel; P.pit = pit; P.coatOnGround = coatOnGround;
+})();
