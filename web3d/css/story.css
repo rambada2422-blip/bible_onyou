@@ -97,11 +97,13 @@
   .ea-tw1 { animation: eatw 4.1s ease-in-out infinite .8s; }
   .ea-drift { animation: eadrift 14s ease-in-out infinite alternate; }
   .ea-shim { animation: eashim 3.6s ease-in-out infinite alternate; }
+  .sa-flick { animation: saflick 1.7s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
 }
 @keyframes otspin { to { transform: rotate(360deg); } }
 @keyframes eatw { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 @keyframes eadrift { from { transform: translateX(-14px); } to { transform: translateX(14px); } }
 @keyframes eashim { from { opacity: .25; } to { opacity: .7; } }
+@keyframes saflick { from { transform: scale(1, 1); } to { transform: scale(.94, 1.07); } }
 @media (prefers-reduced-motion: reduce) { .ot-sheet.sheet { animation: none; } }
 
 /* 3D 장면 위에 뜨는 조각(동행 문답, 오늘의 물음): 풍경 없이 아래 시트만 */

@@ -167,11 +167,18 @@
     }
   };
   /* key의 풍경을 SVG 문자열로 돌려준다 */
-  /* opts.stage: 단계가 있는 풍경(창조)의 단계, opts.align: 'bottom'이면 아래쪽(땅)을 맞춰 자른다(지도의 띠 그림) */
+  /* opts.stage: 단계가 있는 풍경(창조)의 단계, opts.align: 'bottom'이면 아래쪽(땅)을 맞춰 자른다(지도의 띠 그림)
+   * opts.scene, opts.at: 장면과 대목이 주어지고 그 장면의 그림이 sceneart.js에 있으면 그것을 쓴다(없으면 시대 풍경 그대로) */
+  var uid = 0;
   function art(key, opts) {
     opts = opts || {};
-    var f = ART[key] || ART.wilderness, parts = f(opts.stage).split('|');
+    var SA = window.BO3D.sceneArt, str = null;
+    if (opts.scene && SA) { try { str = SA.draw(opts.scene, opts.at); } catch (e) { str = null; } }
+    if (!str) str = (ART[key] || ART.wilderness)(opts.stage);
+    /* 한 화면에 그림이 여러 장 있어도(시대 지도) 하늘 색이 서로 섞이지 않게 id를 그림마다 다르게 한다 */
+    var parts = str.split('ea-sky').join('ea-sky' + (uid++)).split('|');
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" preserveAspectRatio="xMidY' + (opts.align === 'bottom' ? 'Max' : 'Mid') + ' slice" aria-hidden="true"><defs>' + parts[0] + '</defs>' + parts.slice(1).join('') + '</svg>';
   }
-  BO3D.eraArt = { art: art, keys: Object.keys(ART) };
+  /* kit: 장면 그림(sceneart.js)이 같은 붓을 쓰도록 내놓는다 */
+  BO3D.eraArt = { art: art, keys: Object.keys(ART), kit: { rng: rng, ridge: ridge, P: P, grad: grad, stars: stars, sun: sun, cloud: cloud, tent: tent, palm: palm, tree: tree, walls: walls, birds: birds, water: water, river: river, grain: grain, stones: stones } };
 })();
