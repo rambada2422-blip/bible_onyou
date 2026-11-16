@@ -1131,6 +1131,7 @@
     renderer.shadowMap.enabled = lv < 3;
     [SCN && SCN.scene, JL && JL.scene].forEach(function (sc) { if (sc) sc.traverse(function (o) { if (o.material) { (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) { m.needsUpdate = true; }); } }); });
     Object.keys(built).forEach(function (k) { if (built[k].quality) built[k].quality(lv); });
+    if (BO3D.models2 && BO3D.models2.setFar) BO3D.models2.setFar(lv >= 2 ? 24 : 34);   /* 느린 기기(단계 2 이상): 멀리서 걷는 사람을 더 가까운 거리부터 한 덩어리로(팔다리를 따로 흔들지 않음) */
     if (fpsOn) fpsEl.title = '화질 ' + lv;
   }
   function watchSpeed(rdt) {
