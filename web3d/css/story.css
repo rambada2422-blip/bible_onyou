@@ -141,6 +141,12 @@
 .speak3 { flex: none; width: 62px; min-height: 52px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; background: #FFF6DA; color: #6B4A12; box-shadow: inset 0 0 0 2px #F0D58A; font-family: var(--f-display); font-size: 11.5px; line-height: 1.1; }
 .speak3 svg { width: 24px; height: 24px; }
 .speak3.float { align-self: flex-end; margin-bottom: -44px; }
+.vcards.fin { gap: 8px; }
+.vcards.fin .vcard { padding: 11px 14px 10px; }
+.vcards.fin .vcard::before { width: 84px; height: 84px; right: -30px; top: -30px; }
+.vcards.fin .vcard .r { font-size: 21px; }
+.vcards-m { font-size: 13.5px; color: var(--text-soft); margin-top: 6px; }
+@media (max-width: 360px) { .sheet-foot .btn { padding-left: 12px; padding-right: 12px; } }   /* 좁은 휴대폰에서 아래 단추 셋(읽어 주기·시대 지도·다음 장면)의 글이 두 줄로 꺾이지 않게 */
 .speak3.float + .eyebrow { padding-right: 70px; }   /* 긴 머리글(시대 지도)이 오른쪽 위 읽어 주기 단추 밑으로 들어가지 않게 */
 .speak3[aria-pressed="true"] { background: var(--teal); color: var(--ink-3); box-shadow: inset 0 0 0 2px #2F7C74; }
 .narr-meta { display: flex; align-items: center; gap: 8px; }
@@ -184,6 +190,7 @@ html.fs1 .setsample.sheet-body, html.fs2 .setsample.sheet-body { zoom: 1; }
 /* 3D의 말풍선·위쪽 안내와 처음 화면에도(화면 자리를 덜 차지하게 글자만 키운다) */
 html.fs1 .toast3, html.fs1 .hud3 .obj { font-size: 17px; }
 html.fs2 .toast3, html.fs2 .hud3 .obj { font-size: 19px; }
+.overlay3.menu3 > * { flex-shrink: 0; }   /* 세로로 쌓는 처음 화면에서 두 줄 단추가 눌려 글이 테두리를 넘지 않게 */
 html.fs1 .overlay3.menu3 > * { zoom: 1.08; }
 html.fs2 .overlay3.menu3 > * { zoom: 1.16; }
 /* 어두운 바탕의 표와 글 상자: 글이 보이게, 긴 화면에서 눌려 줄어들지 않게 */

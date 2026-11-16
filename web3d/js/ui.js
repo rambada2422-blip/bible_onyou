@@ -226,10 +226,10 @@
     var c = node.cloneNode(true);
     Array.prototype.forEach.call(c.querySelectorAll('.speak3, textarea, input, svg, [hidden], .nospeak'), function (x) { x.remove(); });
     Array.prototype.forEach.call(c.querySelectorAll('p, div, b, small, h1, h2, h3, button, li, summary, .ref, .ot-place, .count'), function (x) { x.appendChild(document.createTextNode('. ')); });
-    return (c.textContent || '').replace(REFRE, function (m, pre, r) { return pre + bookName(r); }).replace(/OT-0?(\d+)/g, '$1번 장면').replace(/🔒|🔊|·/g, ' ').replace(/(\s*\.\s*){2,}/g, '. ').replace(/([.!?…])\s*\./g, '$1').replace(/\s+/g, ' ').trim();
+    return (c.textContent || '').replace(REFRE, function (m, pre, r) { return pre + bookName(r); }).replace(/OT-0?(\d+)/g, '$1번 장면').replace(/(\d+) \/ (\d+)/g, '$2 가운데 $1').replace(/🔒|🔊|·/g, ' ').replace(/(\s*\.\s*){2,}/g, '. ').replace(/([.!?…])\s*\./g, '$1').replace(/\s+/g, ' ').trim();
   }
-  var speaking = null;
-  function stopSpeak() { try { if (canSpeak()) speechSynthesis.cancel(); } catch (e) { /* 무시 */ } if (speaking) { speaking.setAttribute('aria-pressed', 'false'); speaking = null; } }
+  var speaking = null, speakingU = null;   /* 지금 읽는 단추와 그 글. 멈춘 글의 늦은 끝 신호가 새로 읽는 단추를 끄지 않게 글로 맞춰 본다 */
+  function stopSpeak() { speakingU = null; try { if (canSpeak()) speechSynthesis.cancel(); } catch (e) { /* 무시 */ } if (speaking) { speaking.setAttribute('aria-pressed', 'false'); speaking = null; } }
   /* 시트 아래 왼쪽에 놓는 읽어 주기 단추. 다시 누르면 멈춘다. 읽을 수 없는 기기면 null */
   function speakBtn(getNode) {
     if (!speakOn()) return null;
@@ -238,9 +238,9 @@
       stopSpeak();
       try {
         var u = new SpeechSynthesisUtterance(speakText(getNode())); u.lang = 'ko-KR'; u.rate = 0.95;
-        u.onend = u.onerror = function () { if (speaking === b) { b.setAttribute('aria-pressed', 'false'); speaking = null; } };
-        speaking = b; b.setAttribute('aria-pressed', 'true'); speechSynthesis.speak(u);
-      } catch (e) { speaking = null; b.setAttribute('aria-pressed', 'false'); }
+        u.onend = u.onerror = function () { if (speakingU === u) { speakingU = null; if (speaking === b) { b.setAttribute('aria-pressed', 'false'); speaking = null; } } };
+        speaking = b; speakingU = u; b.setAttribute('aria-pressed', 'true'); speechSynthesis.speak(u);
+      } catch (e) { speaking = null; speakingU = null; b.setAttribute('aria-pressed', 'false'); }
     } } }, icon('bookline'), el('span', { text: '읽어 주기' }));
     return b;
   }

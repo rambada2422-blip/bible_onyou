@@ -68,6 +68,11 @@ const BAN = ['틀렸', '실패', '감점', '목숨', '점수는', '순위표', '
   await p.click('text=탐험 시작'); await p.waitForTimeout(300);
   while ((await st()).screen === 'intro') await next();
   await check('시대 지도'); await shot('map');
+  if (canSpeak && ti === 0) {   /* 8~10세 시대 지도의 읽어 주기: 진도와 열린 시대·장면 이름만, 짧게 */
+    const said = await p.evaluate(async () => { const ss = speechSynthesis, keep = ss.speak; let t = ''; ss.speak = (u) => { t = u.text; }; const b = document.querySelector('.ot3 .otmap > .speak3'); if (b) { b.click(); b.click(); } ss.speak = keep; return b ? t : null; });
+    need(said !== null, '시대 지도: 8~10세인데 읽어 주기 단추가 없음');
+    if (said !== null) { need(/^시대 지도\. 마친 장면 40 가운데 0/.test(said) && said.includes('하나님이 천지를 지으심') && said.length < 400, '시대 지도: 읽어 줄 글이 이상함 → ' + said.slice(0, 160)); fs.writeFileSync(path.join(out, 'speak-map.txt'), said + '\n'); }
+  }
   need(await p.evaluate(() => !document.querySelector('.ot3').innerText.includes('모든 시대 열기')), '시대 지도: "모든 시대 열기"가 아이 화면에 남아 있음');
   need(await p.evaluate(() => document.querySelector('.otc[data-id="OT-05"]').classList.contains('locked')), '시대 지도: 시대 2가 처음부터 열려 있음');
   await p.click('.otc[data-id="OT-01"]'); await p.waitForTimeout(100);
@@ -87,6 +92,17 @@ const BAN = ['틀렸', '실패', '감점', '목숨', '점수는', '순위표', '
         need(t.length > 20 && /창세기 \d+장/.test(t) && !/창 \d+:/.test(t), where + ': 읽어 줄 글에서 장절이 풀어지지 않음 → ' + t.slice(0, 120));
         fs.writeFileSync(path.join(out, 'speak-arrive.txt'), t + '\n');
         await p.click('.ot3 .sheet-foot .speak3'); await p.waitForTimeout(50); await p.click('.ot3 .sheet-foot .speak3');
+        /* 빠른 연타: 읽기 → 멈춤 → 다시 읽기. 멈춘 글의 끝 신호가 늦게 와도 단추는 "읽는 중"이어야 한다(가짜 음성으로 확인) */
+        const tap3 = await p.evaluate(async () => {
+          const ss = window.speechSynthesis, real = { speak: ss.speak, cancel: ss.cancel }; let curU = null;
+          ss.speak = (u) => { curU = u; }; ss.cancel = () => { const u = curU; curU = null; if (u && u.onend) setTimeout(() => u.onend(), 40); };
+          BO3D.ui.stopSpeak(); await new Promise((r) => setTimeout(r, 60));   /* 앞에서 누른 읽기(이 브라우저는 음성이 없어 곧바로 끝나기도 함)를 먼저 멈춘다 */
+          const b = document.querySelector('.ot3 .sheet-foot .speak3'), w = (ms) => new Promise((r) => setTimeout(r, ms));
+          b.click(); b.click(); b.click(); await w(120); const on = b.getAttribute('aria-pressed');
+          b.click(); await w(120); const off = b.getAttribute('aria-pressed');
+          ss.speak = real.speak; ss.cancel = real.cancel; return { on, off };
+        });
+        need(tap3.on === 'true' && tap3.off === 'false', where + ': 읽어 주기 단추를 빠르게 누르면 눌림 표시가 어긋남 ' + JSON.stringify(tap3));
       }
       await shot('arrive');
     }

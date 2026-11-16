@@ -178,7 +178,10 @@
     var sb = U.speakBtn(function () {
       var open = OT.eras.filter(function (e) { return eraOpen(e.era); }), shut = OT.eras.length - open.length;
       return el('div', {}, el('p', { text: '시대 지도' }), el('p', { text: '마친 장면 ' + doneCount() + ' / ' + OT.order.length + '. 모은 재료 ' + matCount() + ' / ' + MAT_TOTAL }),
-        open.map(function (e) { return el('p', { text: '시대 ' + e.era + ', ' + e.name + '. ' + e.scenes.map(function (id) { return sc(id).title + (PG.done[id] ? ', 마침' : ''); }).join('. ') }); }),
+        open.map(function (e) {   /* 열린 시대가 둘까지면 장면 이름도, 더 많으면(모든 시대 열기) 시대 이름과 마친 수만 읽어 짧게 */
+          var nd = e.scenes.filter(function (id) { return PG.done[id]; }).length;
+          return el('p', { text: '시대 ' + e.era + ', ' + e.name + '. ' + (open.length <= 2 ? e.scenes.map(function (id) { return sc(id).title + (PG.done[id] ? ', 마침' : ''); }).join('. ') : e.scenes.length + '장면 가운데 ' + nd + '장면 마침') });
+        }),
         shut ? el('p', { text: '아직 열리지 않은 시대가 ' + shut + '개 있어요. 앞 시대의 장면 하나를 마치면 다음 시대로 가는 길이 열려요.' }) : null);
     });
     if (sb) { sb.classList.add('float'); list.insertBefore(sb, list.firstChild); }
@@ -451,9 +454,10 @@
     setDone(d.id); ambience(null);
     var kids_ = [el('div', { class: 'q-kicker', text: '탐험을 마치며' }),
       el('p', { class: 'q-prompt', text: '탐험 일지에 말씀 카드가 들어왔어요.' }),
-      el('div', { class: 'vcards' }, d.cards.map(function (cd) {
-        return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }), el('div', { class: 'm', text: d.title + ' · 성경책에서 직접 읽어 보세요' }));
-      }))];
+      el('div', { class: 'vcards fin' }, d.cards.map(function (cd) {   /* 마침 화면에서는 카드를 작게, 되풀이되던 "성경책에서 직접 읽어 보세요"는 아래 한 번만(작은 화면 스크롤 줄이기) */
+        return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }));
+      })),
+      el('p', { class: 'vcards-m', text: '말씀은 성경책에서 직접 찾아 읽어 보세요.' })];
     var lastOfEra = e.scenes[e.scenes.length - 1] === d.id, closeAt = kids_.length;
     if (c.kind === 'prayer') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '한 문장 기도' }), el('p', { text: c.text })));
     if (c.kind === 'practice') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '이번 주 실천 한 가지' }), el('p', { text: c.text })));
@@ -576,7 +580,7 @@
       el('div', { class: 'setsample sheet-body' }, el('p', { class: 'narr', text: '이 크기로 이야기를 읽어요. 성경책을 곁에 펴 두세요.' })),
       seg3('소리', 'snd', [[1, '켜기'], [0, '끄기']]),
       U.canSpeak() ? seg3('읽어 주기 단추', 'read', [[0, '8~10세만'], [1, '모든 나이']]) : el('p', { class: 'den-msg', text: '이 기기에서는 읽어 주기를 쓸 수 없어요.' }),
-      el('p', { class: 'den-lead', text: '글자 크기는 이야기 글, 일지·지도, 처음 화면, 3D의 위쪽 안내와 말풍선 글을 키워요. 아래 단추의 글은 그대로예요. 읽어 주기는 화면의 글을 기기의 목소리로 읽어요(한국어 음성이 있는 기기에서). 성경 말씀은 읽어 주지 않아요. 말씀은 성경책에서 직접 읽어요.' }),
+      el('p', { class: 'den-lead', text: '글자 크기는 이야기 글, 일지·지도, 처음 화면, 3D의 위쪽 안내와 말풍선 글을 키워요. 이야기 시트 아래 단추의 글은 그대로예요. 읽어 주기는 화면의 글을 기기의 목소리로 읽어요(한국어 음성이 있는 기기에서). 성경 말씀은 읽어 주지 않아요. 말씀은 성경책에서 직접 읽어요.' }),
       el('div', { class: 'otmap-foot' }, btn('돌아가기', function () { if (back) back(); else openMap(); }, 'wide'))]);
   }
 

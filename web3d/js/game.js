@@ -183,17 +183,19 @@
     toastEl.replaceChildren();
     if (who) { add(toastEl, [avatar(who), el('span', {}, el('b', { text: C.chars[who].name + ' ', style: 'color:' + C.chars[who].color }), html)]); }
     else add(toastEl, el('span', { text: html }));
-    toastEl.hidden = false; toastEl.classList.remove('show'); void toastEl.offsetWidth; toastEl.classList.add('show');
+    toastEl.hidden = false; placeToast(); toastEl.classList.remove('show'); void toastEl.offsetWidth; toastEl.classList.add('show');
     clearTimeout(toast.t); toast.t = setTimeout(function () { toastEl.hidden = true; }, S.tier === 't1' ? 7000 : 4200);   /* 8~10세는 읽을 시간을 더 준다 */
   }
+  /* 말풍선은 위쪽 안내(글자 크기·거리 단추에 따라 높이가 바뀜) 바로 아래에 둔다. 말풍선이 떠 있는 동안 매 화면 맞춘다 */
+  function placeToast() { if (toastEl.hidden) return; var t = hud.hidden ? 138 : hud.offsetTop + hud.offsetHeight + 6; if (toastEl._top !== t) { toastEl._top = t; toastEl.style.top = t + 'px'; } }
   function showPanel(kids_, foot, tall) {
-    panelBody.replaceChildren(); panelFoot.replaceChildren(); panel.classList.toggle('tall', !!tall);
+    panelBody.replaceChildren(); panelFoot.replaceChildren(); panel.classList.toggle('tall', !!tall); ui.classList.toggle('tallp', !!tall);   /* tallp: 키 작은 화면에서 반쯤 가린 위쪽 안내를 감춤(game.css) */
     U.stopSpeak();
     add(panelBody, kids_); add(panelFoot, [U.speakBtn(function () { return panelBody; }), foot]);
     panel.hidden = false; panelBody.scrollTop = 0;
     base.hidden = true; stick.x = stick.y = 0; stick.id = null;
   }
-  function hidePanel() { U.stopSpeak(); panel.hidden = true; }
+  function hidePanel() { U.stopSpeak(); panel.hidden = true; ui.classList.remove('tallp'); }
   function btn(label, fn, cls) { return el('button', { class: 'btn ' + (cls || 'onpaper'), on: { click: fn } }, label); }
 
   function beatNodes(b) {
@@ -404,8 +406,10 @@
   }
   function openDen() {
     var prev = state; state = 'den'; stick.x = stick.y = 0; stick.id = null; base.hidden = true;
+    U.stopSpeak();
+    var sb = U.speakBtn(function () { return overlay; });   /* 8~10세는 아지트 글도 읽어 준다(일지·설정처럼 오른쪽 위). 깃발 색을 바꿔 다시 그려도 같은 단추라 읽기가 끊기지 않는다 */
+    if (sb) sb.classList.add('float');
     function render() {
-      U.stopSpeak();
       var ready = partsFound === PARTS.length && sceneDone;
       var slots = PARTS.map(function (p, i) {
         var on = partObjs[i].taken;
@@ -413,7 +417,7 @@
       });
       var frames = DEX.map(function (d) {
         var has = d.id in dex;
-        return el('div', { class: 'frame' + (has ? '' : ' empty') }, has && dex[d.id] ? el('img', { src: dex[d.id], alt: d.name }) : el('div', { class: 'ph' }), el('span', { text: has ? d.name : '빈 액자' }));
+        return el('div', { class: 'frame' + (has ? '' : ' empty nospeak') }, has && dex[d.id] ? el('img', { src: dex[d.id], alt: d.name }) : el('div', { class: 'ph' }), el('span', { text: has ? d.name : '빈 액자' }));
       });
       /* 깃발 색은 시대 부속을 고칠 때마다 하나씩 열린다(흥미 개선: 모은 재료가 무엇을 열게) */
       var cols = [null, '#EE7B62', '#2F9C95', '#4E5FB0', '#F7D774', '#9C6ADE', '#E35D8C', '#5BAE5A', '#E8913A', '#3E8FD4', '#C8A15A', '#7A8794'];
@@ -439,11 +443,10 @@
         el('h2', { text: mt ? '타임머신 수리' : '시간 나침반 수리' }), el('div', { class: 'slots' }, slots), el('p', { class: 'den-msg', text: msg }),
         el('h2', { text: '사진 벽' }), el('div', { class: 'frames' }, frames),
         el('h2', { text: '꾸미기' }),
-        el('div', { class: 'deco' }, el('span', { text: '타임머신 깃발 (시대 부속을 고칠 때마다 색이 하나씩 열려요 · ' + Math.min(cols.length - 1, openN - 1) + ' / ' + (cols.length - 1) + ')' }), el('div', { class: 'sws' }, sw)),
+        el('div', { class: 'deco' }, el('span', { text: '타임머신 깃발 (시대 부속을 고칠 때마다 색이 하나씩 열려요 · ' + Math.min(cols.length - 1, openN - 1) + ' / ' + (cols.length - 1) + ')' }), el('div', { class: 'sws nospeak' }, sw)),
         el('div', { class: 'deco' }, el('span', { text: sceneDone ? '탐험 모자' : '탐험 모자 (첫 장면을 마치면 열려요)' }), hatBtn),
         el('div', { class: 'den-foot' }, btn('밖으로 나가기', function () { (U.stopSpeak(), overlay.hidden = true); state = prev; }, 'quiet'), go));
-      var sb = U.speakBtn(function () { return overlay; });   /* 8~10세는 아지트 글도 읽어 준다(일지·설정처럼 오른쪽 위) */
-      if (sb) { sb.classList.add('float'); overlay.insertBefore(sb, overlay.firstChild); }
+      if (sb) overlay.insertBefore(sb, overlay.firstChild);
       overlay.hidden = false;
     }
     render();
@@ -1117,6 +1120,7 @@
       if (state === 'lookup') updateLookup(dt);
       if (state === 'vision' && vision) updateVision();
       if (horeb) updateTracker();
+      placeToast();
       updateCamera(dt);
       var pp2 = player.group.position, sun = horeb ? env.sun : JL.sun;
       var so = horeb ? (SCN.sunOff || [-38, 46, 30]) : [30, 50, 34];
@@ -1161,6 +1165,7 @@
     jordan: function () { return JL ? { P: JL.P, targets: Object.keys(JL.targets).map(function (k) { var v = JL.targets[k].pos(); return [k, v.x, v.y, v.z]; }) } : null; },
     parts: function () { return { found: partsFound, at: PARTS.map(function (p) { return p.at; }), done: sceneDone }; },
     dex: function () { return Object.keys(dex); },
+    toast: function (t, who) { toast(t, who); },   /* 말풍선 자리 점검용(walkPlay3d.js) */
     quest: function () { return { quest: quest, open: questOpen, at: P.parts }; },
     vision: function () { return vision ? { ok: visionReady(), t: vision.v.currentTime, seen: wasSeen() } : null; },
     lookup: function () { (U.stopSpeak(), overlay.hidden = true); hidePanel(); quest = PARTS.length - 1; partObjs.forEach(function (po) { po.taken = true; po.group.visible = false; }); partsFound = PARTS.length; startLookup(); },
