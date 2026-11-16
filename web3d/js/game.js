@@ -492,11 +492,15 @@
     });
     return { ready: n >= (FIGREQ[sid] || 0), near: best };
   }
-  function quietCtx() {
-    var p = player.group.position, zs = [];
+  function quietZones() {
+    var zs = [];
     if (cur === 'jordan') { if (JL.ark) { if (!_av) _av = new T.Vector3(); JL.ark.getWorldPosition(_av); zs.push([_av.x, _av.z, 10]); } }
     else if (SCN.quietAt) zs = SCN.quietAt() || [];
-    return zs.some(function (z) { return (p.x - z[0]) * (p.x - z[0]) + (p.z - z[1]) * (p.z - z[1]) < z[2] * z[2]; });
+    return zs;
+  }
+  function quietCtx() {
+    var p = player.group.position;
+    return quietZones().some(function (z) { return (p.x - z[0]) * (p.x - z[0]) + (p.z - z[1]) * (p.z - z[1]) < z[2] * z[2]; });
   }
   function updateAura(dt) {
     var gw = GW(), glows = ['choeon', 'hyu', 'onwoo'].map(function (k) { return kids[k] && kids[k].glow; }).filter(Boolean);
@@ -1261,7 +1265,10 @@
     yaw: function (v) { camYaw = v; lastDrag = now + 999; },
     goto: function (x, z) { player.group.position.set(x, H(x, z), z); trail.push([x, z]); },
     render: function () { var r = renderer.info.render, m = renderer.info.memory; return { calls: r.calls, tris: r.triangles, geo: m.geometries, tex: m.textures }; },   /* 장면이 무거워지지 않았는지 비교용 */
-    aura: function () { var vis = ['choeon', 'hyu', 'onwoo'].some(function (k) { return kids[k] && kids[k].glow && kids[k].glow.visible && kids[k].glow.material.opacity > 0; }); return { visible: vis, on: auraLast.on, reason: auraLast.reason, near: auraLast.near, ready: auraLast.ready, state: state, gear: gearStage, cur: cur, id: SCN && SCN.id }; },
+    aura: function () { var vis = ['choeon', 'hyu', 'onwoo'].some(function (k) { return kids[k] && kids[k].glow && kids[k].glow.visible && kids[k].glow.material.opacity > 0; }); var op = 0; ['choeon', 'hyu', 'onwoo'].forEach(function (k) { var g = kids[k] && kids[k].glow; if (g && g.visible) op = Math.max(op, g.material.opacity); });
+      var pp = player ? player.group.position : null;
+      return { visible: vis, op: op, on: auraLast.on, dim: !!auraLast.dim, reason: auraLast.reason, near: auraLast.near, ready: auraLast.ready, state: state, gear: gearStage, cur: cur, id: SCN && SCN.id,
+        paused: !!paused, sa: cur === 'jordan' ? 'dim' : (SCN.aura || 'on'), quiet: player ? quietZones() : [], p: pp ? [pp.x, pp.z] : null, overlay: !overlay.hidden }; },
     figures: function () { return FIGS.map(function (f) { return f.sid; }); }, figreq: function () { return FIGREQ; },
     dexDet: function () { return dexDet.hidden ? null : dexDetText.textContent; }
   };
