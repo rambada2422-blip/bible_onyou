@@ -4,15 +4,18 @@
  * 아이들이 다니는 때: 칠월 절기에 이스라엘 모든 사람이 솔로몬 앞에 모일 때(8:2). 재료 1을 주울 때 8:1-2를 글로 읽는다(돕기: 모여드는 사람들의 보따리).
  * 본문에 맞춘 점 (content/ot/OT-28.json design3d)
  *  - 전의 크기는 왕상 6:2-3대로: 길이 60, 너비 20, 높이 30규빗(27×9×13.5), 앞 낭실은 너비 20, 깊이 10규빗. 꾸밈과 기둥은 그리지 않는다(이 범위 밖).
- *  - 8:1-2: 길에서 사람들이 모여 온다. 8:3-6: 제사장들과 레위 사람들이 줄지어 동쪽 길로 올라와 전으로 들어간다.
+ *  - 8:1-2: 길에서 사람들이 모여 온다. 8:3-6: 제사장들과 레위 사람들이 줄지어 동쪽 길로 올라오고, 제사장들만 전으로 들어간다(8:6. 레위 사람들은 층계 아래 뜰에 선다).
  *    언약궤와 회막의 기구, 지성소 안은 그리지 않는다(행렬까지만. 무엇을 메었는지는 글로). 8:5의 양과 소의 제사는 그리지 않는다.
- *  - 8:10-11: 제사장들이 성소에서 나오자 구름이 전에 가득하다. 하나님의 영광은 전을 둘러싼 흰 구름으로만(사람 모양·얼굴·빛줄기 없음, 불 없음). 제사장들은 전 앞에 비켜 선다.
- *  - 8:14: 솔로몬이 얼굴을 돌려 서 있는 온 회중을 축복한다. 8:22: 단 앞에서 회중을 마주 서서 하늘을 향해 손을 편다.
- *    8:54: 무릎을 꿇고 손을 펴서 기도하다가 일어나 선다(8:55). 기도하는 말과 축복의 말은 소리로 만들지 않는다(대목 글로만).
+ *  - 8:10-11: 제사장들이 성소에서 나오자 구름이 전에 가득하다. 하나님의 영광은 전의 몸체와 지붕을 덮는 흰 구름으로만(사람 모양·얼굴·빛줄기 없음, 불 없음).
+ *  - 8:12-14: 솔로몬이 전 쪽을 보다가 얼굴을 돌려 서 있는 온 회중을 축복한다. 8:22: 단 앞에서 회중을 마주 서서 하늘을 향해 손을 편다.
+ *    8:54-55: 무릎을 꿇고 손을 편 모습에서 일어나 서서 축복한다. 언제 꿇었는지는 본문에 없어 8:54 대목 처음에만 꿇은 모습으로 둔다.
+ *    기도하는 말과 축복의 말은 소리로 만들지 않는다(대목 글로만).
  *  - 하나님의 형상·음성 없음. 하늘에서 내리는 불 없음.
- * 감수가 필요한 설정: 전이 남쪽을 보게 둔 것(성경 다른 곳은 전의 앞이 동쪽, 겔 47:1), 전의 높은 터·뜰·단의 생김새와 자리와 크기, 낭실의 높이,
+ * 감수가 필요한 설정: 전이 남쪽을 보게 둔 것(왕상 7:39는 전의 오른쪽을 동남쪽이라 해 앞이 동쪽), 전의 높은 터·뜰·단의 생김새와 자리와 크기(대하 4:1은 단을 20×20×10규빗,
+ *   대하 3:4는 낭실 높이를 120규빗이라 하나 여기서는 단순하게 작게 둠), 대하 6:13의 놋 대를 그리지 않은 것,
  *   언약궤를 그리지 않고 제사장 행렬만 둔 것과 행렬이 오는 길(다윗 성에서 올라옴 8:1, 동쪽 길로 둠), 제사장의 흰 옷, 제사장·레위 사람의 수,
- *   구름의 모양·빛깔·퍼지는 빠르기, 구름이 대목 끝까지 머무는 것, 솔로몬의 생김새(무리 모형, 왕관과 꾸민 옷 없음)와 자리, 무릎 꿇은 모습(몸을 낮춤),
+ *   구름의 모양·빛깔·퍼지는 빠르기, 구름이 대목 끝까지 머무는 것, 솔로몬의 생김새(무리 모형, 왕관과 꾸민 옷 없음)와 자리, 무릎 꿇은 모습(몸을 낮춤)과 꿇은 때,
+ *   8:55에서 축복할 때 손을 반쯤 든 자세, 구름이 가득할 때 제사장들이 낭실 양옆에 비켜 선 자리(본문에 없음), 레위 사람이 층계 아래에 선 자리, 회중에 여자와 아이를 섞은 것,
  *   회중의 수(56)와 선 자리, 모여 오는 사람들의 길과 보따리, 8:5의 양과 소를 그리지 않은 것, 날씨와 때(맑은 낮),
  *   재료(마른 풀 줄기 8:1, 작은 조약돌 8:2, 마른 흙덩이 8:14 — 모두 길과 회중 뒤의 땅).
  */
@@ -43,7 +46,7 @@
       var x = pos.getX(i), z = pos.getZ(i), y = height(x, z); pos.setY(i, y);
       c.copy(s1).lerp(s2, noise(x * 0.06, z * 0.06));
       if (Math.abs(x) < 24 && z > -70 && z < 0) c.lerp(court, 0.75);                                  /* 전과 단 앞의 뜰 */
-      if ((Math.abs(x - 23) < 2.6 && z > -10 && z < 90) || (Math.abs(z - 18) < 2.4 && x < -30 && x > -90) || (Math.abs(x) < 3 && z > 0 && z < 90)) c.lerp(lane, 0.7);   /* 길 */
+      if ((Math.abs(x - 18) < 2.6 && z > -10 && z < 90) || (Math.abs(z - 18) < 2.4 && x < -30 && x > -90) || (Math.abs(x) < 3 && z > 0 && z < 90)) c.lerp(lane, 0.7);   /* 길 */
       col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
     }
     g.setAttribute('color', new T.BufferAttribute(col, 3)); g.computeVertexNormals();
@@ -58,7 +61,7 @@
 
     /* 여호와의 전(6:2-3의 크기)과 낭실, 높은 터와 층계, 단(8:22). 꾸밈은 그리지 않는다 */
     var stoneM = std('#E2D3AE'), stoneM2 = std('#CDBE98'), roofM = std('#B9A980'), sp2 = [];
-    sp2.push(box(36, TERR, 44, stoneM2, 0, -51, 0));                                                                 /* 높은 터 */
+    sp2.push(box(36, TERR, 40, stoneM2, 0, -53, 0));                                                                 /* 높은 터 */
     sp2.push(box(HW * 2, HH, HL, stoneM, HOUSE_C[0], HOUSE_C[1], TERR)); sp2.push(box(HW * 2 + 0.6, 0.6, HL + 0.6, roofM, HOUSE_C[0], HOUSE_C[1], TERR + HH));
     sp2.push(box(HW * 2, PH, PORCH, stoneM, 0, HZ0 + PORCH / 2, TERR)); sp2.push(box(HW * 2 + 0.6, 0.5, PORCH + 0.6, roofM, 0, HZ0 + PORCH / 2, TERR + PH));
     for (k = 0; k < 4; k++) sp2.push(box(12, TERR * (k + 1) / 4, 1.1, stoneM2, 0, -29.45 - k * 1.1, 0));   /* 층계(높은 터의 남쪽 끝) */
@@ -68,7 +71,7 @@
 
     /* 예루살렘의 집들(멀리)과 둘레의 땅 */
     var hs = [], houseM = [std('#E2C79A'), std('#D7B98A'), std('#E9D3A8')];
-    for (i = 0; i < 60; i++) { var hx = -110 + R() * 220, hz = -100 + R() * 220; if ((Math.abs(hx) < 46 && hz > -80 && hz < 40) || Math.abs(hx - 23) < 8 || Math.abs(hz - 18) < 7 || Math.abs(hx) < 7) continue; var hw = 5 + R() * 4, hh = 3 + R() * 4; hs.push(box(hw, hh, 5 + R() * 4, houseM[i % 3], hx, hz)); }
+    for (i = 0; i < 60; i++) { var hx = -110 + R() * 220, hz = -100 + R() * 220; if ((Math.abs(hx) < 46 && hz > -80 && hz < 40) || Math.abs(hx - 18) < 8 || Math.abs(hz - 18) < 7 || Math.abs(hx) < 7) continue; var hw = 5 + R() * 4, hh = 3 + R() * 4; hs.push(box(hw, hh, 5 + R() * 4, houseM[i % 3], hx, hz)); }
     if (hs.length) scene.add(PR.mergeStatic(hs));
     var deco = [];
     if (MO.rock) for (i = 0; i < 26; i++) { var rx = -150 + R() * 300, rz = -150 + R() * 300; if (Math.abs(rx) < 60 && rz > -90 && rz < 50) continue; var ro = MO.rock(2830 + i); ro.scale.multiplyScalar(0.7 + R() * 1.4); ro.position.set(rx, height(rx, rz) - 0.1, rz); deco.push(ro); }
@@ -95,8 +98,10 @@
     for (i = 0; i < 14; i++) {
       var pr = man(2810 + i * 7, { kind: 'man', carry: 'none' }); if (i < 8) linen(pr);
       var lane2 = (i % 2 ? 0.7 : -0.7), back = Math.floor(i / 2) * 1.6;
-      pr.P = mkPath([[23 + lane2, 50 + back], [23 + lane2, -6 + back], [12 + lane2, -22], [4 + lane2 * 0.5, -27.6], [lane2 * 0.6, DOOR[1] + 0.8], [0, DOOR[1] - 1.5]]);
-      pr.out = [-8 + (i % 7) * 2.6 + (i < 7 ? 0 : 1.3), -31.5 - (i < 7 ? 0 : 1.6)];                  /* 8:10-11 나와서 전 앞에 비켜 선다 */
+      pr.lev = i >= 8;   /* 레위 사람(8:4)은 성소에 들어가지 않는다(8:6, 8:10은 제사장) */
+      if (pr.lev) { pr.out = [7.6 + ((i - 8) % 3) * 1.4, -25.6 - Math.floor((i - 8) / 3) * 1.3]; pr.P = mkPath([[18 + lane2, 12 + back], [18 + lane2, -6 + back], [12 + lane2, -21], pr.out]); }
+      else { pr.P = mkPath([[18 + lane2, 12 + back], [18 + lane2, -6 + back], [12 + lane2, -22], [4 + lane2 * 0.5, -27.6], [lane2 * 0.6, DOOR[1] + 0.8], [0, DOOR[1] - 1.5]]);
+        pr.out = [[-10, -7.5, 7.5, 10][i % 4], i < 4 ? -34.6 : -36.2]; }   /* 8:10-11 나와서 낭실 양옆에 비켜 선다 */
       priests.push(pr);
     }
     /* 온 회중(8:5, 8:14). 앞줄은 장로와 족장들(8:1) */
@@ -119,7 +124,7 @@
     gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
     var CN = 170, cloudG = new T.BufferGeometry(), cp0 = new Float32Array(CN * 3), cpos = new Float32Array(CN * 3), cseed = [];
     for (i = 0; i < CN; i++) {
-      var ox = (R() - 0.5) * (HW * 2 + 9), oy = TERR + R() * (HH + 5), oz = HZ0 + PORCH + 3 - R() * (HL + PORCH + 8);
+      var ox = (R() - 0.5) * (HW * 2 + 3), oy = TERR + R() * (HH + 2), oz = HZ0 + PORCH - 0.5 - R() * (HL + PORCH + 1.5);   /* 전의 몸체와 지붕을 덮는 만큼만(옆으로 치솟는 기둥처럼 보이지 않게, 문 앞은 비움) */
       cp0[i * 3] = ox; cp0[i * 3 + 1] = oy; cp0[i * 3 + 2] = oz; cseed.push(R() * 6.28);
       cpos[i * 3] = 0; cpos[i * 3 + 1] = TERR + 3; cpos[i * 3 + 2] = DOOR[1];
     }
@@ -143,17 +148,17 @@
     function setPhase(p) {
       phase = p; pt = 0; hideAll(); kneel = 0; kneelWant = 0; raise = 0; raiseWant = 0;
       cloudWant = p === 'cloud' || p === 'bless' || p === 'pray' || p === 'kneel' || p === 'rise' ? 1 : 0; cloudAmt = p === 'cloud' ? 0 : cloudWant;
-      if (p === 'gather') comers.forEach(function (o) { o.group.visible = true; });
+      if (p === 'gather' || p === 'wait') comers.forEach(function (o) { o.group.visible = true; });
       if (p === 'ark' || p === 'wait') { standCong(); }
       if (p === 'ark') { setAt(sol, SOL[0], SOL[1], Math.PI); sol.group.visible = true; if (sol.update) sol.update(0.016, 0); }   /* 8:5 솔로몬과 회중이 함께 있다 */
       if (p !== 'gather' && p !== 'ark' && p !== 'wait') {
         standCong();
         priests.forEach(function (o) { setAt(o, o.out[0], o.out[1], 0); o.group.visible = true; if (o.update) o.update(0.016, 0); });
-        setAt(sol, SOL[0], SOL[1], p === 'cloud' ? Math.PI : 0); sol.group.visible = true; if (sol.update) sol.update(0.016, 0);   /* 8:14 얼굴을 돌이켜 회중을 본다 */
+        setAt(sol, SOL[0], SOL[1], p === 'cloud' || p === 'bless' ? Math.PI : 0); sol.group.visible = true; if (sol.update) sol.update(0.016, 0);   /* 8:14 얼굴을 돌이켜 회중을 본다 */
         if (p === 'pray') raiseWant = 1;                                                                  /* 8:22 손을 편다 */
-        if (p === 'kneel') { raiseWant = 1; kneelWant = 1; }                                             /* 8:54 무릎을 꿇고 손을 편다 */
+        if (p === 'kneel') raiseWant = 1;                                                                /* 8:27-30 손을 편 채 기도한다 */
         if (p === 'rise') { kneel = 1; kneelWant = 0; raise = 1; raiseWant = 0; }                        /* 8:54-55 일어나 서서 축복한다 */
-        if (p === 'cloud') priests.forEach(function (o) { o.group.visible = false; });                    /* 8:10 성소에서 나오는 때부터 */
+        if (p === 'cloud') priests.forEach(function (o) { if (!o.lev) o.group.visible = false; });         /* 8:10 제사장이 성소에서 나오는 때부터 */
       }
       placeCloud(0); cloudM.opacity = 0.55 * cloudAmt;
     }
@@ -208,16 +213,17 @@
       beatPose: function (i) { setPhase(['gather', 'ark', 'cloud', 'bless', 'pray', 'kneel', 'rise'][i] || 'wait'); },
       update: function (dt, now) {
         pt += dt;
-        if (phase === 'gather' || phase === 'wait') comers.forEach(function (o, n) { if (phase === 'wait') { o.group.visible = false; return; } walk(o, o.P, (pt + n * 3.1) * 1.4 % (o.P.tot + 8), undefined, dt); });   /* 8:2 모여 온다 */
-        if (phase === 'ark') priests.forEach(function (o, n) { var s = Math.max(0, pt - 1) * 2.2; if (s < o.P.tot) walk(o, o.P, s, undefined, dt); else o.group.visible = false; });   /* 8:3-6 */
+        if (phase === 'gather' || phase === 'wait') comers.forEach(function (o, n) { walk(o, o.P, (pt + n * 3.1) * 1.4 % (o.P.tot + 8), undefined, dt); });   /* 8:2 모여 온다 */
+        if (phase === 'ark') priests.forEach(function (o, n) { var s = Math.max(0, pt - 1) * 2.6; if (s < o.P.tot || o.lev) walk(o, o.P, s, Math.PI, dt); else o.group.visible = false; });   /* 8:3-6 */
         if (phase === 'cloud') {
           cloudWant = pt > 2 ? 1 : 0;                                                                         /* 8:10 제사장이 나올 때에 구름이 가득하다 */
-          priests.forEach(function (o, n) { var s = (pt - n * 0.25) * 1.8; if (s > 0) { if (!o.Q) o.Q = mkPath([[0, DOOR[1] - 1], [0, DOOR[1] + 1.5], o.out]); walk(o, o.Q, s, 0, dt); } });
+          priests.forEach(function (o, n) { var s = (pt - n * 0.25) * 1.8; if (s > 0 && !o.lev) { if (!o.Q) o.Q = mkPath([[0, DOOR[1] - 1], [0, DOOR[1] + 1.5], o.out]); walk(o, o.Q, s, 0, dt); } });
         }
         if (cloudAmt !== cloudWant) { cloudAmt += (cloudWant - cloudAmt) * Math.min(1, dt * 0.35); if (Math.abs(cloudAmt - cloudWant) < 0.002) cloudAmt = cloudWant; }
         if (cloudAmt > 0.001) { placeCloud(now); cloudM.opacity = 0.55 * cloudAmt; } else cloudM.opacity = 0;
         if (sol.group.visible) {
           if (phase === 'rise') { kneelWant = pt > 1.5 ? 0 : 1; raiseWant = pt > 1.5 ? 0.35 : 1; }
+          if (phase === 'bless') sol.group.rotation.y = Math.PI * (1 - sm(1.5, 3, pt));   /* 8:12-13을 말한 뒤 얼굴을 돌이킨다(8:14) */
           kneel += (kneelWant - kneel) * Math.min(1, dt * 1.5); raise += (raiseWant - raise) * Math.min(1, dt * 1.5);
           arms(sol, -2.6 * raise, -2.6 * raise, 0.35 * raise);
           sol.group.position.y = height(SOL[0], SOL[1]) - 0.5 * kneel; sol.group.rotation.x = 0.08 * kneel;   /* 무릎 꿇은 높이로 낮춘다 */
