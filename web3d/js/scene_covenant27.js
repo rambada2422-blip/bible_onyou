@@ -1,18 +1,18 @@
 /* 3D 장면 설정: OT-27 다윗에게 주신 언약 (삼하 7:1-17).
  * 방향: 왕의 백향목 궁은 북쪽(-Z)의 조금 높은 터에 남쪽을 보고 서 있다. 궁 앞에 기둥 줄(지붕 덮인 앞자리)이 있고, 그 앞이 뜰, 뜰 앞에 낮은 담, 담 앞(남쪽)이 길이다.
  *   아이들은 궁 앞 길과 둘레 길에서만 다닌다(담 너머 뜰과 궁으로 가지 않는다).
- * 아이들이 다니는 때: 왕이 궁에 평안히 거할 때, 다윗과 나단이 궁 앞에서 이야기할 때(7:1-3).
+ * 아이들이 다니는 때: 왕이 궁에 평안히 거할 때, 다윗과 나단이 궁 앞에서 이야기할 때(7:1-3). 7:1-2부터 궁 앞 길에서 지켜보기로 본다(재료를 주울 때가 아니라).
  * 본문에 맞춘 점 (content/ot/OT-27.json design3d)
  *  - 7:1-3: 다윗 왕과 선지자 나단이 궁 앞 기둥 줄 아래에서 마주 서 있다. 말은 대목의 글로만(입 모양·몸짓으로 말을 지어내지 않는다).
  *    본문은 궁 어디에서 말했는지 말하지 않는다. 아이들이 멀리서 볼 수 있게 궁 앞에 둔다.
  *  - 7:4-16: 그 밤. 타임머신 창 너머로 밤의 예루살렘을 멀리서 본다(아이들은 화면에 없음). 나단이 그 밤에 어디에 있었는지는 본문에 없어 그리지 않는다.
  *    하나님의 말씀은 글로만. 밤하늘에 특별한 빛을 두지 않는다(별과 푸른 밤빛, 집들 창의 작은 불빛만).
- *  - 7:17: 나단이 동쪽 길에서 걸어와 뜰을 지나 궁 앞에 올라 왕 앞에 선다. 말씀을 전한 때는 본문에 없어 낮으로 둔다.
+ *  - 7:17: 나단이 궁 앞 길에서 뜰 입구로 들어와 층계를 올라 왕 앞에 선다(대목이 열리고 약 6초). 말씀을 전한 때는 본문에 없어 낮으로 둔다.
  *  - 하나님의 궤와 장막(7:2, 6:17)은 왕의 말 속에만 나오므로 그리지 않는다. 지어질 집(7:13)과 다윗의 몸에서 날 자식(7:12)도 그리지 않는다.
  * 감수가 필요한 설정: 궁의 생김새·크기·자리(돌 터, 백향목 벽과 기둥, 앞 기둥 줄, 문과 작은 창. 5:11 백향목·목수·석수), 높은 터와 층계, 뜰과 낮은 담,
  *   다윗과 나단이 궁 앞에서 이야기하는 자리(본문에 없음), 다윗의 생김새(tools/blender/people/davidking.json: 어른, 수염, 붉은 겉옷, 왕관 없음)와 나단의 생김새(무리 모형),
- *   7:17 나단이 오는 길(동쪽 길)과 때(낮으로 둠), 그 밤의 빛(푸른 밤빛, 별, 집과 궁 창의 불빛), 성 안 집과 길과 오가는 사람, 날씨(맑음),
- *   재료(백향목 조각 7:2 — 궁에서 떨어진 서쪽 길가, 양털 한 줌 7:8 — 성 동남쪽 길가, 누구의 것인지 정하지 않음, 작은 돌 7:1 — 궁 앞 길 가장자리).
+ *   7:17 나단이 오는 길(궁 앞 길에서 뜰 입구로)과 때(낮으로 둠), 그 밤의 빛(푸른 밤빛, 별, 집과 궁 창의 불빛), 성 안 집과 길과 오가는 사람, 날씨(맑음),
+ *   재료(백향목 조각 7:2 — 궁에서 떨어진 서쪽 길가, 양털 몇 가닥 7:8 — 성 동남쪽 길가, 누구의 것인지 정하지 않음, 작은 돌 7:1 — 궁 앞 길 가장자리).
  */
 (function () {
   'use strict';
@@ -27,7 +27,12 @@
       var terr = sm(-25.4, -26.9, z) * (1 - sm(28, 31, Math.abs(x)));     /* 궁이 선 조금 높은 터 */
       return TERR * terr + 0.16 * noise(x * 0.08 + 3, z * 0.08 + 1) * (1 - terr) + sm(110, 220, Math.hypot(x, z)) * 14 * noise(x * 0.02, z * 0.02);
     }
-    function gy(x, z) { return height(x, z) + (Math.abs(x) < PAL_W / 2 && z > FRONT_Z - 0.5 ? 0.6 * sm(-28.9, -29.7, z) : 0); }   /* 앞자리 바닥 높이 */
+    function gy(x, z) {   /* 발 높이: 층계 칸과 앞자리 바닥을 따른다 */
+      var y = height(x, z);
+      if (Math.abs(x) < 3.1 && z <= -24.97 && z > -27.18) y = Math.max(y, TERR * (Math.floor((-24.97 - z) / 0.55) + 1) / 4);
+      if (Math.abs(x) < PAL_W / 2 && z <= -29.45 && z > FRONT_Z - 0.5) y += 0.6;
+      return y;
+    }
     function walkable(x, z) { return x >= -34 && x <= 34 && z >= -18 && z <= 28; }
 
     var scene = new T.Scene();
@@ -72,8 +77,8 @@
         if (hx + w > x1 || hz + d > z1) continue;
         var cx = hx + w / 2, cz = hz + d / 2, by = height(cx, cz);
         hs.push(box(w, h, d, m, cx, cz)); hs.push(box(w + 0.3, 0.3, d + 0.3, roofM, cx, cz, by + h));
-        if (hash(hx + 1, hz + 2) < 0.7) {   /* 길 쪽(가운데 쪽) 벽에 작은 창 하나 */
-          var wn = Math.abs(cx) > Math.abs(cz) * 0.9 ? box(0.14, 0.9, 0.8, lampM, cx - Math.sign(cx) * (w / 2 + 0.02), cz, by + h * 0.45) : box(0.8, 0.9, 0.14, lampM, cx, cz - Math.sign(cz) * (d / 2 + 0.02), by + h * 0.45);
+        if (hash(hx + 1, hz + 2) < 0.85) {   /* 길 쪽(가운데 쪽) 벽에 작은 창 하나 */
+          var wn = Math.abs(cx) > Math.abs(cz) * 0.9 ? box(0.14, 1.1, 1.0, lampM, cx - Math.sign(cx) * (w / 2 + 0.02), cz, by + h * 0.42) : box(1.0, 1.1, 0.14, lampM, cx, cz - Math.sign(cz) * (d / 2 + 0.02), by + h * 0.42);
           wins.push(wn);
         }
       }
@@ -98,7 +103,7 @@
     pal.push(box(0.5, 1.3, 4.6, stoneM2, -28, -24.3, 0)); pal.push(box(0.5, 1.3, 4.6, stoneM2, 28, -24.3, 0));
     scene.add(C3.merge(pal));
     [-8.6, -5, 5, 8.6].forEach(function (wx) { wins.push(box(1.0, 0.8, 0.14, lampM, wx, FRONT_Z + 0.04, TERR + 5.8)); });   /* 궁 앞벽 위쪽(앞자리 지붕 위)의 작은 창 */
-    scene.add(C3.merge(wins));
+    var winM = C3.merge(wins); winM.traverse(function (m) { m.castShadow = false; m.receiveShadow = false; }); scene.add(winM);   /* 창에 그림자 줄무늬가 지지 않게 */
 
     /* 둘레의 땅(멀리): 바위와 떨기만 */
     var deco = [];
@@ -118,10 +123,10 @@
     api.person('davidking', function (nm) { nm.group.rotation.order = 'YXZ'; nm.group.position.copy(dav.group.position); nm.group.rotation.copy(dav.group.rotation); nm.group.visible = dav.group.visible; scene.remove(dav.group); scene.add(nm.group); dav = nm; });
     var nat = man(2741);
     var D_RY = Math.PI / 2 - 0.5, N_RY = -Math.PI / 2 + 0.5;                                         /* 서로 마주 보되 길 쪽으로 조금 돌아선다 */
-    var N_COME = mkPath([[16, -19.6], [3.2, -19.4], [0.4, WALL_Z + 1.2], [0.4, WALL_Z - 1.6], [0.3, -27.4], [0.8, -29.8], NAT]);   /* 7:17 동쪽 길에서 와서 궁 앞에 오른다 */
+    var N_COME = mkPath([[3.4, -20.2], [0.4, WALL_Z + 1.0], [0.4, WALL_Z - 1.6], [0.3, -27.4], [0.8, -29.8], NAT]);   /* 7:17 궁 앞 길에서 뜰 입구로 들어와 층계를 올라 왕 앞에 선다 */
     /* 성 안을 오가는 사람들(본문에 없음): 둘레 길에서만, 낮에만 */
     var walkers = [];
-    for (i = 0; i < 6; i++) { var wk = man(i * 37 + 2750, { carry: 'none' }); wk.P = i % 2 ? mkPath([[-78, 15.5 + i * 0.3], [-38, 15.5 + i * 0.3], [-38, 18], [-78, 18]]) : mkPath([[78, -12 + i * 0.3], [38, -12 + i * 0.3], [38, -9.6], [78, -9.6]]); wk.ph = i * 9; walkers.push(wk); }
+    for (i = 0; i < 6; i++) { var wk = man(i * 37 + 2750, { carry: 'none' }); wk.P = i % 2 ? mkPath([[-78, 15.5 + i * 0.3], [-38, 15.5 + i * 0.3], [-38, 18], [-78, 18], [-78, 15.5 + i * 0.3]]) : mkPath([[78, -12 + i * 0.3], [38, -12 + i * 0.3], [38, -9.6], [78, -9.6], [78, -12 + i * 0.3]]); wk.ph = i * 9; walkers.push(wk); }
 
     /* 때에 따른 빛(본문에 없는 빛은 만들지 않는다. 낮과 그 밤만) */
     var LIGHT = {
@@ -166,16 +171,16 @@
         parts: [[-30, 8], [28, 22], [10, -15.5]], lookSpot: [10, -15.5],
         look: { focus: [0, -31], mid: [3, -22], dy: 3, backE: 9, upE: 4.5 } },
       eventCam: function (i) {
-        if (i === 2) return { pos: [26, 22, 16], look: [0, 5, -36] };                                    /* 그 밤: 창 너머로 성과 궁을 멀리서 */
-        if (i === 3) return { pos: [-30, 17, 4], look: [0, 4, -40] };
-        if (i === 4) return { pos: [8, height(8, 4) + 2.5, 4], look: [0, 13, -60] };
-        if (i === 5) return { pos: [0, 40, 42], look: [0, 0, -26] };
+        if (i === 2) return { pos: [30, 24, 20], look: [0, 4, -34] };                                    /* 그 밤: 창 너머로 성과 궁을 멀리서 */
+        if (i === 3) return { pos: [-62, 32, 44], look: [-4, 0, -22] };
+        if (i === 4) return { pos: [58, 36, 52], look: [4, 0, -18] };
+        if (i === 5) return { pos: [0, 58, 78], look: [0, 0, -22] };
         return null;
       },
       eventLook: function (i) { if (i === 6) return { focus: [2, -27], mid: [8, -19], dy: 2, backE: 11, upE: 4 }; return null; },   /* 7:17 나단이 오는 길과 궁 앞이 함께 보이게 */
       kidsHidden: function (i) { return i >= 2 && i <= 5; },
       beatNote: function (i) {
-        if (i === 2) return '그 밤이에요. 타임머신 창 너머로 밤의 예루살렘을 멀리서 봐요. 나단이 그 밤에 어디에 있었는지는 본문에 없어 그리지 않았어요. 하나님의 말씀은 소리나 빛으로 만들지 않고 글로만 읽어요.';
+        if (i === 2) return '그 밤이에요. 창 너머로 밤의 성을 멀리서 봐요. 나단이 있던 곳은 본문에 없어 그리지 않았어요.';
         if (i === 6) return '나단이 말씀을 전한 때는 성경에 적혀 있지 않아 낮으로 두었어요.';
         return null;
       },
@@ -186,12 +191,12 @@
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 예루살렘 다윗 성, 왕의 궁 앞 길에 내려앉았어요. 북쪽 높은 터에 백향목 궁이 보여요.', say: { who: 'hyu', text: '궁 뜰 담 안으로는 들어가지 말자. 궁 앞 길과 둘레 길에서만 다니자.' } },
       lookText: '사무엘하 7장을 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
-      partBeats: [0], eventStart: 1,
+      partBeats: [], eventStart: 0,   /* 7:1-2도 궁 앞에서 본다 */
       sceneDoneText: '나단이 말씀을 전하는 것까지 지켜봐야 떠날 수 있어요.',
       dex: [
         { id: 'palace', name: '백향목 궁', desc: '왕이 평안히 거한 백향목 집', ref: '삼하 7:2', hint: '북쪽 높은 터의 궁을 담아 보세요.', range: 90, crop: 0.5, pos: function () { return v3(PAL[0], TERR + 4, FRONT_Z); } },
         { id: 'david', name: '다윗 왕', desc: '궁에 평안히 거하며 나단에게 말한 왕', ref: '삼하 7:1-2', hint: '궁 앞 기둥 아래의 붉은 옷을 입은 사람을 보세요.', range: 60, crop: 0.36, visible: function () { return dav.group.visible; }, pos: function () { var p = dav.group.position; return v3(p.x, p.y + 1.1, p.z); } },
-        { id: 'nathan', name: '선지자 나단', desc: '왕에게 대답하고, 그 밤에 받은 말씀을 다윗에게 전한 선지자', ref: '삼하 7:3, 7:17', hint: '왕과 마주 선 사람을 보세요.', range: 60, crop: 0.36, visible: function () { return nat.group.visible; }, pos: function () { var p = nat.group.position; return v3(p.x, p.y + 1.1, p.z); } }
+        { id: 'nathan', name: '선지자 나단', desc: '왕에게 대답하고, 그 밤에 받은 말씀을 다윗에게 전한 선지자', ref: '삼하 7:3-4, 7:17', hint: '왕과 마주 선 사람을 보세요.', range: 60, crop: 0.36, visible: function () { return nat.group.visible; }, pos: function () { var p = nat.group.position; return v3(p.x, p.y + 1.1, p.z); } }
       ],
       reset: function () { setPhase('talk'); },
       partFound: function () {},
@@ -203,8 +208,8 @@
         pt += dt; light(dt);
         walkers.forEach(function (o) { if (o.group.visible) { var s = (now * 1.3 + o.ph) % o.P.tot; walk(o, o.P, s < 0.01 ? 0.01 : s, undefined, dt); } });
         if (phase === 'tell') {
-          var arrived = !walk(nat, N_COME, Math.max(0, pt - 0.8) * 1.6, N_RY, dt) && pt > 1;
-          var want = arrived ? D_RY : 0.35 + 0.5 * sm(0, 1, (pt - 0.8) * 1.6 / N_COME.tot);   /* 오는 나단 쪽으로 돌아선다 */
+          var arrived = !walk(nat, N_COME, Math.max(0, pt - 0.3) * 1.8, N_RY, dt) && pt > 1;
+          var np = nat.group.position, dp = dav.group.position, want = arrived ? D_RY : Math.atan2(np.x - dp.x, np.z - dp.z);   /* 오는 나단 쪽으로 돌아선다 */
           dav.group.rotation.y += (want - dav.group.rotation.y) * Math.min(1, dt * 2);
         }
         if (dav.group.visible && dav.update) dav.update(dt, false);
