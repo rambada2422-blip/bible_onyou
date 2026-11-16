@@ -264,26 +264,28 @@ function exposure(d, E) {
   TIERS.forEach((t) => {
     const parts = [];   // [where, text]
     const P = (w, x) => { if (x) parts.push([w, String(x)]); };
+    const PA = (w, x, after) => { if (x) parts.push([w, String(x), undefined, after]); };
     P('title', d.title); P('place', d.place);   // 장면 제목·장소는 시대 지도와 장면 머리에 먼저 보인다
     P('mission.call.' + t, T(m.call, t));
-    ((m.companion || {}).talks || []).forEach((k, i) => { P(`companion.talks[${i}].ask`, k.ask && k.ask.text); P(`companion.talks[${i}].answer.${t}`, T(k.answer, t)); });
+    const ca = (m.companion || {}).when === 'after';   // 관문 뒤의 동행 문답은 관문보다 뒤, 탐지기 물음보다는 앞(이야기 카드)
+    ((m.companion || {}).talks || []).forEach((k, i) => { PA(`companion.talks[${i}].ask`, k.ask && k.ask.text, ca); PA(`companion.talks[${i}].answer.${t}`, T(k.answer, t), ca); });
     (d.beats || []).forEach((b, i) => { P(`beats[${i}].text.${t}`, T(b.text, t)); P(`beats[${i}].say`, b.say && b.say.text); });
     ((m.help || {}).steps || []).forEach((h, i) => {
-      const w = `help.steps[${i}]`;
-      P(w + '.title', h.title); P(w + '.text.' + t, T(h.text, t)); (h.tasks || []).forEach((x, j) => P(`${w}.tasks[${j}]`, x));
-      P(w + '.done', h.done && h.done.text); P(w + '.say', h.say && h.say.text); P(w + '.ask', h.ask && h.ask.text);
-      parts.push([w + '.answer.' + t, T(h.answer, t), i]); if (t === 't3' && h.nt) P(w + '.nt', h.nt.text);
+      const w = `help.steps[${i}]`, ag = h.after === 'gates';
+      PA(w + '.title', h.title, ag); PA(w + '.text.' + t, T(h.text, t), ag); (h.tasks || []).forEach((x, j) => PA(`${w}.tasks[${j}]`, x, ag));
+      PA(w + '.done', h.done && h.done.text, ag); PA(w + '.say', h.say && h.say.text, ag); PA(w + '.ask', h.ask && h.ask.text, ag);
+      parts.push([w + '.answer.' + t, T(h.answer, t), i, ag]); if (t === 't3' && h.nt) PA(w + '.nt', h.nt.text, ag);
     });
     (d.quests || []).forEach((q, i) => { P(`quests[${i}].line`, q.line); P(`quests[${i}].found`, q.found); P(`quests[${i}].say`, q.say && q.say.text); });
     (m.materials || []).forEach((x, i) => { ['name', 'how', 'line', 'use'].forEach((k) => P(`materials[${i}].${k}`, x[k])); });
     S3D(d.id).forEach((x, i) => P(`3D글[${i}]`, x));   // 3D 장면 설정 파일의 글(도감·처음 말·경계 말): 3D에서는 대목보다 먼저 보인다
     const qs = [];
-    ((d.gates || {})[t] || []).forEach((q, i) => qs.push([`gates.${t}[${i}]`, q, -1]));
+    ((d.gates || {})[t] || []).forEach((q, i) => qs.push([`gates.${t}[${i}]`, q, -1, true]));
     (d.quests || []).forEach((x, i) => { if (x.q && x.q[t]) qs.push([`quests[${i}].q.${t}`, x.q[t], -1]); });
     ((m.help || {}).steps || []).forEach((h, i) => { if (h.read && h.read[t]) qs.push([`help.steps[${i}].read.${t}`, h.read[t], i]); });
-    qs.forEach(([w, q, own]) => {
+    qs.forEach(([w, q, own, gate]) => {
       if (q.inStory) return;
-      const story = parts.filter((p) => p[2] === undefined || p[2] !== own);
+      const story = parts.filter((p) => (p[2] === undefined || p[2] !== own) && !(gate && p[3]));   // 관문에는 관문 뒤의 글을 견주지 않는다
       const all = norm(story.map((p) => p[1]).join(' '));
       const where = (tok) => { const f = story.find((p) => norm(p[1]).includes(tok)); return f ? f[0] : '?'; };
       if (q.confirm && Array.isArray(q.confirm.options)) {
