@@ -211,6 +211,10 @@ html.fs2 .overlay3.menu3 > * { zoom: 1.16; }
 .betweenfold { margin-top: 10px; }   /* 시대 안내의 "장면 사이에 성경이 기록한 곳" 접기 */
 .betweenfold > .ot-refs { margin-top: 8px; }
 .betweenlead { margin-top: 8px; }
+/* 시트 글이 아래로 더 있을 때 아래 단추 줄 바로 위에 뜨는 알림(ui.js moreHint). 누르는 것이 아니다 */
+.sheet-foot { position: relative; }
+.more3 { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); padding: 4px 12px; border-radius: 999px; background: rgba(14, 23, 48, .84); color: var(--paper); font-size: 13px; line-height: 1.3; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 8px rgba(0, 0, 0, .22); z-index: 2; }
+.more3[hidden] { display: none; }
 .closefold[open] .foldhint { display: none; }   /* 펼친 뒤에는 "펼치기"를 감춘다 */
 /* 키가 작은 휴대폰(높이 700px 아래): 풍경을 줄이고 글 시트를 키운다 */
 @media (max-height: 700px) {

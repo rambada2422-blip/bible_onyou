@@ -86,6 +86,7 @@
   var cur = { screen: 'none', id: null, step: 0, steps: [], k: '' };
   function show(kind, eraKey, top, body, foot, opts) {
     opts = opts || {};
+    if (kind === 'era' || kind === 'pick') mark(null);   /* 기록하지 않는 화면(시대 안내·3D 고르기)에서는 앞 화면의 시간을 닫는다(pack 갈래 2차 검증) */
     box.replaceChildren();
     box.className = 'ot3 ' + kind + (opts.tall ? ' tall' : '');
     if (eraKey) add(box, el('div', { class: 'ot-stage', html: ART ? ART.art(eraKey, opts.art) : '' }));
@@ -95,6 +96,7 @@
     add(b, body); add(f, [U.speakBtn(function () { return b; }), foot]);
     add(box, el('div', { class: 'ot-sheet sheet' }, b, f));
     box.hidden = false; b.scrollTop = 0;
+    if (U.moreHint) U.moreHint(b, f);   /* 글이 아래로 더 있으면 "아래에 더 있어요" */
     return b;
   }
   function topBar(label) {
@@ -207,8 +209,20 @@
     var t = el('div', { class: 'note look lock-note fadein' }, el('b', { text: '아직 열리지 않았어요' }), el('span', { text: '시대 ' + (e.era - 1) + '의 장면 하나를 마치면 "' + e.name + '" 시대로 가는 길이 열려요.' }));
     var sec = document.getElementById('ote-' + e.era); if (sec) sec.insertBefore(t, sec.children[1]);
   }
+  /* 아이 시험용(주소 끝 #log일 때만): 다음 아이를 위해 이 기기의 진행·사진·놀이 기록을 모두 지운다. 두 번 눌러야 지운다(pack 갈래 2차 검증) */
+  function testWipe() {
+    if (!/#log/.test(location.hash)) return null;
+    var b = btn('진행 지우기(시험용)', function () {
+      if (!b.getAttribute('data-sure')) { b.setAttribute('data-sure', '1'); b.textContent = '정말 지울까요? 한 번 더 누르면 진행·사진·놀이 기록을 모두 지워요'; return; }
+      lastMark = null; t3d = null; PG = {}; save(); load(); DX = {}; LOG = [];
+      try { localStorage.removeItem(DEXK); localStorage.removeItem(LOGK); } catch (e) { /* 무시 */ }
+      openLog();
+    }, 'quiet');
+    return b;
+  }
   /* 놀이 기록 보기(주소 끝 #log): 장면별 머문 시간, 2초 안에 넘긴 화면 수, 나간 곳 */
   function openLog() {
+    mark(null);   /* 놀이 기록을 보는 동안 앞 화면의 시간이 늘지 않게(pack 갈래 2차 검증) */
     cur.screen = 'log';
     var by = {}, exits = [];
     LOG.forEach(function (x) { var id = String(x.w || '').split(' ')[0]; if (x.exit) { exits.push(x.w); return; } var o = by[id] || (by[id] = { n: 0, quick: 0, ms: 0 }); o.n++; o.ms += x.ms; if (x.ms < 2000) o.quick++; });
@@ -217,7 +231,7 @@
     box.replaceChildren(el('div', { class: 'otmap pad' }, el('div', { class: 'eyebrow', text: '아이 시험용 · 이 기기에만 저장' }), el('h1', { class: 'den-title', text: '놀이 기록' }),
       el('table', { class: 'logt' }, el('tr', {}, el('th', { text: '장면' }), el('th', { text: '화면' }), el('th', { text: '2초 안에 넘김' }), el('th', { text: '머문 시간' })), rows),
       el('p', { class: 'den-lead', text: '나간 곳: ' + (exits.slice(-10).join(', ') || '없음') }), ta,
-      el('div', { class: 'otmap-foot' }, btn('기록 지우기', function () { LOG = []; try { localStorage.removeItem(LOGK); } catch (e) { /* 무시 */ } openLog(); }, 'quiet'), btn('부모·교사 화면', openAdultGate, 'quiet'), btn('시대 지도', function () { openMap(); }, 'quiet'))));
+      el('div', { class: 'otmap-foot' }, btn('기록 지우기', function () { mark(null); LOG = []; lastMark = null; try { localStorage.removeItem(LOGK); } catch (e) { /* 무시 */ } openLog(); }, 'quiet'), testWipe(), btn('부모·교사 화면', openAdultGate, 'quiet'), btn('시대 지도', function () { openMap(); }, 'quiet'))));
     box.className = 'ot3 map'; box.hidden = false;
   }
 
@@ -318,7 +332,7 @@
       mark(cur.id + ' ' + s.k + (s.i !== undefined ? s.i : ''));
       var hb = s.k === 'help' ? m.help.steps[s.i].after : null;
       ambience(cur.id, s.k === 'beat' ? s.i : (typeof hb === 'number' ? hb : null));
-    }
+    } else mark(cur.id + '·3D ' + s.k + (s.i !== undefined ? s.i : ''));   /* 3D 안의 문답·돕기 화면은 이름을 달리 기록한다(장면별 걸린 시간에는 넣지 않음: 첫 낱말이 OT-NN이 아님) */
     var last = cur.step === cur.steps.length - 1, next = cur.steps[cur.step + 1];
     var kick = s.k in KICK ? KICK[s.k] + ' ' + (s.i + 1) + ' / ' + (s.k === 'help' ? m.help.steps.length : nOf(s.k)) : '';
     var nextLabel = !next ? '' : (next.k === 'gate' && s.k !== 'gate' ? '다음으로 가는 관문' : (next.k === 'finish' ? '탐험 마치기' : '다음'));
@@ -483,7 +497,8 @@
     kids_.push(el('p', { class: 'ot-soft', text: '오늘은 여기까지 해도 좋아요. 진행은 이 기기에 저장돼요.' }));
     var nextBtn = nx ? btn(sc(nx).era !== d.era ? '다음 시대로' : '다음 장면', function () { if (sc(nx).era !== d.era) openEra(sc(nx).era); else openScene(nx); }) : btn('시대 지도', function () { openMap(); });
     cur.k = 'finish';
-    show('play', e.key, topBar(d.title), kids_, [btn('시대 지도', function () { openMap(d.era); }, 'plain'), nextBtn]);
+    /* 마침 화면의 그림: 그 장면의 끝 그림(art 갈래 sceneart.js가 있으면). 없으면 그림 함수가 scene·at을 모른 채 시대 풍경을 그린다. 창조(OT-01)는 다 지어진 단계 */
+    show('play', e.key, topBar(d.title), kids_, [btn('시대 지도', function () { openMap(d.era); }, 'plain'), nextBtn], { art: d.id === 'OT-01' ? { scene: d.id, at: 'end', stage: 9 } : { scene: d.id, at: 'end' } });
   }
 
   /* ── 수리 현황: 모은 재료 (탐험대 이야기) ── */
@@ -705,7 +720,7 @@
       el('div', { class: 'otmap-foot' }, btn('놀이 기록', openLog, 'quiet'), wipe, btn('시대 지도', function () { openMap(); }, 'quiet'))]);
   }
 
-  function closeAll() { U.stopSpeak(); U.onMiss = null; box.hidden = true; box.replaceChildren(); cur.screen = 'none'; cur.seg = null; }
+  function closeAll() { mark(null); U.stopSpeak(); U.onMiss = null; box.hidden = true; box.replaceChildren(); cur.screen = 'none'; cur.seg = null; }   /* 3D로 들어갈 때·처음 화면으로 나갈 때·3D 안 조각을 닫을 때 앞 화면의 시간을 닫는다 */
 
   /* ── 3D 장면 안에서 쓰는 조각: 동행 문답(앞·뒤)과 오늘의 물음을 3D 화면 위의 시트로 보여 준다 ──
    * kinds: 'before' | 'after' | 'today'. 보여 줄 것이 없으면 바로 done()을 부른다. */

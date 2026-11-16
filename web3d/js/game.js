@@ -174,9 +174,21 @@
   var dexBtn = el('button', { class: 'dex3', hidden: '', on: { click: function () { if (cur === 'jordan') openClues(); else openDex(); } } }, icon('journal'), dexLabel);
   var camBtn = el('button', { class: 'cam3', hidden: '', 'aria-label': '사진 찍기', on: { click: function () { wantShot = true; } } }, icon('camera'));
   var flash = el('div', { class: 'flash3', hidden: '' });
+  /* 3D 장면 도중에 시대 지도로 나가는 길(pack 갈래 2차 검증). 한 번 묻고 나간다. 모은 재료와 사진은 이미 이 기기에 남아 있다 */
+  var mapBtn = el('button', { class: 'map3', hidden: '', 'aria-label': '시대 지도로 나가기', on: { click: function () { askMap(); } } }, icon('arrow'), el('span', { text: '지도' }));
+  function askMap() {
+    if (state === 'depart' || state === 'menu') return;
+    stick.x = stick.y = 0; stick.id = null;
+    var prevClass = overlay.className, prevKids = Array.prototype.slice.call(overlay.childNodes), wasHidden = overlay.hidden;
+    sheetOverlay([el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+      el('p', { class: 'q-prompt', text: '탐험을 멈추고 시대 지도로 갈까요?' }),
+      el('p', { class: 'narr', text: '지금까지 모은 재료와 찍은 사진은 이 기기에 남아요. 이 장면은 다시 들어오면 처음부터 지켜봐요.' })],
+      [btn('계속하기', function () { U.stopSpeak(); overlay.className = prevClass; overlay.replaceChildren.apply(overlay, prevKids); overlay.hidden = wasHidden; }, 'plain'),
+        btn('시대 지도로', function () { (U.stopSpeak(), overlay.hidden = true); hidePanel(); toMap(); })]);
+  }
   var denBtn = el('button', { class: 'den3', hidden: '', on: { click: function () { openDen(); } } }, '타임머신에 타기');
   var dedBtn = el('button', { class: 'den3', hidden: '', on: { click: function () { startDeduce(); } } }, '추리하기');
-  add(ui, [touch, hud, base, hint, toastEl, dexBtn, camBtn, denBtn, dedBtn, snd, flash, panel, overlay, fpsEl]);
+  add(ui, [touch, hud, base, hint, toastEl, dexBtn, camBtn, denBtn, dedBtn, snd, mapBtn, flash, panel, overlay, fpsEl]);
 
   function setObjective(t) { objText.textContent = t; }
   function toast(html, who) {
@@ -197,6 +209,7 @@
     U.stopSpeak();
     add(panelBody, kids_); add(panelFoot, [U.speakBtn(function () { return panelBody; }), foot]);
     panel.hidden = false; panelBody.scrollTop = 0;
+    if (U.moreHint) U.moreHint(panelBody, panelFoot);   /* 재료 창처럼 글이 길면 "아래에 더 있어요"(polish 갈래 부탁: 재료 대목의 긴 글) */
     base.hidden = true; stick.x = stick.y = 0; stick.id = null;
   }
   function hidePanel() { U.stopSpeak(); panel.hidden = true; ui.classList.remove('tallp'); }
@@ -582,7 +595,7 @@
     spawnKids(); hudMode();
     camYaw = Math.PI; snapCamera();
     clueCount.textContent = '단서 0 / ' + JD.clues.length; dexLabel.textContent = '추리 수첩 0 / ' + JD.clues.length;
-    setObjective(JD.objective); hud.hidden = false; snd.hidden = false; U.applySet(); syncSnd();
+    setObjective(JD.objective); hud.hidden = false; snd.hidden = false; mapBtn.hidden = !BO3D.story; hud.classList.toggle('withmap', !!BO3D.story); U.applySet(); syncSnd();
     state = 'caption';
     var sy = JD.story.say, who = C.chars[sy.who];
     showPanel([el('div', { class: 'q-kicker', text: '탐험대 이야기' }), el('p', { class: 'narr', text: tx(JD.story.text) }),
@@ -727,7 +740,7 @@
   /* ── 처음 화면 ── */
   function menu() {
     paused = false; if (BO3D.story) { if (BO3D.story.leave3d) BO3D.story.leave3d(); BO3D.story.close(); }
-    state = 'menu'; cur = 'scene'; dedBtn.hidden = true; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
+    state = 'menu'; cur = 'scene'; dedBtn.hidden = true; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; mapBtn.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
     if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); }
     var tier = S.tier, ch = S.ch, picked = false;
     var ids = ['choeon', 'hyu', 'onwoo'];
@@ -760,7 +773,7 @@
   function begin() {
     root.className = 'g3 app ' + S.tier;
     (U.stopSpeak(), overlay.hidden = true);
-    if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; U.applySet(); syncSnd(); }
+    if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; mapBtn.hidden = !BO3D.story; hud.classList.toggle('withmap', !!BO3D.story); U.applySet(); syncSnd(); }
     useScene(SCN.id); hudMode(); makeVision();
     spawnKids();
     quest = 0; questOpen = false; evIdx = SCN.eventStart || 0; afterVision = false;
@@ -913,6 +926,7 @@
     overlay.className = 'overlay3 sheet3';
     overlay.replaceChildren(el('div', { class: 'sheet' }, body, ft));
     overlay.hidden = false;
+    if (U.moreHint) U.moreHint(body, ft);
   }
   function startGates() {
     state = 'gates'; hidePanel(); root.classList.remove('ev'); camBtn.hidden = true; dexBtn.hidden = true;
@@ -1148,7 +1162,7 @@
 
   /* ── 구약 전체 흐름(story.js)과 잇는 곳 ── */
   var paused = false;
-  function hideAll3d() { hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; dedBtn.hidden = true; track.hidden = true; hint.hidden = true; (U.stopSpeak(), overlay.hidden = true); root.classList.remove('ev'); }
+  function hideAll3d() { hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; mapBtn.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; dedBtn.hidden = true; track.hidden = true; hint.hidden = true; (U.stopSpeak(), overlay.hidden = true); root.classList.remove('ev'); }
   function toMap() { if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } BO3D.story.open(); }
   BO3D.scenes3d = {}; Object.keys(BO3D.scene3d || {}).forEach(function (k) { BO3D.scenes3d[k] = true; });
   BO3D.game = {

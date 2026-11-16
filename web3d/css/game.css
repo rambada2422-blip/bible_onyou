@@ -45,6 +45,11 @@
 
 .snd3 { position: absolute; right: var(--gutter-r); bottom: 22px; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: rgba(14, 23, 48, .72); color: var(--paper); }
 .snd3 svg { width: 22px; height: 22px; }
+/* 3D 도중 시대 지도로 나가기(위쪽 오른쪽). 위쪽 안내 첫 줄은 그 자리를 비워 둔다 */
+.map3 { position: absolute; top: 10px; right: var(--gutter-r); min-width: 44px; min-height: 44px; padding: 0 12px 0 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; background: rgba(14, 23, 48, .78); color: var(--paper); font-family: var(--f-display); font-size: 14px; }
+.map3 svg { width: 15px; height: 15px; transform: rotate(-90deg); color: var(--brass); }
+.map3[hidden] { display: none; }
+.hud3.withmap .row:first-child { padding-right: 78px; }
 .snd3[aria-pressed="true"] { color: #8FA0C8; background: rgba(14, 23, 48, .5); }
 .snd3[aria-pressed="true"]::after { content: ""; position: absolute; width: 30px; height: 3px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
 

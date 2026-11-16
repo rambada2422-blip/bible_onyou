@@ -33,12 +33,16 @@ const BAN = ['틀렸', '실패', '감점', '목숨', '점수는', '순위표', '
       const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
       const small = [...box.querySelectorAll('button')].filter((e) => vis(e) && !e.disabled).map((e) => ({ r: e.getBoundingClientRect(), t: (e.getAttribute('aria-label') || e.textContent).trim().slice(0, 20) })).filter((x) => x.r.height < 43.5 || x.r.width < 43.5).map((x) => x.t + ' ' + Math.round(x.r.width) + '×' + Math.round(x.r.height));
       const out = [...box.querySelectorAll('button, .vcard, .jnote, .arow, table, textarea, input')].filter((e) => vis(e)).filter((e) => { const r = e.getBoundingClientRect(); return r.right > innerWidth + 1 || r.left < -1; }).map((e) => e.className || e.tagName);
-      return { over, small, out, text: box.innerText };
+      /* "아래에 더 있어요"(ui.js moreHint)가 실제로 아래 글이 남았을 때만 보이는지 */
+      const bd = box.querySelector('.sheet-body'), tag = box.querySelector('.sheet-foot > .more3');
+      const more = bd ? { left: bd.scrollHeight - bd.clientHeight - bd.scrollTop, shown: !!tag && !tag.hidden } : null;
+      return { over, small, out, text: box.innerText, more };
     });
     if (r.hidden) { probs.push(where + ': 이야기 화면이 보이지 않음'); return; }
     if (r.over.length) probs.push(where + ': 옆으로 넘침 ' + r.over.join(','));
     if (r.out.length) probs.push(where + ': 화면 밖으로 나감 ' + r.out.join(','));
     if (r.small.length) probs.push(where + ': 누르기 어려운 단추 ' + r.small.join(' / '));
+    if (r.more && (r.more.left > 30) !== r.more.shown && Math.abs(r.more.left - 24) > 6) probs.push(where + ': "아래에 더 있어요"가 맞지 않음 ' + JSON.stringify(r.more));
     BAN.forEach((w) => { if (r.text.includes(w)) probs.push(where + ': 쓰지 않는 표현 "' + w + '"'); });
   };
 
@@ -144,7 +148,10 @@ const BAN = ['틀렸', '실패', '감점', '목숨', '점수는', '순위표', '
   need(P.time['OT-01'] > 0, '기록: 걸린 시간이 없음');
 
   // 3) 탐험 일지
-  await p.click('.ot3 .sheet-foot .btn >> nth=0'); await p.waitForTimeout(100);   /* 시대 지도 */
+  /* 놀이 기록: 이야기 화면을 닫으면(3D로 들어갈 때와 같은 길, story.close) 그 화면의 시간이 거기서 끝나야 한다(pack 갈래 2차 검증) */
+  const lg = await p.evaluate(async () => { const w = (ms) => new Promise((r) => setTimeout(r, ms)); await w(300); BO3D.story.close(); await w(1300); BO3D.story.openMap(); await w(50); return JSON.parse(localStorage.getItem('bo3d.log.v1') || '[]').slice(-1)[0] || null; });
+  need(lg && lg.w === 'OT-01 finish' && lg.ms < 1000, '놀이 기록: 화면을 닫은 뒤에도 마침 화면의 시간이 늘어남 ' + JSON.stringify(lg));
+  await p.waitForTimeout(100);   /* 시대 지도 */
   await tap('탐험 일지');
   need((await st()).screen === 'journal', '탐험 일지: 열리지 않음');
   const cardsWant = await p.evaluate(() => BO3D.ot.scenes['OT-01'].cards.map((c) => c.ref));
@@ -227,6 +234,7 @@ const BAN = ['틀렸', '실패', '감점', '목숨', '점수는', '순위표', '
   const bad = await p.evaluate(() => { const c = 'BO1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, pg: { done: { 'OT-99': { t: 't1' }, 'OT-02': { t: 'zz', at: 5 } }, mats: { 'OT-01:없는것': 1 }, notes: { 'OT-02': 'x'.repeat(5000), 'OT-77': 'y' }, q: { '<img>': { m: 3 } } } })))); const o = BO3D.story.debug.parseCode(c); return { done: Object.keys(o.done), t: o.done['OT-02'].t, mats: Object.keys(o.mats).length, note: o.notes['OT-02'].length, notes: Object.keys(o.notes).length, q: Object.keys(o.q).length }; });
   need(bad.done.join() === 'OT-02' && bad.t === 't2' && bad.mats === 0 && bad.note === 2000 && bad.notes === 1 && bad.q === 0, '가져오기: 모르는 장면·재료·긴 글을 거르지 못함 ' + JSON.stringify(bad));
   await tap('놀이 기록'); need((await st()).screen === 'log', '놀이 기록: 열리지 않음'); await check('놀이 기록'); await shot('log');
+  need(await p.evaluate(() => !document.querySelector('.ot3').innerText.includes('진행 지우기(시험용)')), '놀이 기록: 주소에 #log가 없는데 시험용 지우기 단추가 보임');
   await tap('시대 지도');
   need(await p.evaluate(() => !document.querySelector('.otc[data-id="OT-05"]').classList.contains('locked')), '시대 지도: 모든 시대 열기 뒤에도 시대 2가 잠겨 있음');
   if (canSpeak && ti === 0) {   /* 시대가 모두 열렸을 때 지도 읽기: 마치지 않은 장면이 있는 앞의 두 시대만 장면 이름까지, 나머지는 시대 이름만 */
@@ -241,6 +249,16 @@ const BAN = ['틀렸', '실패', '감점', '목숨', '점수는', '순위표', '
   await p.reload(); await p.waitForTimeout(2000);
   P = await pg(); need(P.done['OT-01'] && Object.keys(P.q).length >= 1, '새로 고침 뒤 기록이 사라짐');
   need(await p.evaluate(() => !!BO3D.story.debug.dex()['OT-03']), '새로 고침 뒤 사진 도감이 사라짐');
+  // 아이 시험용(#log): 놀이 기록 화면의 "진행 지우기(시험용)"은 두 번 눌러야 진행·사진·놀이 기록을 모두 지운다
+  await p.goto('file:///home/user/bible_onyou/dist/preview3d.html#log'); await p.waitForTimeout(1500);
+  await p.evaluate(() => BO3D.story.openMap()); await p.waitForTimeout(150);
+  await tap('놀이 기록 보기'); need((await st()).screen === 'log', '#log: 놀이 기록이 열리지 않음');
+  await tap('진행 지우기(시험용)');
+  need(Object.keys((await pg()).done).length >= 1, '#log 지우기: 한 번 눌렀는데 지워짐');
+  await shot('log-wipe-ask'); await check('놀이 기록(지우기 확인)');
+  await tap('정말 지울까요');
+  const wiped = await p.evaluate(() => ({ done: Object.keys(BO3D.story.debug.pg().done).length, dex: Object.keys(BO3D.story.debug.dex()).length, log: JSON.parse(localStorage.getItem('bo3d.log.v1') || '[]').length, screen: BO3D.story.debug.state().screen }));
+  need(wiped.done === 0 && wiped.dex === 0 && wiped.log === 0 && wiped.screen === 'log', '#log 지우기: 다 지워지지 않음 ' + JSON.stringify(wiped));
 
   console.log('단계', ti, '· 폭', W, '· 지나온 화면', kindsSeen.join('>'), '· 읽어 주기 단추', canSpeak ? spoke + '/' + kindsSeen.length : '이 브라우저에는 음성이 없음', '· 찍은 화면', n);
   console.log('문제', probs.length, probs.slice(0, 40).join('\n'));

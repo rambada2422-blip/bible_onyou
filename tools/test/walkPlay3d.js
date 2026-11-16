@@ -50,12 +50,15 @@ const errs = [], probs = [], notes = [];
     const hit = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2;
     const lap = [];
     R('.toast3').forEach((t) => R('.hud3 .obj, .hud3 .track3, .hud3 .row, .hint, .dex3, .cam3, .snd3').forEach((h) => { if (hit(t.r, h.r)) lap.push('말풍선↔' + name(h.e)); }));
-    const fl = R('.dex3, .cam3, .snd3, .den3'); fl.forEach((a, i) => fl.slice(i + 1).forEach((b) => { if (hit(a.r, b.r)) lap.push(name(a.e) + '↔' + name(b.e)); }));
+    const fl = R('.dex3, .cam3, .snd3, .den3, .map3'); fl.forEach((a, i) => fl.slice(i + 1).forEach((b) => { if (hit(a.r, b.r)) lap.push(name(a.e) + '↔' + name(b.e)); }));
+    R('.map3').forEach((m) => R('.hud3 .row > *, .hud3 .obj').forEach((h) => { if (hit(m.r, h.r)) lap.push('지도 단추↔' + name(h.e)); }));
+    /* "아래에 더 있어요"(ui.js moreHint)가 실제로 아래 글이 남았을 때만 보이는지(3D 시트) */
+    const moreBad = [...ui.querySelectorAll('.panel3, .overlay3.sheet3')].filter(vis).map((sh) => { const bd = sh.querySelector('.sheet-body'), tg = sh.querySelector('.sheet-foot > .more3'); const left = bd.scrollHeight - bd.clientHeight - bd.scrollTop, shown = !!tg && !tg.hidden; return (left > 30) !== shown && Math.abs(left - 24) > 6 ? sh.className.split(' ')[0] + ' 남은 글 ' + left + 'px · 알림 ' + (shown ? '보임' : '없음') : null; }).filter(Boolean);
     const scroll = [...ui.querySelectorAll('.sheet-body, .den3ov')].filter(vis).map((e) => e.scrollHeight - e.clientHeight).filter((d) => d > 2);
     const sheets = [...ui.querySelectorAll('.panel3, .overlay3.sheet3, .overlay3.den3ov')].filter(vis);
     /* 3D 시트는 아래 줄에, 아지트(한 장짜리 화면)는 어디든 */
     const noSpeak = sheets.filter((s) => !s.querySelector(s.classList.contains('den3ov') ? '.speak3' : '.sheet-foot .speak3')).map((s) => s.className.split(' ').slice(0, 2).join('.'));
-    return { over, small, outside, cut, spill, lap, scroll: scroll.length ? Math.max.apply(null, scroll) : 0, sheets: sheets.length, noSpeak, sw: sws.length, toast: R('.toast3').length };
+    return { over, small, outside, cut, spill, lap, moreBad, scroll: scroll.length ? Math.max.apply(null, scroll) : 0, sheets: sheets.length, noSpeak, sw: sws.length, toast: R('.toast3').length };
   });
   const canSpeak = await (async () => { await p.goto('file:///home/user/bible_onyou/dist/preview3d.html'); await p.waitForTimeout(2500); await p.evaluate(() => document.fonts.ready); return p.evaluate(() => BO3D.ui.canSpeak()); })();
   // 같은 화면을 네 가지 폭으로 바꿔 가며 본다(끝나면 390×844로 돌아온다)
@@ -71,6 +74,7 @@ const errs = [], probs = [], notes = [];
       if (r.cut.length) probs.push(at + ': 잘린 글 ' + r.cut.join(' / '));
       if (r.spill.length) probs.push(at + ': 단추 글이 단추 밖으로 넘침 ' + r.spill.join(' / '));
       if (r.lap.length) probs.push(at + ': 겹침 ' + r.lap.join(' / '));
+      if (r.moreBad.length) probs.push(at + ': "아래에 더 있어요"가 맞지 않음 ' + r.moreBad.join(' / '));
       if (ti === 0 && canSpeak && r.noSpeak.length) probs.push(at + ': 8~10세 시트에 읽어 주기 단추가 없음 ' + r.noSpeak.join(','));
       if (more) more(r, at);
       notes.push(at + ' · 시트 ' + r.sheets + ' · 스크롤 ' + r.scroll + 'px' + (r.toast ? ' · 말풍선' : ''));
@@ -175,6 +179,14 @@ const errs = [], probs = [], notes = [];
   await widths('도감');
   await p.click('.overlay3 .sheet-foot .btn:has-text("닫기")'); await p.waitForTimeout(300);
 
+  // 3D 도중 시대 지도로 나가는 단추(pack 갈래 2차 검증): 누르면 한 번 묻고, "계속하기"면 그대로 돌아온다
+  need(await p.evaluate(() => { const b = document.querySelector('.map3'); return !!b && !b.hidden; }), '3D: 걷는 화면에 "지도" 단추가 없음');
+  await p.click('.map3'); await p.waitForTimeout(300);
+  need(await p.evaluate(() => /시대 지도로 갈까요/.test(document.querySelector('.overlay3').innerText) && !document.querySelector('.overlay3').hidden), '3D: "지도" 단추를 눌러도 묻는 창이 없음');
+  await widths('지도로 나가기 묻기');
+  await p.click('.overlay3 .sheet-foot .btn:has-text("계속하기")'); await p.waitForTimeout(300);
+  need(await p.evaluate(() => document.querySelector('.overlay3').hidden && BO3D.debug.state().state === 'explore'), '3D: "계속하기"로 돌아오지 않음 ' + JSON.stringify(await st()));
+
   // ④ 아지트(깃발 색 12개). 재료를 주우면 다음 물음이 열리므로 그 전에 본다
   await p.evaluate(() => { const s = BO3D.debug.scene(); BO3D.debug.goto(s.P.machine[0] - 2, s.P.machine[1] - 3); }); await p.waitForTimeout(900);
   if (await p.evaluate(() => [...document.querySelectorAll('.den3')].some((x) => !x.hidden))) {
@@ -242,7 +254,14 @@ const errs = [], probs = [], notes = [];
   need(fin.head === '탐험을 마치며' && fin.cards === D.cards.length && fin.m === 1 && fin.perCard === 0 && fin.line.includes(D.title), '3D 마침: 말씀 카드·안내 줄이 맞지 않음 ' + JSON.stringify(fin));
 
   // ② 탐험 일지 "사진 도감"에 이 장면 사진이 보이는지(3D에서 나와 시대 지도로)
-  await p.evaluate(() => BO3D.story.openMap()); await p.waitForTimeout(400);   /* 3D에서 시대 지도로 나오는 길(걸린 시간이 여기서 멈춘다) */
+  /* 3D 마침 시트를 닫고 걷다가 "지도" 단추로 시대 지도로 나온다(걸린 시간이 여기서 멈춘다) */
+  await p.click('.overlay3 .sheet-foot .btn.onpaper'); await p.waitForTimeout(400);
+  await p.click('.map3'); await p.waitForTimeout(300);
+  await p.click('.overlay3 .sheet-foot .btn:has-text("시대 지도로")'); await p.waitForTimeout(500);
+  need(await p.evaluate(() => BO3D.story.debug.state().screen === 'map' && !!document.querySelector('.ot3:not([hidden]) .otmap')), '3D: "시대 지도로"를 눌러도 시대 지도가 열리지 않음');
+  /* 놀이 기록: 3D 안의 문답·돕기 조각은 "OT-NN·3D …" 이름으로 남고, 장면별 걸린 시간에는 들어가지 않는다 */
+  const L3 = await p.evaluate(() => JSON.parse(localStorage.getItem('bo3d.log.v1') || '[]').map((x) => x.w));
+  need(L3.some((w) => new RegExp('^' + id + '·3D (help|talk|today)\\d').test(w)), '놀이 기록: 3D 안 조각이 따로 기록되지 않음 ' + JSON.stringify(L3.slice(-8)));
   if (ti === 0 && canSpeak) need(await p.evaluate(() => !!document.querySelector('.ot3 .otmap > .speak3')), '시대 지도: 8~10세인데 읽어 주기 단추가 없음');
   await p.click('.ot3 button:has-text("탐험 일지")'); await p.waitForTimeout(200);
   await p.click('.ot3 [data-tab="photos"]'); await p.waitForTimeout(300);
