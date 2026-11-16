@@ -107,6 +107,7 @@ const errs = [], probs = [], notes = [];
     probs.push('이야기 조각이 닫히지 않음');
   };
 
+  const t3dStart = Date.now();
   await enter3d(p, ti, id);
   await p.waitForSelector('text=출발하자', { timeout: 60000 }); await p.waitForTimeout(1500);
   const info = await p.evaluate(() => BO3D.debug.scene());
@@ -219,6 +220,13 @@ const errs = [], probs = [], notes = [];
   await p.evaluate(() => BO3D.debug.lookup());
   await p.waitForSelector('.panel3:not([hidden])', { timeout: 120000 }); await p.waitForTimeout(2500);
   await widths('지켜보기 첫 대목');
+  /* 지켜보기 패널이 떠 있을 때 "지도": 묻는 창이 패널 위를 덮고(어둡게), 묻는 동안 대목이 멈추며, "계속하기"면 그 대목으로 돌아온다 */
+  await p.click('.map3'); await p.waitForTimeout(300);
+  const ask = await p.evaluate(() => { const o = document.querySelector('.overlay3'), pn = document.querySelector('.panel3'); return { st: BO3D.debug.state().state, zo: +getComputedStyle(o).zIndex || 0, zp: +getComputedStyle(pn).zIndex || 0, shown: !o.hidden }; });
+  need(ask.shown && ask.st === 'ask' && ask.zo > ask.zp, '3D: 지켜보기 중 "지도"를 누르면 묻는 창이 패널 위에 오지 않거나 멈추지 않음 ' + JSON.stringify(ask));
+  await shot('지켜보기중_지도');
+  await p.click('.overlay3 .sheet-foot .btn:has-text("계속하기")'); await p.waitForTimeout(300);
+  need(await p.evaluate(() => BO3D.debug.state().state === 'event' && !document.querySelector('.panel3').hidden && document.querySelector('.overlay3').hidden), '3D: 지켜보기 중 "계속하기"로 그 대목에 돌아오지 않음 ' + JSON.stringify(await st()));
   const nb = D.beats.length - info.eventStart;
   for (let i = 0; i < nb; i++) {
     if (i > 0) await p.waitForTimeout(1800);
@@ -254,11 +262,19 @@ const errs = [], probs = [], notes = [];
   need(fin.head === '탐험을 마치며' && fin.cards === D.cards.length && fin.m === 1 && fin.perCard === 0 && fin.line.includes(D.title), '3D 마침: 말씀 카드·안내 줄이 맞지 않음 ' + JSON.stringify(fin));
 
   // ② 탐험 일지 "사진 도감"에 이 장면 사진이 보이는지(3D에서 나와 시대 지도로)
-  /* 3D 마침 시트를 닫고 걷다가 "지도" 단추로 시대 지도로 나온다(걸린 시간이 여기서 멈춘다) */
+  /* 3D 안에서 창을 가렸다 돌아오면(휴대폰 홈 단추 등): "나간 곳"에 3D가 남고, 돌아온 뒤 3D 시간을 다시 센다 */
+  const hid = await p.evaluate((sid) => { window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })); window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })); const L = JSON.parse(localStorage.getItem('bo3d.log.v1') || '[]'); return L.slice(-1)[0] || null; }, id);
+  need(hid && hid.w === id + '·3D' && hid.exit, '놀이 기록: 3D 안에서 창을 가린 것이 "나간 곳"에 남지 않음 ' + JSON.stringify(hid));
+  /* 3D 마침 시트를 닫고 걷다가 "지도" 단추로 나온다. 관문까지 마쳤으므로 장면을 마친 것으로 남아야 한다(걸린 시간도 여기서 멈춘다) */
   await p.click('.overlay3 .sheet-foot .btn.onpaper'); await p.waitForTimeout(400);
   await p.click('.map3'); await p.waitForTimeout(300);
+  need(await p.evaluate(() => /이 장면을 마치고/.test(document.querySelector('.overlay3').innerText)), '3D: 마친 뒤 "지도"의 묻는 글이 마침을 알려 주지 않음');
   await p.click('.overlay3 .sheet-foot .btn:has-text("시대 지도로")'); await p.waitForTimeout(500);
   need(await p.evaluate(() => BO3D.story.debug.state().screen === 'map' && !!document.querySelector('.ot3:not([hidden]) .otmap')), '3D: "시대 지도로"를 눌러도 시대 지도가 열리지 않음');
+  const dn = await p.evaluate((sid) => { const P = BO3D.story.debug.pg(); return { done: P.done[sid] || null, time: P.time[sid] || 0, mapBtn: !document.querySelector('.map3') || document.querySelector('.map3').hidden }; }, id);
+  need(dn.done && dn.done.d3, '3D: 관문까지 마치고 "지도"로 나왔는데 장면이 마친 것으로 남지 않음 ' + JSON.stringify(dn));
+  need(dn.time > 0 && dn.time <= Date.now() - t3dStart + 1500, '기록: 3D 시간이 실제 걸린 시간보다 많음(겹쳐 셈) ' + JSON.stringify({ time: dn.time, real: Date.now() - t3dStart }));
+  need(dn.mapBtn, '3D: 시대 지도로 나온 뒤에도 "지도" 단추가 보임');
   /* 놀이 기록: 3D 안의 문답·돕기 조각은 "OT-NN·3D …" 이름으로 남고, 장면별 걸린 시간에는 들어가지 않는다 */
   const L3 = await p.evaluate(() => JSON.parse(localStorage.getItem('bo3d.log.v1') || '[]').map((x) => x.w));
   need(L3.some((w) => new RegExp('^' + id + '·3D (help|talk|today)\\d').test(w)), '놀이 기록: 3D 안 조각이 따로 기록되지 않음 ' + JSON.stringify(L3.slice(-8)));

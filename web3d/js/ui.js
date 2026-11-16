@@ -247,20 +247,26 @@
   applySet();
   /* 시트 글이 아래로 더 있으면 아래 단추 줄 바로 위에 "아래에 더 있어요"를 띄운다. 끝까지 내리면 사라진다(작은 휴대폰에서 아래 글을 놓치지 않게).
      body: 글 상자(스크롤되는 곳), foot: 그 아래 단추 줄. 시트를 다시 그릴 때마다 불러도 된다 */
+  var moreOn = [];   /* 지켜보는 글 상자들. 화면에서 빠진 상자의 관찰자는 끊는다(이야기 카드는 화면마다 상자를 새로 만든다) */
   function moreHint(body, foot) {
     if (!body || !foot) return;
+    moreOn = moreOn.filter(function (h) { if (h.body.isConnected) return true; if (h.mo) h.mo.disconnect(); if (h.ro) h.ro.disconnect(); h.body._moreChk = null; return false; });
     var tag = null;
     for (var i = 0; i < foot.children.length; i++) if (foot.children[i].classList.contains('more3')) tag = foot.children[i];
     if (!tag) { tag = el('div', { class: 'more3', 'aria-hidden': 'true', hidden: '' }, '▼ 아래에 더 있어요'); foot.insertBefore(tag, foot.firstChild); }
     body._moreTag = tag;
     if (!body._moreChk) {
+      var h = { body: body };
       body._moreChk = function () { var t = body._moreTag; if (!t) return; var m = body.clientHeight > 0 && body.scrollHeight - body.clientHeight - body.scrollTop > 24; if (t.hidden === m) t.hidden = !m; };
       body.addEventListener('scroll', body._moreChk, { passive: true });
-      try { if (window.MutationObserver) new MutationObserver(body._moreChk).observe(body, { childList: true, subtree: true, characterData: true, attributes: true }); } catch (e) { /* 없으면 스크롤 때만 */ }
-      try { if (window.ResizeObserver) new ResizeObserver(body._moreChk).observe(body); } catch (e2) { /* 없으면 스크롤 때만 */ }
+      body.addEventListener('toggle', body._moreChk, true); body.addEventListener('load', body._moreChk, true);   /* 접기를 펼칠 때, 그림이 늦게 올 때 */
+      try { if (window.MutationObserver) { h.mo = new MutationObserver(body._moreChk); h.mo.observe(body, { childList: true, subtree: true, characterData: true }); } } catch (e) { /* 없으면 스크롤 때만 */ }
+      try { if (window.ResizeObserver) { h.ro = new ResizeObserver(body._moreChk); h.ro.observe(body); } } catch (e2) { /* 없으면 스크롤 때만 */ }
+      try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(body._moreChk); } catch (e3) { /* 무시 */ }   /* 글꼴이 늦게 와서 글이 늘 때 */
+      moreOn.push(h);
     }
     body._moreChk();
-    if (window.requestAnimationFrame) requestAnimationFrame(body._moreChk);
+    if (window.requestAnimationFrame) requestAnimationFrame(function () { if (body._moreChk) body._moreChk(); });
   }
 
   BO3D.ui = { S: S, set: SET, saveSet: saveSet, applySet: applySet, canSpeak: canSpeak, speakOn: speakOn, speakBtn: speakBtn, speakText: speakText, stopSpeak: stopSpeak, onMiss: null, moreHint: moreHint, el: el, add: add, tx: tx, icon: icon, refChip: refChip, avatar: avatar, say: say, bookName: bookName, bookOf: bookOf, chapterOf: chapterOf, books: BOOKS,

@@ -176,16 +176,26 @@
   var flash = el('div', { class: 'flash3', hidden: '' });
   /* 3D 장면 도중에 시대 지도로 나가는 길(pack 갈래 2차 검증). 한 번 묻고 나간다. 모은 재료와 사진은 이미 이 기기에 남아 있다 */
   var mapBtn = el('button', { class: 'map3', hidden: '', 'aria-label': '시대 지도로 나가기', on: { click: function () { askMap(); } } }, icon('arrow'), el('span', { text: '지도' }));
+  var NOMAP = { menu: 1, route: 1, lookup: 1, vision: 1, depart: 1, end2: 1, ask: 1 };   /* 올려다보기·영상·출발 같은 연출 중에는 지도 단추를 감춘다 */
   function askMap() {
-    if (state === 'depart' || state === 'menu') return;
+    if (NOMAP[state]) return;
     stick.x = stick.y = 0; stick.id = null;
-    var prevClass = overlay.className, prevKids = Array.prototype.slice.call(overlay.childNodes), wasHidden = overlay.hidden;
+    var prevState = state, prevClass = overlay.className, prevKids = Array.prototype.slice.call(overlay.childNodes), wasHidden = overlay.hidden;
+    var done = cur !== 'jordan' && partsFound === PARTS.length && sceneDone;   /* 관문까지 마치고 걷던 중이면 나갈 때 장면을 마친 것으로 남긴다(타임머신 출발과 같게) */
+    state = 'ask';   /* 묻는 동안 걷기·대목 진행을 멈춘다 */
     sheetOverlay([el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
-      el('p', { class: 'q-prompt', text: '탐험을 멈추고 시대 지도로 갈까요?' }),
-      el('p', { class: 'narr', text: '지금까지 모은 재료와 찍은 사진은 이 기기에 남아요. 이 장면은 다시 들어오면 처음부터 지켜봐요.' })],
-      [btn('계속하기', function () { U.stopSpeak(); overlay.className = prevClass; overlay.replaceChildren.apply(overlay, prevKids); overlay.hidden = wasHidden; }, 'plain'),
-        btn('시대 지도로', function () { (U.stopSpeak(), overlay.hidden = true); hidePanel(); toMap(); })]);
+      el('p', { class: 'q-prompt', text: done ? '이 장면을 마치고 시대 지도로 갈까요?' : '탐험을 멈추고 시대 지도로 갈까요?' }),
+      el('p', { class: 'narr', text: cur === 'jordan' ? '추리 수첩의 단서 사진은 이 탐험 안에서만 써요. 다시 들어오면 처음부터 단서를 찾아요.'
+        : done ? '이 장면을 끝까지 지켜보았어요. 지도로 가면 말씀 카드가 탐험 일지에 들어가요. 모은 재료와 찍은 사진도 이 기기에 남아요.'
+          : '지금까지 모은 재료와 찍은 사진은 이 기기에 남아요. 이 장면은 다시 들어오면 처음부터 지켜봐요.' })],
+      [btn('계속하기', function () { U.stopSpeak(); overlay.className = prevClass; overlay.replaceChildren.apply(overlay, prevKids); overlay.hidden = wasHidden; state = prevState; }, 'plain'),
+        btn('시대 지도로', function () {
+          (U.stopSpeak(), overlay.hidden = true); hidePanel();
+          if (BO3D.story) { if (done) BO3D.story.complete3d(SCN.id); else if (BO3D.story.exit3d) BO3D.story.exit3d('map'); }   /* 마치지 않고 나간 것은 놀이 기록의 "나간 곳"에 */
+          toMap();
+        })]);
   }
+  function calmAudio() { if (FX) { FX.audio.setFire(999); FX.audio.setFlock(999); FX.audio.wind(0.16); FX.audio.pulse(false); } }   /* 3D 장면의 불·양 떼·센 바람·맥박 소리를 3D 밖으로 가져가지 않는다 */
   var denBtn = el('button', { class: 'den3', hidden: '', on: { click: function () { openDen(); } } }, '타임머신에 타기');
   var dedBtn = el('button', { class: 'den3', hidden: '', on: { click: function () { startDeduce(); } } }, '추리하기');
   add(ui, [touch, hud, base, hint, toastEl, dexBtn, camBtn, denBtn, dedBtn, snd, mapBtn, flash, panel, overlay, fpsEl]);
@@ -741,7 +751,7 @@
   function menu() {
     paused = false; if (BO3D.story) { if (BO3D.story.leave3d) BO3D.story.leave3d(); BO3D.story.close(); }
     state = 'menu'; cur = 'scene'; dedBtn.hidden = true; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; mapBtn.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
-    if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); }
+    if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } calmAudio();
     var tier = S.tier, ch = S.ch, picked = false;
     var ids = ['choeon', 'hyu', 'onwoo'];
     var tb = C.tiers.map(function (t) {
@@ -1139,6 +1149,7 @@
       if (state === 'lookup') updateLookup(dt);
       if (state === 'vision' && vision) updateVision();
       if (horeb) updateTracker();
+      var mh = snd.hidden || !BO3D.story || !!NOMAP[state] && state !== 'ask'; if (mapBtn.hidden !== mh) { mapBtn.hidden = mh; hud.classList.toggle('withmap', !mh); }
       if (!hudRO) placeToast();
       updateCamera(dt);
       var pp2 = player.group.position, sun = horeb ? env.sun : JL.sun;
@@ -1163,10 +1174,11 @@
   /* ── 구약 전체 흐름(story.js)과 잇는 곳 ── */
   var paused = false;
   function hideAll3d() { hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; mapBtn.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; dedBtn.hidden = true; track.hidden = true; hint.hidden = true; (U.stopSpeak(), overlay.hidden = true); root.classList.remove('ev'); }
-  function toMap() { if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } BO3D.story.open(); }
+  function toMap() { if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } calmAudio(); BO3D.story.open(); }
   BO3D.scenes3d = {}; Object.keys(BO3D.scene3d || {}).forEach(function (k) { BO3D.scenes3d[k] = true; });
   BO3D.game = {
     toStory: function () { state = 'story'; paused = true; hideAll3d(); },
+    forget: function () { for (var k in built) built[k].dexShots = null; flagColor = null; if (flag && machine) { machine.group.remove(flag); flag = null; } hatOn = false; },   /* 진행을 지울 때: 이미 만든 3D 장면이 기억하던 사진·깃발도 잊는다 */
     menu: menu,
     start3d: function (id) {
       paused = false; hideAll3d(); root.className = 'g3 app ' + S.tier;

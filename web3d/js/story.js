@@ -27,7 +27,16 @@
     if (lastMark) { addTime(String(lastMark.w).split(' ')[0], t - lastMark.t); LOG.push({ w: lastMark.w, ms: t - lastMark.t, at: lastMark.t }); if (LOG.length > 800) LOG = LOG.slice(-800); try { localStorage.setItem(LOGK, JSON.stringify(LOG)); } catch (e) { /* 저장 못 하면 이번만 */ } }
     lastMark = where ? { w: where, t: t } : null;
   }
-  try { window.addEventListener('pagehide', function () { try { stop3d(); U.stopSpeak(); } catch (e0) { /* 무시 */ } if (lastMark) { var w = lastMark.w; mark(null); LOG.push({ w: w, exit: 1, at: Date.now() }); try { localStorage.setItem(LOGK, JSON.stringify(LOG)); } catch (e) { /* 무시 */ } } }); } catch (e) { /* 무시 */ }
+  var t3dWas = null;   /* 창을 가렸을 때 3D 안이었으면, 돌아왔을 때 3D 시간을 다시 센다 */
+  try { window.addEventListener('pagehide', function () {
+    var in3d = t3d ? t3d.id : null;
+    try { stop3d(); U.stopSpeak(); } catch (e0) { /* 무시 */ }
+    t3dWas = in3d;
+    if (lastMark) { var w = lastMark.w; mark(null); LOG.push({ w: w, exit: 1, at: Date.now() }); }
+    else if (in3d) LOG.push({ w: in3d + '·3D', exit: 1, at: Date.now() });   /* 3D 안에서 나간 것도 "나간 곳"에 */
+    try { localStorage.setItem(LOGK, JSON.stringify(LOG)); } catch (e) { /* 무시 */ }
+  }); window.addEventListener('pageshow', function (ev) { if (ev.persisted && t3dWas && !t3d) t3d = { id: t3dWas, t: Date.now() }; t3dWas = null; }); } catch (e) { /* 무시 */ }
+  function exit3d(kind) { if (t3d) { LOG.push({ w: t3d.id + '·3D', exit: kind || 1, at: Date.now() }); try { localStorage.setItem(LOGK, JSON.stringify(LOG)); } catch (e) { /* 무시 */ } } }   /* 3D 도중 "지도"로 나감(game.js askMap) */
   function save() { try { localStorage.setItem(KEY, JSON.stringify(PG)); } catch (e) { /* 저장할 수 없는 환경이면 이번 방문 동안만 기억한다 */ } }
   load();
   /* 어른용 화면에 쓰는 기록(이 기기에만, 이름 없음): 장면별 걸린 시간, 물음마다 엇나간 횟수, 마친 날 */
@@ -210,18 +219,23 @@
     var sec = document.getElementById('ote-' + e.era); if (sec) sec.insertBefore(t, sec.children[1]);
   }
   /* 아이 시험용(주소 끝 #log일 때만): 다음 아이를 위해 이 기기의 진행·사진·놀이 기록을 모두 지운다. 두 번 눌러야 지운다(pack 갈래 2차 검증) */
+  /* 이 기기의 진행·사진·놀이 기록·영상 본 표시를 모두 지우고, 이미 만든 3D 장면이 기억하던 사진·깃발도 잊게 한다(부모·교사 화면과 시험용 지우기가 함께 쓴다) */
+  function wipeAll() {
+    lastMark = null; t3d = null; t3dWas = null; PG = {}; save(); load(); DX = {}; LOG = [];
+    try { localStorage.removeItem(DEXK); localStorage.removeItem(LOGK); for (var i = localStorage.length - 1; i >= 0; i--) { var k = localStorage.key(i); if (k && k.indexOf('bo3d.vision.') === 0) localStorage.removeItem(k); } } catch (e) { /* 무시 */ }
+    var g = BO3D.game; if (g && g.forget) { try { g.forget(); } catch (e2) { /* 무시 */ } }
+  }
   function testWipe() {
     if (!/#log/.test(location.hash)) return null;
     var b = btn('진행 지우기(시험용)', function () {
       if (!b.getAttribute('data-sure')) { b.setAttribute('data-sure', '1'); b.textContent = '정말 지울까요? 한 번 더 누르면 진행·사진·놀이 기록을 모두 지워요'; return; }
-      lastMark = null; t3d = null; PG = {}; save(); load(); DX = {}; LOG = [];
-      try { localStorage.removeItem(DEXK); localStorage.removeItem(LOGK); } catch (e) { /* 무시 */ }
-      openLog();
+      wipeAll(); openLog(true);
     }, 'quiet');
     return b;
   }
   /* 놀이 기록 보기(주소 끝 #log): 장면별 머문 시간, 2초 안에 넘긴 화면 수, 나간 곳 */
-  function openLog() {
+  function openLog(adult) {   /* adult: 부모·교사 화면(어른 확인)에서 왔을 때만 지우는 단추를 보인다(아이 시험 중 아이가 지우지 않게) */
+    adult = adult === true;
     mark(null);   /* 놀이 기록을 보는 동안 앞 화면의 시간이 늘지 않게(pack 갈래 2차 검증) */
     cur.screen = 'log';
     var by = {}, exits = [];
@@ -231,7 +245,9 @@
     box.replaceChildren(el('div', { class: 'otmap pad' }, el('div', { class: 'eyebrow', text: '아이 시험용 · 이 기기에만 저장' }), el('h1', { class: 'den-title', text: '놀이 기록' }),
       el('table', { class: 'logt' }, el('tr', {}, el('th', { text: '장면' }), el('th', { text: '화면' }), el('th', { text: '2초 안에 넘김' }), el('th', { text: '머문 시간' })), rows),
       el('p', { class: 'den-lead', text: '나간 곳: ' + (exits.slice(-10).join(', ') || '없음') }), ta,
-      el('div', { class: 'otmap-foot' }, btn('기록 지우기', function () { mark(null); LOG = []; lastMark = null; try { localStorage.removeItem(LOGK); } catch (e) { /* 무시 */ } openLog(); }, 'quiet'), testWipe(), btn('부모·교사 화면', openAdultGate, 'quiet'), btn('시대 지도', function () { openMap(); }, 'quiet'))));
+      el('div', { class: 'otmap-foot' }, adult ? btn('기록 지우기', function () { mark(null); LOG = []; lastMark = null; try { localStorage.removeItem(LOGK); } catch (e) { /* 무시 */ } openLog(true); }, 'quiet') : null, adult ? testWipe() : null,
+        btn('부모·교사 화면', openAdultGate, 'quiet'), btn('시대 지도', function () { openMap(); }, 'quiet')),
+      adult ? null : el('p', { class: 'fine', text: '기록을 지우려면 부모·교사 화면에서 "놀이 기록"을 여세요.' })));
     box.className = 'ot3 map'; box.hidden = false;
   }
 
@@ -253,6 +269,7 @@
 
   /* ── 장면 들어가기: 타임머신 이동 → (3D가 있으면 고르기) → 이야기 카드 ── */
   function warp(title, sub, fn) {
+    mark(null);   /* 이동 화면은 앞 화면(마침 등)의 시간에 넣지 않는다(독립 검증 ⑥) */
     cur.screen = 'warp';
     box.replaceChildren(el('div', { class: 'otwarp pad' }, el('div', { class: 'eyebrow', text: '탐험대 이야기 · 시간 이동' }), el('h1', { class: 'den-title', text: title }), el('p', { class: 'den-lead', text: sub }), el('div', { class: 'otwarp-ring' })));
     box.className = 'ot3 warpbox'; box.hidden = false;
@@ -695,7 +712,7 @@
     });
     var slow = OT.order.filter(function (id) { return PG.time[id]; }).map(function (id) { return el('tr', {}, el('td', { text: id.replace('OT-', '') + ' ' + sc(id).title }), el('td', { text: minText(PG.time[id]) }), el('td', { text: PG.done[id] ? '마침' : '하는 중' })); });
     var wipe = btn('이 기기의 진행 지우기', function () {
-      if (wipe.getAttribute('data-sure')) { PG = {}; save(); load(); DX = {}; try { localStorage.removeItem(DEXK); } catch (e) { /* 무시 */ } LOG = []; try { localStorage.removeItem(LOGK); } catch (e2) { /* 무시 */ } openAdult(); }
+      if (wipe.getAttribute('data-sure')) { wipeAll(); openAdult(); }   /* 영상 본 표시와 3D 장면이 기억하던 사진·깃발까지(독립 검증 ⑥) */
       else { wipe.setAttribute('data-sure', '1'); wipe.textContent = '정말 지울까요? 한 번 더 누르면 모두 지워요'; }
     }, 'quiet');
     page('adult', [el('div', { class: 'eyebrow', text: '부모·교사용 · 이 기기의 기록만' }), el('h1', { class: 'den-title', text: '부모·교사 화면' }),
@@ -717,7 +734,7 @@
       el('div', { class: 'otmap-foot' }, btn(PG.unlockAll ? '시대 잠금 다시 켜기' : '모든 시대 열기', function () { PG.unlockAll = !PG.unlockAll; save(); openAdult(); }, 'quiet')),
       moveNodes(),
       el('h2', { text: '그 밖에' }),
-      el('div', { class: 'otmap-foot' }, btn('놀이 기록', openLog, 'quiet'), wipe, btn('시대 지도', function () { openMap(); }, 'quiet'))]);
+      el('div', { class: 'otmap-foot' }, btn('놀이 기록', function () { openLog(true); }, 'quiet'), wipe, btn('시대 지도', function () { openMap(); }, 'quiet'))]);
   }
 
   function closeAll() { mark(null); U.stopSpeak(); U.onMiss = null; box.hidden = true; box.replaceChildren(); cur.screen = 'none'; cur.seg = null; }   /* 3D로 들어갈 때·처음 화면으로 나갈 때·3D 안 조각을 닫을 때 앞 화면의 시간을 닫는다 */
@@ -747,7 +764,7 @@
     open: function () { openMap(); }, openMap: openMap, openJournal: openJournal, openSettings: openSettings, openAdult: openAdult,
     /* game.js(3D)가 쓰는 기록: 엇나감, 사진, 14~19세 기록 */
     missFor: missFor, saveShot: saveShot, shots: function (id) { var o = {}, x = DX[id] || {}; Object.keys(x).forEach(function (k) { o[k] = x[k].img || ''; }); return o; },
-    leave3d: stop3d,
+    leave3d: stop3d, exit3d: exit3d,
     note: function (id, v) { if (v === undefined) return PG.notes[id] || ''; PG.notes[id] = String(v).slice(0, 2000); save(); }, openScene: openScene, play: play, complete3d: complete3d, close: closeAll, segment: segment, take: function (id, key) { PG.mats[id + ':' + key] = 1; save(); },
     reset: function () { PG = {}; save(); load(); },
     debug: {

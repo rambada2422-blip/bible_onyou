@@ -149,8 +149,9 @@ const BAN = ['틀렸', '실패', '감점', '목숨', '점수는', '순위표', '
 
   // 3) 탐험 일지
   /* 놀이 기록: 이야기 화면을 닫으면(3D로 들어갈 때와 같은 길, story.close) 그 화면의 시간이 거기서 끝나야 한다(pack 갈래 2차 검증) */
-  const lg = await p.evaluate(async () => { const w = (ms) => new Promise((r) => setTimeout(r, ms)); await w(300); BO3D.story.close(); await w(1300); BO3D.story.openMap(); await w(50); return JSON.parse(localStorage.getItem('bo3d.log.v1') || '[]').slice(-1)[0] || null; });
-  need(lg && lg.w === 'OT-01 finish' && lg.ms < 1000, '놀이 기록: 화면을 닫은 뒤에도 마침 화면의 시간이 늘어남 ' + JSON.stringify(lg));
+  const lgr = await p.evaluate(async () => { const w = (ms) => new Promise((r) => setTimeout(r, ms)); await w(300); const tc = Date.now(); BO3D.story.close(); await w(1300); BO3D.story.openMap(); await w(50); return { lg: JSON.parse(localStorage.getItem('bo3d.log.v1') || '[]').slice(-1)[0] || null, tc }; });
+  const lg = lgr.lg;
+  need(lg && lg.w === 'OT-01 finish' && lg.at + lg.ms <= lgr.tc + 40, '놀이 기록: 화면을 닫은 뒤에도 마침 화면의 시간이 늘어남 ' + JSON.stringify(lgr));
   await p.waitForTimeout(100);   /* 시대 지도 */
   await tap('탐험 일지');
   need((await st()).screen === 'journal', '탐험 일지: 열리지 않음');
@@ -251,14 +252,18 @@ const BAN = ['틀렸', '실패', '감점', '목숨', '점수는', '순위표', '
   need(await p.evaluate(() => !!BO3D.story.debug.dex()['OT-03']), '새로 고침 뒤 사진 도감이 사라짐');
   // 아이 시험용(#log): 놀이 기록 화면의 "진행 지우기(시험용)"은 두 번 눌러야 진행·사진·놀이 기록을 모두 지운다
   await p.goto('file:///home/user/bible_onyou/dist/preview3d.html#log'); await p.waitForTimeout(1500);
-  await p.evaluate(() => BO3D.story.openMap()); await p.waitForTimeout(150);
+  await p.evaluate(() => { BO3D.story.openMap(); localStorage.setItem('bo3d.vision.OT-09.seen', '1'); }); await p.waitForTimeout(150);
   await tap('놀이 기록 보기'); need((await st()).screen === 'log', '#log: 놀이 기록이 열리지 않음');
+  need(await p.evaluate(() => { const t = document.querySelector('.ot3').innerText; return !t.includes('진행 지우기(시험용)') && !t.includes('기록 지우기'); }), '#log: 아이 지도에서 연 놀이 기록에 지우는 단추가 보임(어른 확인 없이)');
+  /* 지우기는 부모·교사 화면(어른 확인)을 거쳐야 한다 */
+  await tap('부모·교사 화면'); await p.fill('#adult-in', String(await p.evaluate(() => BO3D.story.debug.adultAnswer()))); await tap('확인');
+  await tap('놀이 기록'); need((await st()).screen === 'log', '#log: 부모·교사 화면에서 놀이 기록이 열리지 않음');
   await tap('진행 지우기(시험용)');
   need(Object.keys((await pg()).done).length >= 1, '#log 지우기: 한 번 눌렀는데 지워짐');
   await shot('log-wipe-ask'); await check('놀이 기록(지우기 확인)');
   await tap('정말 지울까요');
-  const wiped = await p.evaluate(() => ({ done: Object.keys(BO3D.story.debug.pg().done).length, dex: Object.keys(BO3D.story.debug.dex()).length, log: JSON.parse(localStorage.getItem('bo3d.log.v1') || '[]').length, screen: BO3D.story.debug.state().screen }));
-  need(wiped.done === 0 && wiped.dex === 0 && wiped.log === 0 && wiped.screen === 'log', '#log 지우기: 다 지워지지 않음 ' + JSON.stringify(wiped));
+  const wiped = await p.evaluate(() => ({ done: Object.keys(BO3D.story.debug.pg().done).length, dex: Object.keys(BO3D.story.debug.dex()).length, log: JSON.parse(localStorage.getItem('bo3d.log.v1') || '[]').length, vision: localStorage.getItem('bo3d.vision.OT-09.seen'), screen: BO3D.story.debug.state().screen }));
+  need(wiped.done === 0 && wiped.dex === 0 && wiped.log === 0 && wiped.vision === null && wiped.screen === 'log', '#log 지우기: 다 지워지지 않음(영상 본 표시 포함) ' + JSON.stringify(wiped));
 
   console.log('단계', ti, '· 폭', W, '· 지나온 화면', kindsSeen.join('>'), '· 읽어 주기 단추', canSpeak ? spoke + '/' + kindsSeen.length : '이 브라우저에는 음성이 없음', '· 찍은 화면', n);
   console.log('문제', probs.length, probs.slice(0, 40).join('\n'));
