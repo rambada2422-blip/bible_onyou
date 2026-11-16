@@ -9,10 +9,11 @@
 OT-37(성전을 다시 지음) 3D 장면: design3d·탐지기 물음 3개·재료 3개 → 장면 설정 파일 → 시험 3단계 → 독립 검증.
 
 ## 끝난 것
+- 준비(커밋 146efa4): `props_3d-c.js`(3d-c 장면이 함께 쓰는 것, `BO3D.c3d.on`), `tools/test/toggle3d_c.js`(장면 끄고 켜기), 다섯 장면의 이야기 카드 값 `_card3dc`. `index.html`·`build3d.js`에 더하기 한 곳씩.
 - 시작 점검(2026-11-16 14:20 KST): `setup_env.sh` 끝, `validate_ot.js --v3` 40장면 오류 0 경고 0, `build3d.js` 끝, `walk3dScene.js OT-39 1` 통과(화면 31, 문제 0, 오류 0, 3분).
 
 ## 하는 중
-- OT-37
+- OT-37 성전을 다시 지음(`scene_temple37.js`)과 OT-34 요시야와 율법책(`scene_josiah34.js`)을 제작 에이전트 둘이 따로 만드는 중. 끝나면 작성 과정을 보지 않은 에이전트가 배치를 본문과 대조한다.
 
 ## 정한 방식 (이 갈래의 장면 모두에 같다)
 - 장면 자료는 기존 3D 장면과 같은 형식으로 쓴다: `design3d.build: true`, `quests` 3개, `mission.materials` 3개(첫 재료는 이야기 카드 때의 재료를 그대로 둔다). 검사기(`validate_ot.js`)가 이 형식을 요구한다.
