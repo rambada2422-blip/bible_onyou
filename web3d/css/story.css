@@ -116,4 +116,30 @@
 .match3 .opt { min-height: 48px; font-size: 14.5px; }
 .match3 .mref svg { width: 18px; height: 18px; flex: none; }
 .match3 .opt.ok { box-shadow: inset 0 0 0 2px #2F7C64; background: #E3F2EA; }
+/* 시대 잠금, 수리 막대, 재료 찾기, 마무리 접기, 읽어 주기, 놀이 기록 (흥미 개선 2026-11-16) */
+.ote.locked .ote-h, .otc.locked { opacity: .55; filter: grayscale(.6); }
+.otc.locked .tt b::before { content: '🔒 '; }
+.rmeter { margin: 4px 0 10px; }
+.rm-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; height: 26px; }
+.rm-cell { position: relative; border-radius: 6px; background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.25); overflow: hidden; }
+.rm-cell i { position: absolute; left: 0; right: 0; bottom: 0; background: #E9B44C; }
+.rm-cell.full { box-shadow: inset 0 0 0 2px #F7D774, 0 0 8px rgba(247,215,116,.6); }
+.rmeter small { display: block; margin-top: 4px; font-size: 12.5px; opacity: .85; }
+.seek { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.seek-t { height: 74px; border-radius: 14px; box-shadow: inset 0 0 0 2px var(--paper-line); background: #EADBB6; position: relative; }
+.seek-t.rock { background: radial-gradient(circle at 35% 40%, #B9AE9A 0 22%, transparent 23%), radial-gradient(circle at 65% 62%, #A99E88 0 18%, transparent 19%), #E4D6B4; }
+.seek-t.sand { background: repeating-linear-gradient(160deg, #EAD9AE 0 6px, #E2CF9F 6px 12px); }
+.seek-t.grass { background: radial-gradient(circle at 30% 70%, #9DB36A 0 14%, transparent 15%), radial-gradient(circle at 70% 40%, #8FA85E 0 12%, transparent 13%), #E6DAB4; }
+.seek-t.miss { opacity: .45; }
+.seek-t.hit { box-shadow: inset 0 0 0 3px #2F7C64, 0 0 12px rgba(47,124,100,.5); animation: seekpop .5s ease both; }
+@keyframes seekpop { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .seek-t.hit { animation: none; } }
+.seek-msg { font-size: 16px; font-weight: 600; }
+.closefold { border-radius: 14px; box-shadow: inset 0 0 0 2px var(--paper-line); padding: 10px 14px; }
+.closefold summary { cursor: pointer; font-weight: 600; }
+.speak3 { margin-left: auto; font-size: 13.5px; padding: 6px 10px; border-radius: 999px; background: #FFF6DA; box-shadow: inset 0 0 0 1.5px #F0D58A; }
+.narr-meta { display: flex; align-items: center; gap: 8px; }
+.logt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.logt td, .logt th { border-bottom: 1px solid rgba(255,255,255,.2); padding: 4px 2px; text-align: left; }
+.otmap textarea { width: 100%; height: 90px; font-size: 11px; }
 

@@ -320,8 +320,28 @@ window.BO3D = window.BO3D || {};
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t + 4.0);
       o.connect(f); f.connect(g); g.connect(sfx); o.start(t); o.stop(t + 4.1); }
     function wind(v) { if (ctx) windG.gain.setTargetAtTime(v, ctx.currentTime, 0.8); }
+    /* 3D 절정의 간접 연출(규칙서 13.8): 땅울림(성벽·물), 쿵(쓰러짐), 낮은 고동(긴장되는 밤) */
+    function rumble(sec, v) {
+      if (!ctx) return; sec = sec || 3; v = v || 0.5;
+      var t = ctx.currentTime, s = ctx.createBufferSource(); s.buffer = noiseBuf(Math.ceil(sec) + 1);
+      var f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 140; f.Q.value = 0.8;
+      var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.25); g.gain.setValueAtTime(v, t + sec * 0.55); g.gain.exponentialRampToValueAtTime(0.0001, t + sec);
+      s.connect(f); f.connect(g); g.connect(sfx); s.start(t); s.stop(t + sec + 0.1);
+    }
+    function thud(v) {
+      if (!ctx) return; v = v || 0.6; var t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(32, t + 0.5);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+      o.connect(g); g.connect(sfx); o.start(t); o.stop(t + 0.8); rumble(1.2, v * 0.4);
+    }
+    var pulseT = null;
+    function pulse(on) {
+      if (!ctx) return;
+      if (on && !pulseT) { var nb2 = 0, beat = function () { if (++nb2 > 14) { clearInterval(pulseT); pulseT = null; return; } var t = ctx.currentTime; tone(55, t, 0.18, 0.12, 'sine'); tone(52, t + 0.22, 0.16, 0.08, 'sine'); }; beat(); pulseT = setInterval(beat, 1300); }   /* 열네 번 뒤에는 저절로 멎는다 */
+      else if (!on && pulseT) { clearInterval(pulseT); pulseT = null; }
+    }
     function mute(m) { muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); }
-    return { start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, mute: mute, isMuted: function () { return muted; } };
+    return { start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, rumble: rumble, thud: thud, pulse: pulse, mute: mute, isMuted: function () { return muted; } };
   })();
 
   BO3D.fx = { fire: fire, upgradeBush: upgradeBush, sortLayers: sortLayers, Post: Post, audio: audio, GLOW: GLOW, SOFT: SOFT };

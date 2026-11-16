@@ -86,6 +86,7 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
   const meta = await p.evaluate(() => Object.fromEntries(BO3D.ot.order.map((id) => [id, { era: BO3D.ot.scenes[id].era, title: BO3D.ot.scenes[id].title }])));
   const log = [];
   // 첫 장면은 지도에서 고른다
+  if (from > 1) await p.evaluate(() => BO3D.story.debug.unlockAll());   /* 중간부터 볼 때는 시대 잠금을 푼다 */
   await p.click('.otc[data-id="' + order[from - 1] + '"]'); await p.waitForTimeout(100);
   for (let k = from - 1; k < to; k++) {
     const id = order[k], t0 = Date.now(), firstOfEra = k === from - 1 || meta[order[k - 1]].era !== meta[id].era;
@@ -101,6 +102,10 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
       const where = id + ' ' + s.k + ' ' + (s.step + 1) + '/' + s.n;
       if (firstOfEra && ['arrive', 'talk', 'gate', 'quest', 'mat', 'today'].includes(s.k) && !kinds.slice(0, -1).includes(s.k)) await shot(id + '-' + s.k);
       if (s.k === 'gate' || s.k === 'quest') await solve(where, gi++ === 0);
+      if (s.k === 'mat') {   /* 숨은 재료 찾기: 다른 곳을 한 번 눌러 탐지기 말을 본 뒤 맞는 곳 */
+        const r = await p.evaluate(async () => { const k = BO3D.story.debug.seek(); if (k === null) return { skip: 1 }; const t = [...document.querySelectorAll('.ot3 .seek-t')]; const other = t.find((x, i) => i !== k); other.click(); await new Promise((r) => setTimeout(r, 30)); const msg = document.querySelector('.ot3 .seek-msg').textContent; t[k].click(); await new Promise((r) => setTimeout(r, 30)); return { msg, got: !!document.querySelector('.ot3 .matcard') }; });
+        if (!r.skip && !r.got) probs.push(where + ': 숨은 재료를 찾지 못함');
+      }
       if (s.k === 'help') {   /* 현장 돕기(규칙서 13.6) */
         const h = await doHelp(p);
         if (!h || !h.enabled || !h.good || !h.said) probs.push(where + ': 현장 돕기를 마치지 못함 ' + JSON.stringify(h));

@@ -144,3 +144,5 @@ button.track3 { border: 0; font: inherit; font-family: var(--f-display); cursor:
 .note.story3 { background: #E3F1EE; color: #16433E; }
 .note.story3 span { display: flex; flex-direction: column; gap: 2px; }
 .note.story3 small { font-size: 12px; letter-spacing: .04em; color: #2F7C74; }
+/* 잠긴 깃발 색(시대 부속을 고치면 열림) */
+.sw.locked { opacity: .35; font-size: 12px; }

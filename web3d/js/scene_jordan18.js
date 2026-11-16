@@ -1,4 +1,5 @@
 /* 3D 장면 설정: OT-18 요단 강을 건너다 (수 3:1-4:24). 시대 추리에 쓰던 요단 강 세계(jordan.js)를 그대로 쓴다.
+ * 간접 연출(규칙서 13.8, 2026-11-16, 감수 전): 물이 돌아와 넘칠 때 합성 땅울림. 움직임 줄이기 설정이면 흔들지 않는다.
  * 방향: 아이들은 동쪽 둑(+Z)에 서서 서쪽(-Z, 여리고 쪽)을 본다. 오른쪽(+X)이 상류다(수 3:16).
  * 본문에 맞춘 점 (content/ot/OT-18.json design3d)
  *  - 처음에 요단은 언덕까지 넘친다(수 3:15). 제사장들의 발이 물가에 잠기자 물이 끊어지고 강바닥이 마른다(수 3:15-17).
@@ -102,7 +103,7 @@
       if (p === 'cross') { want = LOW; level = Math.min(level, LOW + 0.3); if (!arkTo) setArk(MID[0], MID[1]); JL.setCrowd('cross'); }
       if (p === 'stones') { want = LOW; JL.setCrowd('west'); arkTo = null; setArk(MID[0], MID[1]); }   /* 수 4:1: 온 백성이 건너기를 마침 */
       /* 수 4:15-18: 제사장들이 올라오자 물이 돌아온다 */
-      if (p === 'return') { JL.setCrowd('west'); arkTo = [WEST[0], WEST[1]]; onDone = function () { want = FULL; onDone = null; }; }
+      if (p === 'return') { JL.setCrowd('west'); arkTo = [WEST[0], WEST[1]]; onDone = function () { want = FULL; onDone = null; if (FX) FX.audio.rumble(3.5, 0.5); }; }   /* 물이 돌아와 넘칠 때(수 4:18, 간접 연출) */
       if (p === 'gilgal') { JL.setCrowd('west'); arkTo = null; setArk(WEST[0], WEST[1]); want = FULL; }
     }
     function lerpAngle(a, b, t) { var d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; }

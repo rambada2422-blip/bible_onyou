@@ -1,4 +1,5 @@
 /* 3D 장면 설정: OT-36 사자 굴의 다니엘 (단 6:1-28).
+ * 간접 연출(규칙서 13.8, 2026-11-16, 감수 전): 굴을 봉한 밤에 합성 낮은 고동(긴장). 사자의 모습과 소리는 만들지 않는다(6:22). 움직임 줄이기 설정이면 흔들지 않는다.
  * 방향: 아이들은 남쪽 빈터(+Z)에 있고, 북쪽에 왼쪽부터 왕궁(서), 사자 굴(가운데), 다니엘의 집(동)이 있다. 다니엘의 집 위층 방의 창은 예루살렘 쪽(서쪽)으로 열려 있다(6:10).
  * 본문에 맞춘 점 (content/ot/OT-36.json design3d)
  *  - 창가의 다니엘은 멀리서만 보인다(가까이 들여다보지 않는다). 기도의 말은 지어내지 않는다.
@@ -100,7 +101,7 @@
     /* 대목마다 모든 상태를 처음부터 정한다('이전'으로 돌아와도 뒤 대목의 것이 남지 않게) */
     function at(o, x, z) { o.group.position.set(x, height(x, z), z); }
     function setPhase(p) {
-      phase = p;
+      phase = p; if (FX) FX.audio.pulse(false);
       stoneWant = 0; stoneOn = 0; seal.visible = false; danIn = false; lift = 0; liftWant = 0; danTo = null; kingTo = null; offTo = null; accT = 0; offHide = false;
       dan.group.visible = true; at(dan, DAN0[0], DAN0[1]); at(king, KING0[0], KING0[1]); king.group.visible = true;
       officials.forEach(function (o) { o.group.visible = true; at(o, o.home[0], o.home[1]); });
@@ -163,7 +164,7 @@
           var om = step(o, to, phase === 'den' ? 2.8 : 2.4, dt); o.update(dt, om ? 1 : 0, now);
         });
         /* 6:17: 다니엘이 굴에 들어간 뒤 돌이 어귀를 막고 도장 자국이 남는다 */
-        if (denT >= 0) { denT += dt; if (danIn) stoneWant = 1; if (stoneOn > 0.95) seal.visible = true; }
+        if (denT >= 0) { denT += dt; if (danIn) stoneWant = 1; if (stoneOn > 0.95 && !seal.visible) { seal.visible = true; if (FX) FX.audio.pulse(true); } if (stoneOn > 0.95) seal.visible = true; }   /* 굴을 봉한 밤: 낮은 고동으로 긴장(간접 연출. 사자의 소리·모습은 만들지 않는다, 6:22) */
         stoneOn += (stoneWant - stoneOn) * Math.min(1, dt * 0.8);
         var sx = STONE_OFF[0] + (DEN[0] - STONE_OFF[0]) * stoneOn, sz = STONE_OFF[1] + (DEN[1] - STONE_OFF[1]) * stoneOn;
         stone.position.set(sx, height(sx, sz) + 0.45 + stoneOn * 0.9, sz); stone.rotation.x = stoneOn * 0.4 - 0.4; seal.position.set(DEN[0] + 2.2, stone.position.y + 0.5, DEN[1] + 1.6);

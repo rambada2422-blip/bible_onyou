@@ -1,4 +1,5 @@
 /* 3D 장면 설정: OT-19 여리고 성이 무너지다 (수 6:1-27).
+ * 간접 연출(규칙서 13.8, 2026-11-16, 감수 전): 성벽이 무너져 내릴 때 합성 땅울림과 화면 흔들림. 움직임 줄이기 설정이면 흔들지 않는다.
  * 방향: 여리고 성은 북쪽(-Z), 이스라엘 진은 남쪽(+Z). 세 아이는 진 쪽, 성과 행렬에서 멀리 떨어진 곳에서만 다닌다.
  * 본문에 맞춘 점 (content/ot/OT-19.json design3d)
  *  - 성은 굳게 닫혀 있다(수 6:1). 성을 도는 행렬의 차례: 무장한 사람들 → 양각 나팔을 든 제사장 일곱 → 언약궤를 멘 제사장들 → 후군(수 6:8-9, 6:13).
@@ -225,7 +226,8 @@
         }
         placeMarch(dt);
         if ((phase === 'fall' || phase === 'after') && fallT > -3) {
-          fallT += dt;
+          var fallPrev = fallT; fallT += dt;
+          if (fallPrev < 0 && fallT >= 0 && phase === 'fall') { if (FX) FX.audio.rumble(4, 0.75); if (api.shake) api.shake(0.45, 3); }   /* 성벽이 무너져 내릴 때 땅울림과 흔들림(수 6:20, 간접 연출) */
           segs.forEach(function (sg) {
             var u = Math.min(1, Math.max(0, (fallT - sg.delay) / 2.2)), e = u * u;
             sg.pivot.rotation.x = e * 1.2; sg.pivot.position.y = sg.y0 - e * 5.5;

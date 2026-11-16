@@ -71,7 +71,8 @@
       if (FX) FX.sortLayers(g);
     });
   }
-  var api = { T: T, M: M, FX: FX, mk: mk, fallback: fallback, person: person, loadGlb: function (k, cb) { loadGlb(k, cb); }, now: function () { return now; }, camera: function () { return camera; } };
+  var shakeT = 0, shakeDur = 1, shakeAmp = 0, calm = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var api = { T: T, M: M, FX: FX, mk: mk, fallback: fallback, person: person, shake: function (amp, sec) { if (calm) return; shakeAmp = amp; shakeDur = shakeT = sec || 1; }, loadGlb: function (k, cb) { loadGlb(k, cb); }, now: function () { return now; }, camera: function () { return camera; } };
 
   /* 장면 만들기: 장면 설정(BO3D.scene3d[id])이 지형·인물·소품을 만들고, 틀이 타임머신·재료·도감을 더한다. 한 번 만든 장면은 다시 쓴다. */
   var built = {}, machine = null, PARTS = [], partObjs = [], DEX = [], machineY = 0, departGlow = null;
@@ -408,9 +409,14 @@
         var has = d.id in dex;
         return el('div', { class: 'frame' + (has ? '' : ' empty') }, has && dex[d.id] ? el('img', { src: dex[d.id], alt: d.name }) : el('div', { class: 'ph' }), el('span', { text: has ? d.name : '빈 액자' }));
       });
-      var cols = [null, '#EE7B62', '#2F9C95', '#4E5FB0', '#F7D774'];
-      var sw = cols.map(function (c) {
-        return el('button', { class: 'sw' + (c ? '' : ' none'), 'aria-pressed': String(flagColor === c), 'aria-label': c ? '깃발 색' : '깃발 없음', style: c ? 'background:' + c : '', on: { click: function () { setFlag(c); render(); } } }, c ? null : '없음');
+      /* 깃발 색은 시대 부속을 고칠 때마다 하나씩 열린다(흥미 개선: 모은 재료가 무엇을 열게) */
+      var cols = [null, '#EE7B62', '#2F9C95', '#4E5FB0', '#F7D774', '#9C6ADE', '#E35D8C', '#5BAE5A', '#E8913A', '#3E8FD4', '#C8A15A', '#7A8794'];
+      var fixedN = BO3D.story && BO3D.story.fixedEras ? BO3D.story.fixedEras() : 0, openN = 2 + fixedN;
+      var sw = cols.map(function (c, k) {
+        var locked = k >= openN;
+        var b = el('button', { class: 'sw' + (c ? '' : ' none') + (locked ? ' locked' : ''), 'aria-pressed': String(flagColor === c), 'aria-label': locked ? '잠긴 깃발 색' : c ? '깃발 색' : '깃발 없음', style: c ? 'background:' + c : '', on: { click: function () { if (locked) return; setFlag(c); render(); } } }, c ? (locked ? '🔒' : null) : '없음');
+        if (locked) b.disabled = true;
+        return b;
       });
       var hatBtn = el('button', { class: 'tog', 'aria-pressed': String(hatOn), on: { click: function () { setHat(!hatOn); render(); } } }, hatOn ? '쓰고 있어요' : '쓰기');
       if (!sceneDone) hatBtn.disabled = true;
@@ -427,7 +433,7 @@
         el('h2', { text: mt ? '타임머신 수리' : '시간 나침반 수리' }), el('div', { class: 'slots' }, slots), el('p', { class: 'den-msg', text: msg }),
         el('h2', { text: '사진 벽' }), el('div', { class: 'frames' }, frames),
         el('h2', { text: '꾸미기' }),
-        el('div', { class: 'deco' }, el('span', { text: '타임머신 깃발' }), el('div', { class: 'sws' }, sw)),
+        el('div', { class: 'deco' }, el('span', { text: '타임머신 깃발 (시대 부속을 고칠 때마다 색이 하나씩 열려요 · ' + Math.min(cols.length - 1, openN - 1) + ' / ' + (cols.length - 1) + ')' }), el('div', { class: 'sws' }, sw)),
         el('div', { class: 'deco' }, el('span', { text: sceneDone ? '탐험 모자' : '탐험 모자 (첫 장면을 마치면 열려요)' }), hatBtn),
         el('div', { class: 'den-foot' }, btn('밖으로 나가기', function () { overlay.hidden = true; state = prev; }, 'quiet'), go));
       overlay.hidden = false;
@@ -1049,6 +1055,7 @@
     if (want.y < ground) want.y = ground;
     camPos.lerp(want, k); camLook.lerp(camLookT, k);
     camera.position.copy(camPos); camera.lookAt(camLook);
+    if (shakeT > 0) { shakeT -= dt; var sk = shakeAmp * Math.max(0, shakeT / shakeDur); camera.position.x += (Math.random() - 0.5) * sk; camera.position.y += (Math.random() - 0.5) * sk * 0.6; }   /* 3D 절정의 땅 흔들림(13.8) */
     /* 자막 창이 열리면 장면을 화면 위쪽으로 올리고, 사건을 볼 때는 당겨 본다 */
     var wantShift = (state === 'event') ? 0.2 : (state === 'caption' ? 0.14 : 0);
     var wantFov = (state === 'event') ? 50 : (state === 'lookup' ? baseFov - 8 * Math.min(1, lookT / 6) : baseFov);

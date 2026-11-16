@@ -1,4 +1,5 @@
 /* 3D 장면 설정: OT-26 다윗과 골리앗 (삼상 17:1-54). 엘라 골짜기.
+ * 간접 연출(규칙서 13.8, 2026-11-16, 감수 전): 골리앗이 엎드러질 때 합성 쿵 소리와 작은 흔들림. 움직임 줄이기 설정이면 흔들지 않는다.
  * 방향: 골짜기는 동서(X)로 길다. 이스라엘이 선 산은 남쪽(+Z), 블레셋이 선 산은 북쪽(-Z), 그 사이 골짜기에 시내가 흐른다(삼상 17:3, 17:40).
  * 본문에 맞춘 점 (content/ot/OT-26.json design3d)
  *  - 골리앗은 블레셋 진에서 나와 골짜기에 서서 외친다(17:4, 17:8). 방패 든 사람이 앞서 간다(17:7, 17:41). 키와 무기는 적힌 만큼(투구, 갑옷, 창).
@@ -159,7 +160,7 @@
       beatPose: function (i) { setPhase(i <= 1 ? 'goliath' : ['', '', 'david', 'fear', 'saul', 'brook', 'near', 'fall'][i]); },
       update: function (dt, now) {
         if (golTo && gol.group.visible) { step(gol, golAt, golTo, 0.9, dt); bearer.group.position.set(golAt[0] + 1.1, height(golAt[0] + 1.1, golAt[1] + 2.0), golAt[1] + 2.0); bearer.group.rotation.y = gol.group.rotation.y = Math.PI * 0.02; }
-        if (davTo && dav.group.visible) { var ar = step(dav, davAt, davTo, davRun ? 4.5 : 1.6, dt); if (dav.update) dav.update(dt, !ar); if (ar && fallPending) { fallPending = false; golFallWant = 1; golTo = null; } } else if (dav.update) dav.update(dt, false);
+        if (davTo && dav.group.visible) { var ar = step(dav, davAt, davTo, davRun ? 4.5 : 1.6, dt); if (dav.update) dav.update(dt, !ar); if (ar && fallPending) { fallPending = false; golFallWant = 1; golTo = null; setTimeout(function () { if (FX) FX.audio.thud(0.7); if (api.shake) api.shake(0.25, 0.8); }, 700); }   /* 골리앗이 땅에 엎드러질 때 쿵(17:49, 간접 연출) */ } else if (dav.update) dav.update(dt, false);
         if (gol.update) gol.update(dt, !!golTo);
         /* 17:49: 땅에 엎드러짐(멀리서). 앞으로 천천히 눕는다 */
         golFall += (golFallWant - golFall) * Math.min(1, dt * (golFallWant ? 0.9 : 3));

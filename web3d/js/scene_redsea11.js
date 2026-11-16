@@ -1,4 +1,5 @@
 /* 3D 장면 설정: OT-11 바다가 갈라지다 (출 14:1-31). 바다와 믹돌 사이 비하히롯 앞 바닷가.
+ * 간접 연출(규칙서 13.8, 2026-11-16, 감수 전): 물이 돌아올 때 합성 땅울림과 흔들림. 움직임 줄이기 설정이면 흔들지 않는다.
  * 방향: 바다는 북쪽(-Z), 이스라엘 진은 바닷가(+Z), 애굽 진은 그 뒤 멀리 남쪽(+Z 멀리)에서 다가온다. 갈라진 길은 x=0을 따라 북쪽으로.
  * 본문에 맞춘 점 (content/ot/OT-11.json design3d)
  *  - 구름 기둥이 진 앞에서 뒤로 옮겨 두 진 사이에 서고, 밤에 이스라엘 쪽을 비춘다(출 14:19-20). 둥근 구름 덩이만, 형상 없음.
@@ -271,7 +272,7 @@
         /* 출 14:26-27: 새벽, 병거가 길 가운데로 들어온 뒤 모세가 다시 손을 내밀고 물이 돌아온다 */
         /* 14:26-27: 병거들이 길 가운데로 들어온 뒤 모세가 다시 손을 내밀고, 새벽에 물이 돌아온다 */
         if (phase === 'return') { retT += dt; var inside = chariots.filter(function (ch) { return ch.group.position.z < -16; }).length;
-          if (retT > 3 && (inside >= chariots.length * 0.8 || retT > 14)) { stretchWant = 1; if (retT > 5) partWant = 0; } }
+          if (retT > 3 && (inside >= chariots.length * 0.8 || retT > 14)) { stretchWant = 1; if (retT > 5) { if (partWant !== 0) { if (FX) FX.audio.rumble(4, 0.7); if (api.shake) api.shake(0.3, 2.5); } partWant = 0; } } }   /* 물이 돌아올 때 땅울림(14:27-28, 간접 연출) */
         part += (partWant - part) * Math.min(1, dt * (partWant > part ? 0.35 : 0.45));
         seaC.mesh.position.y = (BED - 0.8) * Math.min(1, part * 1.15);
         seaC.mesh.visible = part < 0.97;

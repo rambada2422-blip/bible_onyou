@@ -1,4 +1,5 @@
 /* 3D 장면 설정: OT-30 갈멜 산의 엘리야 (왕상 18:20-39). 18:40은 다루지 않는다.
+ * 간접 연출(규칙서 13.8, 2026-11-16, 감수 전): 불이 내려올 때 합성 땅울림과 흔들림(불과 땅의 소리일 뿐, 하나님의 음성은 만들지 않는다). 움직임 줄이기 설정이면 흔들지 않는다.
  * 방향: 아이들은 산비탈 동쪽(+X)에서 서쪽을 본다. 백성은 가운데, 바알의 단은 서쪽 멀리, 여호와의 단은 그 앞쪽.
  * 본문에 맞춘 점 (content/ot/OT-30.json design3d)
  *  - 바알의 선지자들은 자기 단 둘레를 돌며 아침부터 저녁까지 부르지만 대답이 없다(18:26-29). 몸을 상하게 하는 모습은 그리지 않는다(18:28은 글로만).
@@ -187,6 +188,7 @@
         waterLv += (waterWant - waterLv) * Math.min(1, dt * 0.6); water.position.y = height(ALT[0] + 4, ALT[1]) - 0.3 + waterLv * 0.3;
         /* 불: 0~0.9초 위에서 내려옴 → 단 위에서 탐 → 단·나무·물이 사라짐 → 백성이 엎드림 */
         if (fireT >= 0) {
+          if (fireT === 0) { if (FX) FX.audio.rumble(3, 0.6); if (api.shake) api.shake(0.3, 1.6); }   /* 불이 내려올 때 땅울림(18:38, 간접 연출. 소리는 불과 땅의 소리일 뿐이다) */
           fireT += dt;
           var fd = Math.min(1, fireT / 0.9);
           fall.position.y = height(ALT[0], ALT[1]) + 16 - 11 * fd; fall.material.opacity = fireT < 2.4 ? Math.min(1, fireT * 2) : Math.max(0, 1 - (fireT - 2.4));
