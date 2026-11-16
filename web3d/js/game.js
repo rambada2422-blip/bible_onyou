@@ -1378,6 +1378,16 @@
       var d = 0, u = 0; for (var i = 0; i < a.mask.length; i++) { if (a.mask[i] || b.mask[i]) u++; if (a.mask[i] !== b.mask[i]) d++; }
       return { diff: d, union: u, ratio: u ? d / u : 0 };
     },
+    /* 게임 거리 비교(V2, growthShots.js): 멈춘 채 같은 화면을 다시 그려 화소를 읽는다 */
+    freeze: function (on) { paused = !!on; },
+    grab: function () {
+      var rs = (cur === 'scene' || !JL) ? SCN.scene : JL.scene;
+      if (post) post.render(rs, camera); else renderer.render(rs, camera);
+      var cv = document.createElement('canvas'); cv.width = canvas.width; cv.height = canvas.height;
+      var cx = cv.getContext('2d'); cx.drawImage(canvas, 0, 0);
+      return { w: cv.width, h: cv.height, data: cx.getImageData(0, 0, cv.width, cv.height).data, url: cv.toDataURL('image/jpeg', 0.85) };
+    },
+    kidLook: function (on) { ['choeon', 'hyu', 'onwoo'].forEach(function (k) { var kd = kids[k]; if (kd && kd.look) { kd.look(kd === player && on); for (var u = 0; u < 12; u++) kd.update(0.1, 0); } }); },
     rebuild: function (opt) { if (opt && 'stage' in opt) gearStage = opt.stage; if (opt && 'hat' in opt) hatOn = opt.hat; if (opt && 'flag' in opt) flagColor = opt.flag; rebuildKids(); }
   };
 

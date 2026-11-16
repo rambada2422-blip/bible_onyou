@@ -161,7 +161,8 @@ const ok = (cond, where, what) => { if (!cond) probs.push(where + ': ' + what); 
 
     /* T29: 화면 차례로 그려서 맞는 보기만 고르면 통과, 틀린 보기면 basis에 맞는 안내(엇나간 바늘 / 성경에서 확인) */
     const t29 = await p.evaluate(async () => {
-      const U = BO3D.ui, w = () => new Promise((r) => setTimeout(r, 0)), probs = [];
+      if (BO3D.debug.freeze) BO3D.debug.freeze(true);   /* 처음 화면 뒤 3D 풍경을 멈춘다(누를 때마다 한 화면씩 기다리지 않게) */
+      const U = BO3D.ui, w = () => Promise.resolve(), probs = [];
       let nSingle = 0, nMulti = 0, nWrong = 0, nDetour = 0;
       const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-9999px;top:0;width:360px'; document.body.appendChild(box);
       for (const id of BO3D.ot.order) {
@@ -202,6 +203,7 @@ const ok = (cond, where, what) => { if (!cond) probs.push(where + ': ' + what); 
         }
       }
       box.remove();
+      if (BO3D.debug.freeze) BO3D.debug.freeze(false);
       return { probs, nSingle, nMulti, nWrong, nDetour };
     });
     t29.probs.slice(0, 20).forEach((x) => probs.push('T29 ' + x));
