@@ -19,3 +19,34 @@
     return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
   };
 })();
+/* 더하기(2026-11-16): 꼭짓점 색을 지키며 같은 재질의 물체를 한 덩어리로 합친다(그리기 호출을 줄인다).
+ *   BO3D.props.mergeStatic은 꼭짓점 색을 버려서, 꼭짓점 색으로 칠한 모형(종려·바위·떨기)이 검게 보인다. 3d-c 장면은 이것을 쓴다. */
+(function () {
+  'use strict';
+  var C = BO3D.c3d;
+  C.merge = function (objs) {
+    var T = THREE, byMat = [], out = new T.Group();
+    objs.forEach(function (o) {
+      o.updateMatrixWorld(true);
+      o.traverse(function (m) {
+        if (!m.isMesh || !m.visible) return;
+        var g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone(); g.applyMatrix4(m.matrixWorld);
+        var e = byMat.filter(function (x) { return x.mat === m.material; })[0]; if (!e) { e = { mat: m.material, gs: [] }; byMat.push(e); } e.gs.push(g);
+      });
+    });
+    byMat.forEach(function (e) {
+      var n = 0, k = 0, hasCol = e.gs.some(function (g) { return !!g.attributes.color; });
+      e.gs.forEach(function (g) { n += g.attributes.position.count; });
+      var pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = hasCol ? new Float32Array(n * 3) : null;
+      e.gs.forEach(function (g) {
+        var cnt = g.attributes.position.count, ca = g.attributes.color, w;
+        pos.set(g.attributes.position.array, k * 3); if (g.attributes.normal) nor.set(g.attributes.normal.array, k * 3);
+        if (col) for (w = 0; w < cnt; w++) { col[(k + w) * 3] = ca ? ca.getX(w) : 1; col[(k + w) * 3 + 1] = ca ? ca.getY(w) : 1; col[(k + w) * 3 + 2] = ca ? ca.getZ(w) : 1; }
+        k += cnt; g.dispose();
+      });
+      var bg = new T.BufferGeometry(); bg.setAttribute('position', new T.BufferAttribute(pos, 3)); bg.setAttribute('normal', new T.BufferAttribute(nor, 3)); if (col) bg.setAttribute('color', new T.BufferAttribute(col, 3)); bg.computeBoundingSphere();
+      var mesh = new T.Mesh(bg, e.mat); mesh.castShadow = true; mesh.receiveShadow = true; out.add(mesh);
+    });
+    return out;
+  };
+})();

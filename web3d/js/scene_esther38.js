@@ -27,7 +27,7 @@
   BO3D.scene3d['OT-38'] = function (api) {
     var T = THREE, M2 = BO3D.models2 || {}, MO = BO3D.models || {}, PR = BO3D.props, FX = api.FX, C3 = BO3D.c3d, R = PR.rng(3811), sm = C3.sm, noise = C3.noise, hash = C3.hash, i, k;
     var WALL_Z = -24, GATE = [0, WALL_Z], IN = [0, -29], OUT = [0, -21.5], MOR = [4.5, -15], MEET = [3.2, -16.6], FRONT_M = [0, -21.2];
-    var ROYAL = [-2, -72], ROYAL_DOOR = [-2, -66.5], HALL = [4, -52], HALL_DOOR = [4, -56.5], HALL_SIDE = [11, -52], GARDEN = [12, -66];   /* 담 안: 왕궁의 집(북), 잔치 자리(가운데), 후원(동북) */
+    var ROYAL = [-6, -62], ROYAL_DOOR = [-6, -56.5], HALL = [8, -62], HALL_DOOR = [8, -56.5], GARDEN = [10, -46];   /* 담 안: 왕궁의 집(서), 잔치 자리(동), 그 앞의 후원 */
     function height(x, z) {
       var inside = sm(-25.5, -27.5, z);                                   /* 담 안은 조금 높은 터 */
       return 1.2 * inside + 0.18 * noise(x * 0.08 + 3, z * 0.08 + 1) * (1 - inside) + sm(120, 230, Math.hypot(x, z)) * 12 * noise(x * 0.02, z * 0.02);
@@ -85,20 +85,20 @@
 
     /* 담 안: 왕궁의 집과 잔치 자리(7:1), 왕궁 후원(7:7). 모두 단순한 꼴, 창 너머로 멀리서만 */
     var inner = [], hallM = std('#E6D2AA'), royalM = std('#DCC49A');
-    inner.push(box(16, 9, 11, royalM, ROYAL[0], ROYAL[1])); inner.push(box(16.6, 0.6, 11.6, roofM, ROYAL[0], ROYAL[1], height(ROYAL[0], ROYAL[1]) + 9));
-    inner.push(box(14, 8, 9, hallM, HALL[0], HALL[1])); inner.push(box(14.6, 0.6, 9.6, roofM, HALL[0], HALL[1], height(HALL[0], HALL[1]) + 8));
+    inner.push(box(12, 9, 11, royalM, ROYAL[0], ROYAL[1])); inner.push(box(12.6, 0.6, 11.6, roofM, ROYAL[0], ROYAL[1], height(ROYAL[0], ROYAL[1]) + 9));
+    inner.push(box(12, 8, 11, hallM, HALL[0], HALL[1])); inner.push(box(12.6, 0.6, 11.6, roofM, HALL[0], HALL[1], height(HALL[0], HALL[1]) + 8));
     var doorM = std('#3A2E24');
-    inner.push(box(2.4, 3.6, 0.3, doorM, ROYAL_DOOR[0], ROYAL_DOOR[1] + 0.12)); inner.push(box(2.4, 3.6, 0.3, doorM, HALL_DOOR[0], HALL_DOOR[1] - 0.12)); inner.push(box(0.3, 3.6, 2.4, doorM, HALL_SIDE[0] + 0.12, HALL_SIDE[1]));
+    inner.push(box(2.4, 3.6, 0.3, doorM, ROYAL_DOOR[0], ROYAL_DOOR[1] + 0.12)); inner.push(box(2.4, 3.6, 0.3, doorM, HALL_DOOR[0], HALL_DOOR[1] + 0.12));
     var innerM = PR.mergeStatic(inner); scene.add(innerM);
     var trees = [];
     if (M2.palm) for (i = 0; i < 9; i++) { var pl = M2.palm(3820 + i), px = GARDEN[0] - 4.2 + (i % 3) * 4.2 + (hash(i, 2) - 0.5) * 1.4, pz = GARDEN[1] - 5 + Math.floor(i / 3) * 4.8 + (hash(i, 4) - 0.5) * 1.2; pl.scale.multiplyScalar(0.8); pl.position.set(px, height(px, pz), pz); trees.push(pl); }
-    if (trees.length) scene.add(PR.mergeStatic(trees));
+    if (trees.length) scene.add(C3.merge(trees));
 
     /* 둘레의 땅(멀리): 바위와 떨기만 */
     var deco = [];
     if (MO.rock) for (i = 0; i < 30; i++) { var ro = MO.rock(3830 + i), rx = -160 + R() * 320, rz = -160 + R() * 320; if (Math.abs(rx) < 85 && rz > -90 && rz < 70) continue; ro.scale.multiplyScalar(0.8 + R() * 1.5); ro.position.set(rx, height(rx, rz) - 0.1, rz); deco.push(ro); }
     if (MO.shrub) for (i = 0; i < 24; i++) { var sh = MO.shrub(380 + i), sx = -150 + R() * 300, sz = -150 + R() * 300; if (Math.abs(sx) < 85 && sz > -90 && sz < 70) continue; sh.position.set(sx, height(sx, sz), sz); deco.push(sh); }
-    if (deco.length) scene.add(PR.mergeStatic(deco));
+    if (deco.length) scene.add(C3.merge(deco));
 
     /* 사람 */
     function man(seed, opt) { var o = null; try { if (M2.israelite) o = M2.israelite(seed, opt || { kind: 'man', carry: 'none' }); } catch (e) { o = null; } if (!o) o = PR.soldier(seed, '#7A6A54', null); o.group.rotation.order = 'YXZ'; scene.add(o.group); return o; }
@@ -132,8 +132,8 @@
 
     var OUTP = mkPath([IN, OUT, MEET]), BACKP = mkPath([MEET, OUT, IN]);
     var MOR_GO = mkPath([MOR, [-3, -12], [-1, -18], FRONT_M]);                                                         /* 4:17 모르드개가 가서 모은다 */
-    var K_TO = mkPath([[ROYAL_DOOR[0], ROYAL_DOOR[1] + 0.4], [3.4, -61], [HALL_DOOR[0] - 0.4, HALL_DOOR[1] - 0.3]]), H_TO = mkPath([[ROYAL_DOOR[0] + 1.2, ROYAL_DOOR[1] + 0.4], [4.8, -61.6], [HALL_DOOR[0] + 0.8, HALL_DOOR[1] - 0.3]]);   /* 7:1 왕궁의 집에서 잔치 자리로 */
-    var K_OUT = mkPath([[HALL_SIDE[0] + 0.4, HALL_SIDE[1]], [13.8, -56], GARDEN]), K_BACK = mkPath([GARDEN, [13.8, -56], [HALL_SIDE[0] + 0.4, HALL_SIDE[1]]]);                    /* 7:7-8 */
+    var K_TO = mkPath([[ROYAL_DOOR[0], ROYAL_DOOR[1] + 0.4], [ROYAL_DOOR[0], -54.2], [HALL_DOOR[0] - 0.5, -54.2], [HALL_DOOR[0] - 0.5, HALL_DOOR[1] + 0.3]]), H_TO = mkPath([[ROYAL_DOOR[0] + 1.2, ROYAL_DOOR[1] + 0.4], [ROYAL_DOOR[0] + 1.2, -53.2], [HALL_DOOR[0] + 0.7, -53.2], [HALL_DOOR[0] + 0.7, HALL_DOOR[1] + 0.3]]);   /* 7:1 왕궁의 집에서 잔치 자리로 */
+    var K_OUT = mkPath([[HALL_DOOR[0], HALL_DOOR[1] + 0.4], [HALL_DOOR[0] + 1, -52], GARDEN]), K_BACK = mkPath([GARDEN, [HALL_DOOR[0] + 1, -52], [HALL_DOOR[0], HALL_DOOR[1] + 0.4]]);                    /* 7:7-8 */
 
     var phase = 'mourn', pt = 0, tilt = 0;
     function still(o) { if (o.update) o.update(0.016, 0); }
@@ -150,7 +150,7 @@
       if (p === 'answer' || p === 'reply') { hathach.group.visible = true; setAt(hathach, MEET[0], MEET[1], Math.PI * 0.25 + Math.PI); if (p === 'answer') setAt(hathach, IN[0], IN[1], 0); }
       if (p === 'gather') { setAt(hathach, IN[0], IN[1], 0); }
       if (p === 'feast') { king.group.visible = true; haman.group.visible = true; setAt(king, ROYAL_DOOR[0], ROYAL_DOOR[1], 0); setAt(haman, ROYAL_DOOR[0] + 1.2, ROYAL_DOOR[1], 0); }
-      if (p === 'garden') { king.group.visible = true; setAt(king, HALL_SIDE[0], HALL_SIDE[1], Math.PI / 2); }
+      if (p === 'garden') { king.group.visible = true; setAt(king, HALL_DOOR[0], HALL_DOOR[1] + 0.4, 0); }
       still(mor); still(hathach);
     }
     var D_SERV = 0, D_HATH = 13;   /* 4:4 옷을 가져온 내시 → 4:6 하닥 */
@@ -191,9 +191,10 @@
         look: { focus: [GATE[0], WALL_Z + 2], mid: [2, -16], dy: 3, backE: 9, upE: 5 } },
       eventCam: function (i) {
         if (i === 4) return { pos: [10, height(10, 34) + 16, 34], look: [0, 1, -15] };                         /* 4:16-17 모여 오는 유다인 */
-        if (i === 5 || i === 6) return { pos: [4, 38, -18], look: [6, 1.5, -60] };                              /* 담 안을 창 너머로 멀리서 */
+        if (i === 5 || i === 6) return { pos: [2, 48, 4], look: [2, 0, -56] };                              /* 담 안을 창 너머로 멀리서 */
         return null;
       },
+      eventLook: function (i) { if (i === 2 || i === 3) return { focus: [2, -20], mid: [3, -16], dy: 1.5, backE: 14, upE: 4 }; return null; },   /* 문과 모르드개와 하닥이 함께 보이게 */
       kidsHidden: function (i) { return i === 5 || i === 6; },
       beatNote: function (i) {
         if (i === 5) return '시간이 흘렀어요. 며칠 뒤, 왕후 에스더가 잔치를 연 날이에요. 타임머신 창 너머로 궁의 담 안을 멀리서 봐요. 잔치 자리 안의 모습은 성경에 없어서 그리지 않았어요.';
