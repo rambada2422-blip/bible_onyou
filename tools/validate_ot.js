@@ -220,11 +220,75 @@ function check(file) {
       beatRefs.forEach((r) => { const v = R.verses(r); if (v) v.list.forEach((x) => { const n = lcs(a, norm(x.krv)); if (n > best) { best = n; br = r; } }); });
       if (best >= 16 && br !== ref) W(`${w}: 장면 본문과 ${best}글자가 그대로 같음. 자기 말로 풀어 쓴다 (${br})`);
     }
+  });  if (V4) exposure(d, E);
+}
+
+/* ── --v4: 성경을 읽어야 답이 나오는 물음(규칙서 13.9, 대표 결정 2026-11-16) ──
+ * 물음의 답이 그 나이 단계에서 물음 앞에 보이는 글(대목·돕기·동행 문답·통신·재료·탐지기 글)에 먼저 나오면 오류.
+ * 이름만 겹치고 답(관계)은 성경에서만 알 수 있으면 그 물음에 "inStory": "이유"를 적는다(독립 대조가 확인). */
+const JOSA2 = /(에서|으로|에게|께서|이다|였다|했다|었다|았다|하여|해서|이라고|라고|처럼|까지|부터|이에요|예요|했어요|였어요)$/;
+const JOSA1 = /[을를은는이가에와과의도만로]$/;
+function toks(label) {
+  return String(label).split(/[\s,·()\[\]"'“”‘’.!?~\-]+/).map((w) => {
+    let x = w.replace(JOSA2, ''); if (x.length >= 3) x = x.replace(JOSA1, ''); return x;
+  }).filter((x) => x.length >= 2 || /\d/.test(x));
+}
+const STOP = new Set(['하나님', '하나님이', '여호와', '여호와께서', '이스라엘', '사람', '사람들', '백성', '모두', '그리고', '그는', '그가', '그들', '그들이', '자기', '했다', '하셨다', '말했다', '하였다', '있었다', '때문에', '위해', '하려고', '것을', '것이', '그것', '모든', '함께', '다시', '이미']);
+function seen(label, story, prompt) {          // 보기의 낱말(물음에 이미 있는 낱말·흔한 낱말 빼고)이 이야기 글에 얼마나 있나
+  const pt = new Set(toks(prompt || ''));
+  const t = toks(label).filter((x) => !STOP.has(x) && !pt.has(x)); if (!t.length) return null;
+  const hit = t.filter((x) => story.includes(x));
+  const need = t.length <= 2 ? t.length : Math.ceil(t.length * 0.7);
+  return hit.length >= need ? hit : null;
+}
+function exposure(d, E) {
+  const m = d.mission || {}, TIERS = ['t1', 't2', 't3'], AGE = { t1: '8~10세', t2: '11~13세', t3: '14~19세' };
+  const T = (o, t) => (o && typeof o === 'object' ? (o[t] || '') : (o || ''));
+  TIERS.forEach((t) => {
+    const parts = [];   // [where, text]
+    const P = (w, x) => { if (x) parts.push([w, String(x)]); };
+    P('mission.call.' + t, T(m.call, t));
+    ((m.companion || {}).talks || []).forEach((k, i) => { P(`companion.talks[${i}].ask`, k.ask && k.ask.text); P(`companion.talks[${i}].answer.${t}`, T(k.answer, t)); });
+    (d.beats || []).forEach((b, i) => { P(`beats[${i}].text.${t}`, T(b.text, t)); P(`beats[${i}].say`, b.say && b.say.text); });
+    ((m.help || {}).steps || []).forEach((h, i) => {
+      const w = `help.steps[${i}]`;
+      P(w + '.title', h.title); P(w + '.text.' + t, T(h.text, t)); (h.tasks || []).forEach((x, j) => P(`${w}.tasks[${j}]`, x));
+      P(w + '.done', h.done && h.done.text); P(w + '.say', h.say && h.say.text); P(w + '.ask', h.ask && h.ask.text);
+      parts.push([w + '.answer.' + t, T(h.answer, t), i]); if (t === 't3' && h.nt) P(w + '.nt', h.nt.text);
+    });
+    (d.quests || []).forEach((q, i) => { P(`quests[${i}].line`, q.line); P(`quests[${i}].found`, q.found); P(`quests[${i}].say`, q.say && q.say.text); });
+    (m.materials || []).forEach((x, i) => { ['name', 'how', 'line', 'use'].forEach((k) => P(`materials[${i}].${k}`, x[k])); });
+    const qs = [];
+    ((d.gates || {})[t] || []).forEach((q, i) => qs.push([`gates.${t}[${i}]`, q, -1]));
+    (d.quests || []).forEach((x, i) => { if (x.q && x.q[t]) qs.push([`quests[${i}].q.${t}`, x.q[t], -1]); });
+    ((m.help || {}).steps || []).forEach((h, i) => { if (h.read && h.read[t]) qs.push([`help.steps[${i}].read.${t}`, h.read[t], i]); });
+    qs.forEach(([w, q, own]) => {
+      if (q.inStory) return;
+      const story = parts.filter((p) => p[2] === undefined || p[2] !== own);
+      const all = norm(story.map((p) => p[1]).join(' '));
+      const where = (tok) => { const f = story.find((p) => norm(p[1]).includes(tok)); return f ? f[0] : '?'; };
+      if (q.confirm && Array.isArray(q.confirm.options)) {
+        q.confirm.options.filter((o) => o.ok).forEach((o) => {
+          const h = seen(o.label, all, q.confirm.prompt);
+          if (h) E(`${w}: 답 "${o.label}"이(가) ${AGE[t]} 이야기 글에 먼저 나옴(${h.map((x) => x + '@' + where(x)).join(', ')}). 이야기에서 가리거나, 이름만 겹치면 "inStory"에 이유(규칙서 13.9)`);
+        });
+      }
+      if (q.type === 'order' && Array.isArray(q.items)) {
+        // 이야기 글이 같은 차례를 그대로 말하는가: 항목마다 가장 먼저 크게 겹치는 글의 자리
+        const flat = story.map((p) => norm(p[1])), pos = q.items.map((it) => { const tk = toks(it); let best = -1, bi = -1; flat.forEach((f, k) => { const n = tk.filter((x) => f.includes(x)).length / (tk.length || 1); if (n > best) { best = n; bi = k; } }); return best >= 0.6 ? bi : -1; });
+        const found = pos.filter((x) => x >= 0).length, inc = pos.every((x, k) => x < 0 || k === 0 || pos[k - 1] < 0 || x >= pos[k - 1]);
+        if (found >= q.items.length - 1 && inc) E(`${w}: 순서 맞추기의 항목이 ${AGE[t]} 이야기 글에 같은 차례로 다 나옴. 더 잘게 묻거나 이야기 글을 줄인다(규칙서 13.9). 아니면 "inStory"에 이유`);
+      }
+      if (q.type === 'match' && Array.isArray(q.pairs)) {
+        q.pairs.forEach((pr) => { const cv = (String(pr.ref).match(/(\d+:\d+)$/) || [])[1]; if (cv && story.some((p) => p[1].includes('(' + cv + ')') || p[1].includes(cv + ')'))) E(`${w}: 잇기의 구절 ${pr.ref}이(가) ${AGE[t]} 이야기 글에 장절과 함께 나옴. 이야기 글에서 그 장절 표시를 뺀다(규칙서 13.9)`); });
+      }
+    });
   });
 }
 
-const NEED_MISSION = process.argv.includes('--mission') || process.argv.includes('--v2') || process.argv.includes('--v3');
-const V3 = process.argv.includes('--v3');
+const NEED_MISSION = process.argv.includes('--mission') || process.argv.includes('--v2') || process.argv.includes('--v3') || process.argv.includes('--v4');
+const V4 = process.argv.includes('--v4');
+const V3 = process.argv.includes('--v3') || V4;
 const V2 = process.argv.includes('--v2') || V3;
 const want = process.argv.slice(2).filter((x) => !x.startsWith('--'));
 const files = fs.readdirSync(DIR).filter((f) => /^OT-\d\d\.json$/.test(f) && (!want.length || want.includes(f.replace('.json', '')))).sort();

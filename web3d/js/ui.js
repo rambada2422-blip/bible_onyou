@@ -95,13 +95,17 @@
       } } }, o.icon && IC[o.icon] ? icon(o.icon) : null, el('span', { text: o.label }));
       return b;
     });
-    return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' + (pics ? ' pics' : '') }, btns), noteBox];
+    return [q.hidePrompt ? null : el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' + (pics ? ' pics' : '') }, btns), noteBox];
   }
+  /* 성경을 읽어야 답이 나오는 물음(규칙서 13.9): 물음을 먼저 보여 주고, 읽을 장절은 힌트로 준다 */
+  function askLine(text) { return el('p', { class: 'q-ask', text: text }); }
+  function hintCard(refs, prompt, label) { return el('div', { class: 'findcard' }, icon('book'), el('div', {}, el('small', { class: 'hint-k', text: label || '힌트' }), refs.map(function (r) { return el('div', { class: 'big', text: bookName(r) }); }), el('p', { text: tx(prompt) }))); }
   /* 읽을 곳을 먼저 보여 주고, 찾아 읽은 뒤에 묻는다(규칙서 13.5). refs가 있으면 떨어진 여러 곳을 함께 읽는다 */
   function findBlock(q, onOk) {
     var refs = q.refs || [q.ref], after = el('div', { style: 'display:flex;flex-direction:column;gap:12px' });
-    var rb = el('button', { class: 'btn plain', on: { click: function () { rb.disabled = true; rb.textContent = '읽었어요'; add(after, choiceBlock(q.confirm, q.refs ? refs : q.ref, onOk)); after.scrollIntoView({ block: 'nearest' }); } } }, '찾아서 읽었어요');
-    return [el('div', { class: 'findcard' }, icon('book'), el('div', {}, refs.map(function (r) { return el('div', { class: 'big', text: bookName(r) }); }), el('p', { text: tx(q.prompt) }))), rb, after];
+    var cq = Object.assign({}, q.confirm, { hidePrompt: true });
+    var rb = el('button', { class: 'btn plain', on: { click: function () { rb.disabled = true; rb.textContent = '읽었어요'; add(after, choiceBlock(cq, q.refs ? refs : q.ref, onOk)); after.scrollIntoView({ block: 'nearest' }); } } }, '찾아서 읽었어요');
+    return [askLine(q.confirm.prompt), hintCard(refs, q.prompt), rb, after];
   }
   function findrefBlock(q, onOk, idp) {
     var ch = el('input', { id: 'g-ch-' + idp, type: 'text', inputmode: 'numeric', 'aria-label': '장', autocomplete: 'off', maxlength: '3' });
@@ -116,7 +120,7 @@
     } } }, '확인');
     return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'refin' }, el('span', { text: q.book }), ch, el('span', { text: '장' }), vs, el('span', { text: '절' }), check), noteBox];
   }
-  function readCard(refs, prompt) { return el('div', { class: 'findcard' }, icon('book'), el('div', {}, refs.map(function (r) { return el('div', { class: 'big', text: bookName(r) }); }), el('p', { text: tx(prompt) }))); }
+  function readCard(refs, prompt) { return hintCard(refs, prompt, '읽을 곳'); }
   /* 여러 개 고르기(8~10세, 규칙서 13.8): 한 절을 찾아 읽고, 맞는 것을 모두 고른다 */
   function multiBlock(q, onOk) {
     var after = el('div', { style: 'display:flex;flex-direction:column;gap:12px' }), cq = q.confirm;
@@ -138,10 +142,10 @@
         }
         noteBox.scrollIntoView({ block: 'nearest' });
       } } }, '다 골랐어요');
-      add(after, [el('p', { class: 'q-prompt', text: cq.prompt }), el('div', { class: 'opts' }, btns), check, noteBox]);
+      add(after, [el('div', { class: 'opts' }, btns), check, noteBox]);
       after.scrollIntoView({ block: 'nearest' });
     } } }, '찾아서 읽었어요');
-    return [readCard([q.ref], q.prompt), rb, after];
+    return [askLine(cq.prompt), hintCard([q.ref], q.prompt), rb, after];
   }
   /* 잇기(14~19세, 규칙서 13.8): 떨어진 여러 곳을 찾아 읽고, 구절마다 맞는 내용을 잇는다 */
   function matchBlock(q, onOk) {
