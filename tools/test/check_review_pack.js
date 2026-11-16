@@ -10,7 +10,7 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const ROOT = path.join(__dirname, '..', '..'), OUT = path.join(ROOT, 'docs', '감수');
 let fail = 0;
 const ok = (c, msg) => { console.log((c ? '통과 ' : '실패 ') + msg); if (!c) fail++; };
-const files = ['README.md', '감수자료.html', '감수자료_인쇄용.html', '먼저볼30_인쇄용.html', '참고_장면전체글_인쇄용.html', '항목목록.json', '미해결_전체.md']
+const files = ['README.md', '감수자료.html', '감수자료_인쇄용.html', '먼저볼30_인쇄용.html', '참고_장면전체글_인쇄용.html', '항목목록.json', '미해결_전체.md', '대표_결재지.md', '대표_결재지.html']
   .concat(Array.from({ length: 10 }, (_, i) => 'md/시대' + String(i + 1).padStart(2, '0') + '.md'));
 const before = files.map((f) => fs.readFileSync(path.join(OUT, f), 'utf8'));
 const run = cp.spawnSync('node', [path.join(ROOT, 'tools/make_review_pack.js')], { encoding: 'utf8' });
@@ -61,6 +61,13 @@ const pm = (A('감수자료_인쇄용.html').match(/class="pm"/g) || []).length 
 ok(pm === core + 30, '인쇄용 두 파일의 표시 칸 수(' + pm + ')가 표시 항목 수 + 먼저 볼 30에 한 번 더 실린 30(' + (core + 30) + ')과 같다');
 ok(list.items.filter((x) => x.first30).length === 30, '먼저 볼 항목이 30개다');
 ok(new Set(list.items.map((x) => x.id)).size === list.items.length, '항목 번호가 겹치지 않는다 (' + list.items.length + '개)');
+const sign = JSON.parse(fs.readFileSync(path.join(OUT, '대표_결재_자료.json'), 'utf8'));
+const signMd = A('대표_결재지.md');
+const daepyo = list.items.filter((x) => x.to === '대표');
+const cov = new Set([].concat.apply([], sign.decisions.map((d) => d.covers || [])));
+ok(daepyo.every((x) => cov.has(x.id) || signMd.includes(x.id)), '검증자가 대표에게 넘긴 ' + daepyo.length + '건이 모두 대표 결재지에 있다');
+ok(sign.decisions.every((d) => d.q && d.rec && d.why && d.now && /[까요|습니까]\?/.test(d.q)), '결재 ' + sign.decisions.length + '가지(손으로 쓴 것)에 물음·추천·까닭·기본값이 모두 있다');
+ok((A('대표_결재지.html').match(/class="mk"/g) || []).length === (signMd.match(/^\| [가-마]\d+ \|/gm) || []).length, '결재지 HTML의 표시 칸 수가 md의 줄 수와 같다');
 const gen = fs.readFileSync(path.join(ROOT, 'tools/make_review_pack.js'), 'utf8');
 ok(!/['"`]ref\//.test(gen) && !/bible_ref/.test(gen), '생성기가 성경 본문(ref/)을 읽지 않는다');
 ok(!/감수 완료/.test(after.join('\n').replace(/감수 완료\(날짜, 감수자\)/g, '')), '어디에도 "감수 완료"라고 쓰지 않았다');

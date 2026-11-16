@@ -785,6 +785,60 @@ function refPrintHtml() {
   return page('바이블 온유 · 참고: 장면 전체 글(인쇄용)', CSS_COMMON + CSS_PRINT, body, '');
 }
 
+/* ───────── 6.5 대표 결재지 ───────── */
+const SIGN = JSON.parse(fs.readFileSync(path.join(OUT, '대표_결재_자료.json'), 'utf8'));
+(function () {
+  const covered = new Set();
+  SIGN.decisions.forEach((d) => (d.covers || []).forEach((id) => { if (!byId[id]) throw new Error('결재 자료가 가리키는 항목이 없음: ' + id); covered.add(id); }));
+  /* 검증자가 대표에게 넘긴 것 가운데 위 결정에 묶이지 않은 것은 '라' 묶음에 자동으로 싣는다 */
+  let n = 0;
+  items.filter((it) => it.kind === 'open' && it.to === '대표' && !covered.has(it.id)).forEach((it) => {
+    n++;
+    SIGN.decisions.push({ id: '라' + n, sec: 'D', q: it.title, rec: '지금대로', why: '검증자가 신학 판단이 아닌 놀이 설계의 일로 보아 대표에게 넘겼습니다. 지금 자료에 그대로 있고, 바꾸면 그 장면의 작성과 대조를 다시 합니다.', now: '지금대로', src: it.id + (it.scene ? ' · ' + sceneById[it.scene].title : ''), auto: true });
+  });
+})();
+const signCount = (sec) => SIGN.decisions.filter((d) => d.sec === sec).length;
+function signMd() {
+  const o = ['# 대표 결재지 (바이블 온유)', '', '> **🟡 내부 결정 · 대표가 정할 것 ' + SIGN.decisions.length + '가지** (모두 예/아니오로 답할 수 있게 썼고, 추천과 까닭을 붙였습니다.)',
+    '> - 급한 것은 **"가" 묶음 ' + signCount('A') + '가지**입니다. 나머지는 모두 지금대로 두기를 추천하므로, 다르게 하실 것만 표시하셔도 됩니다.',
+    '> - 신학 판단이 섞인 것은 여기서 정하지 않고 **목회자 감수 자료로 옮겼습니다**("목회자에게" 칸).',
+    '> - 돈이 드는 결정은 없습니다. 밖으로 나가는 일(목사님께 자료 드리기, 공회 문의, 아이 시험)은 대표가 직접 하시는 일로 적었습니다.', '',
+    '자료 판 `' + VERSION + '` · `docs/감수/대표_결재_자료.json`을 고치고 `node tools/make_review_pack.js`를 돌리면 다시 만들어집니다. 휴대폰에서는 `대표_결재지.html`을 열어 표시하고 "내보내기"로 글을 뽑을 수 있습니다.', ''];
+  SIGN.sections.forEach((sec) => {
+    const list = SIGN.decisions.filter((d) => d.sec === sec.key);
+    if (!list.length) return;
+    o.push('## ' + sec.title + ' (' + list.length + ')', ''); if (sec.lead) o.push(sec.lead, '');
+    o.push('| # | 정할 것 | 추천 | 까닭 | 지금 기본값 | 답 |', '|---|---|---|---|---|---|');
+    list.forEach((d) => o.push('| ' + d.id + ' | ' + d.q + (d.fill ? '<br>' + d.fill : '') + (d.pastor ? '<br>**목회자에게**: ' + d.pastor : '') + (d.covers ? '<br><sub>함께 정리되는 검증자 항목: ' + d.covers.join(', ') + '</sub>' : '') + ' | **' + d.rec + '** | ' + d.why + ' | ' + d.now + '<br><sub>' + d.src + '</sub> | ' + (d.auto ? '☐ 지금대로 ☐ 바꿈' : '☐ 예 ☐ 아니오') + ' |'));
+    o.push('');
+  });
+  o.push('## 목회자에게 옮긴 것', '', '아래는 대표가 정하기보다 목사님의 판단이 먼저 필요한 것이어서 감수 자료에 넣었습니다.', '');
+  ['공통·읽어주기', '공통·마무리', '추리·요단강'].forEach((id) => o.push('- **' + id + '** ' + byId[id].title));
+  scopeItems.forEach((it) => o.push('- **' + it.id + '** ' + it.title));
+  ['OT-30·미해결4', 'OT-05·미해결7'].forEach((id) => o.push('- **' + id + '** ' + byId[id].title));
+  o.push('', '검증자가 남긴 것 가운데 화면·코드로 고치면 되는 일 ' + (openBy['코드'] || 0) + '건은 대표가 정할 것이 없어 총괄에게 넘겼습니다(`미해결_전체.md`의 "코드" 절).', '');
+  return o.join('\n');
+}
+function signHtml() {
+  const o = ['<div class="top"><div class="row"><b id="cnt">표시 0 / 0</b><span class="bar"><i id="bari"></i></span><select id="flt" hidden><option value=""></option></select><button type="button" class="pr" id="exp">내보내기</button></div></div><main>',
+    '<section id="guide"><h1>대표 결재지</h1><p class="sm">바이블 온유 · 자료 판 ' + VERSION + '</p>',
+    '<div class="note"><b>🟡 내부 결정 · 대표가 정할 것 ' + SIGN.decisions.length + '가지</b><ul><li>급한 것은 <b>"가" 묶음 ' + signCount('A') + '가지</b>입니다. 나머지는 모두 "예(지금대로)"를 추천하므로 다르게 하실 것만 표시하셔도 됩니다.</li><li>신학 판단이 섞인 것은 여기서 정하지 않고 목회자 감수 자료로 옮겼습니다.</li><li>돈이 드는 결정은 없습니다. 밖으로 나가는 일(목사님께 자료 드리기, 공회 문의, 아이 시험)은 대표가 직접 하시는 일입니다.</li><li>표시는 이 기기에만 저장됩니다. 다 하신 뒤 "내보내기"의 글을 복사해 보내 주세요.</li></ul></div></section>'];
+  SIGN.sections.forEach((sec) => {
+    const list = SIGN.decisions.filter((d) => d.sec === sec.key);
+    if (!list.length) return;
+    o.push('<section><h2>' + esc(sec.title) + ' (' + list.length + ')</h2>' + (sec.lead ? '<p class="sm">' + esc(sec.lead) + '</p>' : ''));
+    list.forEach((d) => o.push('<article class="it core" id="' + esc(d.id) + '"><header><span class="code">' + esc(d.id) + '</span><span class="star">추천: ' + esc(d.rec) + '</span></header><p class="ln g"><span class="v">' + esc(d.q) + '</span></p>' +
+      '<p class="ln n sub"><span class="k">까닭</span> <span class="v">' + esc(d.why) + '</span></p><p class="ln n sub"><span class="k">지금 기본값</span> <span class="v">' + esc(d.now) + '</span></p>' +
+      (d.pastor ? '<p class="ln n sub"><span class="k">목회자에게</span> <span class="v">' + esc(d.pastor) + '</span></p>' : '') + (d.fill ? '<p class="ln n sub"><span class="k">채울 것</span> <span class="v">' + esc(d.fill) + '</span></p>' : '') +
+      '<p class="sm">' + esc(d.src) + (d.covers ? ' · 함께 정리: ' + esc(d.covers.join(', ')) : '') + '</p>' +
+      '<div class="mk" data-id="' + esc(d.id) + '" data-lab="' + (d.auto ? '지금대로|바꿈' : '예|아니오') + '|더 알아보고"><label><input type="radio" name="m-' + esc(d.id) + '" value="ok"><span>' + (d.auto ? '지금대로' : '예') + '</span></label><label><input type="radio" name="m-' + esc(d.id) + '" value="fix"><span>' + (d.auto ? '바꿈' : '아니오') + '</span></label><label><input type="radio" name="m-' + esc(d.id) + '" value="del"><span>더 알아보고</span></label><button type="button" class="clr">지움</button><textarea rows="1" placeholder="적을 칸(날짜, 이름, 다르게 할 내용)"></textarea></div></article>'));
+    o.push('</section>');
+  });
+  o.push('</main><dialog id="dlg"><h3 style="margin-top:0">결재 내보내기 · 불러오기</h3><textarea id="box" spellcheck="false"></textarea><p id="msg" class="sm" role="status"></p><p><button type="button" class="pr" id="cpy">글 복사</button> <button type="button" id="dwn">파일로 저장</button> <button type="button" id="imp">불러오기</button> <button type="button" id="rst">모두 지우기</button> <button type="button" id="cls">닫기</button></p></dialog>');
+  const js = JS_SCREEN.replace("'bo-review-'", "'bo-sign-'").replace('바이블 온유 감수 표시', '바이블 온유 대표 결재').replace("{fix:'고침 · 바꿈',del:'뺌 · 의논 필요'}", "{fix:'아니오 · 바꿈',del:'더 알아보고'}").replace('== 그대로 · 지금대로 ==', '== 예 · 지금대로 ==').replace("'그대로':'ok',", "'예':'ok','아니오':'fix','더 알아보고':'del','그대로':'ok',").replace('(그대로|고침|뺌|', '(예|아니오|더 알아보고|그대로|고침|뺌|').replace("'감수표시_'", "'대표결재_'");
+  return page('바이블 온유 · 대표 결재지', CSS_COMMON + CSS_SCREEN + '@media print{.mk textarea{border:0;border-bottom:1px solid #888;border-radius:0}.it{break-inside:avoid}}', o.join('\n'), js);
+}
+
 /* ───────── 7. 쓰기 ───────── */
 function itemsJson() {
   return JSON.stringify({ version: VERSION, note: '감수 자료의 항목 목록. node tools/make_review_pack.js 가 만든다. core=목회자가 표시하는 항목, src=그 글이 있는 곳', counts: COUNTS.map((c) => ({ name: c[0], got: c[1], expect: c[2], ok: c[3] })),
@@ -801,5 +855,7 @@ W('감수자료_인쇄용.html', printHtml());
 W('먼저볼30_인쇄용.html', first30PrintHtml());
 W('참고_장면전체글_인쇄용.html', refPrintHtml());
 W('항목목록.json', itemsJson());
+W('대표_결재지.md', signMd() + '\n');
+W('대표_결재지.html', signHtml());
 printCounts();
 console.log('만든 곳: docs/감수/ (README.md, 감수자료.html, 감수자료_인쇄용.html, 먼저볼30_인쇄용.html, 참고_장면전체글_인쇄용.html, md/시대01~10.md, 항목목록.json, 미해결_전체.md)');

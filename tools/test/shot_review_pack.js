@@ -61,12 +61,25 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '통과 ' : '실패 ') + m
   await p.locator('[id="OT-11·3D"]').scrollIntoViewIfNeeded();
   await p.screenshot({ path: path.join(dir, 'm6_3d.png') });
   ok(errs.length === 0, '화면 오류 없음' + (errs.length ? ': ' + errs.join(' / ') : ''));
+  /* 대표 결재지 */
+  const g = await ctx.newPage(); const gerr = []; g.on('pageerror', (e) => gerr.push(String(e)));
+  await g.goto('file://' + path.join(OUT, '대표_결재지.html'));
+  ok((await g.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 0, '결재지: 390 폭에서 옆으로 넘치지 않는다');
+  await g.screenshot({ path: path.join(dir, 'g1_top.png') });
+  await g.locator('[id="가1"] label:has(input[value=ok]) span').click(); await g.locator('[id="가1"] textarea').fill('시험: 11/20까지');
+  await g.locator('[id="라1"] label:has(input[value=fix]) span').click();
+  await g.locator('[id="가1"]').scrollIntoViewIfNeeded(); await g.screenshot({ path: path.join(dir, 'g2_marked.png') });
+  await g.reload(); await g.locator('#exp').click();
+  const gt = await g.locator('#box').inputValue();
+  ok(/\[가1\] 예 \| 시험: 11\/20까지/.test(gt) && /\[라1\] 바꿈/.test(gt) && /대표 결재/.test(gt), '결재지: 표시가 저장되고 내보낸 글에 들어 있다');
+  ok(gerr.length === 0, '결재지: 화면 오류 없음' + (gerr.length ? ': ' + gerr.join(' / ') : ''));
+  await g.close();
   /* 넓은 화면 */
   const w = await b.newPage({ viewport: { width: 1280, height: 800 } });
   await w.goto(url); await w.screenshot({ path: path.join(dir, 'w1_top.png') });
   /* 인쇄용 */
   const { execSync } = require('child_process');
-  for (const f of ['감수자료_인쇄용', '먼저볼30_인쇄용', '참고_장면전체글_인쇄용'].concat((process.argv[3] || '').split(',').filter(Boolean))) {
+  for (const f of ['감수자료_인쇄용', '먼저볼30_인쇄용', '참고_장면전체글_인쇄용', '대표_결재지'].concat((process.argv[3] || '').split(',').filter(Boolean))) {
     const q = await b.newPage();
     await q.goto('file://' + path.join(f.includes('/') ? ROOT : OUT, f + '.html'));
     const pdf = path.join(dir, path.basename(f) + '.pdf');
