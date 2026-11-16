@@ -100,7 +100,7 @@
     function meshesOf(objs) { var l = []; objs.forEach(function (o) { o.updateMatrixWorld(true); o.traverse(function (m) { if (m.isMesh) l.push(m); }); }); return l; }
     /* 둘레의 땅: 본문에 없으므로 바위와 떨기만. 아이들이 걷는 비탈에도 몇 개(재료 자리와 타임머신 둘레는 비워 둔다) */
     function clear(x, z) { return !(Math.abs(x) < 30 && z > -64 && z < 2) && !(x > -62 && x < 62 && z > -22 && z < 34) && Math.hypot(x - VS[0], z - VS[1]) > 34 && pathD(x, z) > 6; }
-    var deco = [], KEEP = [[-40, 4.5], [-18, -3.6], [4, -3.6], [2, 20], [9, 26]];
+    var deco = [], KEEP = [[-40, 4.5], [-33, -3.5], [4, -3.6], [2, 20], [9, 26]];
     function decoAt(o, x, z) { o.position.set(x, height(x, z) - 0.08, z); deco.push(o); }
     if (MO.rock) for (i = 0; i < 46; i++) { var ro = MO.rock(3700 + i); ro.scale.multiplyScalar(0.6 + R() * 1.5); var rx = -150 + R() * 300, rz = -150 + R() * 300; if (clear(rx, rz)) decoAt(ro, rx, rz); }
     if (MO.shrub) for (i = 0; i < 40; i++) { var sh = MO.shrub(370 + i), hx = -150 + R() * 300, hz = -150 + R() * 300; if (clear(hx, hz)) decoAt(sh, hx, hz); }
@@ -209,14 +209,13 @@
     elders.forEach(function (e, n) { e.home = [22 + (n % 3) * 1.3, -13 + Math.floor(n / 3) * 1.4]; e.front = [-3.75 + n * 1.5, -17.6]; });
     asaph.forEach(function (a, n) { a.home = [-17 + (n % 3) * 1.4, -12.5 + Math.floor(n / 3) * 1.5]; });
 
-    /* 짐승(1:6, 6:17): 이름을 정하지 않은 단순한 꼴. 처음에는 짐을 진 채 서쪽에 서 있고(1:6), 봉헌식 대목에서는 멀리 서 있는 몇 마리(6:17). 움직이지 않으므로 무리마다 한 덩어리로 */
-    var BC = ['#8A6A4A', '#6E5A48', '#C9B79A', '#E2D8C4', '#3E342C'], packM = std('#B9A27A'), beastM = BC.map(std);
-    function beast(s, ci, pack) {
+    /* 짐승(1:6, 6:17): 이름을 정하지 않은 단순한 꼴. 처음에는 돌아온 사람들이 데려온 짐승들이 짐 없이 서쪽 길 끝에 서 있고(1:6, 2:66-67), 봉헌식 대목에서는 멀리 서 있는 몇 마리(6:17). 움직이지 않으므로 무리마다 한 덩어리로 */
+    var BC = ['#8A6A4A', '#6E5A48', '#C9B79A', '#E2D8C4', '#3E342C'], beastM = BC.map(std);
+    function beast(s, ci) {
       var gr = new T.Group(), m = beastM[ci];
       var bd2 = new T.Mesh(new T.BoxGeometry(0.5 * s, 0.48 * s, 1.05 * s), m); bd2.position.y = 0.72 * s; gr.add(bd2);
       var hd = new T.Mesh(new T.BoxGeometry(0.28 * s, 0.3 * s, 0.42 * s), m); hd.position.set(0, 0.95 * s, 0.66 * s); gr.add(hd);
       [[-0.17, 0.36], [0.17, 0.36], [-0.17, -0.36], [0.17, -0.36]].forEach(function (q) { var lg = new T.Mesh(new T.BoxGeometry(0.11 * s, 0.5 * s, 0.11 * s), m); lg.position.set(q[0] * s, 0.25 * s, q[1] * s); gr.add(lg); });
-      if (pack) { var pk = new T.Mesh(new T.SphereGeometry(0.42 * s, 6, 5), packM); pk.scale.set(1.25, 0.6, 0.9); pk.position.y = 1.06 * s; gr.add(pk); }
       return gr;
     }
     var BSPEC = [[1.5, 0], [1.4, 1], [1.5, 0], [1.3, 1], [1.1, 2], [1.15, 2], [1.1, 3], [1.2, 2], [0.7, 3], [0.7, 3], [0.65, 3], [0.7, 2], [0.7, 3], [0.65, 3], [1.0, 4], [1.0, 4]];
@@ -279,7 +278,7 @@
       camp.visible = p === 'work' || cere; herd.visible = p === 'dedic';
       if (early) {
         /* 3:8-10: 감독하는 레위 사람들과 기초를 놓는 건축자들. 올라온 사람들은 둘레에 */
-        builders.forEach(function (b, n) { if (n >= 2) at(b, [-2.2, -4.6, -11.2, 14.8][n - 2], [FRONT + 1.5, FRONT + 1.5, -29, -27][n - 2], n >= 4 ? WEST : NORTH); else at(b, CARRY_A[0], CARRY_A[1], WEST); });
+        builders.forEach(function (b, n) { if (n >= 2) at(b, [-2.2, -4.6, -11.2, 16.6][n - 2], [FRONT + 1.5, FRONT + 1.5, -29, -25.1][n - 2], n >= 4 ? WEST : NORTH); else at(b, CARRY_A[0], CARRY_A[1], WEST); });
         overseers.forEach(function (o, n) { at(o, 6.5 + n * 1.5, -20.6 + (n % 2) * 0.8, NORTH + 0.25); });
         at(zerub, -11, -20.8, NORTH - 0.5); at(jeshua, -9.6, -20.4, NORTH - 0.5);
         crowd.forEach(function (o) { at(o, o.home[0], o.home[1], o.homeRy); });
@@ -348,7 +347,7 @@
       },
       P: { start: [2, 20], machine: [9, 26], machineRot: -0.4,
         /* 재료가 놓인 곳(quests[i].found): 짐승들이 다니는 길가(털) / 짐승들이 선 곳 아래 비탈(말총) / 전 터 아래 비탈 앞쪽(잔돌) */
-        parts: [[-40, 4.5], [-18, -3.6], [4, -3.6]], lookSpot: [4, -3.6],
+        parts: [[-40, 4.5], [-33, -3.5], [4, -3.6]], lookSpot: [4, -3.6],
         look: { focus: [0, FRONT - 1], mid: [0, F[1]], dy: 1.5, backE: 9, upE: 6 } },
       eventCam: function (i) {
         if (i === 2) return { pos: [VS[0] + 6, VY + 17, VS[1] - 40], look: [VS[0], VY + 0.6, VS[1] + 1.5] };   /* 타임머신 창 너머로, 멀리서 */

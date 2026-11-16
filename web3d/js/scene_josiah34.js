@@ -11,13 +11,16 @@
  *  - 22:14-20: 다섯 사람이 둘째 구역의 집 앞에 서 있다(멀리서, 집 바깥만). 훌다의 모습과 훌다가 전한 말씀은 그림·소리로 만들지 않는다(대목 글과 성경책으로만). 사람들이 왕에게 돌아온다(22:20).
  *  - 23:1-3: 장로들(23:1, 앞줄)과 어린 사람부터 나이 든 사람까지 모든 백성(23:2)이 남쪽 길 아래 빈 땅에서 왕과 함께 가운데 층계로 올라가 뜰에 선다.
  *    왕이 맨 앞에서 책을 들고 올라가 대 위에 선다(23:2-3). 다섯 사람(힐기야·사반 등)의 자리는 23:1-3에 없으므로 따로 세우지 않는다.
+ *    대목은 행렬이 층계를 오르는 데서 시작한다(모였던 자리는 본문에 없어 그리지 않음).
  *    백성은 서 있다(절하거나 손을 드는 모습은 본문에 없어 그리지 않는다). 23:4 뒤의 일(우상을 헐어 버림)은 넣지 않는다.
  *  - 하나님의 형상·빛·음성 없음. 왕과 사람들의 얼굴을 가까이 보이지 않는다.
  * 감수가 필요한 설정: 전의 생김새·크기·높은 터와 층계, 뜰과 낮은 담, 비계와 사다리, 대의 생김새와 자리(전 문 앞, 민기둥 하나 곁), 왕이 있는 곳의 생김새와 자리(기둥과 지붕),
  *   둘째 구역 집의 생김새와 자리, 책의 꼴(작은 네모), 요시야의 생김새와 옷 색(tools/blender/people/josiah.json: 수염 없는 젊은 어른, 푸른 겉옷, 왕관 없음),
  *   힐기야·사반·일꾼·백성의 옷(무리 모형), 사람 수(일꾼 11, 백성 64), 사반이 책을 들고 다니는 것, 언약 대목의 따뜻한 빛(날씨와 때는 본문에 없음), 길을 오가는 사람들,
  *   아히감·악볼·아사야가 처음부터 왕 곁에 선 것, 힐기야가 처음부터 뜰 어귀에 있다가 22:12 때 길로 왕에게 걸어오는 것, 문지기의 자리,
- *   일꾼들이 사반이 오기 전(22:3)부터 일하고 있는 것(22:5의 일하는 사람으로 읽음), 백성이 모였다가 올라가기 시작한 자리(남쪽 빈 땅)와 줄지어 오르는 모습, 왕이 맨 앞에 선 것.
+ *   일꾼들이 사반이 오기 전(22:3)부터 일하고 있는 것(22:5의 일하는 사람으로 읽음), 백성이 줄지어 층계를 오르는 모습, 왕이 맨 앞에 선 것,
+ *   언약 대목에 다섯 사람을 따로 세우지 않은 것, 3D에서도 관문 뒤에 훌다 동행 문답이 나오는 것(규칙서 13.3, 아이들은 훌다의 집에 가지 않는다),
+ *   재료 근거(납작한 돌 22:1, 마른 흙덩이 22:4, 조약돌 23:2)가 자리를 말하는 절이라는 것.
  */
 (function () {
   'use strict';
@@ -188,8 +191,8 @@
       if (!o) o = PR.soldier(i, '#7A6A54', null);
       o.group.rotation.order = 'YXZ'; scene.add(o.group); o.k = i;
       o.home = [-6.65 + cl * 1.9 + (hash(i, 1) - 0.5) * 0.6, -39.6 + row * 1.75 + (hash(i, 2) - 0.5) * 0.4];
-      o.from = [o.home[0] * 1.15 + (hash(i, 3) - 0.5) * 0.5, -1 + row * 1.5 + (hash(i, 4) - 0.5) * 0.4];   /* 23:2 남쪽 길 아래 빈 땅에 모였다가(앞줄이 장로) */
-      o.sx = o.home[0] * 0.85; o.wait = row * 0.8 + cl * 0.1 + 0.5;                                                     /* 가운데 층계(너비 ±6)로 줄지어 올라간다 */
+      o.from = [o.home[0] * 0.85 + (hash(i, 3) - 0.5) * 0.3, EDGE_Z + 0.2 + row * 1.9 + (hash(i, 4) - 0.5) * 0.3];   /* 23:2 왕을 앞세우고 줄지어 층계를 올라가는 행렬(앞줄이 장로). 모였던 자리는 본문에 없어 그리지 않는다 */
+      o.sx = o.home[0] * 0.85; o.wait = row * 0.35 + cl * 0.06 + 0.3;                                                     /* 가운데 층계(너비 ±6)로 줄지어 올라간다 */
       if (i >= 56) { o.walkA = -44 + hash(i, 5) * 20; o.walkB = 4 + hash(i, 6) * 20; o.walkZ = ROAD_Z - 0.7 + (hash(i, 7) - 0.5) * 1.8; o.walkS = 1.3 + hash(i, 8) * 0.7; o.walkP = hash(i, 9) * 60; }
       crowd.push(o);
     }
@@ -205,8 +208,8 @@
     var LEAVE = FIVE.map(function (o, n) { return mkPath([GATHER[n], [26 - n * 0.4, ROAD_Z + (n % 2 ? 0.7 : -0.5)], [-40, ROAD_Z + (n % 2 ? 0.7 : -0.5)], [-50, 1 + n]]); });
     var BACK = FIVE.map(function (o, n) { return mkPath([[-10 - n * 1.5, ROAD_Z + (n % 2 ? 0.7 : -0.5)], [26, ROAD_Z + (n % 2 ? 0.7 : -0.5)], GATHER[n]]); });
     var HIL_IN = mkPath([[19, -3.6], GATHER[0]]);
-    crowd.forEach(function (o) { o.P = mkPath([o.from, [o.sx, ROAD_Z - 1], [o.sx, EDGE_Z - 0.6], o.home]); });
-    var KPROC = mkPath([[0.4, -2.6], [0.4, ROAD_Z - 1], [0.4, EDGE_Z - 0.6], [0, DAIS[1] + 2.4]]), KSP = 2.0;   /* 23:2 왕이 맨 앞에서 올라가 대에 선다 */
+    crowd.forEach(function (o) { o.P = mkPath([o.from, [o.sx, EDGE_Z - 0.6], o.home]); });
+    var KPROC = mkPath([[0.4, EDGE_Z - 1.6], [0.2, DAIS[1] + 3.2], [0, DAIS[1]]]), KSP = 2.4;   /* 23:2 왕이 맨 앞에서 올라가 대에 선다 */
 
     var phase = 'work', pt = 0, tod = 0, todWant = 0, lean = 0, wt = 0;
     var ca = new T.Color(), cb = new T.Color();
@@ -261,9 +264,9 @@
         return { who: 'hyu', text: '이 길 위에서만 다니자.' };
       },
       P: { start: [0, 17], machine: [6, 24], machineRot: -0.4,
-        /* 재료가 놓인 곳(quests[i].found): 전에서 멀리 떨어진 서쪽 집들 앞 땅 / 여호와의 전이 올려다보이는 비탈 아래 / 층계 동쪽, 길 아래 빈 땅
+        /* 재료가 놓인 곳(quests[i].found): 전에서 멀리 떨어진 남북 길의 남쪽 끝 길가 / 여호와의 전이 올려다보이는 비탈 아래 / 층계 동쪽, 길 아래 빈 땅
            (재료 3은 사반·다섯 사람이 다니는 길과 층계에서 6 넘게 떨어진 곳) */
-        parts: [[-31, 24], [-21, -1.2], [14, 5]], lookSpot: [14, 5],
+        parts: [[-5.5, 29], [-21, -1.2], [14, 5]], lookSpot: [14, 5],
         look: { focus: [0, FRONT_Z], mid: [0, -30], dy: 3.5, backE: 9, upE: 6.5 } },
       eventCam: function (i) {
         if (i === 2) return camFollow(shaphan, 15, 5.6);                                                    /* 책이 건네지고, 사반이 왕에게 간다 */
@@ -334,7 +337,7 @@
           if (pt > 11) FIVE.forEach(function (o, n) { walk(o, LEAVE[n], Math.max(0, (pt - 11 - n * 0.5) * 3.0), -Math.PI / 2, dt); });   /* 22:14 떠난다 */
         }
         if (phase === 'report') FIVE.forEach(function (o, n) { walk(o, BACK[n], pt * 3.4, Math.PI / 2, dt); });
-        if (cov) { var ks = pt * KSP; if (ks < KPROC.tot) { var kw = pathAt(KPROC, ks); kingAt(kw[0], kw[1], kw[2], 0); } else kingAt(DAIS[0], DAIS[1], 0, DAIS_H); }   /* 23:3 대 위에 선다 */
+        if (cov) { var ks = pt * KSP, kw = pathAt(KPROC, ks); kingAt(kw[0], kw[1], ks < KPROC.tot ? kw[2] : 0, DAIS_H * sm(KPROC.tot - 3.2, KPROC.tot - 0.4, ks)); }   /* 23:3 대 위에 선다 */
         if (king.update) king.update(dt, phase === 'covenant' && pt * KSP < KPROC.tot);
         keepers.forEach(function (o) { if (o.update) o.update(dt, 0); });
         placeBook();
