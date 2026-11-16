@@ -950,9 +950,10 @@
     var c = SC.close[S.tier], kids_ = [
       el('div', { class: 'q-kicker', text: '탐험을 마치며' }),
       el('p', { class: 'q-prompt', text: BO3D.story ? '타임머신을 타고 떠나면 탐험 일지에 말씀 카드가 들어와요.' : '탐험 일지에 말씀 카드가 들어왔어요.' }),
-      el('div', { class: 'vcards' }, SC.cards.map(function (cd) {
-        return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }), el('div', { class: 'm', text: SC.title + ' · 성경책에서 직접 읽어 보세요' }));
-      }))];
+      el('div', { class: 'vcards fin' }, SC.cards.map(function (cd) {   /* 이야기 카드 마침과 같이: 카드는 작게, "성경책에서 직접"은 한 번만(작은 화면 스크롤 줄이기) */
+        return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }));
+      })),
+      el('p', { class: 'vcards-m', text: '말씀은 성경책에서 직접 찾아 읽어 보세요.' })];
     if (c.kind === 'prayer') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '한 문장 기도' }), el('p', { text: c.text })));
     if (c.kind === 'practice') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '이번 주 실천 한 가지' }), el('p', { text: c.text })));
     if (c.kind === 'note') {

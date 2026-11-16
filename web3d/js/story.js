@@ -230,9 +230,10 @@
         doctor(e.intro),
         el('h3', { class: 'ot-h3', text: '이 시대에서 볼 장면' }),
         el('div', { class: 'found-list' }, e.scenes.map(function (id) { return el('div', { class: 'it' }, el('span', { text: sc(id).title + ' ' }), refChip(sc(id).ref)); })),
-        el('h3', { class: 'ot-h3', text: '장면 사이에 성경이 기록한 곳' }),
-        el('p', { class: 'ot-soft', text: '이 탐험에서는 장면으로 보지 않지만, 성경은 이 사이에도 이야기를 기록했어요. 성경책에서 직접 찾아 읽어 보세요.' }),
-        el('div', { class: 'ot-refs' }, e.between.map(function (r) { return el('span', { class: 'ref', text: U.bookName(r) }); }))],
+        /* 장면 사이의 기록은 접어 둔다(작은 화면에서 시대 안내가 길어 스크롤이 컸다). 펼치면 그대로 보인다 */
+        e.between && e.between.length ? el('details', { class: 'closefold betweenfold' }, el('summary', { text: '장면 사이에 성경이 기록한 곳 (' + e.between.length + '곳) 펼치기' }),
+          el('p', { class: 'ot-soft', text: '이 탐험에서는 장면으로 보지 않지만, 성경은 이 사이에도 이야기를 기록했어요. 성경책에서 직접 찾아 읽어 보세요.' }),
+          el('div', { class: 'ot-refs' }, e.between.map(function (r) { return el('span', { class: 'ref', text: U.bookName(r) }); }))) : null],
       [btn('지도로', function () { openMap(n); }, 'plain'), btn('첫 장면으로', function () { openScene(e.scenes[0]); })]);
   }
 

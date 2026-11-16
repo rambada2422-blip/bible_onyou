@@ -2,7 +2,7 @@
 //  ① 탐지기 물음을 한 번 엇나간 뒤 맞히면 부모·교사 화면용 기록(OT-NN:tN:part0)이 남는지
 //  ② 사진기 단추로 찍으면 이 기기의 사진 도감에 그 장면 사진이 남고, 탐험 일지 "사진 도감"에 보이는지
 //  ③ 8~10세에서 이 시험이 지나가는 3D 시트(도착 안내·탐지기 물음·재료 패널·도감)와 아지트, 3D에서 나온 시대 지도에 읽어 주기 단추가 있는지
-//     지켜보기 대목(첫·마지막)과 첫 관문 시트도 본다(남은 재료는 건너뛴다). 3D 마침 시트는 지나가지 않는다(walk3dScene.js가 지나간다)
+//     지켜보기 대목(첫·마지막), 첫 관문, 관문을 다 푼 뒤의 3D 마침 시트도 본다(남은 재료는 건너뛴다)
 //  ④ 폭 320·360·390·430에서 처음 화면·위쪽 안내·말풍선·탐지기 물음(답하기 전·후)·재료 패널·도감·아지트(깃발 색 12개)가 옆으로 넘치거나
 //     화면 밖으로 나가지 않고, 단추가 44px 이상이고, 단추 글이 단추 밖으로 넘치지 않고, 위쪽 안내·거리 단추와 말풍선이 겹치지 않는지.
 //     처음 화면과 걷는 화면은 글자 크기 "아주 크게"로도 본다. 시트가 스크롤해야 하는지는 문제로 치지 않고 길이만 적는다.
@@ -201,6 +201,26 @@ const errs = [], probs = [], notes = [];
   await p.waitForSelector('.overlay3:not([hidden]) .q-kicker', { timeout: 20000 });
   need(await p.evaluate(() => /관문/.test(document.querySelector('.overlay3 .q-kicker').textContent)), '관문 시트가 열리지 않음');
   await widths('관문');
+  // 관문을 모두 풀고(walk3dScene.js와 같은 풀이) 3D 마침 시트를 네 폭으로 본다
+  const pickIn = (lb) => p.evaluate((l) => { const o = [...document.querySelectorAll('.overlay3 .opt')].find((x) => x.textContent.trim().endsWith(l.trim())); if (o) o.click(); return !!o; }, lb);
+  const readIt = async () => { await p.click('.overlay3 .btn:has-text("찾아서 읽었어요")'); await p.waitForTimeout(200); };
+  const gates = D.gates[tier];
+  for (let g = 0; g < gates.length; g++) {
+    if (g > 0) await p.waitForSelector('.overlay3:not([hidden]) .q-kicker', { timeout: 20000 });
+    const gq = gates[g];
+    if (gq.type === 'choice') await pickIn(gq.options.find((o) => o.ok).label);
+    else if (gq.type === 'find') { await readIt(); await pickIn(gq.confirm.options.find((o) => o.ok).label); }
+    else if (gq.type === 'order') { for (const it of gq.items) await pickIn(it); }
+    else if (gq.type === 'multi') { await readIt(); for (const o of gq.confirm.options.filter((x) => x.ok)) await pickIn(o.label); await p.click('.overlay3 .btn:has-text("다 골랐어요")'); }
+    else if (gq.type === 'match') { for (const pr of gq.pairs) { await p.evaluate(([r, t]) => { [...document.querySelectorAll('.overlay3 .match3 .mref')].find((x) => x.textContent.trim().endsWith(r)).click(); [...document.querySelectorAll('.overlay3 .match3 .mtext')].find((x) => x.textContent.trim() === t.trim()).click(); }, [pr.ref, pr.text]); await p.waitForTimeout(80); } }
+    else if (gq.type === 'findref') { const cv = gq.accept[0].split(':'); const ins = await p.$$('.overlay3 .refin input'); await ins[0].fill(cv[0]); await ins[1].fill(cv[1]); await p.click('.overlay3 .refin .btn'); }
+    await p.waitForTimeout(300);
+    need(await p.evaluate(() => !!document.querySelector('.overlay3 .note.good')), '관문 ' + (g + 1) + '(' + gq.type + ')을 풀지 못함');
+    await p.click('.overlay3 .sheet-foot .btn.onpaper'); await p.waitForTimeout(400);
+  }
+  await segs();
+  await p.waitForSelector('text=계속 탐험하기', { timeout: 20000 });
+  await widths('3D 마침');
 
   // ② 탐험 일지 "사진 도감"에 이 장면 사진이 보이는지(3D에서 나와 시대 지도로)
   await p.evaluate(() => BO3D.story.openMap()); await p.waitForTimeout(400);   /* 3D에서 시대 지도로 나오는 길(걸린 시간이 여기서 멈춘다) */
