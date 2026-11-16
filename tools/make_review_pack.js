@@ -35,6 +35,11 @@ const CLASS = fs.existsSync(classPath) ? JSON.parse(fs.readFileSync(classPath, '
 /* 검증자 항목이 가리키는 게임 글의 자리(하위 에이전트가 지금 자료에서 찾아 적은 것). 없으면 붙이지 않는다 */
 const atPath = path.join(OUT, '미해결_자리.json');
 const AT = fs.existsSync(atPath) ? JSON.parse(fs.readFileSync(atPath, 'utf8')) : {};
+/* 화면 사진(tools/test/make_review_images.py가 만든 것). 있으면 싣고, 없으면 글만 싣는다 */
+const IMG_DIR = path.join(OUT, '화면');
+const hasImg = (f) => fs.existsSync(path.join(IMG_DIR, f));
+const imgLine = (f, cap) => ({ k: cap, v: '', g: false, img: f });
+let MD_IMG_PREFIX = '../화면/';
 const WHO = { choeon: '최온', hyu: '휴', onwoo: '온우', doctor: '최현 박사', narr: '해설' };
 const TIER = { t1: '8~10세', t2: '11~13세', t3: '14~19세' };
 const TIERS = ['t1', 't2', 't3'];
@@ -214,8 +219,10 @@ add({ id: '공통·읽어주기', group: 'rule', kind: 'common', label: '공통'
     const j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
     lines.push(G('', j.note, {}));
     const sw = Object.keys(CN).filter((k) => j.colors && j.colors[k]).map((k) => CN[k] + ' ' + j.colors[k]).join(' · ');
+    if (hasImg('인물_' + f.replace('.json', '.jpg'))) lines.push(imgLine('인물_' + f.replace('.json', '.jpg'), '게임에 나오는 모습(앞·옆·뒤)'));
     lines.push(N('색', sw + (j.beard ? ' · 수염 모양 ' + ({ full: '긴 수염', short: '짧은 수염', none: '없음' }[j.beard] || j.beard) : ''), { sub: true, swatch: true }));
   });
+  [['moses', '모세'], ['joshua', '여호수아'], ['priest', '제사장']].forEach(([f, nm]) => { if (hasImg('인물_' + f + '.jpg')) { lines.push(N('', nm + ' (설정 글 없이 먼저 만든 인물)')); lines.push(imgLine('인물_' + f + '.jpg', nm + ': 게임에 나오는 모습')); } });
   add({ id: '공통·인물', group: 'rule', kind: 'common', label: '공통', title: '3D 인물의 옷 색·수염·소품 (본문에 없는 생김새)', refs: 'tools/blender/people', core: true, lines });
 })();
 (function () {
@@ -244,6 +251,11 @@ add({ id: '공통·읽어주기', group: 'rule', kind: 'common', label: '공통'
   L.push(N('이름 고르기 앞에 보여 주는 배경(시범판 자료 EX-00. 3D 게임은 이 가운데 넷째 대목을 씀)', '', { head: true })); codeLines(koStrings(slice(c2, "'EX-00': {", "'EX-01': {"))).forEach((x) => L.push(x));
   add({ id: '추리·요단강', group: 'rule', kind: 'common', label: '시대 추리', title: '요단 강 시대 추리 (이름을 잘못 넣으면 가는 곳)', refs: '수 3:1-17, 출 2:23-25, 3:10', core: true, fold: true, lines: L });
 })();
+
+/* 대표 결재 자료 가운데 목사님께 여쭐 것으로 표시된 것(pastorItem)은 감수 자료의 표시 항목으로도 싣는다 */
+const SIGN = JSON.parse(fs.readFileSync(path.join(OUT, '대표_결재_자료.json'), 'utf8'));
+SIGN.decisions.filter((d) => d.pastorItem).forEach((d) => add({ id: '여쭘·' + d.id, group: 'rule', kind: 'common', label: '대표가 여쭙는 것', title: d.pastor, refs: '대표 결재지 ' + d.id, core: true, askMarks: true,
+  lines: [N('배경', d.q), N('지금', d.now), N('대표에게 드린 추천', d.rec + ' — ' + d.why)] }));
 
 const eraName = {};
 erasDoc.eras.forEach((e) => { eraName[e.era] = e.name; });
@@ -339,6 +351,8 @@ function sceneItems(d) {
       const c3 = rd('web3d/js/content3d.js');
       codeLines(koStrings(c3.slice(0, c3.indexOf('  jordan: {')))).forEach((x) => scr.push(x));
     }
+    const pics = [1, 2, 3].map((k) => sid + '_' + k + '.jpg').filter(hasImg);
+    if (pics.length) { scr.push(N('화면 사진(사건을 지켜보는 동안의 화면. 컴퓨터에서 휴대폰 크기로 찍음)', '', { head: true })); pics.forEach((f, i) => scr.push(imgLine(f, sid + ' 지켜보기 화면 ' + (i + 1)))); }
     scr.push(N('3D 화면에만 나오는 글(도착 글, 사진 도감의 이름·설명, 안내)', '', { head: true }));
     codeLines(s3.strings).forEach((x) => scr.push(x));
   }
@@ -463,7 +477,7 @@ const RULE_N = RULE_ITEMS.length;
 const pastorView = (it) => it.kind !== 'open' || it.core;
 const refTxt = (l) => (l.ref ? ' (' + l.ref + ')' : '');
 /* 표시 칸의 이름: 검증자의 물음은 "지금대로 / 바꿈 / 의논", 나머지는 "그대로 / 고침 / 뺌" */
-const marks = (it) => (it.kind === 'open' ? ['지금대로', '바꿈', '의논 필요'] : ['그대로', '고침', '뺌']);
+const marks = (it) => (it.kind === 'open' || it.askMarks ? ['지금대로', '바꿈', '의논 필요'] : ['그대로', '고침', '뺌']);
 function mdItem(it) {
   const o = [];
   o.push('#### ' + it.id + ' · ' + it.label + (it.pri ? ' · ★먼저 볼 ' + it.pri : '') + (it.core ? '' : ' · 참고'));
@@ -472,6 +486,7 @@ function mdItem(it) {
   it.lines.forEach((l) => {
     if (l.hide) return;
     if (l.head) { o.push('- **' + l.k + '**' + refTxt(l)); return; }
+    if (l.img) { o.push('  - ![' + l.k + '](' + MD_IMG_PREFIX + l.img + ')'); return; }
     o.push((l.sub ? '  - ' : '- ') + (l.k ? l.k + ': ' : '') + l.v + refTxt(l));
   });
   if (it.core) { o.push(''); o.push('표시: ' + marks(it).map((x) => '☐ ' + x).join(' ') + ' 　적을 칸: '); }
@@ -508,7 +523,7 @@ const GUIDE = {
     '원칙(규칙) 항목에서는 **그대로 = 이 원칙에 동의, 고침 = 조건을 달아 동의, 뺌 = 이 방식은 쓰지 않는다**는 뜻입니다. 원칙에서 "뺌"이 나오면 그 원칙에 딸린 장면 항목은 보실 필요가 없습니다.',
     '휴대폰·컴퓨터에서는 `감수자료.html`을 열면 표시한 것이 그 기기에 저장되고, "내보내기"로 글로 뽑아 보내실 수 있습니다. 종이가 편하시면 `감수자료_인쇄용.html`을 인쇄해 주세요(전체는 A4 약 200쪽으로 많습니다. `먼저볼30_인쇄용.html`은 훨씬 짧습니다).',
     '성경 본문은 싣지 않았습니다(사용 허락 전). 장절을 보시고 성경책에서 확인해 주세요.',
-    '화면 사진은 아직 넣지 못했습니다. 3D 장면과 인물의 생김새는 글과 색 네모로만 실었으니, 직접 보셔야 판단되는 것은 "의논 필요"나 메모로 남겨 주세요(대표가 미리보기 화면을 보여 드릴 수 있습니다).'
+    '3D 장면과 인물은 화면 사진을 몇 장씩 실었습니다(컴퓨터에서 휴대폰 크기로 찍은 것). 움직임과 소리는 사진으로 알 수 없으니, 직접 보셔야 판단되는 것은 메모로 남겨 주세요(대표가 미리보기 화면을 보여 드릴 수 있습니다).'
   ],
   order: [
     '① **원칙과 공통 항목**: 여기서 방향이 정해집니다.',
@@ -621,6 +636,7 @@ function htmlLines(it) {
     if (l.hide) return '';
     const ref = l.ref ? ' <span class="rf">' + esc(l.ref) + '</span>' : '';
     if (l.head) return '<p class="hd">' + esc(l.k) + ref + '</p>';
+    if (l.img) return '<figure><img alt="' + esc(l.k) + '" loading="lazy" src="data:image/jpeg;base64,' + fs.readFileSync(path.join(IMG_DIR, l.img)).toString('base64') + '"><figcaption>' + esc(l.k) + '</figcaption></figure>';
     const cls = ['ln', l.sub ? 'sub' : '', l.g ? 'g' : 'n', l.t || '', l.opt || ''].filter(Boolean).join(' ');
     const v = l.swatch ? esc(l.v).replace(/#[0-9A-Fa-f]{6}/g, (c) => '<i class="sw" style="background:' + c + '"></i>') : (l.g ? esc(l.v) : inl(l.v));
     return '<p class="' + cls + '">' + (l.k ? '<span class="k">' + esc(l.k) + '</span> ' : '') + '<span class="v">' + v + '</span>' + ref + '</p>';
@@ -653,6 +669,7 @@ h1{font-size:1.45rem;margin:.2em 0}h2{font-size:1.25rem;margin:1.6em 0 .5em;padd
 .ln{margin:.3em 0}.ln.sub{margin-left:1em;font-size:.95em}.ln .k{color:var(--mut);font-size:.82em;margin-right:2px}
 .ln.g .v{font-weight:500}.ln.n .v{color:#3b4350}.ln.ok .k{color:var(--acc);font-weight:700}
 .sw{display:inline-block;width:1.1em;height:1.1em;border:1px solid #888;border-radius:3px;vertical-align:-.2em;margin:0 2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+figure{margin:.4em 0 .4em 1em;display:inline-block;vertical-align:top;max-width:calc(100% - 1em)}figure img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:6px;display:block}figcaption{font-size:.78em;color:var(--mut)}
 .hd{margin:.7em 0 .1em;font-weight:700;font-size:.9em;border-bottom:1px dashed var(--line)}
 table{border-collapse:collapse;width:100%;font-size:.92em}th,td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top}th{background:var(--soft)}
 code{background:var(--soft);padding:0 4px;border-radius:4px;font-size:.9em}
@@ -827,7 +844,6 @@ function refPrintHtml() {
 }
 
 /* ───────── 6.5 대표 결재지 ───────── */
-const SIGN = JSON.parse(fs.readFileSync(path.join(OUT, '대표_결재_자료.json'), 'utf8'));
 (function () {
   const covered = new Set();
   SIGN.decisions.forEach((d) => (d.covers || []).forEach((id) => { if (!byId[id]) throw new Error('결재 자료가 가리키는 항목이 없음: ' + id); covered.add(id); }));
@@ -888,7 +904,9 @@ function itemsJson() {
 }
 fs.mkdirSync(path.join(OUT, 'md'), { recursive: true });
 const W = (rel, s) => fs.writeFileSync(path.join(OUT, rel), s);
+MD_IMG_PREFIX = '화면/';
 W('README.md', readmeMd() + '\n');
+MD_IMG_PREFIX = '../화면/';
 erasDoc.eras.forEach((e) => W('md/시대' + String(e.era).padStart(2, '0') + '.md', eraMd(e) + '\n'));
 W('미해결_전체.md', unresolvedMd() + '\n');
 W('감수자료.html', screenHtml());
