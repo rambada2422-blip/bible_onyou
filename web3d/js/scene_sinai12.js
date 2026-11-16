@@ -9,10 +9,14 @@
  *  - 셋째 날 아침, 산 위에 우레와 번개와 빽빽한 구름이 있다(19:16). 모세가 백성을 이끌고 진에서 나오고 백성은 산기슭에 선다(19:17. 경계 바깥).
  *    연기가 가마 연기처럼 오르고 온 산이 크게 진동한다(19:18). 불(19:18)은 구름과 연기 속에서 비치는 붉은 빛으로만. 모양은 둥근 덩이뿐이다.
  *  - 말씀하시는 동안(20:1-17) 백성은 산기슭에 서 있다. 말씀은 글로만.
- *  - 백성이 떨며 멀리 선다(20:18, 20:21). 모세는 백성에게 말한 뒤(20:20) 짙은 어둠 쪽으로 가까이 간다(20:21). 연기 속으로 들어가면 보이지 않는다(안쪽은 보여 주지 않는다).
+ *  - 백성이 떨며 멀리 선다(20:18, 20:21). 모세는 백성에게 말한 뒤(20:20) 짙은 어둠 쪽으로 가까이 간다(20:21). 경계 바깥에서 멈춰 선 모습까지만 보여 준다(안쪽은 보여 주지 않는다).
+ *  - 셋째 날 아침(19:16): 진에 있던 백성이 먼저 떨고, 그 뒤 모세가 백성을 이끌고 진에서 나와 산기슭에 선다(19:17). 우레 소리는 대목 첫머리에만 낸다(19:19의 음성처럼 들리지 않게).
+ *  - 재료를 줍는 자리: 재료 1은 서쪽의 진(장막과 백성)을, 재료 2는 장로들 앞에 선 모세를 바라보며 줍는다(그 자리에서 보여 주는 대목 19:1-2, 19:3-8).
  *  - 산 위에는 구름·연기·불빛뿐이다. 산꼭대기의 모세, 돌판, 나팔과 부는 이, 천사, 경계를 넘는 사람은 없다.
  * 감수가 필요한 설정: 경계의 생김새(낮은 말뚝)와 산에서 떨어진 거리, 산의 높이와 모양, 진과 장막의 자리, 사람 수(일부만 그림), 장로의 수(일곱 사람만 그림), 모세의 생김새와 선 자리,
- *   구름·연기·불빛의 빛깔과 크기, 번개를 빛으로만 그린 것, 말씀하시는 대목에 소리를 내지 않은 것, 백성이 물러선 거리, 모세가 연기 속으로 들어가 보이지 않게 한 것, 빤 옷(19:14)을 그리지 않은 것.
+ *   구름·연기·불빛의 빛깔과 크기, 번개를 빛으로만 그린 것, 말씀하시는 대목에 소리를 내지 않은 것(번개 빛은 소리 없이 이어진다), 백성이 물러선 거리, 모세가 경계 바깥에서 멈춰 선 것, 빤 옷(19:14)을 그리지 않은 것,
+ *   장막의 모양과 다섯 가지 천 색, 백성의 차림(여인·아이·아기를 안은 사람, 자루·머리에 인 짐·지팡이), 모세의 지팡이, 마른 덤불과 바위(본문은 나무를 말하지 않는다), 셋째 날 전의 맑은 하늘과 햇빛,
+ *   폭풍 때 커지는 바람 소리, 경계를 산 사방에 같은 거리로 둔 것(19:12 "사방"), 경계 말뚝의 높이(약 1.7m).
  */
 (function () {
   'use strict';
@@ -64,7 +68,7 @@
     function near(x, z, p, r) { return Math.hypot(x - p[0], z - p[1]) < r; }
     function open(x, z) { return x > -26 && x < 64 && z > -70 && z < 24; }     /* 백성이 서고 지나는 곳, 아이들이 다니는 곳은 비워 둔다 */
     var statics = [];
-    if (MO.rock) for (i = 0; i < 46; i++) { var ro = MO.rock(1200 + i); ro.scale.multiplyScalar(0.5 + R() * 1.5); var rx = -150 + R() * 300, rz = -150 + R() * 220; if (near(rx, rz, CAMP, CAMP_R + 6) || open(rx, rz) || (rx > 20 && rz > 20 && rz < 44)) continue; put(ro, rx, rz, -0.1); }
+    if (MO.rock) for (i = 0; i < 46; i++) { var ro = MO.rock(1200 + i); ro.scale.multiplyScalar(0.5 + R() * 1.5); var rx = -150 + R() * 300, rz = -150 + R() * 220; if (near(rx, rz, CAMP, CAMP_R + 6) || open(rx, rz) || (rx > 20 && rz > 20 && rz < 44) || height(rx, rz) > 3) continue; put(ro, rx, rz, -0.1); }
     if (MO.shrub) for (i = 0; i < 20; i++) { var sh = MO.shrub(120 + i), hx = -140 + R() * 280, hz = -60 + R() * 150; if (near(hx, hz, CAMP, CAMP_R + 6) || open(hx, hz) || (hx > 20 && hz > 20 && hz < 44)) continue; put(sh, hx, hz, -0.05); }
     /* 산 앞에 친 진의 장막들(19:2). 장막의 천 재질은 다섯 가지를 함께 쓴다(그리기 호출을 줄인다) */
     var tentMat = {};
@@ -77,7 +81,7 @@
     scene.add(PR.mergeStatic(statics));
     /* 산 둘레의 경계(19:12, 19:23): 낮은 말뚝을 띄엄띄엄. 그 말씀이 나오는 대목부터 보인다 */
     var stakeList = [];
-    for (i = -31; i <= 31; i++) { var sa = i * 0.04, sx = PEAK[0] + Math.sin(sa) * BR, sz = PEAK[1] + Math.cos(sa) * BR, stq = PA.stake ? PA.stake() : new T.Group(); stq.position.set(sx, height(sx, sz), sz); stakeList.push(stq); }
+    for (i = 0; i < 158; i++) { var sa = i / 158 * 6.2832, sx = PEAK[0] + Math.sin(sa) * BR, sz = PEAK[1] + Math.cos(sa) * BR, stq = PA.stake ? PA.stake() : new T.Group(); stq.scale.set(1.3, 1.7, 1.3); stq.position.set(sx, height(sx, sz), sz); stakeList.push(stq); }   /* 산 사방(19:12) */
     var stakes = PR.mergeStatic(stakeList); stakes.visible = false; scene.add(stakes);
 
     /* 산 위의 빽빽한 구름(19:16), 산에 자욱한 연기와 가마 연기처럼 오르는 연기(19:18): 둥근 덩이를 한 번에 그린다. 그림자 없음 */
@@ -126,7 +130,7 @@
 
     var phase = 'idle', evT = 0, prevT = 0, storm = 0, stormWant = 0, cloudK = 0, cloudWant = 0, smokeK = 0, smokeWant = 0, fireK = 0, fireWant = 0;
     var mode = 'home', meet = false, lookAtMoses = false, mosesTo = null, mosesWalk = false, flash = 0, nextFlash = 99, windOn = -1, ca = new T.Color(), cb = new T.Color();
-    var M_FOOT = [FOOT[0], FOOT[1] - 3.2], M_FAR = [FAR[0], FAR[1] - 5], M_DARK = [9, -108], HIDE_Z = -93;
+    var M_FOOT = [FOOT[0], FOOT[1] - 3.2], M_NEAR = [10, -55.8];   /* 20:21: 짙은 어둠 쪽으로 가까이 가되 경계(산꼭대기에서 BR) 바깥에서 멈춘다 */
     function applySky() {
       var f = Math.min(1, flash) * (calm ? 0.3 : 1);
       ca.set('#F1DCB2'); cb.set('#4A4852'); ca.lerp(cb, storm); cb.set('#C9CEE6'); ca.lerp(cb, f * 0.55); scene.background.copy(ca); scene.fog.color.copy(ca);
@@ -147,9 +151,9 @@
       if (p === 'elders') { meet = true; }                                                              /* 19:7 */
       if (p === 'ready') { mode = 'gather'; lookAtMoses = true; }                                       /* 19:14-15: 모세가 백성에게 이른다 */
       if (p === 'idle' || p === 'camp' || p === 'elders' || p === 'ready') { setWeather(0); snapAll(); }
-      if (p === 'third') { setWeather(0); mode = 'home'; snapAll(); stormWant = 1; cloudWant = 1; mode = 'foot'; mosesTo = M_FOOT; nextFlash = 0.3; }   /* 19:16-18 */
+      if (p === 'third') { setWeather(0); mode = 'home'; snapAll(); stormWant = 1; cloudWant = 1; nextFlash = 0.3; }   /* 19:16: 진에 있던 백성이 먼저 떤다. 2.5초 뒤 산기슭으로(update) */
       if (p === 'words1' || p === 'words2') { setWeather(1); mode = 'foot'; snapAll(); setAt(moses, M_FOOT); moses.group.rotation.y = Math.PI; nextFlash = 5; }   /* 20:1-17 */
-      if (p === 'afar') { setWeather(1); mode = 'foot'; snapAll(); mode = 'far'; setAt(moses, M_FAR); moses.group.rotation.y = 0; nextFlash = 0.5; }              /* 20:18-21 */
+      if (p === 'afar') { setWeather(1); mode = 'foot'; snapAll(); mode = 'far'; setAt(moses, M_FOOT); moses.group.rotation.y = 0; nextFlash = 0.5; }             /* 20:18-21: 백성은 뒤로 물러서고 모세는 그 앞에 남는다 */
     }
     function at(t) { return prevT < t && evT >= t; }
     function thunder(v) { if (FX && FX.audio) FX.audio.rumble(2.4, v); }
@@ -166,13 +170,14 @@
       id: 'OT-12', scene: scene, sun: sun, sunOff: [-32, 50, 28],
       height: height, walkable: walkable,
       edge: function (x, z) {
-        if (z < -12) return { who: 'onwoo', text: '산 쪽으로는 더 가지 말자. 산 둘레에는 넘지 말아야 할 경계가 있어.' };
-        if (x < 24) return { who: 'hyu', text: '장막들 안쪽으로는 들어가지 말자. 우리는 진 가장자리에서 지켜보는 사람이야.' };
+        if (z < -12) return { who: 'onwoo', text: '산 쪽으로는 더 가지 말자. 우리는 진 가장자리에서 지켜보는 사람이야.' };
+        if (x < 24) return { who: 'hyu', text: z > 24 ? '장막들 안쪽으로는 들어가지 말자. 우리는 진 가장자리에서 지켜보는 사람이야.' : '사람들이 모인 쪽으로는 들어가지 말자. 우리는 진 가장자리에서 지켜보는 사람이야.' };
         return { who: 'hyu', text: '진에서 너무 멀리 가지는 말자.' };
       },
-      P: { start: [46, 14], machine: [53, 20], machineRot: -1.2,
-        /* 재료가 놓인 곳(quests[i].found): 진의 가장자리(산에서 먼 쪽) / 진 바깥의 광야 쪽 / 산이 바라보이는 진 가장자리(경계에서 먼 곳) */
-        parts: [[40, 34], [57, 2], [30, -8]], lookSpot: [30, -8],
+      P: { start: [58, 22], machine: [55, 31], machineRot: -1.2,
+        /* 재료가 놓인 곳(quests[i].found): 서쪽의 진(장막과 백성)이 바라보이는 빈 땅 / 장로들 앞의 모세가 바라보이는 진 가장자리 / 산이 바라보이는 진 가장자리(산에서 먼 곳).
+           재료를 주울 때 화면은 걸어온 쪽을 보므로, 재료 1은 진 쪽으로, 재료 2는 모세 쪽으로 걸어가며 줍게 둔다 */
+        parts: [[34, 18], [25, 9], [30, -8]], lookSpot: [30, -8],
         look: { focus: FOOT, mid: PEAK, dy: 16, backE: 7, upE: 3.2 } },
       /* 지켜보기의 카메라: 아이들이 다니는 동쪽 가장자리 쪽에서 본다 */
       eventCam: function (i) {
@@ -180,7 +185,7 @@
         if (i === 3) return cam([16, 6], 2.4, [6, -150], 4);      /* 산기슭에 선 백성과 구름에 덮인 산 */
         if (i === 4) return cam([20, -8], 4, PEAK, 16);             /* 산 위의 구름과 연기와 불빛 */
         if (i === 5) return cam([14, -30], 1.9, [6, -150], 2.5);      /* 산기슭에 선 백성의 뒤에서 */
-        if (i === 6) return cam([15, 4], 2.6, [10, -150], 3);       /* 멀리 선 백성과 어둠 쪽으로 가는 모세 */
+        if (i === 6) return cam([16, -2], 3.4, [9, -150], -1);      /* 멀리 선 백성(앞)과 짙은 어둠 쪽으로 가까이 가는 모세(그 너머) */
         return null;
       },
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
@@ -189,7 +194,7 @@
       partBeats: [0, 1], eventStart: 2,
       beatNote: function (i) {
         if (i === 1) return '모세가 산으로 올라가 말씀을 받은 일은 글로 읽어요. 우리는 진에서, 장로들 앞에 선 모세를 봐요.';
-        if (i === 3) return '나팔 소리와 하나님의 음성은 소리로 만들지 않았어요. 성경책에서 읽어요.';
+        if (i === 3) return '나팔 소리와 하나님의 음성은 소리로 만들지 않았어요. 모세가 산꼭대기에 올라갔다 내려온 일도 성경책에서 읽어요.';
         if (i === 4 || i === 5) return '하나님의 말씀은 소리로 만들지 않았어요. 성경책을 펴서 직접 읽어요.';
         if (i === 6) return '짙은 어둠 안쪽은 보여 주지 않아요. 성경은 여기까지 말해요.';
         return null;
@@ -202,7 +207,7 @@
           visible: function () { return moses.group.visible; }, pos: function () { var p = moses.group.position; return v3(p.x, p.y + 1.1, p.z); } },
         { id: 'bounds', name: '산 둘레의 경계', desc: '백성을 위하여 산 사방에 정한 경계. 아무도 산에 오르거나 경계를 넘지 말라고 하셨다', ref: '출 19:12', hint: '경계의 말씀이 나온 뒤에 산기슭 쪽을 담아 보세요.', range: 160, crop: 0.6,
           visible: function () { return stakes.visible; }, pos: function () { return v3(PEAK[0] + 10, height(PEAK[0] + 10, PEAK[1] + BR) + 0.6, PEAK[1] + BR); } },
-        { id: 'cloud', name: '빽빽한 구름과 연기', desc: '셋째 날 아침 산 위에 우레와 번개와 빽빽한 구름이 있었고, 연기가 가마 연기처럼 올랐다', ref: '출 19:16', hint: '셋째 날 아침이 된 뒤에 산 위를 담아 보세요.', range: 600, crop: 0.8,
+        { id: 'cloud', name: '빽빽한 구름과 연기', desc: '셋째 날 아침 산 위에 우레와 번개와 빽빽한 구름이 있었고, 연기가 가마 연기처럼 올랐다', ref: '출 19:16-18', hint: '셋째 날 아침이 된 뒤에 산 위를 담아 보세요.', range: 600, crop: 0.8,
           visible: function () { return cloudK > 0.6; }, pos: function () { return v3(PEAK[0], TOPY + 6, PEAK[1]); } }
       ],
       reset: function () { setPhase('idle'); },
@@ -216,11 +221,12 @@
         var stormy = phase === 'third' || phase === 'afar', quiet = phase === 'words1' || phase === 'words2';
         if (phase === 'third') {
           if (evT > 3) { smokeWant = 1; fireWant = 1; }
+          if (at(2.5)) { mode = 'foot'; mosesTo = M_FOOT; }                                                                          /* 19:17: 모세가 백성을 이끌고 진에서 나와 산기슭에 선다 */
           if (at(4.2)) { if (FX && FX.audio) { FX.audio.rumble(5, 0.7); FX.audio.thud(0.5); } if (api.shake) api.shake(0.35, 4); }   /* 19:18: 온 산이 크게 진동한다(간접 연출) */
         }
-        if (phase === 'afar' && at(3.5)) { mosesTo = M_DARK; mosesWalk = true; }                                                    /* 20:21 */
+        if (phase === 'afar' && at(3.5)) { mosesTo = M_NEAR; mosesWalk = true; }                                                    /* 20:21: 경계 바깥까지만 */
         /* 번개(19:16, 20:18): 하늘과 구름이 번쩍인다. 우레 소리는 말씀하시는 대목에서는 내지 않는다 */
-        if ((stormy || quiet) && evT >= nextFlash) { flash = stormy ? 1 : 0.6; nextFlash = evT + (stormy ? 4 + R() * 3 : 8 + R() * 4); if (stormy) thunder(evT < 1 ? 0.5 : 0.32); }
+        if ((stormy || quiet) && evT >= nextFlash) { flash = stormy ? 1 : 0.6; nextFlash = evT + (stormy ? 4 + R() * 3 : 8 + R() * 4); if (stormy && (phase === 'afar' || evT < 10)) thunder(evT < 1 ? 0.5 : 0.32); }   /* 대목 3에서는 첫머리에만(19:19의 음성처럼 들리지 않게) */
         var chg = false;
         if (Math.abs(storm - stormWant) > 0.003) { storm += (stormWant - storm) * Math.min(1, dt * 1.1); chg = true; }
         if (flash > 0) { flash = Math.max(0, flash - dt * 3.2); chg = true; }
@@ -250,7 +256,7 @@
           if (d > 0.02) { var f = Math.min(1, dt * 0.95); p.x += dx * f; p.z += dz * f; p.y = height(p.x, p.z); }
           if (mv) o.group.rotation.y = Math.atan2(dx, dz);
           else if (mode === 'gather') faceTo(o, MOS);
-          else if (mode !== 'home') faceTo(o, phase === 'afar' && moses.group.visible && evT < 3.5 ? [M_FAR[0], M_FAR[1]] : PEAK);
+          else if (mode !== 'home') faceTo(o, phase === 'afar' && evT < 3.5 ? [moses.group.position.x, moses.group.position.z] : PEAK);   /* 20:19-20: 모세와 말한다 */
           else if ((meet && o.meet) || lookAtMoses) faceTo(o, MOS);
           else o.group.rotation.y = o.ry;
           o.group.rotation.z = trem && !mv ? Math.sin(now * 23 + n * 1.7) * 0.012 : 0;
@@ -263,9 +269,8 @@
           if (md > 0.3) {
             if (mosesWalk) { var st = Math.min(md, 3.1 * dt); mp.x += mx / md * st; mp.z += mz / md * st; } else { var f2 = Math.min(1, dt * 0.95); mp.x += mx * f2; mp.z += mz * f2; }
             mp.y = height(mp.x, mp.z); moses.group.rotation.y = Math.atan2(mx, mz); walking = true;
-          } else if (phase === 'third') moses.group.rotation.y = Math.PI;                                /* 산 쪽을 향해 선다 */
+          } else if (phase === 'third' || phase === 'afar') faceTo(moses, PEAK);                       /* 산 쪽을 향해 선다 */
         } else if (phase === 'elders') moses.group.rotation.y = -Math.PI / 2; else if (phase === 'ready') moses.group.rotation.y = Math.PI;
-        moses.group.visible = !(phase === 'afar' && mp.z < HIDE_Z);                                      /* 연기 속으로 들어가면 보이지 않는다(20:21) */
         if (moses.update) moses.update(dt, walking);
       },
       audio: function (A) { A.setFlock(999); A.setFire(999); var w2 = storm > 0.5 ? 1 : 0; if (w2 !== windOn && A.wind) { windOn = w2; A.wind(w2 ? 0.28 : 0.16); } },
