@@ -309,7 +309,7 @@
       el('p', { class: 'q-prompt', text: '본 것을 사진으로 담아 도감을 채워요.' }),
       el('div', { class: 'dexgrid' }, cells),
       holyAll ? el('div', { class: 'witness' }, el('h3', { text: '목격 기록' }),
-        el('p', { class: 'fine', text: '하나님께 드린 것과 하나님이 보이신 표징은 모으는 칸이 아니에요. 본 것을 장절과 함께 적어 두고, 성경에서 다시 읽어요.' }),
+        el('p', { class: 'fine', text: '하나님께 속한 거룩한 것과 하나님이 보이신 표징은 모으는 칸이 아니에요. 본 것을 장절과 함께 적어 두고, 성경에서 다시 읽어요.' }),
         seen.length ? seen.map(function (d) { return el('div', { class: 'wit-row' }, el('b', { text: d.name }), el('span', { text: d.desc }), d.ref ? refChip(d.ref) : null); })
           : el('p', { class: 'fine', text: '아직 적은 것이 없어요.' })) : null],
       btn('닫기', function () { overlay.className = prevClass; overlay.replaceChildren.apply(overlay, prevKids); overlay.hidden = wasHidden; }));
