@@ -119,8 +119,8 @@
     }
     var jonah = { group: api.fallback('#56707E', 1.75, 0.27), update: function () {} }; jonah.group.rotation.order = 'YXZ'; scene.add(jonah.group); jonah.group.visible = false;
     api.person('jonah', function (nm) { nm.group.rotation.order = 'YXZ'; nm.group.position.copy(jonah.group.position); nm.group.rotation.copy(jonah.group.rotation); nm.group.visible = jonah.group.visible; scene.remove(jonah.group); scene.add(nm.group); jonah = nm; });
-    var J_IN = mkPath([[26, 1.2], [-30, 0.8], [WALL_X - 3, 0.2]]);                                         /* 3:3-4 동쪽 길로 와서 성에 들어간다 */
-    var J_OUT = mkPath([[-26, 0.6], [6, -6], [BOOTH[0] - 1, BOOTH[1] + 3.2], [BOOTH[0], BOOTH[1] + 0.6]]);   /* 4:5 성에서 나와 동쪽에 앉는다 */
+    var J_IN = mkPath([[10, 1.2], [-30, 0.8], [WALL_X - 3, 0.2]]), T_IN = 1 + J_IN.tot / 3;                                         /* 3:3-4 동쪽 길로 와서 성에 들어간다 */
+    var J_OUT = mkPath([[-6, -5], [6, -9], [BOOTH[0] - 1, BOOTH[1] + 3.2], [BOOTH[0], BOOTH[1] + 0.6]]);   /* 4:5 성에서 나와 동쪽에 앉는다 */
 
     /* 초막(4:5)과 박 넝쿨(4:6). 생김새는 본문에 없다 */
     var booth = new T.Group(), poleM = std('#7A5A3A'), thatchM = std('#9A8456');
@@ -178,9 +178,9 @@
     function setPhase(p) {
       phase = p; pt = 0; slump = 0;
       var town = p !== 'sea' && p !== 'shore';
-      jonah.group.visible = false; jonah.group.rotation.x = 0; booth.visible = p === 'booth' || p === 'gourd'; vine.visible = p === 'gourd'; booth.scale.y = 1;
+      jonah.group.visible = false; jonah.group.rotation.x = 0; booth.visible = p === 'gourd'; vine.visible = p === 'gourd'; booth.scale.y = 1;
       grow = 0; wither = 0; dustM.opacity = 0; vineM.color.copy(LEAF0); vine.scale.setScalar(0.001);
-      folk.forEach(function (o) { o.group.visible = p === 'enter' || p === 'decree' || p === 'booth' || p === 'gourd'; if (o.group.visible) { setAt(o, o.spot[0], o.spot[1], o.ry); if (o.update) o.update(0.016, 0); } });
+      folk.forEach(function (o) { o.group.visible = p === 'decree' || p === 'booth' || p === 'gourd'; if (o.group.visible) { setAt(o, o.spot[0], o.spot[1], o.ry); if (o.update) o.update(0.016, 0); } });
       blankets.visible = p === 'decree' || p === 'booth' || p === 'gourd';
       shadowM.opacity = 0; seaT = 0;
       lightKey = town ? 'day' : p === 'sea' ? 'storm' : 'calm'; lightSnap = true;
@@ -213,10 +213,11 @@
       eventCam: function (i) {
         if (i === 2) return { pos: [SEA[0] + 34, 13, SEA[1] + 46], look: [SEA[0], 1.5, SEA[1]] };                 /* 창 너머: 바다 위의 배 */
         if (i === 3) return { pos: [SHORE_J[0] + 9, 6.5, SHORE_J[1] - 30], look: [SHORE_J[0], 1.4, SHORE_J[1]] };   /* 창 너머: 바닷가 */
+        if (i === 5) return { pos: [-16, height(-16, 22) + 9, 22], look: [0, 0.8, 46] };   /* 3:7-8 굵은 베를 덮은 소 떼와 양 떼 */
         if (i === 6 || i === 7) return { pos: [5, height(5, -13) + 5.5, -13], look: [BOOTH[0], height(BOOTH[0], BOOTH[1]) + 1.4, BOOTH[1]] };   /* 성 동쪽 언덕의 초막 */
         return null;
       },
-      eventLook: function (i) { if (i === 4 || i === 5) return { focus: [WALL_X + 6, 0], mid: [-30, 6], dy: 2.5, backE: 12, upE: 5 }; return null; },
+      eventLook: function (i) { if (i === 4) return { focus: [WALL_X + 6, 0], mid: [-30, 6], dy: 2.5, backE: 12, upE: 5 }; return null; },
       kidsHidden: function (i) { return i === 2 || i === 3; },
       beatNote: function (i) {
         if (i === 0) return '그 앞의 일이에요. 요나가 배를 탄 욥바는 여기서 먼 바닷가예요. 우리는 그 뒤의 니느웨 성 밖에 있어요.';
@@ -267,9 +268,12 @@
           }
           waves();
         }
-        if (phase === 'enter') { var mv = walk(jonah, J_IN, Math.max(0, pt - 1) * 2.4, -Math.PI / 2, dt); if (!mv && pt > 2 && jonah.group.position.x < WALL_X) jonah.group.visible = false; }
+        if (phase === 'enter') {
+          var mv = walk(jonah, J_IN, Math.max(0, pt - 1) * 3, -Math.PI / 2, dt); if (!mv && pt > 2 && jonah.group.position.x < WALL_X) jonah.group.visible = false;
+          folk.forEach(function (o, n) { var s3 = (pt - T_IN - 3 - n * 0.35) * 1.6; if (s3 > 0) { if (!o.P) o.P = mkPath([[WALL_X - 2, (n % 2 ? 0.6 : -0.6)], [WALL_X + 3, (n % 2 ? 0.6 : -0.6)], o.spot]); walk(o, o.P, s3, o.ry, dt); } });   /* 3:5 그 뒤에 굵은 베를 입은 백성이 성문 밖에 모인다 */
+        }
         if (phase === 'booth') {
-          var tj = J_OUT.tot / 2.4, wv = walk(jonah, J_OUT, Math.max(0, pt - 1) * 2.4, -Math.PI / 2, dt);
+          var tj = J_OUT.tot / 2.4, wv = walk(jonah, J_OUT, Math.max(0, pt - 1) * 2.4, -Math.PI / 2, dt); booth.visible = !wv && pt > 1 + tj;
           if (!wv && pt > 1 + tj) { booth.scale.y = Math.min(1, Math.max(0.001, (pt - 1 - tj) / 4)); if (booth.scale.y >= 1) { jonah.group.position.y = height(BOOTH[0], BOOTH[1] + 0.6) - 0.45; } }   /* 4:5 초막을 짓고 그 그늘에 앉는다 */
         }
         if (phase === 'gourd') {
