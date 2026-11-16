@@ -41,7 +41,13 @@
     return g;
   }
   function mk(name, arg, fb) { try { if (M[name]) return M[name](arg); } catch (e) { console.error('model ' + name, e); } return fb(); }
-  function mkKid(key) { return mk('kid', key, function () { return { group: fallback(C.chars[key].color, { choeon: 1.35, hyu: 1.55, onwoo: 1.72 }[key], 0.24), update: function () {} }; }); }
+  /* 탐험대 장비 단계(growth.js). 장면을 시작할 때 정하고, 끝 카드에서 저장이 끝난 뒤에만 바뀐다 */
+  var gearStage = 0;
+  function GW() { return BO3D.growth || null; }
+  function mkKid(key) {
+    try { if (M.kid) return M.kid(key, { gear: gearStage }); } catch (e) { console.error('model kid', e); }
+    return { group: fallback(C.chars[key].color, { choeon: 1.35, hyu: 1.55, onwoo: 1.72 }[key], 0.24), update: function () {} };
+  }
 
   /* ── 장면 구성 ── */
   var renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: !!window.BO3D_TEST });
@@ -57,8 +63,13 @@
 
   /* Blender로 만든 인물(뼈대와 동작이 있는 GLB)을 읽는다. 동작: Idle, Walk, 그리고 장면마다 한 번만 하는 동작(once: {클립 이름: 자세 이름}).
      읽기가 끝나면 cb({group, key, setPose(name), update(dt, moving)}). 없으면 부르지 않는다(장면은 대체 모형으로 돈다). */
+  /* 성경 인물 공통 목록(빛 규칙 R5): person()과 swapGlb()로 만든 인물을 모두 올린다. 장면마다 요청한 수(FIGREQ)보다 덜 올라오면 빛을 끈다 */
+  var FIGS = [], FIGREQ = {}, buildingId = null;
+  function figure(sid, holder) { if (!sid || !holder) return; for (var i = 0; i < FIGS.length; i++) if (FIGS[i].h === holder) return; FIGS.push({ sid: sid, h: holder }); }
   function person(key, cb, opts) {
     opts = opts || {};
+    var sid = buildingId, cb0 = cb; if (sid) FIGREQ[sid] = (FIGREQ[sid] || 0) + 1;
+    cb = function (o) { figure(sid, o); cb0(o); };
     loadGlb(key, function (gltf) {
       var g = gltf.scene, mixer = new T.AnimationMixer(g), act = {}, curA = null, pose = 'idle', once = opts.once || {}, byPose = {};
       g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
@@ -93,7 +104,7 @@
   }
   function buildScene(id) {
     if (built[id]) return built[id];
-    var rt = BO3D.scene3d[id](api), sv = SCN, svc = cur; SCN = rt; cur = 'scene';
+    buildingId = id; var rt = BO3D.scene3d[id](api), sv = SCN, svc = cur; buildingId = null; SCN = rt; cur = 'scene';
     rt.data = otData(id);
     var mats = (rt.data.mission && rt.data.mission.materials) || [], qs = rt.data.quests || rt.quests || [];
     rt.PARTS = qs.map(function (q, i) {
@@ -135,6 +146,7 @@
       if (kids[k] && kids[k].group.parent) kids[k].group.parent.remove(kids[k].group);
       kids[k] = mkKid(k); sc.add(kids[k].group);
     });
+    ['choeon', 'hyu', 'onwoo'].forEach(function (k) { if (kids[k].wrist) { kids[k].glow = wristGlow(); kids[k].wrist.add(kids[k].glow); } });
     player = kids[S.ch];
     followers = ['choeon', 'hyu', 'onwoo'].filter(function (k) { return k !== S.ch; }).map(function (k) { return kids[k]; });
     place(player.group, st[0], st[1]);
@@ -162,12 +174,14 @@
   var objText = el('span', { text: '' });
   var partCount = el('span', { class: 'count teal', text: '부품 0 / 3' });
   var trackArrow = el('i', {}, icon('arrow')), trackText = el('span', { text: '' });
+  /* 손목 탐지기(3단계) 도감 탐지: 아직 사진에 담지 않은 도감 대상이 사진 거리 안에 있으면 알린다. 부품 안내(아래 track)는 모두에게 그대로 */
+  var dexDetArrow = el('i', {}, icon('arrow')), dexDetText = el('span', { text: '' }), dexDet = el('div', { class: 'dexdet3', hidden: '' }, dexDetArrow, dexDetText), dexDetT = 0;
   var track = el('button', { class: 'track3', hidden: '', on: { click: function () { if (!questOpen && (state === 'explore')) openQuiz(); } } }, trackArrow, trackText);
   var hudRef = refChip('', true), clueCount = el('span', { class: 'count teal', hidden: '', text: '단서 0 / 5' });
   var hud = el('div', { class: 'hud3 pad', hidden: '' },
     el('div', { class: 'row' }, place_, hudRef),
     el('div', { class: 'row' }, partCount, clueCount),
-    el('div', { class: 'obj' }, icon('compass'), objText), track);
+    el('div', { class: 'obj' }, icon('compass'), objText), track, dexDet);
   var knob = el('i', {}), base = el('div', { class: 'stick', hidden: '' }, knob);
   var hint = el('div', { class: 'hint', hidden: '' }, '왼쪽 아래를 누른 채 밀면 걸어요. 오른쪽을 밀면 둘러봐요. 사진기 버튼으로 본 것을 찍어 도감에 담아요.');
   var toastEl = el('div', { class: 'toast3', hidden: '' });
@@ -403,7 +417,7 @@
   }
   function setHat(on) {
     hatOn = on;
-    if (hat && hat.parent) hat.parent.remove(hat);
+    takeOffHats();
     if (on) wearHat();
   }
   function openDen() {
@@ -419,16 +433,18 @@
         return el('div', { class: 'frame' + (has ? '' : ' empty') }, has && dex[d.id] ? el('img', { src: dex[d.id], alt: d.name }) : el('div', { class: 'ph' }), el('span', { text: has ? d.name : '빈 액자' }));
       });
       /* 깃발 색은 시대 부속을 고칠 때마다 하나씩 열린다(흥미 개선: 모은 재료가 무엇을 열게) */
-      var cols = [null, '#EE7B62', '#2F9C95', '#4E5FB0', '#F7D774', '#9C6ADE', '#E35D8C', '#5BAE5A', '#E8913A', '#3E8FD4', '#C8A15A', '#7A8794'];
-      var fixedN = BO3D.story && BO3D.story.fixedEras ? BO3D.story.fixedEras() : 0, openN = 2 + fixedN;
+      var gw = GW(), cols = gw ? gw.FLAGS : [null, '#EE7B62', '#2F9C95', '#4E5FB0', '#F7D774', '#9C6ADE', '#E35D8C', '#5BAE5A', '#E8913A', '#3E8FD4', '#C8A15A', '#7A8794'];
+      var openN = gw ? gw.flagsOpen() : 2 + (BO3D.story && BO3D.story.fixedEras ? BO3D.story.fixedEras() : 0);
       var sw = cols.map(function (c, k) {
         var locked = k >= openN;
-        var b = el('button', { class: 'sw' + (c ? '' : ' none') + (locked ? ' locked' : ''), 'aria-pressed': String(flagColor === c), 'aria-label': locked ? '잠긴 깃발 색' : c ? '깃발 색' : '깃발 없음', style: c ? 'background:' + c : '', on: { click: function () { if (locked) return; setFlag(c); render(); } } }, c ? (locked ? '🔒' : null) : '없음');
+        var b = el('button', { class: 'sw' + (c ? '' : ' none') + (locked ? ' locked' : ''), 'aria-pressed': String(flagColor === c), 'aria-label': locked ? '잠긴 깃발 색' : c ? '깃발 색' : '깃발 없음', style: c ? 'background:' + c : '', on: { click: function () { if (locked) return; setFlag(c); if (gw) gw.prefs.setFlag(c); render(); } } }, c ? (locked ? '🔒' : null) : '없음');
         if (locked) b.disabled = true;
         return b;
       });
-      var hatBtn = el('button', { class: 'tog', 'aria-pressed': String(hatOn), on: { click: function () { setHat(!hatOn); render(); } } }, hatOn ? '쓰고 있어요' : '쓰기');
-      if (!sceneDone) hatBtn.disabled = true;
+      var hatBtn = el('button', { class: 'tog', 'aria-pressed': String(hatOn), on: { click: function () { setHat(!hatOn); if (gw && gearStage >= 1) gw.prefs.setHat(hatOn); render(); } } }, hatOn ? '쓰고 있어요' : '쓰기');
+      if (!sceneDone && gearStage < 1) hatBtn.disabled = true;
+      var fxBtn = gw && gearStage >= 3 ? el('button', { class: 'tog', 'aria-pressed': String(gw.prefs.fx()), on: { click: function () { gw.prefs.setFx(!gw.prefs.fx()); render(); } } }, gw.prefs.fx() ? '켜져 있어요' : '꺼져 있어요') : null;
+      var gi = gw && gearStage ? gw.info(gearStage) : null;
       var mt = PARTS.length && PARTS[0].mat, wd = mt ? '재료' : '부품';
       var msg = ready ? wd + '를 모두 모았고 이 시대의 탐험도 마쳤어요. 이제 떠날 수 있어요.'
         : [partsFound < PARTS.length ? (mt ? '수리에 쓸 재료가 ' : '시간 나침반의 부품이 ') + (PARTS.length - partsFound) + '개 모자라요.' : wd + '는 모두 모았어요.',
@@ -443,11 +459,72 @@
         el('h2', { text: '사진 벽' }), el('div', { class: 'frames' }, frames),
         el('h2', { text: '꾸미기' }),
         el('div', { class: 'deco' }, el('span', { text: '타임머신 깃발 (시대 부속을 고칠 때마다 색이 하나씩 열려요 · ' + Math.min(cols.length - 1, openN - 1) + ' / ' + (cols.length - 1) + ')' }), el('div', { class: 'sws' }, sw)),
-        el('div', { class: 'deco' }, el('span', { text: sceneDone ? '탐험 모자' : '탐험 모자 (첫 장면을 마치면 열려요)' }), hatBtn),
+        el('div', { class: 'deco' }, el('span', { text: sceneDone || gearStage >= 1 ? '탐험 모자 (세 아이가 함께 써요)' : '탐험 모자 (첫 장면을 마치면 열려요)' }), hatBtn),
+        gi ? el('div', { class: 'deco' }, el('span', { text: '탐험 장비 ' + gearStage + '단계 · ' + gi.name + ' · ' + gi.fn }), btn('기록장', function () { overlay.hidden = true; state = prev; toMap(); if (BO3D.story.openRecord) BO3D.story.openRecord('gear'); }, 'quiet')) : null,
+        fxBtn ? el('div', { class: 'deco' }, el('span', { text: '손목 탐지기 빛 (끄면 빛만 없어지고 기능은 그대로)' }), fxBtn) : null,
         el('div', { class: 'den-foot' }, btn('밖으로 나가기', function () { overlay.hidden = true; state = prev; }, 'quiet'), go));
       overlay.hidden = false;
     }
     render();
+  }
+  /* ── 손목 탐지기의 빛(타임머신 장비의 빛, 창작) — 켜고 끄는 규칙은 growth.js의 auraRule 하나(보완-4, 보완2-3) ──
+   * 탐색(explore·free) 중에만, 성경 인물 6m 밖, 조용한 자리 밖, 장면 설정이 off가 아닐 때. 어기면 그 프레임에 바로 끈다. 켤 때만 서서히 */
+  var auraTex = null, auraLast = { on: false, reason: 'init' }, auraLevel = 0, _av = null;
+  function wristGlow() {
+    if (!auraTex) {
+      var cv = document.createElement('canvas'); cv.width = cv.height = 64;
+      var cx = cv.getContext('2d'), gr = cx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, 'rgba(230,255,252,1)'); gr.addColorStop(0.3, 'rgba(127,224,214,0.6)'); gr.addColorStop(1, 'rgba(127,224,214,0)');
+      cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64); auraTex = new T.CanvasTexture(cv);
+    }
+    var sp = new T.Sprite(new T.SpriteMaterial({ map: auraTex, transparent: true, opacity: 0, blending: T.AdditiveBlending, depthWrite: false, fog: false }));
+    sp.scale.setScalar(0.3); sp.visible = false; return sp;
+  }
+  function figureCtx() {
+    var sid = cur === 'jordan' ? 'jordan' : SCN.id, sc = cur === 'jordan' ? JL.scene : scene, p = player.group.position, best = Infinity, n = 0;
+    if (!_av) _av = new T.Vector3();
+    FIGS.forEach(function (f) {
+      if (f.sid !== sid || !f.h || !f.h.group) return;
+      var r = f.h.group; while (r.parent) r = r.parent;
+      if (r !== sc) return;
+      n++; f.h.group.getWorldPosition(_av);
+      var d = Math.sqrt((_av.x - p.x) * (_av.x - p.x) + (_av.z - p.z) * (_av.z - p.z)); if (d < best) best = d;
+    });
+    return { ready: n >= (FIGREQ[sid] || 0), near: best };
+  }
+  function quietCtx() {
+    var p = player.group.position, zs = [];
+    if (cur === 'jordan') { if (JL.ark) { if (!_av) _av = new T.Vector3(); JL.ark.getWorldPosition(_av); zs.push([_av.x, _av.z, 10]); } }
+    else if (SCN.quietAt) zs = SCN.quietAt() || [];
+    return zs.some(function (z) { return (p.x - z[0]) * (p.x - z[0]) + (p.z - z[1]) * (p.z - z[1]) < z[2] * z[2]; });
+  }
+  function updateAura(dt) {
+    var gw = GW(), glows = ['choeon', 'hyu', 'onwoo'].map(function (k) { return kids[k] && kids[k].glow; }).filter(Boolean);
+    if (!gw || !player || !glows.length) { auraLast = { on: false, reason: glows.length ? 'no-growth' : 'stage' }; return; }
+    var fc = figureCtx();
+    var r = gw.auraRule({ stage: gearStage, fx: gw.prefs.fx(), state: state, overlayOpen: !overlay.hidden, sceneAura: cur === 'jordan' ? 'dim' : (SCN.aura || 'on'),
+      figuresReady: fc.ready, nearFigure: fc.near, inQuiet: quietCtx(), visible: !document.hidden, reduced: calm });
+    auraLast = { on: r.on, dim: !!r.dim, reason: r.reason, near: fc.near, ready: fc.ready };
+    if (!r.on) { auraLevel = 0; glows.forEach(function (g) { g.visible = false; g.material.opacity = 0; }); return; }   /* 즉시 끔 */
+    auraLevel = Math.min(1, auraLevel + dt / 0.4);                                                                     /* 켤 때만 0.4초 */
+    var base = r.dim ? 0.32 : 0.58, pulse = r.dim ? 0 : 0.14 * Math.sin(now * 3.2);
+    glows.forEach(function (g) { g.visible = true; g.material.opacity = (base + pulse) * auraLevel; });
+  }
+  /* 손목 탐지기(3단계) 도감 탐지 */
+  function updateDexDet(dt) {
+    dexDetT -= dt; if (dexDetT > 0) return; dexDetT = 0.3;
+    var show = gearStage >= 3 && (cur === 'scene' || !JL) && (state === 'explore' || state === 'free') && player;
+    if (!show) { dexDet.hidden = true; return; }
+    var p = player.group.position, cnt = 0, bd = Infinity, bp = null;
+    DEX.forEach(function (d) {
+      if (d.id in dex) return; if (d.visible && !d.visible()) return;
+      var wp = d.pos(), dd = Math.sqrt((wp.x - p.x) * (wp.x - p.x) + (wp.z - p.z) * (wp.z - p.z));
+      if (dd < d.range) { cnt++; if (dd < bd) { bd = dd; bp = wp; } }
+    });
+    if (!cnt) { dexDet.hidden = true; return; }
+    dexDet.hidden = false;
+    dexDetText.textContent = '손목 탐지기 · 사진에 담을 것 ' + cnt + '개';
+    var rel = Math.atan2(bp.x - p.x, bp.z - p.z) - camYaw; dexDetArrow.style.transform = 'rotate(' + (-rel) + 'rad)';
   }
   function makeGlow() {
     var cv = document.createElement('canvas'); cv.width = cv.height = 128;
@@ -474,6 +551,9 @@
   function endCard() {
     state = 'end2';
     if (BO3D.story) BO3D.story.complete3d(SCN.id);
+    /* 새 장비는 저장(complete3d)이 끝난 바로 뒤에만 확정한다(보완2-2). 말씀 카드 화면·자유 걷기에서는 보이지 않는다 */
+    var gw = GW(), newGear = gw ? gw.pending() : [];
+    if (newGear.length) { gw.markSeen(); gearStage = gw.stage(); }
     overlay.className = 'overlay3 den3ov pad';
     overlay.replaceChildren(
       el('div', { class: 'eyebrow', text: SC.title + ' · 탐험 완료' }),
@@ -483,6 +563,7 @@
         el('div', { class: 'slot on' }, icon('book'), el('b', { text: '말씀 카드' }), el('span', { text: SC.cards.length + '장' })),
         el('div', { class: 'slot on' }, icon('camera'), el('b', { text: '탐험 도감' }), el('span', { text: dexCount() + ' / ' + DEX.length })),
         el('div', { class: 'slot on' }, icon('gear'), el('b', { text: PARTS.length && PARTS[0].mat ? '모은 재료' : '찾은 부품' }), el('span', { text: partsFound + ' / ' + PARTS.length }))),
+      newGear.length && BO3D.story.gearCard ? BO3D.story.gearCard(newGear) : null,
       el('p', { class: 'den-msg', text: BO3D.story ? '시대 지도에서 다음 장면으로 갈 수 있어요.' : '다음 장면(하나님의 이름과 세 가지 표징, 출 3:13-4:17)은 목사님 감수를 마친 뒤 열립니다.' }),
       el('div', { class: 'den-foot' }, BO3D.story && SCN.id === 'OT-09' ? btn('다른 이름으로 가 보기', function () { if (C3 && BO3D.jordan) route(); else menu(); }, 'quiet') : btn('처음부터 다시', menu, 'quiet'),
         BO3D.story ? btn('시대 지도로', toMap, 'wide') : btn('다른 이름으로 가 보기', function () { if (C3 && BO3D.jordan) route(); else menu(); }, 'wide')));
@@ -558,6 +639,7 @@
     });
   }
   function loadJordanGlb() {
+    figure('jordan', JL.leader); JL.priests.forEach(function (pr) { figure('jordan', pr); });   /* 요단 경로의 여호수아·제사장도 인물 목록에(빛 규칙) */
     swapGlb('joshua', JL.leader, 'Idle', false, false);
     /* Blender 제사장은 채가 모델 기준 (x -0.156, y 1.393)을 지난다. 오른쪽 어깨용이며 왼쪽은 좌우를 뒤집어 쓴다. */
     var PX = 0.156, PY = 1.393, a = JL.P.ark, bed = JL.height(a[0], a[1]);
@@ -574,7 +656,7 @@
   function enterJordan() {
     if (!JL) { JL = BO3D.jordan.build(); loadJordanGlb(); }
     cur = 'jordan'; overlay.hidden = true; clue = {}; dedReady = false;
-    spawnKids(); hudMode();
+    gearStage = GW() ? GW().stage() : 0; spawnKids(); hudMode();
     camYaw = Math.PI; snapCamera();
     clueCount.textContent = '단서 0 / ' + JD.clues.length; dexLabel.textContent = '추리 수첩 0 / ' + JD.clues.length;
     setObjective(JD.objective); hud.hidden = false; snd.hidden = false;
@@ -758,11 +840,13 @@
     if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; var m0 = FX.audio.isMuted(); snd.setAttribute('aria-pressed', String(m0)); snd.setAttribute('aria-label', m0 ? '소리 켜기' : '소리 끄기'); }
     useScene(SCN.id); hudMode(); makeVision();
     BGM('play', 'explore');
+    gearStage = GW() ? GW().stage() : 0;
     spawnKids();
     quest = 0; questOpen = false; evIdx = SCN.eventStart || 0; afterVision = false;
     if (SCN.reset) SCN.reset();
-    if (hat) { hat.parent && hat.parent.remove(hat); }
+    takeOffHats();
     hatOn = false; sceneDone = false; partsFound = 0;
+    var gw0 = GW(); if (gw0) { if (gearStage >= 1 && gw0.prefs.hat()) setHat(true); setFlag(gw0.prefs.flag()); }   /* 저장한 모자·깃발(bo3d.gear.v1) */
     partObjs.forEach(function (po) { po.taken = false; po.group.visible = true; });
     partCount.textContent = partWord() + ' 0 / ' + PARTS.length;
     for (var kk in kids) kids[kk].group.visible = true;
@@ -923,21 +1007,25 @@
   }
 
   /* ── 마무리: 말씀 카드와 꾸미기 보상 ── */
-  var hat = null;
-  function makeHat() {
+  var hat = null, hats = [];
+  function makeHat(bandColor) {
     var g = new T.Group();
-    var khaki = new T.MeshStandardMaterial({ color: '#C9A769', flatShading: true }), band = new T.MeshStandardMaterial({ color: C.chars[S.ch].color, flatShading: true });
+    var khaki = new T.MeshStandardMaterial({ color: '#C9A769', flatShading: true }), band = new T.MeshStandardMaterial({ color: bandColor || C.chars[S.ch].color, flatShading: true });
     var brim = new T.Mesh(new T.CylinderGeometry(0.3, 0.32, 0.03, 16), khaki), crown = new T.Mesh(new T.CylinderGeometry(0.15, 0.18, 0.15, 14), khaki), bd = new T.Mesh(new T.CylinderGeometry(0.185, 0.185, 0.04, 14), band);
     crown.position.y = 0.08; bd.position.y = 0.035; brim.castShadow = crown.castShadow = true;
     g.add(brim); g.add(crown); g.add(bd);
     return g;
   }
+  function takeOffHats() { hats.forEach(function (h) { if (h.parent) h.parent.remove(h); }); hats = []; if (hat && hat.parent) hat.parent.remove(hat); hat = null; }
+  /* 탐험 모자: 세 아이가 함께 쓴다(탐험대 장비, 띠는 각자의 색) */
   function wearHat() {
-    if (hat && hat.parent) hat.parent.remove(hat);
-    hat = makeHat();
-    var box = new T.Box3().setFromObject(player.group);
-    hat.position.y = (box.max.y - player.group.position.y) - 0.04;
-    player.group.add(hat);
+    takeOffHats();
+    ['choeon', 'hyu', 'onwoo'].forEach(function (k) {
+      var kd = kids[k]; if (!kd || !kd.group.parent) return;
+      var h = makeHat(C.chars[k].color), box = new T.Box3().setFromObject(kd.group);
+      h.position.y = (box.max.y - kd.group.position.y) - 0.04; kd.group.add(h); hats.push(h);
+    });
+    hat = hats[0] || null;
   }
   function finish() {
     state = 'end';
@@ -1118,6 +1206,7 @@
       if (state === 'lookup') updateLookup(dt);
       if (state === 'vision' && vision) updateVision();
       if (horeb) updateTracker();
+      updateAura(dt); updateDexDet(dt);
       updateCamera(dt);
       var pp2 = player.group.position, sun = horeb ? env.sun : JL.sun;
       var so = horeb ? (SCN.sunOff || [-38, 46, 30]) : [30, 50, 34];
@@ -1171,7 +1260,10 @@
     stick: function (x, y) { stick.x = x; stick.y = y; },
     yaw: function (v) { camYaw = v; lastDrag = now + 999; },
     goto: function (x, z) { player.group.position.set(x, H(x, z), z); trail.push([x, z]); },
-    render: function () { var r = renderer.info.render, m = renderer.info.memory; return { calls: r.calls, tris: r.triangles, geo: m.geometries, tex: m.textures }; }   /* 장면이 무거워지지 않았는지 비교용 */
+    render: function () { var r = renderer.info.render, m = renderer.info.memory; return { calls: r.calls, tris: r.triangles, geo: m.geometries, tex: m.textures }; },   /* 장면이 무거워지지 않았는지 비교용 */
+    aura: function () { var vis = ['choeon', 'hyu', 'onwoo'].some(function (k) { return kids[k] && kids[k].glow && kids[k].glow.visible && kids[k].glow.material.opacity > 0; }); return { visible: vis, on: auraLast.on, reason: auraLast.reason, near: auraLast.near, ready: auraLast.ready, state: state, gear: gearStage, cur: cur, id: SCN && SCN.id }; },
+    figures: function () { return FIGS.map(function (f) { return f.sid; }); }, figreq: function () { return FIGREQ; },
+    dexDet: function () { return dexDet.hidden ? null : dexDetText.textContent; }
   };
 
   useScene('OT-09'); hudMode();

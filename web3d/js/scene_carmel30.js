@@ -151,6 +151,7 @@
         if (i === 6) return { focus: ALT, mid: ALT, dy: 2.2, backE: 9, upE: 5 };
         return { focus: ALT, mid: [-4, 2], dy: 1.4, backE: 7, upE: 3.2 };
       },
+      aura: 'dim', quietAt: function () { return [[ALT[0], ALT[1], 8]]; },   /* 제단 둘레 8m는 끔 */
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 넓은 산비탈에 내려앉았어요. 많은 사람이 모여 있어요.', say: { who: 'hyu', text: '사람들과 단에서 멀리 떨어진 비탈에서만 다니자.' } },
       lookText: '갈멜 산 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',

@@ -76,6 +76,7 @@
       P: { start: P.start, machine: P.machine, machineRot: -0.5, parts: P.parts, lookSpot: P.lookSpot,
         look: { focus: P.bush, mid: P.mosesEnd, dy: -0.6 } },
       partRocks: true,
+      aura: 'off',   /* 성장 시스템: 떨기나무 앞(3:5) — 손목 장비의 빛을 장면 내내 끈다 */
       detector: HQ ? HQ.detector : '탐지기', askLabel: HQ ? HQ.askLabel : '탐지기 물음 풀기',
       intro: HQ ? HQ.intro : null, quests: HQ ? HQ.quests : null,
       lookText: '모세가 하나님의 산에 이른 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',

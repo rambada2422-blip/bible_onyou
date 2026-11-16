@@ -160,6 +160,7 @@
         if (i === 3) return { focus: [0, WALL_Z], mid: [10, WALL_Z], dy: 5, backE: 9, upE: 4 };
         return { focus: STAND, mid: SQUARE, dy: 1.2, backE: 9, upE: 7 };
       },
+      quietAt: function () { return [[STAND[0], STAND[1], 8]]; },   /* 율법책을 읽는 강단 둘레 8m는 끔 */
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 성 밖 비탈에 내려앉았어요. 밤이에요. 성벽이 무너져 있어요.', say: { who: 'hyu', text: '성벽에는 가까이 가지 말자. 이 비탈 위에서만 다니자.' } },
       lookText: '느헤미야의 성벽 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',

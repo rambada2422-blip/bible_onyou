@@ -331,7 +331,8 @@
     return new T.Matrix4().compose(new T.Vector3(cx + px * l, cy + py * l, cz + pz * l), q, new T.Vector3(sx, sy, sz));
   }
 
-  function makeKid(key) {
+  function makeKid(key, opt) {
+    opt = opt || {};
     if (!KIDS[key]) key = 'choeon';
     var d = KIDS[key], girl = key === 'choeon';
     var H = d.H, sw = d.sw;
@@ -480,6 +481,26 @@
     }
     var armL = makeArm(1), armR = makeArm(-1);
 
+    /* --- 탐험대 장비(성장, growth.js): 2단계 어깨 표식, 3단계 손목 탐지기. 성경의 물건이 아니라 타임머신 탐험대 장비 --- */
+    var gear = opt.gear || 0, wrist = null;
+    var gBrass = new T.MeshStandardMaterial({ color: BRASS, roughness: 0.38, metalness: 0.3 }), gBrassHi = new T.MeshStandardMaterial({ color: BRASS_HI, roughness: 0.35, metalness: 0.3 });
+    if (gear >= 2) {          // 왼쪽 윗팔 바깥의 놋쇠 표식(원과 물결 문양, 글자 없음)
+      var em = new T.Group(), er = rArm * 1.05;
+      em.add(new T.Mesh(new T.CylinderGeometry(er, er, 0.006, 16), gBrass));
+      var ring = new T.Mesh(new T.TorusGeometry(er * 0.72, er * 0.1, 4, 16), gBrassHi); ring.rotation.x = PI / 2; ring.position.y = 0.004; em.add(ring);
+      em.rotation.z = -PI / 2; em.position.set(rArm * 1.12, -ua * 0.28, 0);
+      armL.sh.add(em);
+    }
+    if (gear >= 3) {          // 왼손목의 놋쇠 탐지기와 청록 화면(빛은 game.js가 이 자리에 단다)
+      var dv = new T.Group();
+      dv.add(new T.Mesh(new T.CylinderGeometry(rArm * 1.12, rArm * 1.12, fa * 0.2, 10), gBrass));
+      var scr = new T.Mesh(new T.BoxGeometry(rArm * 1.3, fa * 0.13, 0.008), new T.MeshBasicMaterial({ color: '#7FE0D6' }));
+      scr.position.set(0, 0, rArm * 1.1); dv.add(scr);
+      dv.position.set(0, -fa * 0.74, 0);
+      wrist = new T.Object3D(); wrist.position.set(0, 0, rArm * 1.25); dv.add(wrist);
+      armL.el.add(dv);
+    }
+
     /* --- 다리 --- */
     function makeLeg(s) {
       var hip = new T.Group(), knee = new T.Group();
@@ -551,7 +572,7 @@
       }
     }
     update(0, 0);
-    return { group: group, update: update };
+    return { group: group, update: update, wrist: wrist, gear: gear };
   }
 
   /* ================================================================== 모세 */

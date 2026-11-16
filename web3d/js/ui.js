@@ -38,8 +38,23 @@
   function avatar(key) {
     var AV = BO3D.avatars || {};
     if (!AV[key]) return el('span', { class: 'avatar' });
-    return el('img', { class: 'avatar', alt: '', src: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(AV[key]) });
+    var img = el('img', { class: 'avatar', alt: '', src: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(AV[key]) });
+    /* 탐험대 장비(growth.js): 1단계 모자 배지, 2단계 놋쇠 테두리, 3단계 손목 탐지기 배지. 세 아이가 함께 바뀐다 */
+    var g = BO3D.growth, n = g ? g.stage() : 0;
+    if (!n) return img;
+    if (n >= 2) img.className = 'avatar g2';
+    return el('span', { class: 'avw' }, img, el('i', { class: 'av-badge', html: g.svg[n >= 3 ? 'wrist' : n >= 2 ? 'badge' : 'hat'] }));
   }
+  /* 보기 섞기(성장 시스템 설계 보완-3·보완2-6): 물음마다 고정된 차례. 보기 객체 사본 하나로 그리기·채점·안내를 모두 한다 */
+  function shuffled(arr, key) {
+    var a = arr.slice(), h = 7, i;
+    key = String(key || '');
+    for (i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) % 2147483647;
+    if (!h) h = 1;
+    for (i = a.length - 1; i > 0; i--) { h = (h * 48271) % 2147483647; var k = h % (i + 1), t = a[i]; a[i] = a[k]; a[k] = t; }
+    return a;
+  }
+  function optKey(q) { return (q.prompt || '') + '|' + q.options.map(function (o) { return o.label; }).join('|'); }
   /* "출 3:5" → "출애굽기 3장 5절", "출 3:1-12" → "출애굽기 3장 1-12절", "창 1:1-2:3" → "창세기 1장 1절-2장 3절" */
   function bookName(ref) {
     var m = /^(\S+) (\d+)(?::(\d+))?(?:-(?:(\d+):)?(\d+))?$/.exec(String(ref || '').trim());
@@ -92,8 +107,8 @@
   }
   function realBasis(o) { return o && o.basis && o.basis !== '본문에 없음' ? o.basis : null; }
   function choiceBlock(q, ref, onOk) {
-    var pics = q.options.some(function (o) { return o.icon; }), noteBox = el('div', {});
-    var btns = q.options.map(function (o) {
+    var pics = q.options.some(function (o) { return o.icon; }), noteBox = el('div', {}), opts = shuffled(q.options, optKey(q));
+    var btns = opts.map(function (o) {
       var b = el('button', { class: 'opt', on: { click: function () {
         if (o.ok) { btns.forEach(function (x) { x.disabled = true; if (x !== b) x.classList.add('rest'); }); b.classList.add('ok'); noteBox.replaceChildren(goodNote(ref)); onOk(); }
         else { b.classList.add('rest'); b.disabled = true; noteBox.replaceChildren(realBasis(o) ? detourNote(o.basis, ref) : lookNote(q.lookRef !== undefined ? q.lookRef : ref, q.lookText)); }
@@ -133,15 +148,16 @@
     var rb = el('button', { class: 'btn plain', on: { click: function () {
       rb.disabled = true; rb.textContent = '읽었어요';
       var noteBox = el('div', {});
-      var btns = cq.options.map(function (o) {
+      var opts = shuffled(cq.options, optKey(cq));
+      var btns = opts.map(function (o) {
         var b = el('button', { class: 'opt', 'aria-pressed': 'false', on: { click: function () { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); } } },
           el('span', { class: 'mark', html: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 L6.5 12 L13 4.5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' }), el('span', { text: o.label }));
         return b;
       });
       var check = el('button', { class: 'btn plain', on: { click: function () {
-        var picked = cq.options.filter(function (o, k) { return btns[k].getAttribute('aria-pressed') === 'true'; });
-        var good = cq.options.every(function (o, k) { return (btns[k].getAttribute('aria-pressed') === 'true') === !!o.ok; });
-        if (good) { btns.forEach(function (b, k) { b.disabled = true; b.classList.add(cq.options[k].ok ? 'ok' : 'rest'); }); check.disabled = true; noteBox.replaceChildren(goodNote(q.ref, '맞는 것을 모두 찾았어요.')); onOk(); }
+        var picked = opts.filter(function (o, k) { return btns[k].getAttribute('aria-pressed') === 'true'; });
+        var good = opts.every(function (o, k) { return (btns[k].getAttribute('aria-pressed') === 'true') === !!o.ok; });
+        if (good) { btns.forEach(function (b, k) { b.disabled = true; b.classList.add(opts[k].ok ? 'ok' : 'rest'); }); check.disabled = true; noteBox.replaceChildren(goodNote(q.ref, '맞는 것을 모두 찾았어요.')); onOk(); }
         else {
           var wrong = picked.filter(function (o) { return !o.ok && realBasis(o); })[0];
           noteBox.replaceChildren(wrong ? detourNote(wrong.basis, q.ref) : lookNote(q.ref, picked.some(function (o) { return !o.ok; }) ? '그 절에 없는 것이 섞여 있어요. 다시 읽고 골라 보세요.' : '그 절에 나오는 것이 더 있어요. 다시 읽고 모두 골라 보세요.'));
@@ -218,5 +234,5 @@
 
   BO3D.ui = { S: S, el: el, add: add, tx: tx, icon: icon, refChip: refChip, avatar: avatar, say: say, bookName: bookName, bookOf: bookOf, chapterOf: chapterOf, books: BOOKS,
     goodNote: goodNote, lookNote: lookNote, choiceBlock: choiceBlock, findBlock: findBlock, findrefBlock: findrefBlock, orderBlock: orderBlock, blockFor: blockFor, quizTier: quizTier, btn: btn,
-    setScene: setScene, inScene: inScene, openFor: openFor };
+    setScene: setScene, inScene: inScene, openFor: openFor, shuffled: shuffled, optKey: optKey };
 })();

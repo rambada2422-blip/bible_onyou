@@ -135,6 +135,7 @@
         if (i === 3) return { focus: [HOUSE[0] - 14, HOUSE[1] + 8], mid: PALACE, dy: 2, backE: 8, upE: 4 };
         return { focus: DEN, mid: DEN, dy: 1.4, backE: 7, upE: 4 };
       },
+      quietAt: function () { return [[DEN[0], DEN[1], 6]]; },   /* 사자 굴 어귀 6m는 끔 */
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 큰 도시 바깥의 빈터에 내려앉았어요. 멀리 왕궁이 보여요.', say: { who: 'hyu', text: '빈터 안에서만 다니자. 집과 왕궁에는 가까이 가지 말자.' } },
       lookText: '다니엘 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',

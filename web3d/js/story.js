@@ -56,6 +56,14 @@
   function doneCount() { return OT.order.filter(function (id) { return PG.done[id]; }).length; }
   function eraOpen(n) { if (n <= 1 || PG.unlockAll) return true; var pe = eraOf(n - 1); return pe.scenes.some(function (id) { return PG.done[id]; }); }
   function eraMats(e) { var all = 0, got = 0; e.scenes.forEach(function (id) { mats(id).forEach(function (x) { all++; if (PG.mats[id + ':' + x.key]) got++; }); }); return { all: all, got: got }; }
+  function fixedCount() { return OT.eras.filter(function (e) { var em = eraMats(e); return em.all && em.got === em.all; }).length; }
+  /* 성장(탐험대 장비, growth.js)이 읽는 진행 요약: 메모리의 진행 자료에서 만든다(저장 실패 때도 이 방문 동안 맞음). 진행 자료는 바꾸지 않는다 */
+  function progressSummary() {
+    var ids = OT.order.filter(function (id) { return PG.done[id]; }), tierOf = {};
+    ids.forEach(function (id) { tierOf[id] = PG.done[id].t; });
+    return { done: ids.length, doneIds: ids, tierOf: tierOf, fixedEras: fixedCount(), matsGot: matCount(), matsTotal: MAT_TOTAL, unlockAll: !!PG.unlockAll };
+  }
+  function GR() { return BO3D.growth || null; }
   function nextOf(id) { var i = OT.order.indexOf(id); return i >= 0 && i < OT.order.length - 1 ? OT.order[i + 1] : null; }
 
   /* ── 작은 그림 ── */
@@ -151,10 +159,11 @@
       el('div', { class: 'otstat' },
         el('span', { class: 'count teal', text: '마친 장면 ' + doneCount() + ' / ' + OT.order.length }),
         el('span', { class: 'count', text: '모은 재료 ' + matCount() + ' / ' + MAT_TOTAL })),
-      repairMeter(),
+      repairMeter(), growthHead(),
       el('p', { class: 'den-lead', text: '시대마다 타임머신 부속을 고쳐요. 앞 시대의 장면 하나를 마치면 다음 시대로 가는 길이 열려요.' }),
       eras,
       el('div', { class: 'otmap-foot' },
+        GR() ? btn('탐험 기록장', function () { openRecord(); }, 'quiet') : null,
         btn('수리 현황', openRepair, 'quiet'), btn('비상 착륙 이야기', function () { intro(function () { openMap(); }); }, 'quiet'),
         btn(PG.unlockAll ? '시대 잠금 다시 켜기' : '모든 시대 열기(부모·교사)', function () { PG.unlockAll = !PG.unlockAll; save(); openMap(); }, 'quiet'),
         /#log/.test(location.hash) ? btn('놀이 기록 보기', openLog, 'quiet') : null,
@@ -162,6 +171,9 @@
         btn('처음 화면', function () { closeAll(); var g = G(); if (g) g.menu(); }, 'quiet')),
       el('p', { class: 'fine', text: '감수 전 시험판입니다. 모든 장면은 목사님 감수를 마치기 전이며, 아이들에게 공개하지 않습니다.' }));
     box.appendChild(list);
+    /* 옛 저장 자료로 처음 열 때: 그동안 모은 장비를 한 번만 보여 준다 */
+    var g0 = GR(), pend = g0 ? g0.pending() : [];
+    if (pend.length) { list.insertBefore(gearCard(pend, true, '그동안 모은 장비'), list.children[3] || null); g0.markSeen(); }
     box.hidden = false;
     if (scrollTo) { var t = document.getElementById('ote-' + scrollTo); if (t) list.scrollTop = t.offsetTop - 8; }
   }
@@ -384,7 +396,14 @@
       } } });
       return b;
     });
-    return [el('div', { class: 'eyebrow dark', text: '탐험대 이야기 · 재료 찾기' }), msg, el('div', { class: 'seek' }, tiles), got];
+    /* 손목 탐지기(3단계): 스캔 한 번에 숨은 자리를 넣은 세 곳이 빛난다(어느 곳인지는 알려 주지 않는다) */
+    var g = GR(), scanBtn = null;
+    if (g && g.stage() >= 3) scanBtn = el('button', { class: 'btn plain scanbtn', on: { click: function () {
+      scanBtn.disabled = true; var set = g.scanSet(cur.id + mm.key, spot);
+      tiles.forEach(function (b, k) { if (set.indexOf(k) >= 0 && !b.disabled) b.classList.add('scan'); });
+      msg.textContent = '손목 탐지기가 세 곳을 가리켜요. 그 가운데 한 곳에 있어요.'; mark(cur.id + ' seek-scan');
+    } } }, '탐지기 스캔');
+    return [el('div', { class: 'eyebrow dark', text: '탐험대 이야기 · 재료 찾기' }), msg, scanBtn, el('div', { class: 'seek' }, tiles), got];
   }
   function go() { if (cur.step < cur.steps.length - 1) { cur.step++; render(); } }
   function take(mt) { if (mt && mt.key) { PG.mats[cur.id + ':' + mt.key] = 1; save(); } }
@@ -399,12 +418,15 @@
   function finish(d) {
     var c = d.close[S.tier] || d.close.t2, e = eraOf(d.era), nx = nextOf(d.id);
     PG.done[d.id] = { t: S.tier }; save();
+    var g = GR(), newGear = [];
+    if (g) { g.noteComplete(d.id, S.tier); newGear = g.pending(); g.markSeen(); }   /* 저장한 뒤에 단계를 계산한다. 다시 마친 장면이면 늘지 않는다 */
     bgm(d.id, 'after');
     var kids_ = [el('div', { class: 'q-kicker', text: '탐험을 마치며' }),
       el('p', { class: 'q-prompt', text: '탐험 일지에 말씀 카드가 들어왔어요.' }),
       el('div', { class: 'vcards' }, d.cards.map(function (cd) {
         return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }), el('div', { class: 'm', text: d.title + ' · 성경책에서 직접 읽어 보세요' }));
       }))];
+    if (newGear.length) { kids_.push(gearCard(newGear, true)); mark(d.id + ' gear-new'); }
     var lastOfEra = e.scenes[e.scenes.length - 1] === d.id, closeAt = kids_.length;
     if (c.kind === 'prayer') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '한 문장 기도' }), el('p', { text: c.text })));
     if (c.kind === 'practice') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '이번 주 실천 한 가지' }), el('p', { text: c.text })));
@@ -423,6 +445,95 @@
     var nextBtn = nx ? btn(sc(nx).era !== d.era ? '다음 시대로' : '다음 장면', function () { if (sc(nx).era !== d.era) openEra(sc(nx).era); else openScene(nx); }) : btn('시대 지도', function () { openMap(); });
     cur.k = 'finish';
     show('play', e.key, topBar('시대 ' + e.era + ' · ' + d.title), kids_, [btn('시대 지도', function () { openMap(d.era); }, 'plain'), nextBtn]);
+  }
+
+  /* ── 탐험대 장비(성장, growth.js · docs/14 보완 1·2차) ──
+   * 지도 머리: 지금 단계·다음 장비(구현된 단계만)·깃발. 새 장비 카드: 얻는 순간 쓰는 기능을 함께 알려 준다 */
+  function growthHead() {
+    var g = GR(); if (!g) return null;
+    var n = g.stage(), s = g.info(n), nx = g.next(), fc = g.prefs.flag();
+    var pips = g.STAGES.filter(function (x) { return x.ready; }).map(function (x) { return el('i', { class: 'gp' + (x.n <= n ? ' on' : ''), title: x.name }); });
+    return el('button', { class: 'gearhead', on: { click: function () { openRecord('gear'); } } },
+      el('span', { class: 'gh-top' }, fc ? el('i', { class: 'gh-flag', style: 'background:' + fc }) : null,
+        el('b', { text: '탐험 장비 ' + n + '단계' + (s ? ' · ' + s.name : '') }), el('span', { class: 'gh-pips' }, pips)),
+      el('small', { text: nx ? '다음 장비: ' + nx.stage.name + '까지 ' + nx.left + '장면' : '다음 장비는 준비하고 있어요' }));
+  }
+  function gearCard(list, withBtn, title) {
+    var g = GR();
+    return el('div', { class: 'closebox gearnew pop' }, el('h3', { text: title || (list.length > 1 ? '새 장비 ' + list.length + '가지' : '새 장비') }),
+      list.map(function (s) {
+        return el('div', { class: 'gear-row' }, el('span', { class: 'gi', html: g.svg[s.key] || '' }),
+          el('div', {}, el('b', { text: s.name + ' · ' + s.fn }), el('p', { text: (s.d && (s.d[S.tier] || s.d.t2)) || '' }), s.light ? el('small', { class: 'gear-light', text: s.light }) : null));
+      }),
+      withBtn ? btn('탐험 기록장 열기', function () { openRecord(); }, 'plain') : null);
+  }
+  /* 탐험 기록장: 장비 · 마친 장면 · 말씀 카드(1단계) · 책갈피(2단계). 잠긴 칸은 구현된 기능만 "n장면을 마치면" */
+  function openRecord(tab) {
+    var g = GR(); if (!g) return;
+    cur.screen = 'record'; mark('record ' + (tab || 'scenes'));
+    var n = g.stage(), sm = g.summary();
+    tab = tab || (n >= 1 ? 'scenes' : 'gear');
+    var TABS = [['gear', '장비'], ['scenes', '마친 장면'], ['cards', '말씀 카드'], ['marks', '책갈피']];
+    var need = { scenes: 1, cards: 1, marks: 2 };
+    function locked(k) { var st = g.info(need[k]); return el('p', { class: 'den-msg', text: st.name + josa(st.name, '를', '을') + ' 얻으면(' + st.at + '장면) 열려요. 지금 ' + sm.done + '장면을 마쳤어요.' }); }
+    var body;
+    if (tab === 'gear') {
+      var rows = g.STAGES.filter(function (x) { return x.ready; }).map(function (x) {
+        var own = x.n <= n;
+        return el('div', { class: 'gear-row' + (own ? '' : ' off') }, el('span', { class: 'gi', html: g.svg[x.key] || '' }),
+          el('div', {}, el('b', { text: x.n + '단계 · ' + x.name + ' · ' + x.fn }), el('p', { text: own ? (x.d[S.tier] || x.d.t2) : x.at + '장면을 마치면 생겨요.' })));
+      });
+      var nx = g.next();
+      var opts = [];
+      if (n >= 1) opts.push(el('div', { class: 'deco' }, el('span', { text: '탐험 모자 (3D에서 세 아이가 써요)' }),
+        el('button', { class: 'tog', 'aria-pressed': String(g.prefs.hat()), on: { click: function () { g.prefs.setHat(!g.prefs.hat()); openRecord('gear'); } } }, g.prefs.hat() ? '쓰고 있어요' : '쓰기')));
+      if (n >= 3) opts.push(el('div', { class: 'deco' }, el('span', { text: '손목 탐지기 빛 (끄면 빛만 없어지고 기능은 그대로)' }),
+        el('button', { class: 'tog', 'aria-pressed': String(g.prefs.fx()), on: { click: function () { g.prefs.setFx(!g.prefs.fx()); openRecord('gear'); } } }, g.prefs.fx() ? '켜져 있어요' : '꺼져 있어요')));
+      var open = g.flagsOpen(), cur0 = g.prefs.flag();
+      var sw = g.FLAGS.map(function (c, k) {
+        var lk = k >= open, b = el('button', { class: 'sw' + (c ? '' : ' none') + (lk ? ' locked' : ''), 'aria-pressed': String(cur0 === c), 'aria-label': lk ? '잠긴 깃발 색' : c ? '깃발 색' : '깃발 없음', style: c ? 'background:' + c : '', on: { click: function () { if (lk) return; g.prefs.setFlag(c); openRecord('gear'); } } }, c ? (lk ? '🔒' : null) : '없음');
+        if (lk) b.disabled = true; return b;
+      });
+      opts.push(el('div', { class: 'deco' }, el('span', { text: '탐험대 깃발 (시대 부속을 고칠 때마다 색이 하나씩 열려요 · ' + (open - 1) + ' / ' + (g.FLAGS.length - 1) + ')' }), el('div', { class: 'sws' }, sw)));
+      body = [el('div', { class: 'gearlist' }, rows), el('p', { class: 'den-msg', text: nx ? '다음 장비: ' + nx.stage.name + '까지 ' + nx.left + '장면' : '다음 장비는 준비하고 있어요.' }), opts];
+    } else if (n < (need[tab] || 0)) {
+      body = locked(tab);
+    } else if (tab === 'scenes' || tab === 'cards') {
+      body = OT.eras.map(function (e) {
+        var ids = e.scenes.filter(function (id) { return PG.done[id]; });
+        if (!ids.length) return null;
+        return el('div', { class: 'rec-era' }, el('h2', { text: '시대 ' + e.era + ' · ' + e.name }),
+          ids.map(function (id) {
+            var d = sc(id);
+            if (tab === 'cards') return el('div', { class: 'vcards' }, d.cards.map(function (cd) { return el('div', { class: 'vcard' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }), el('div', { class: 'm', text: d.title })); }));
+            return el('div', { class: 'rec-row' }, el('span', {}, el('b', { text: d.title }), el('small', { text: U.bookName(d.ref) })), btn('다시 가기', function () { openScene(id); }, 'quiet'));
+          }));
+      });
+      if (!sm.done) body = el('p', { class: 'den-msg', text: '아직 마친 장면이 없어요.' });
+      if (tab === 'cards') body = [el('p', { class: 'den-lead', text: '말씀 카드는 장절과 제목만 적혀 있어요. 성경책에서 직접 찾아 읽고, 가족에게도 들려주세요.' }), body];
+    } else {
+      var items = g.bookmarks(), byBook = [], last = null;
+      items.forEach(function (x) { var b = U.bookName(x.ref.split(' ')[0] + ' 1').replace(/ 1장$/, ''); if (!last || last.b !== b) { last = { b: b, list: [] }; byBook.push(last); } last.list.push(x); });
+      var legacy = items.some(function (x) { return x.legacy; });
+      body = [el('p', { class: 'den-lead', text: '마친 장면에서 찾아 읽은 물음의 장절이에요. 누르면 다시 찾을 곳을 알려 줘요.' }),
+        legacy ? el('p', { class: 'fine', text: '전에 마친 장면은 마지막으로 마친 나이 단계의 물음만 보여요.' }) : null,
+        byBook.map(function (bk) {
+          return el('div', { class: 'rec-era' }, el('h2', { text: bk.b }), bk.list.map(function (x) {
+            var hintBox = el('div', {});
+            return el('div', { class: 'rec-mark' }, el('button', { class: 'rec-mbtn', on: { click: function () { hintBox.replaceChildren(el('div', { class: 'note look fadein' }, el('b', { text: '성경책에서 ' + U.bookName(x.ref) + '을 찾아 읽어 보세요.' }))); } } },
+              refChip(x.ref), el('span', { text: (x.label || x.kind) + ' · ' + x.title })), hintBox);
+          }));
+        })];
+      if (!items.length) body = el('p', { class: 'den-msg', text: '아직 책갈피가 없어요.' });
+    }
+    var tabs = el('div', { class: 'rec-tabs', role: 'tablist' }, TABS.map(function (t) {
+      return el('button', { class: 'rec-tab', role: 'tab', 'aria-selected': String(t[0] === tab), on: { click: function () { openRecord(t[0]); } } }, t[1]);
+    }));
+    box.replaceChildren(el('div', { class: 'otmap pad' },
+      el('div', { class: 'eyebrow', text: '탐험대 이야기 · 탐험 장비 ' + n + '단계' }), el('h1', { class: 'den-title', text: '탐험 기록장' }),
+      tabs, el('div', { class: 'rec-body' }, body),
+      el('div', { class: 'otmap-foot' }, btn('시대 지도', function () { openMap(); }, 'wide'))));
+    box.className = 'ot3 map'; box.hidden = false;
   }
 
   /* ── 수리 현황: 모은 재료 (탐험대 이야기) ── */
@@ -477,10 +588,12 @@
     PG.done[id] = { t: S.tier, d3: 1 };
     mats(id).forEach(function (x) { PG.mats[id + ':' + x.key] = 1; });
     save();
+    if (GR()) GR().noteComplete(id, S.tier);
   }
 
   BO3D.story = {
-    fixedEras: function () { return OT.eras.filter(function (e) { var em = eraMats(e); return em.all && em.got === em.all; }).length; },   /* 아지트 꾸미기 해금에 쓴다 */
+    fixedEras: function () { return fixedCount(); },   /* 아지트 꾸미기 해금에 쓴다 */
+    progressSummary: progressSummary, openRecord: function (tab) { openRecord(tab); }, gearCard: function (list, title) { return gearCard(list, false, title); },
     open: function () { openMap(); }, openMap: openMap, openScene: openScene, play: play, complete3d: complete3d, close: closeAll, segment: segment, take: function (id, key) { PG.mats[id + ':' + key] = 1; save(); },
     reset: function () { PG = {}; save(); load(); },
     debug: {

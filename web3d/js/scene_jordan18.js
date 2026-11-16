@@ -131,6 +131,7 @@
         if (i === 6) return { focus: GILGAL, mid: GILGAL, dy: 1.5, backE: 10, upE: 6 };
         return null;
       },
+      aura: 'dim', quietAt: function () { var a = JL && JL.ark; return a ? [[a.position.x, a.position.z, 10]] : []; },   /* 언약궤 둘레 10m는 끔 */
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 넓은 강가에 내려앉았어요. 맞은편 멀리 성이 보여요.', say: { who: 'hyu', text: '강물이 언덕까지 차올랐어. 둑 위에서만 다니자.' } },
       lookText: '요단 강을 건넌 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',

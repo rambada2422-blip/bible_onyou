@@ -199,6 +199,7 @@
         if (i === 4) return { focus: CITY, mid: CITY, dy: 5, backE: 10, upE: 5 };
         return { focus: CITY, mid: [8, -20], dy: 4, backE: 9, upE: 4.5 };
       },
+      aura: 'dim', quietAt: function () { return ark ? [[ark.position.x, ark.position.z, 10]] : []; },   /* 언약궤 둘레 10m는 끔 */
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 넓은 평지에 내려앉았어요. 멀리 성벽으로 둘린 성이 보여요.', say: { who: 'hyu', text: '성에서 멀리 떨어진 진 쪽에서만 다니자.' } },
       lookText: '여리고 성 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',

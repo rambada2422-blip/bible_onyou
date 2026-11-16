@@ -136,6 +136,7 @@
       },
       beatNote: function (i) { return i === 2 || i === 3 ? '이 대목은 아브람이 이곳에 장막을 치기 전의 일이에요. 장막을 잠시 걷어 내고 보여 줘요.' : null; },
       helpNote: function (after) { return after === 2 ? '이 돕기도 장막을 치기 전, 일행이 이 땅에 막 들어오던 때의 이야기예요. 우리가 재료를 주운 길은 이 일행이 지나간 뒤의 길이에요.' : null; },   /* 3D에서는 재료를 먼저 모으므로 때를 밝힌다(시대 2 독립 대조, 2026-11-16) */
+      quietAt: function () { return [[ALTAR[0], ALTAR[1], 6]]; },   /* 제단 둘레 6m는 끔 */
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 언덕 위에 내려앉았어요. 저쪽에 장막 몇 채가 보여요.', say: { who: 'hyu', text: '장막에서 멀리 떨어진 곳에서만 다니자.' } },
       lookText: '아브람을 부르신 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
