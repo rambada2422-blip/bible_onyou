@@ -241,7 +241,7 @@
         u.onend = u.onerror = function () { if (speaking === b) { b.setAttribute('aria-pressed', 'false'); speaking = null; } };
         speaking = b; b.setAttribute('aria-pressed', 'true'); speechSynthesis.speak(u);
       } catch (e) { speaking = null; b.setAttribute('aria-pressed', 'false'); }
-    } } }, icon('book'), el('span', { text: '읽어 주기' }));
+    } } }, icon('bookline'), el('span', { text: '읽어 주기' }));
     return b;
   }
   applySet();

@@ -116,12 +116,19 @@
       if (l.who === 'narr') return el('p', { class: 'narr', text: l.text });
       return U.say(l.who, l.text);
     }
+    /* 첫 1분 안내를 세 걸음으로(전에는 줄마다 한 번씩 네 번): ① 무슨 일이 났나 ② 어떻게 하나 ③ 준비물(성경책). 걸음마다 한 화면에 들어오게 */
+    var cut = Math.min(2, st.lines.length - 1), N = 3;
     function step() {
-      var last = i === st.lines.length - 1;
+      var last = i === N - 1, body;
+      if (i === 0) body = st.lines.slice(0, cut).map(line);
+      else if (i === 1) body = [st.lines.slice(cut).map(line), el('p', { class: 'den-msg ot-rule', text: st.rule })];
+      else body = [el('div', { class: 'ready3' }, el('b', { text: '시작하기 전에' }),
+        el('span', {}, icon('bookline'), '성경책을 곁에 펴 두세요. 물음이 나오면 성경책에서 찾아 읽고 답해요.'),
+        S.tier === 't1' ? el('span', {}, icon('compass'), '찾기 어려우면 부모님이나 선생님과 함께 찾아요.') : null,
+        el('span', {}, icon('journal'), '장면을 마치면 탐험 일지에 말씀 카드가 들어와요. 언제든 쉬어 가도 진행은 이 기기에 남아요.'))];
       show('intro', 'patriarchs', null,
-        [el('div', { class: 'eyebrow dark', text: '탐험대 이야기' }), el('h2', { class: 'ot-title', text: st.title }),
-          st.lines.slice(0, i + 1).map(line), last ? el('p', { class: 'den-msg ot-rule', text: st.rule }) : null],
-        btn(last ? '시대 지도 보기' : '다음', function () { if (last) { PG.seenIntro = 1; save(); then(); } else { i++; step(); } }, 'wide'));
+        [el('div', { class: 'eyebrow dark', text: '탐험대 이야기 ' + (i + 1) + ' / ' + N }), el('h2', { class: 'ot-title', text: i === N - 1 ? '준비됐나요?' : st.title }), body],
+        [i > 0 ? btn('이전', function () { i--; step(); }, 'plain') : null, btn(last ? '시대 지도 보기' : '다음', function () { if (last) { PG.seenIntro = 1; save(); then(); } else { i++; step(); } })]);
     }
     step();
   }
