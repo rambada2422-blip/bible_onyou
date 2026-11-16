@@ -1,0 +1,4 @@
+{ "name": "Samuel", "note": "사무엘(삼상 8:4-22, 10:17-25). 늙었다(8:1, 8:5). 겉옷을 입었다(15:27, 28:14). 이 본문은 생김새와 옷 색을 말하지 않는다. 늙은 사람이라 흰 수염과 흰 머리. 지팡이는 본문에 없어 그리지 않는다. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#5E5A6E", "ROBE_SH": "#45425A", "ROBE_HI": "#727088", "TUNIC": "#E6DCC4", "BEARD": "#E4E0D8", "BEARD_SH": "#C8C4BC", "BROW": "#D8D4CC", "HAIR": "#E4E0D8",
+              "CLOTH": "#DCD2BC", "CLOTH_SH": "#C4BAA2", "BELT": "#7A5A3A", "BELT_SH": "#5E4428" } }

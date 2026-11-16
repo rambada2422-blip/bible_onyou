@@ -1,0 +1,4 @@
+{ "name": "Jonah", "note": "아밋대의 아들 요나(욘 1:1, 3:3-4, 4:5). 이 본문은 생김새와 옷을 말하지 않는다. 지팡이 없음. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#56707E", "ROBE_SH": "#3E525E", "ROBE_HI": "#6A8492", "TUNIC": "#E4D6B4", "BEARD": "#3A2C22", "BEARD_SH": "#2C211A", "BROW": "#3A2C22", "HAIR": "#3A2C22",
+              "CLOTH": "#DCCDA6", "CLOTH_SH": "#C4B48C" } }
