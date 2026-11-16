@@ -166,6 +166,15 @@
         stones(103, 430, 14, '#C99A64', '#B07A48') + P(ridge(104, 520, 16, 2.4), '#A88A5A') + stones(105, 540, 8, '#9A7A4A', '#B49464');
     }
   };
+  /* 시대 지도의 띠 그림에만 까는 길(지도 글: "앞 시대의 장면 하나를 마치면 다음 시대로 가는 길이 열려요"). 시대마다 [시작 x, 왼쪽 y, 오른쪽 y, 색].
+   * 열 시대의 띠를 이어 보면 한 줄기 길이 된다. 창조는 동산 동편(창 3:24)쯤에서 시작한다. 사람·발자국은 그리지 않는다 */
+  var TRAIL = { creation: [540, 590, 545, '#E8D8A8'], patriarchs: [-20, 600, 540, '#8C7868'], exodus: [-20, 598, 548, '#F6DDA8'], wilderness: [-20, 600, 540, '#F4E4C0'],
+    conquest: [-20, 600, 552, '#D8CFA6'], judges: [-20, 600, 548, '#E6CF8C'], kingdom: [-20, 600, 548, '#C8AC7C'], divided: [-20, 604, 580, '#6E5E5E'], exile: [-20, 604, 584, '#8E7E6E'], return: [-20, 600, 548, '#E6CFA0'] };
+  function trail(key) {
+    var t = TRAIL[key] || TRAIL.wilderness, x0 = t[0], y0 = t[1], y1 = t[2], mx = (x0 + 920) / 2, my = Math.min(y0, y1) - 24, w0 = x0 > 0 ? 2 : 16;
+    return '<path d="M' + x0 + ',' + (y0 + w0) + ' Q' + mx + ',' + (my + 12) + ' 920,' + (y1 + 11) + '" stroke="#16233F" stroke-width="5" fill="none" opacity=".2"/>' +
+      P('M' + x0 + ',' + (y0 - w0) + ' Q' + mx + ',' + (my - 12) + ' 920,' + (y1 - 10) + ' L920,' + (y1 + 10) + ' Q' + mx + ',' + (my + 12) + ' ' + x0 + ',' + (y0 + w0) + ' Z', t[3], ' opacity=".92"');
+  }
   /* key의 풍경을 SVG 문자열로 돌려준다 */
   /* opts.stage: 단계가 있는 풍경(창조)의 단계, opts.align: 'bottom'이면 아래쪽(땅)을 맞춰 자른다(지도의 띠 그림)
    * opts.scene, opts.at: 장면과 대목이 주어지고 그 장면의 그림이 sceneart.js에 있으면 그것을 쓴다(없으면 시대 풍경 그대로) */
@@ -175,6 +184,7 @@
     var SA = window.BO3D.sceneArt, str = null;
     if (opts.scene && SA) { try { str = SA.draw(opts.scene, opts.at); } catch (e) { str = null; } }
     if (!str) str = (ART[key] || ART.wilderness)(opts.stage);
+    if (opts.align === 'bottom' && !opts.scene) str += trail(key);
     /* 한 화면에 그림이 여러 장 있어도(시대 지도) 하늘 색이 서로 섞이지 않게 id를 그림마다 다르게 한다 */
     var parts = str.split('ea-sky').join('ea-sky' + (uid++)).split('|');
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" preserveAspectRatio="xMidY' + (opts.align === 'bottom' ? 'Max' : 'Mid') + ' slice" aria-hidden="true"><defs>' + parts[0] + '</defs>' + parts.slice(1).join('') + '</svg>';
