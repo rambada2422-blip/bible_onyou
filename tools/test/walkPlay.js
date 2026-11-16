@@ -163,6 +163,20 @@ const BAN = ['틀렸', '실패', '감점', '목숨', '점수는', '순위표', '
   await p.waitForTimeout(80);
   need(await p.evaluate(() => { const c = document.querySelector('.ot3 .dexcell'); return !!c && !!c.querySelector('img') && c.innerText.includes('방주') && c.innerText.includes('창 6:15-16'); }), '탐험 일지: 사진 도감에 사진·설명·장절이 보이지 않음');
   need(await p.evaluate(() => BO3D.story.shots('OT-03').ark.indexOf('data:image/jpeg') === 0), '사진 도감: 3D 장면에 돌려줄 사진이 없음');
+  /* 저장 자리가 모자랄 때: 사진을 모두 버리지 않고 오래된 것부터 그림만 뺀다(이름·설명은 남김). 저장을 잠시 작게 흉내 낸다 */
+  const full = await p.evaluate(async () => {
+    const dx = BO3D.story.debug.dex(), keep = JSON.parse(JSON.stringify(dx)); Object.keys(dx).forEach((k) => delete dx[k]);   /* 시험 사진만 두고 잰다 */
+    const real = Storage.prototype.setItem, img = 'data:image/jpeg;base64,' + 'A'.repeat(4000);   /* 사진 둘은 들어가고 셋은 안 들어가는 크기 */
+    Storage.prototype.setItem = function (k, v) { if (k === 'bo3d.dex.v1' && v.length > 9000) throw new DOMException('full', 'QuotaExceededError'); return real.call(this, k, v); };
+    const d = (n) => ({ id: 'q' + n, name: '시험 사진 ' + n, desc: '설명', ref: '창 1:1' });
+    for (let i = 1; i <= 3; i++) { BO3D.story.saveShot('OT-02', d(i), img); await new Promise((r) => setTimeout(r, 5)); }
+    Storage.prototype.setItem = real;
+    const st = JSON.parse(localStorage.getItem('bo3d.dex.v1') || '{}')['OT-02'] || {};
+    const r = { keys: Object.keys(st).length, imgs: ['q1', 'q2', 'q3'].map((k) => !!(st[k] && st[k].img)), names: !!(st.q1 && st.q1.n) };
+    delete dx['OT-02']; Object.assign(dx, keep); localStorage.setItem('bo3d.dex.v1', JSON.stringify(dx));
+    return r;
+  });
+  need(full.keys === 3 && full.names && full.imgs.join() === 'false,true,true', '사진 도감: 저장 자리가 모자랄 때 새 사진 그림을 지키지 못함 ' + JSON.stringify(full));
   await shot('journal-photos'); await check('탐험 일지(사진 도감)');
   await p.click('.ot3 [data-tab="notes"]'); await p.waitForTimeout(80);
   need(await p.evaluate(() => document.querySelectorAll('.ot3 .jnote').length === 1), '탐험 일지: 내 기록에 마친 장면이 없음');

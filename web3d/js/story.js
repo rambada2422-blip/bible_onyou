@@ -41,12 +41,18 @@
   var DEXK = 'bo3d.dex.v1', DX = {};
   try { DX = JSON.parse(localStorage.getItem(DEXK) || '{}') || {}; } catch (e) { DX = {}; }
   function saveDex() {
-    try { localStorage.setItem(DEXK, JSON.stringify(DX)); }
-    catch (e) { /* 자리가 모자라면 사진 없이 이름과 설명만 남긴다 */
-      try { var lite = {}; Object.keys(DX).forEach(function (id) { lite[id] = {}; Object.keys(DX[id]).forEach(function (k) { var o = DX[id][k]; lite[id][k] = { n: o.n, d: o.d, r: o.r }; }); }); localStorage.setItem(DEXK, JSON.stringify(lite)); } catch (e2) { /* 이번 방문 동안만 */ }
+    try { localStorage.setItem(DEXK, JSON.stringify(DX)); return; } catch (e) { /* 자리가 모자람 */ }
+    /* 자리가 모자라면 오래된 사진부터 그림만 빼고(이름·설명·장절은 남김) 들어갈 때까지 다시 넣는다. 여덟 번에 나눠 뺀다 */
+    var old = [];
+    Object.keys(DX).forEach(function (id) { Object.keys(DX[id]).forEach(function (k) { if (DX[id][k].img) old.push([DX[id][k].t || 0, id, k]); }); });
+    old.sort(function (a, b) { return a[0] - b[0]; });
+    var copy = JSON.parse(JSON.stringify(DX)), step = Math.max(1, Math.ceil(old.length / 8));
+    for (var i = 0; i < old.length; i += step) {
+      old.slice(i, i + step).forEach(function (x) { copy[x[1]][x[2]].img = ''; });
+      try { localStorage.setItem(DEXK, JSON.stringify(copy)); return; } catch (e2) { /* 더 뺀다 */ }
     }
   }
-  function saveShot(id, d, img) { if (!d || !d.id) return; (DX[id] || (DX[id] = {}))[d.id] = { n: d.name, d: d.desc, r: d.ref || '', img: img || '' }; saveDex(); }
+  function saveShot(id, d, img) { if (!d || !d.id) return; (DX[id] || (DX[id] = {}))[d.id] = { n: d.name, d: d.desc, r: d.ref || '', img: img || '', t: Date.now() }; saveDex(); }
   function shotCount() { return Object.keys(DX).reduce(function (a, id) { return a + Object.keys(DX[id]).length; }, 0); }
 
   function sc(id) { return OT.scenes[id]; }
