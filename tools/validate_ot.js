@@ -221,6 +221,7 @@ function check(file) {
       if (best >= 16 && br !== ref) W(`${w}: 장면 본문과 ${best}글자가 그대로 같음. 자기 말로 풀어 쓴다 (${br})`);
     }
   });  if (V4) exposure(d, E);
+  if (V5) lengthBias(d, E);
 }
 
 /* ── --v4: 성경을 읽어야 답이 나오는 물음(규칙서 13.9, 대표 결정 2026-11-16) ──
@@ -307,8 +308,29 @@ function exposure(d, E) {
   });
 }
 
-const NEED_MISSION = process.argv.includes('--mission') || process.argv.includes('--v2') || process.argv.includes('--v3') || process.argv.includes('--v4');
-const V4 = process.argv.includes('--v4');
+/* ── --v5: 정답 길이로 답이 보이는가(성장 시스템 설계 보완-3, 2026-11-16) ──
+ * 한 개만 맞는 물음에서 정답이 맞지 않는 보기 가운데 가장 긴 것보다 1.3배 넘게, 5글자 넘게 길면 오류.
+ * 정답이 여러 사실을 담아야 해서 길 수밖에 없으면 그 물음에 "lenOk": "이유"(독립 대조가 확인). */
+function lengthBias(d, E) {
+  const m = d.mission || {};
+  ['t1', 't2', 't3'].forEach((t) => {
+    const qs = [];
+    ((d.gates || {})[t] || []).forEach((q, i) => qs.push([`gates.${t}[${i}]`, q]));
+    (d.quests || []).forEach((x, i) => { if (x.q && x.q[t]) qs.push([`quests[${i}].q.${t}`, x.q[t]]); });
+    ((m.help || {}).steps || []).forEach((h, i) => { if (h.read && h.read[t]) qs.push([`help.steps[${i}].read.${t}`, h.read[t]]); });
+    qs.forEach(([w, q]) => {
+      if (q.lenOk || q.type === 'multi' || !q.confirm || !Array.isArray(q.confirm.options)) return;
+      const ok = q.confirm.options.filter((o) => o.ok); if (ok.length !== 1) return;
+      const L = (s) => String(s).replace(/\s/g, '').length;
+      const ol = L(ok[0].label), mx = Math.max(...q.confirm.options.filter((o) => !o.ok).map((o) => L(o.label)));
+      if (ol > mx * 1.3 && ol - mx >= 5) E(`${w}: 정답(${ol}자)이 맞지 않는 보기 가운데 가장 긴 것(${mx}자)보다 눈에 띄게 김. 맞지 않는 보기를 정답만큼 구체적으로(뜻은 그대로). 어쩔 수 없으면 "lenOk"에 이유`);
+    });
+  });
+}
+
+const NEED_MISSION = process.argv.includes('--mission') || process.argv.includes('--v2') || process.argv.includes('--v3') || process.argv.includes('--v4') || process.argv.includes('--v5');
+const V5 = process.argv.includes('--v5');
+const V4 = process.argv.includes('--v4') || V5;
 const V3 = process.argv.includes('--v3') || V4;
 const V2 = process.argv.includes('--v2') || V3;
 const want = process.argv.slice(2).filter((x) => !x.startsWith('--'));
