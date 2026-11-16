@@ -2,6 +2,9 @@
 //   node tools/validate_ot.js            전체
 //   node tools/validate_ot.js OT-05 ...   고른 장면만
 //   node tools/validate_ot.js --mission    임무(mission)가 없으면 오류로 본다
+//   node tools/validate_ot.js --v4         --v3에 더해 넓힌 기계 검사(tools/bible_ref/v4checks.js)와 시대 안내(eras.json) 검사.
+//                                          사람이 읽고 가릴 것은 CHK로 나온다(오류·경고 수에 들지 않음). 가린 것은 content/ot/_verify/v4_확인됨.json 에 적는다.
+//                                          --v4 --list 는 가려 둔 것까지 모두 보여 준다.
 // 오류(ERR)가 하나라도 있으면 종료 코드 1. 경고(WARN)는 사람이 확인한다.
 // 장절이 실제로 있는지, 문장이 검증용 본문(개역한글)과 지나치게 같은지도 본다(ref/bible 이 있을 때. tools/bible_ref/fetch.sh).
 const fs = require('fs'), path = require('path');
@@ -221,14 +224,35 @@ function check(file) {
       if (best >= 16 && br !== ref) W(`${w}: 장면 본문과 ${best}글자가 그대로 같음. 자기 말로 풀어 쓴다 (${br})`);
     }
   });
+  /* 넓힌 기계 검사(--v4, 3차 전수 대조 2026-11-16~17) */
+  if (V4 && hasRef) V4C.checkScene(d).forEach((f) => v4out(id, f, E));
+  if (V4) v4scenes.push(d);
+}
+const v4scenes = []; let nchk = 0, nack = 0; const chkByCode = {};
+function v4out(id, f, E) {
+  if (f.level === 'ERR') { (E || ((m) => { nerr++; console.log(`ERR  ${id}: ${m}`); }))(`[v4 ${f.code}] ${f.where}: ${f.msg}`); return; }
+  const key = `${f.code}|${f.where}`;
+  if (ACK[id] && ACK[id][key] !== undefined) { nack++; if (!LIST) return; console.log(`ack  ${id}: [${f.code}] ${f.where}: ${f.msg}  ← ${ACK[id][key]}`); return; }
+  nchk++; chkByCode[f.code] = (chkByCode[f.code] || 0) + 1;
+  console.log(`CHK  ${id}: [${f.code}] ${f.where}: ${f.msg}`);
 }
 
-const NEED_MISSION = process.argv.includes('--mission') || process.argv.includes('--v2') || process.argv.includes('--v3');
-const V3 = process.argv.includes('--v3');
+const V4 = process.argv.includes('--v4');
+const LIST = process.argv.includes('--list');
+const V4C = V4 ? require('./bible_ref/v4checks.js') : null;
+const ACKFILE = path.join(DIR, '_verify', 'v4_확인됨.json');
+const ACK = V4 && fs.existsSync(ACKFILE) ? JSON.parse(fs.readFileSync(ACKFILE, 'utf8')) : {};
+const NEED_MISSION = process.argv.includes('--mission') || process.argv.includes('--v2') || process.argv.includes('--v3') || V4;
+const V3 = process.argv.includes('--v3') || V4;
 const V2 = process.argv.includes('--v2') || V3;
 const want = process.argv.slice(2).filter((x) => !x.startsWith('--'));
 const files = fs.readdirSync(DIR).filter((f) => /^OT-\d\d\.json$/.test(f) && (!want.length || want.includes(f.replace('.json', '')))).sort();
 if (!hasRef) console.log('주의: ref/bible 이 없어 장절이 실제로 있는지는 검사하지 못함 (tools/bible_ref/fetch.sh)');
 files.forEach((f) => check(path.join(DIR, f)));
+if (V4 && hasRef && !want.length) {
+  const E = JSON.parse(fs.readFileSync(path.join(DIR, 'eras.json'), 'utf8'));
+  V4C.checkEras(E, v4scenes).forEach((f) => v4out('eras', f));
+}
+if (V4) console.log(`넓힌 검사(--v4): 사람이 볼 것(CHK) ${nchk}건${nack ? `, 읽고 가려 둔 것 ${nack}건(--list로 봄)` : ''}` + (nchk ? ' · ' + Object.keys(chkByCode).sort().map((k) => `${k} ${chkByCode[k]}`).join(', ') : ''));
 console.log(`검사 ${files.length}개 장면: 오류 ${nerr}, 경고 ${nwarn}`);
 process.exit(nerr ? 1 : 0);
