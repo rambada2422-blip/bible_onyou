@@ -1,0 +1,35 @@
+# 푸시할 때마다 구약 장면 자료를 자동으로 검사한다(3차 전수 대조 때 더함, 2026-11-16).
+#   1) 검증용 성경 본문을 받는다(저장소에는 넣지 않는다. tools/bible_ref/fetch.sh)
+#   2) validate_ot.js 를 모든 플래그로 돌린다. 오류가 하나라도 있으면 실패
+#   3) build3d.js 로 묶는다. 묶어서 나온 파일(otdata.js 등)이 저장소의 것과 다르면 실패(자료를 고치고 다시 묶지 않은 것)
+name: 장면 자료 검사
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 검증용 본문 받기
+        run: bash tools/bible_ref/fetch.sh
+      - name: 형식·장절 검사 (플래그 없음)
+        run: node tools/validate_ot.js
+      - name: 임무 검사 (--mission)
+        run: node tools/validate_ot.js --mission
+      - name: 물음의 세 단계·현장 돕기 (--v2)
+        run: node tools/validate_ot.js --v2
+      - name: 놀이 다양화 (--v3)
+        run: node tools/validate_ot.js --v3
+      - name: 넓힌 기계 검사 (--v4)
+        run: |
+          set -o pipefail
+          node tools/validate_ot.js --v4 | { grep -v '^CHK' || true; }
+      - name: 묶기 (build3d.js)
+        run: node tools/build3d.js
+      - name: 묶은 파일이 저장소와 같은지
+        run: git diff --exit-code -- web3d/js/otdata.js web3d/js/avatars.js web3d/js/glbdata.js
