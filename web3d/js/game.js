@@ -107,6 +107,7 @@
     rt.departGlow = makeGlow(); rt.departGlow.position.y = 1.3; if (FX) rt.departGlow.layers.set(FX.GLOW); rt.machine.group.add(rt.departGlow);
     rt.DEX = (rt.dex || []).concat([{ id: 'machine', name: '타임머신', desc: '탐험대가 타고 온 놋쇠 타임머신. 성경에 나오는 물건은 아니다', ref: null, hint: '처음 도착한 자리에 서 있어요.', range: 17,
       pos: function () { return new T.Vector3(rt.P.machine[0], rt.height(rt.P.machine[0], rt.P.machine[1]) + 1.3, rt.P.machine[1]); } }]);
+    if (BO3D.props && BO3D.props.mergeTagged && rt.mergeStill !== false) BO3D.props.mergeTagged(rt.scene);   /* 바위·덤불·나무·장막처럼 움직이지 않는 소품을 한 덩어리로(그리기 호출 줄이기) */
     if (FX) FX.sortLayers(rt.scene);
     built[id] = rt; SCN = sv || rt; cur = svc;
     return rt;
@@ -178,6 +179,28 @@
   add(ui, [touch, hud, base, hint, toastEl, dexBtn, camBtn, denBtn, dedBtn, snd, flash, panel, overlay, fpsEl]);
 
   function setObjective(t) { objText.textContent = t; }
+  /* 화면 위 장절 표시. 대목을 보여 줄 때는 그 대목의 장절을 따라가고, 탐험 중에는 이 장면에서 다루는 범위를 보여 준다.
+     장면의 ref가 대목들을 다 덮지 못하면(예: OT-21의 ref는 삿 6:11-16인데 3D는 7장) 대목의 장절을 이어 붙여 만든다(삿 6:11-16, 7:1-22). */
+  function parseRef(r) {
+    var m = /^(.+?)\s+(\d+):(\d+)(?:-(?:(\d+):)?(\d+))?$/.exec(String(r || '').trim());
+    if (!m) return null;
+    var c1 = +m[2], v1 = +m[3], c2 = m[4] ? +m[4] : c1, v2 = m[5] ? +m[5] : v1;
+    return { book: m[1], c1: c1, v1: v1, c2: c2, v2: v2 };
+  }
+  function sceneRange(sc) {
+    var whole = parseRef(sc.ref), bs = (sc.beats || []).map(function (b) { return parseRef(b.ref); });
+    if (!whole || !bs.length || bs.some(function (b) { return !b || b.book !== whole.book; })) return sc.ref;
+    var inside = function (b) { return (b.c1 > whole.c1 || (b.c1 === whole.c1 && b.v1 >= whole.v1)) && (b.c2 < whole.c2 || (b.c2 === whole.c2 && b.v2 <= whole.v2)); };
+    if (bs.every(inside)) return sc.ref;
+    var runs = [];
+    bs.forEach(function (b) {
+      var l = runs[runs.length - 1];
+      if (l && l.c2 === b.c1 && b.v1 <= l.v2 + 1) { if (b.c2 > l.c2 || b.v2 > l.v2) { l.c2 = b.c2; l.v2 = b.v2; } }
+      else runs.push({ c1: b.c1, v1: b.v1, c2: b.c2, v2: b.v2 });
+    });
+    return whole.book + ' ' + runs.map(function (r) { return r.c1 + ':' + r.v1 + (r.c2 !== r.c1 ? '-' + r.c2 + ':' + r.v2 : r.v2 !== r.v1 ? '-' + r.v2 : ''); }).join(', ');
+  }
+  function setHudRef(r) { if (hudRef.lastChild) hudRef.lastChild.textContent = r || (SC ? (SC.hudRange || (SC.hudRange = sceneRange(SC))) : ''); }
   function toast(html, who) {
     toastEl.replaceChildren();
     if (who) { add(toastEl, [avatar(who), el('span', {}, el('b', { text: C.chars[who].name + ' ', style: 'color:' + C.chars[who].color }), html)]); }
@@ -315,12 +338,13 @@
       state = 'caption';
       if (SCN.partFound) SCN.partFound(i);
       var bi = SCN.partBeats ? SCN.partBeats[i] : null;
+      if (bi !== null && bi !== undefined && SC.beats[bi]) setHudRef(SC.beats[bi].ref);   /* 화면 위 장절 표시가 이 대목을 따라간다 */
       showPanel([el('div', { class: 'q-kicker', text: (pm ? '재료 ' : '부품 ') + partsFound + ' / ' + PARTS.length + ' · ' + PARTS[i].name }),
         el('div', { class: 'say' }, avatar(S.ch), el('div', { class: 'bubble' }, el('b', { text: C.chars[S.ch].name, style: 'color:' + C.chars[S.ch].color }), PARTS[i].line)),
         pm ? matNote(pm) : null,
         bi !== null && bi !== undefined && SC.beats[bi] ? [el('div', { class: 'q-kicker', text: '지켜보기' }), storyNote(SCN.beatNote ? SCN.beatNote(bi) : null), beatNodes(SC.beats[bi])] : null],
         btn('계속 탐험하기', function () {
-          hidePanel();
+          hidePanel(); setHudRef(null);
           if (SCN.partContinue) SCN.partContinue(i);
           var go2 = function () { quest = i + 1; openQuiz(); };
           if (bi !== null && bi !== undefined && hasHelp(bi)) seg('help:' + bi, go2); else go2();   /* 이 대목 뒤의 현장 돕기(규칙서 13.6) */
@@ -486,7 +510,7 @@
   function hudMode() {
     var j = cur === 'jordan';
     place_.textContent = j ? JD.unknownPlace : SC.place;
-    if (!j && hudRef.lastChild) hudRef.lastChild.textContent = SC.ref;
+    if (!j) setHudRef(null);
     hudRef.hidden = j; partCount.hidden = j; clueCount.hidden = !j;
     dedBtn.hidden = true;
     if (j) { track.hidden = true; denBtn.hidden = true; }
@@ -878,6 +902,7 @@
   }
   function showBeat() {
     var b = SC.beats[evIdx], last = evIdx === SC.beats.length - 1, e0 = SCN.eventStart || 0;
+    setHudRef(b.ref);
     /* 인물의 자세는 장면 설정이 정한다(호렙: 영상에서 이미 얼굴을 가렸으면 그대로 둔다) */
     if (SCN.beatPose) SCN.beatPose(evIdx, afterVision);
     /* 장면 설정이 이 대목에서 아이들을 숨기거나(예: 타임머신 창으로 보는 장면) 탐험대 이야기 한 줄을 덧붙일 수 있다 */
@@ -898,7 +923,7 @@
     overlay.hidden = false;
   }
   function startGates() {
-    state = 'gates'; hidePanel(); root.classList.remove('ev'); camBtn.hidden = true; dexBtn.hidden = true;
+    state = 'gates'; hidePanel(); root.classList.remove('ev'); camBtn.hidden = true; dexBtn.hidden = true; setHudRef(null);
     for (var kk3 in kids) kids[kk3].group.visible = true;
     var gates = SC.gates[S.tier], gi = 0;
     (function show() {
@@ -1075,13 +1100,70 @@
   }
   window.addEventListener('resize', resize);
 
+  /* ── 가볍게 그리기 (화면은 같다) ──
+   * 1) 그림자 지도는 한 화면에 한 번만 그린다. 빛 번짐(fx.js Post)은 장면을 세 번 그리는데(평소, 가림용 검정, 빛나는 층),
+   *    three.js는 그때마다 그림자 지도를 다시 그렸다. 첫 번째에만 그리게 한다.
+   * 2) 빛나는 층(FX.GLOW)에 보이는 것이 하나도 없으면 가림용 검정 그리기를 건너뛴다(가릴 빛이 없으므로 결과가 같다).
+   *    Post는 가림용 그리기 직전에 camera.layers.set(0)을 부른다. 그때만 아무 층도 보지 않게 바꿔 준다.
+   * 3) 느린 기기 자동 대응(quality 0~3): 초당 장면 수가 낮으면 화면 배율 → 그림자 → 빛 번짐 순으로 스스로 낮춘다. */
+  var glowList = [], glowScan = null, glowScanT = -9, glowOn = true, frameNo = 0;
+  function scanGlow(sc) {
+    glowList = []; glowScan = sc; glowScanT = now;
+    sc.traverse(function (o) { if ((o.isMesh || o.isPoints || o.isSprite || o.isLine) && o.layers.mask === (1 << FX.GLOW)) glowList.push(o); });
+  }
+  function anyGlow() {
+    for (var i = 0; i < glowList.length; i++) {
+      var o = glowList[i], a = o, ok = true;
+      if (o.material && o.material.opacity !== undefined && o.material.transparent && o.material.opacity <= 0.003) continue;
+      while (a) { if (!a.visible) { ok = false; break; } a = a.parent; }
+      if (ok && o.parent) return true;
+    }
+    return false;
+  }
+  var layersSet = T.Layers.prototype.set;
+  function noBlackPass(ch) { if (ch === 0) this.mask = 0; else layersSet.call(this, ch); }
+  var Q = { level: 0, auto: !window.BO3D_TEST, t: 0, n: 0, slow: 0, fast: 0, lock: 0, basePR: Math.min(window.devicePixelRatio || 1, 2), shadowEvery: 1 };
+  function setQuality(lv) {
+    lv = Math.max(0, Math.min(3, lv)); if (lv === Q.level) return; Q.level = lv;
+    var pr = [Q.basePR, Math.max(1, Q.basePR * 0.75), Math.min(Q.basePR, 1), Math.min(Q.basePR, 0.8)][lv];
+    renderer.setPixelRatio(pr); resize();
+    Q.shadowEvery = [1, 2, 3, 0][lv];                                   /* 그림자 지도를 몇 화면마다 다시 그리나(0: 그림자 끔) */
+    renderer.shadowMap.enabled = lv < 3;
+    [SCN && SCN.scene, JL && JL.scene].forEach(function (sc) { if (sc) sc.traverse(function (o) { if (o.material) { (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) { m.needsUpdate = true; }); } }); });
+    Object.keys(built).forEach(function (k) { if (built[k].quality) built[k].quality(lv); });
+    if (fpsOn) fpsEl.title = '화질 ' + lv;
+  }
+  function watchSpeed(rdt) {
+    /* 탐험·지켜보기 중에만 잰다. 2초 평균이 낮으면 한 단계 내리고, 오래 넉넉하면 한 단계 올린다(올렸다가 다시 내려오면 그 뒤로는 올리지 않는다) */
+    if (!Q.auto || !player || rdt > 0.5 || document.hidden) return;
+    if (state !== 'explore' && state !== 'free' && state !== 'event' && state !== 'lookup') return;
+    Q.t += rdt; Q.n++;
+    if (Q.t < 2) return;
+    var f = Q.n / Q.t; Q.t = 0; Q.n = 0;
+    if (f < 27) { Q.fast = 0; if (++Q.slow >= 2 && Q.level < 3) { Q.slow = 0; if (Q.up) Q.lock = 1; Q.up = false; setQuality(Q.level + 1); } }
+    else if (f > 50) { Q.slow = 0; if (++Q.fast >= 8 && Q.level > 0 && !Q.lock) { Q.fast = 0; Q.up = true; setQuality(Q.level - 1); } }
+    else { Q.slow = 0; Q.fast = 0; }
+  }
+  function drawScene(rs, rdt) {
+    frameNo++;
+    watchSpeed(rdt);
+    if (BO3D.models2 && BO3D.models2.setEye) BO3D.models2.setEye(camera.position.x, camera.position.y, camera.position.z);   /* 멀리서 걷는 사람을 가볍게 그리는 기준 */
+    var sm = renderer.shadowMap;
+    sm.autoUpdate = false; sm.needsUpdate = Q.shadowEvery > 0 && frameNo % Q.shadowEvery === 0;
+    if (!post || Q.level >= 3) { renderer.setRenderTarget(null); renderer.render(rs, camera); return; }
+    if (glowScan !== rs || now - glowScanT > 1) scanGlow(rs);
+    glowOn = anyGlow();
+    if (!glowOn) camera.layers.set = noBlackPass;
+    try { post.render(rs, camera); } finally { if (!glowOn) delete camera.layers.set; }
+  }
+
   var last = performance.now();
   function frame(t) {
     requestAnimationFrame(frame);
     var rdt = (t - last) / 1000, dt = Math.min(0.05, rdt); last = t;
     if (paused) return; /* 이야기 카드·시대 지도가 화면을 덮는 동안은 3D를 그리지 않는다(휴대폰 전지와 시험 속도) */
     now += dt;
-    if (fpsOn) { fpsN++; fpsT += rdt; if (fpsT > 0.5) { fpsEl.textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }
+    if (fpsOn) { fpsN++; fpsT += rdt; if (fpsT > 0.5) { fpsEl.textContent = Math.round(fpsN / fpsT) + ' fps · 그리기 ' + renderer.info.render.calls + (Q.level ? ' · 화질 ' + Q.level : ''); fpsN = 0; fpsT = 0; } }
     var horeb = cur === 'scene' || !JL; /* 장면 틀로 만든 3D 장면 */
     if (horeb) {
       if (machine.update) machine.update(now);
@@ -1120,7 +1202,7 @@
     }
     var rs = horeb ? SCN.scene : JL.scene;
     renderer.info.autoReset = false; renderer.info.reset();   /* 한 화면(후처리 포함)의 그리기 수를 모아 센다(perf3d.js) */
-    if (post) post.render(rs, camera); else renderer.render(rs, camera);
+    drawScene(rs, rdt);
     if (wantShot) { wantShot = false; if (horeb) takeShot(); else takeClue(); }
   }
 
@@ -1157,7 +1239,12 @@
     stick: function (x, y) { stick.x = x; stick.y = y; },
     yaw: function (v) { camYaw = v; lastDrag = now + 999; },
     goto: function (x, z) { player.group.position.set(x, H(x, z), z); trail.push([x, z]); },
-    render: function () { var r = renderer.info.render, m = renderer.info.memory; return { calls: r.calls, tris: r.triangles, geo: m.geometries, tex: m.textures }; }   /* 장면이 무거워지지 않았는지 비교용 */
+    render: function () { var r = renderer.info.render, m = renderer.info.memory; return { calls: r.calls, tris: r.triangles, geo: m.geometries, tex: m.textures, glow: glowOn ? 1 : 0, q: Q.level }; },   /* 장면이 무거워지지 않았는지 비교용 */
+    beat: function (i) { if (state !== 'event') return false; evIdx = i; showBeat(); return true; },   /* 지켜보기의 대목으로 바로 간다(perf3d.js) */
+    hudRef: function () { return hudRef.lastChild ? hudRef.lastChild.textContent : ''; },
+    quality: function (lv, auto) { if (auto !== undefined) Q.auto = !!auto; if (lv !== undefined && lv !== null) setQuality(lv); return { level: Q.level, auto: Q.auto, pr: renderer.getPixelRatio() }; },
+    now: function () { return now; },   /* 게임 시각(초). 고치기 전·후 화면을 같은 시각에 찍으려고 */
+    three: function () { return { scene: cur === 'jordan' && JL ? JL.scene : SCN.scene, camera: camera, renderer: renderer }; }
   };
 
   useScene('OT-09'); hudMode();

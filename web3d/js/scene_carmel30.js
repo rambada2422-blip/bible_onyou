@@ -102,7 +102,7 @@
       o.home = [-18 + (i % 12) * 3.1 + (hash(i, 2) - 0.5) * 1.4, 10 + Math.floor(i / 12) * 3.2 + hash(i, 4) * 1.5]; o.near = [o.home[0] * 0.7, o.home[1] - 5];
       put(o.group, o.home[0], o.home[1]); o.group.rotation.order = 'YXZ'; o.group.rotation.y = Math.PI; o.at = o.home.slice(); people.push(o);   /* YXZ: 엎드릴 때 바라보는 쪽(단 쪽)으로 기운다 */
     }
-    for (i = 0; i < 40; i++) { var pp = PR.soldier(i + 500, ['#A84A32', '#8E5A3E', '#B0623A'][i % 3], null); pp.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); pp.a = i / 40 * 6.283; pp.r = 5 + (i % 3) * 1.4; put(pp.group, BAAL[0] + Math.cos(pp.a) * pp.r, BAAL[1] + Math.sin(pp.a) * pp.r); prophets.push(pp); }
+    for (i = 0; i < 40; i++) { var pp = PR.soldier(i + 500, ['#A84A32', '#8E5A3E', '#B0623A'][i % 3], null, { spear: false }); pp.a = i / 40 * 6.283; pp.r = 5 + (i % 3) * 1.4; put(pp.group, BAAL[0] + Math.cos(pp.a) * pp.r, BAAL[1] + Math.sin(pp.a) * pp.r); prophets.push(pp); }
     /* 엘리야(Blender, 지팡이 없음) */
     var ELI0 = [8, 4], eli = { group: api.fallback('#7A6248', 1.75, 0.27), update: function () {} };
     put(eli.group, ELI0[0], ELI0[1]); eli.group.rotation.y = -Math.PI * 0.6;

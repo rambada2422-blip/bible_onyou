@@ -87,7 +87,7 @@
     api.person('daniel', function (nm) { nm.group.position.copy(dan.group.position); nm.group.rotation.y = dan.group.rotation.y; nm.group.visible = dan.group.visible; scene.remove(dan.group); scene.add(nm.group); dan = nm; });
     api.person('darius', function (nm) { nm.group.position.copy(king.group.position); nm.group.rotation.y = king.group.rotation.y; scene.remove(king.group); scene.add(nm.group); king = nm; });
     var officials = [];
-    for (i = 0; i < 8; i++) { var of = PR.soldier(i + 900, ['#6E4A5A', '#5A5A3E', '#7A5A3A'][i % 3], null); of.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); of.home = [PALACE[0] + 16 + (i % 4) * 1.6, PALACE[1] + 16 + Math.floor(i / 4) * 1.6]; put(of.group, of.home[0], of.home[1]); officials.push(of); }
+    for (i = 0; i < 8; i++) { var of = PR.soldier(i + 900, ['#6E4A5A', '#5A5A3E', '#7A5A3A'][i % 3], null, { spear: false }); of.home = [PALACE[0] + 16 + (i % 4) * 1.6, PALACE[1] + 16 + Math.floor(i / 4) * 1.6]; put(of.group, of.home[0], of.home[1]); officials.push(of); }
 
     var phase = 'day', tod = 0, todWant = 0, danTo = null, kingTo = null, danIn = false, lift = 0, liftWant = 0, offTo = null, accT = 0, offHide = false;
     var ca = new T.Color(), cb = new T.Color();

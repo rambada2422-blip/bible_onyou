@@ -76,7 +76,7 @@
     var still = PR.mergeStatic(mtents.concat(itents, [camels])); mtents.concat(itents).forEach(function (t) { scene.remove(t); }); scene.remove(camels); scene.add(still);
     /* 골짜기에 누운 사람들(7:12): 멀리서 보이는 꼴. 달아날 때(7:21) 일어나 북쪽으로 */
     var midian = [];
-    for (i = 0; i < 40; i++) { var mm = PR.soldier(i + 700, ['#7A4A3A', '#6E5A3A', '#8A5A3E'][i % 3], null); mm.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; });   /* 창은 본문에 없어 숨긴다 */
+    for (i = 0; i < 40; i++) { var mm = PR.soldier(i + 700, ['#7A4A3A', '#6E5A3A', '#8A5A3E'][i % 3], null, { spear: false });   /* 창은 본문에 없어 숨긴다 */
       mm.home = [MCAMP[0] + (R() - 0.5) * 100, MCAMP[1] + (R() - 0.5) * 36]; put(mm.group, mm.home[0], mm.home[1], 0.1); mm.group.rotation.x = -1.45; mm.group.rotation.y = R() * 6; midian.push(mm); }
     /* 이스라엘 백성(7:1-8): 많이 모였다가 돌아가고, 물가로 내려가고, 서른(삼백 명의 표시)이 남는다 */
     var men = [], N = 90;

@@ -21,6 +21,7 @@
     var cloth = new T.MeshStandardMaterial({ color: c, flatShading: true, side: T.DoubleSide, roughness: 1 });
     var m = new T.Mesh(geo, cloth); m.scale.set(w * 0.72, h, d * 0.72); m.position.y = h / 2; m.castShadow = true; g.add(m);
     var pole = new T.Mesh(new T.CylinderGeometry(0.035, 0.035, h + 0.3, 5), M('#5A4430')); pole.position.y = (h + 0.3) / 2; g.add(pole);
+    g.userData.stillProp = true;   /* 움직이지 않는 소품: 장면에 바로 놓였으면 틀이 한 덩어리로 합쳐 그린다(mergeTagged) */
     return g;
   }
 
@@ -94,14 +95,15 @@
   }
 
   /* 멀리 보이는 군사(진영의 줄): 통옷, 머리, 투구, 창. 사람의 생김새는 그리지 않는다(멀리서 보는 크기) */
-  function soldier(seed, tunic, helm) {
-    var r = rng(seed + 29), g = new T.Group(), body = new T.Group();
-    var robe = new T.Mesh(new T.CylinderGeometry(0.17, 0.27, 1.15, 7), M(tunic || '#8A5A3A')); robe.position.y = 0.6; body.add(robe);
-    var torso = new T.Mesh(new T.CylinderGeometry(0.2, 0.17, 0.4, 7), M(tunic || '#8A5A3A')); torso.position.y = 1.32; body.add(torso);
-    var head = new T.Mesh(new T.SphereGeometry(0.13, 8, 6), M('#B98A62')); head.position.y = 1.63; body.add(head);
-    if (helm) { var hm = new T.Mesh(new T.SphereGeometry(0.15, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), M(helm)); hm.position.y = 1.66; body.add(hm); }
-    var sp = new T.Mesh(new T.CylinderGeometry(0.02, 0.02, 2.1, 4), M('#6B4A2A')); sp.position.set(0.27, 1.15, 0.05); body.add(sp);
-    g.add(body); g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
+  function soldier(seed, tunic, helm, opt) {
+    var r = rng(seed + 29), g = new T.Group(), body = new T.Group(), tmp = new T.Group();
+    var robe = new T.Mesh(new T.CylinderGeometry(0.17, 0.27, 1.15, 7), M(tunic || '#8A5A3A')); robe.position.y = 0.6; tmp.add(robe);
+    var torso = new T.Mesh(new T.CylinderGeometry(0.2, 0.17, 0.4, 7), M(tunic || '#8A5A3A')); torso.position.y = 1.32; tmp.add(torso);
+    var head = new T.Mesh(new T.SphereGeometry(0.13, 8, 6), M('#B98A62')); head.position.y = 1.63; tmp.add(head);
+    if (helm) { var hm = new T.Mesh(new T.SphereGeometry(0.15, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), M(helm)); hm.position.y = 1.66; tmp.add(hm); }
+    if (!opt || opt.spear !== false) { var sp = new T.Mesh(new T.CylinderGeometry(0.02, 0.02, 2.1, 4), M('#6B4A2A')); sp.position.set(0.27, 1.15, 0.05); tmp.add(sp); }   /* 창이 본문에 없는 장면은 { spear: false } */
+    /* 통옷·머리·투구·창을 꼭짓점 색 mesh 하나로 굽는다(한 사람 = 그리기 한 번. 생김새는 같다) */
+    var one = bake(tmp); one.castShadow = true; body.add(one); g.add(body);
     var ph = r() * 6;
     return { group: g, update: function (dt, speed, t) { body.position.y = speed > 0.1 ? Math.abs(Math.sin((t || 0) * 8 + ph)) * 0.06 : 0; } };
   }
@@ -111,25 +113,85 @@
     return g;
   }
 
-  /* 움직이지 않는 물건 여럿을 재질별로 한 덩어리로 합친다(그리기 호출을 줄인다). 합친 뒤에는 따로 움직일 수 없다 */
-  function mergeStatic(objs) {
-    var byMat = [], out = new T.Group();
+  /* ── 그리기 호출 줄이기 ──
+   * 색만 다른 재질은 꼭짓점 색으로 옮겨 한 재질로 그린다(흰 재질 × 꼭짓점 색 = 원래 색. 화면은 같다).
+   * 재질의 나머지 성질(평면 음영, 양면, 거칠기, 투명도, 빛남 등)이 같은 것끼리만 합친다. */
+  var VCM = {};
+  function sig(m) {
+    return [m.type, m.flatShading ? 1 : 0, m.side, m.roughness, m.metalness, m.transparent ? 1 : 0, m.opacity, m.emissive ? m.emissive.getHex() : 0, m.emissiveIntensity, m.map ? m.map.uuid : '', m.depthWrite ? 1 : 0, m.fog ? 1 : 0, m.alphaTest].join('|');
+  }
+  function okToBake(m) { return m && (m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshBasicMaterial) && !Array.isArray(m) && !m.map && !m.skinning && !m.morphTargets; }
+  function vcMat(m) {
+    var k = sig(m), v = VCM[k];
+    if (!v) { v = m.clone(); v.color.set('#FFFFFF'); v.vertexColors = true; v.needsUpdate = true; VCM[k] = v; }
+    return v;
+  }
+  /* mesh들의 기하를 한 덩어리로 잇는다. items: [{ geo, mtx, mat }] (mtx는 덩어리 좌표로 옮기는 행렬) */
+  function joinGeo(items) {
+    var n = 0, k = 0, c = new T.Color(), nm = new T.Matrix3();
+    var parts = items.map(function (it) { var g = it.geo.index ? it.geo.toNonIndexed() : it.geo; n += g.attributes.position.count; return g; });
+    var pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3), v = new T.Vector3();
+    items.forEach(function (it, ii) {
+      var g = parts[ii], P = g.attributes.position, N = g.attributes.normal, C = it.mat.vertexColors ? g.attributes.color : null, j;
+      c.copy(it.mat.color || c.set('#FFFFFF')); nm.getNormalMatrix(it.mtx);
+      for (j = 0; j < P.count; j++, k++) {
+        v.fromBufferAttribute(P, j).applyMatrix4(it.mtx); pos[k * 3] = v.x; pos[k * 3 + 1] = v.y; pos[k * 3 + 2] = v.z;
+        if (N) { v.fromBufferAttribute(N, j).applyMatrix3(nm).normalize(); nor[k * 3] = v.x; nor[k * 3 + 1] = v.y; nor[k * 3 + 2] = v.z; }
+        col[k * 3] = c.r * (C ? C.getX(j) : 1); col[k * 3 + 1] = c.g * (C ? C.getY(j) : 1); col[k * 3 + 2] = c.b * (C ? C.getZ(j) : 1);
+      }
+      if (g !== it.geo) g.dispose();
+    });
+    var bg = new T.BufferGeometry();
+    bg.setAttribute('position', new T.BufferAttribute(pos, 3)); bg.setAttribute('normal', new T.BufferAttribute(nor, 3)); bg.setAttribute('color', new T.BufferAttribute(col, 3));
+    bg.computeBoundingSphere();
+    return bg;
+  }
+  /* 한 물건(여러 재질의 도막)을 꼭짓점 색 mesh 하나로 굽는다. 도막의 재질 성질이 모두 같아야 한다(색만 다름). 좌표는 root 기준 */
+  function bake(root) {
+    var items = [], inv = new T.Matrix4(), first = null;
+    root.updateMatrixWorld(true); inv.copy(root.matrixWorld).invert();
+    root.traverse(function (m) { if (m.isMesh && m.visible && okToBake(m.material)) { if (!first) first = m.material; items.push({ geo: m.geometry, mtx: new T.Matrix4().multiplyMatrices(inv, m.matrixWorld), mat: m.material }); } });
+    var mesh = new T.Mesh(joinGeo(items), vcMat(first));
+    items.forEach(function (it) { it.geo.dispose(); });
+    return mesh;
+  }
+  /* 움직이지 않는 물건 여럿을 한 덩어리(재질 성질별)로 합친다. 합친 뒤에는 따로 움직이거나 숨길 수 없다.
+     opt.cell: 이 크기(m)의 칸마다 따로 합친다(화면 밖의 칸은 그리지 않게). opt.keepShadow: 그림자 드리움을 원래대로(없으면 모두 드리운다) */
+  function mergeStatic(objs, opt) {
+    opt = opt || {};
+    var groups = {}, out = new T.Group(), wp = new T.Vector3();
     objs.forEach(function (o) {
       o.updateMatrixWorld(true);
+      var cellKey = '';
+      if (opt.cell) { wp.setFromMatrixPosition(o.matrixWorld); cellKey = Math.floor(wp.x / opt.cell) + ',' + Math.floor(wp.z / opt.cell) + '|'; }
       o.traverse(function (m) {
         if (!m.isMesh || !m.visible) return;
-        var g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone(); g.applyMatrix4(m.matrixWorld);
-        var e = byMat.filter(function (x) { return x.mat === m.material; })[0]; if (!e) { e = { mat: m.material, gs: [] }; byMat.push(e); } e.gs.push(g);
+        for (var a = m.parent; a && a !== o.parent; a = a.parent) if (!a.visible) return;
+        if (!okToBake(m.material)) { var keep = m.clone(); keep.matrix.copy(m.matrixWorld); keep.matrix.decompose(keep.position, keep.quaternion, keep.scale); out.add(keep); return; }
+        var cast = opt.keepShadow ? !!m.castShadow : true, key = cellKey + sig(m.material) + (cast ? '|c' : '|n');
+        var e = groups[key] || (groups[key] = { mat: m.material, cast: cast, recv: false, items: [] });
+        if (m.receiveShadow || !opt.keepShadow) e.recv = true;
+        e.items.push({ geo: m.geometry, mtx: m.matrixWorld.clone(), mat: m.material });
       });
     });
-    byMat.forEach(function (e) {
-      var n = 0, k = 0; e.gs.forEach(function (g) { n += g.attributes.position.count; });
-      var pos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
-      e.gs.forEach(function (g) { pos.set(g.attributes.position.array, k * 3); if (g.attributes.normal) nor.set(g.attributes.normal.array, k * 3); k += g.attributes.position.count; g.dispose(); });
-      var bg = new T.BufferGeometry(); bg.setAttribute('position', new T.BufferAttribute(pos, 3)); bg.setAttribute('normal', new T.BufferAttribute(nor, 3)); bg.computeBoundingSphere();
-      var mesh = new T.Mesh(bg, e.mat); mesh.castShadow = true; mesh.receiveShadow = true; out.add(mesh);
+    Object.keys(groups).forEach(function (k) {
+      var e = groups[k], mesh = new T.Mesh(joinGeo(e.items), vcMat(e.mat)); mesh.castShadow = e.cast; mesh.receiveShadow = e.recv; out.add(mesh);
     });
     return out;
   }
-  BO3D.props = { tent: tent, chariot: chariot, horse: horse, cloudPillar: cloudPillar, stoneHeap: stoneHeap, soldier: soldier, shield: shield, rng: rng, mergeStatic: mergeStatic };
+  /* 장면에 이미 놓인 물건들을 합친 덩어리로 바꿔 놓는다(원래 물건은 장면에서 뺀다) */
+  function mergeInScene(scene, objs, opt) {
+    var m = mergeStatic(objs, opt);
+    objs.forEach(function (o) { if (o.parent) o.parent.remove(o); });
+    scene.add(m);
+    return m;
+  }
+  /* 장면에 바로 놓인(장면의 직접 자식인) 움직이지 않는 소품(userData.stillProp: 바위·덤불·나무·장막 등)을 칸마다 한 덩어리로 합친다.
+     틀(game.js buildScene)이 장면을 만든 뒤 한 번 부른다. 숨겨 둔 것, 다른 묶음 안에 든 것(장면이 따로 보이고 숨기는 것)은 건드리지 않는다. */
+  function mergeTagged(scene, opt) {
+    var objs = scene.children.filter(function (o) { return o.userData && o.userData.stillProp && o.visible; });
+    if (objs.length < 2) return null;
+    return mergeInScene(scene, objs, { cell: (opt && opt.cell) || 48, keepShadow: true });
+  }
+  BO3D.props = { tent: tent, chariot: chariot, horse: horse, cloudPillar: cloudPillar, stoneHeap: stoneHeap, soldier: soldier, shield: shield, rng: rng, mergeStatic: mergeStatic, mergeInScene: mergeInScene, mergeTagged: mergeTagged, bake: bake };
 })();

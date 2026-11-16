@@ -165,6 +165,22 @@
 
   /* ------------------------------------------------------------------ geometry 만들기 */
   // u(둘레 0..1), v(아래 0 → 위 1) 격자. x = cos(2πu), z = sin(2πu) 방향으로 감으면 바깥이 앞면이 된다.
+  /* 같은 재질의 mesh 여럿을 지금 자세 그대로 mesh 하나로 잇는다(root 좌표). 서 있는 사람을 한 번에 그릴 때 쓴다 */
+  function mergeParts(parts, root, material) {
+    var wb = new Builder(), inv = new T.Matrix4(), mm = new T.Matrix4(), nm = new T.Matrix3(), v = new T.Vector3();
+    root.updateMatrixWorld(true); inv.copy(root.matrixWorld).invert();
+    parts.forEach(function (m) {
+      var P = m.geometry.attributes.position, N = m.geometry.attributes.normal, C = m.geometry.attributes.color, j;
+      mm.multiplyMatrices(inv, m.matrixWorld); nm.getNormalMatrix(mm);
+      for (j = 0; j < P.count; j++) {
+        v.fromBufferAttribute(P, j).applyMatrix4(mm); wb.pos.push(v.x, v.y, v.z);
+        v.fromBufferAttribute(N, j).applyMatrix3(nm).normalize(); wb.nor.push(v.x, v.y, v.z);
+        wb.col.push(C.getX(j), C.getY(j), C.getZ(j));
+      }
+    });
+    return wb.mesh(material);
+  }
+
   function grid(nu, nv, closed, fn) {
     var cols = closed ? nu : nu + 1, rows = nv + 1, v3 = new T.Vector3();
     var pos = new Float32Array(cols * rows * 3), idx = [], i, j, k = 0;
@@ -517,20 +533,13 @@
       l.knee.rotation.x = (Kn * Math.max(0, c) * (0.55 + 0.45 * (1 - Math.abs(s))) + 0.12 * Math.max(0, s)) * w;
       return thigh * Math.cos(l.hip.rotation.x) + shin * Math.cos(l.hip.rotation.x + l.knee.rotation.x);
     }
-    function update(dt, speed) {
-      dt = Math.min(Math.max(dt || 0, 0), 0.1);
-      speed = Math.abs(speed || 0);
-      st.t += dt;
-      var moving = speed > 0.03;
-      st.w += ((moving ? 1 : 0) - st.w) * Math.min(1, dt * 9);
-      st.run += (clamp((speed - 1.7) / 2.2, 0, 1) - st.run) * Math.min(1, dt * 6);
-      // 걸음 박자는 속도에 비례하고, 빨라지면 보폭도 조금 길어진다
-      var stride = legLen * (1.75 + 0.75 * Math.max(0, speed - 1.2));
-      st.ph += dt * speed / stride * TAU;
-      var w = st.w, r = st.run, s = Math.sin(st.ph), c = Math.cos(st.ph);
+    /* 가만히 서 있는 동안에는 머리를 뺀 몸(골반·몸통·두 팔·두 다리, mesh 아홉)을 미리 이어 둔 mesh 하나로 바꿔 그린다(그리기 열한 번 → 두 번).
+       머리는 따로 남겨 두리번거림을 그대로 둔다. 걷기 시작하면 다시 나눠 팔다리를 움직인다. */
+    var bodyParts = [], whole = null, still = false, idleT = 0;
+    rig.traverse(function (o) { if (!o.isMesh) return; for (var a = o; a && a !== rig; a = a.parent) if (a === head) return; bodyParts.push(o); });
+    function pose(speed, w, r, s, c, br) {
       var A = lerp(0.2, 0.52, clamp(speed / 1.1, 0, 1)) + 0.26 * r;
-      var Kn = lerp(0.85, 1.45, r), br = Math.sin(st.t * 1.9);
-
+      var Kn = lerp(0.85, 1.45, r);
       var reach = Math.max(legPose(legL, s, c, A, Kn, w, r), legPose(legR, -s, -c, A, Kn, w, r));
       rig.position.y = reach - legLen + r * w * 0.035 * Math.abs(Math.sin(st.ph));
 
@@ -549,6 +558,34 @@
         armR.sh.rotation.set(-B * s * w, 0, -splay);
         armR.el.rotation.x = -(0.12 + (bend + 0.25 * Math.max(0, s)) * w);
       }
+    }
+    function setStill(on) {
+      if (on === still) return;
+      still = on;
+      if (on) {
+        pose(0, 0, 0, 0, 1, 0);
+        if (!whole) { whole = mergeParts(bodyParts, rig, sm); whole.visible = false; rig.add(whole); }
+        whole.castShadow = bodyParts[0].castShadow; whole.receiveShadow = bodyParts[0].receiveShadow; whole.frustumCulled = bodyParts[0].frustumCulled; whole.layers.mask = bodyParts[0].layers.mask;
+      }
+      if (whole) whole.visible = on;
+      bodyParts.forEach(function (m) { m.visible = !on; });
+    }
+    function update(dt, speed) {
+      dt = Math.min(Math.max(dt || 0, 0), 0.1);
+      speed = Math.abs(speed || 0);
+      st.t += dt;
+      var moving = speed > 0.03;
+      if (!moving && st.w < 0.004 && st.run < 0.004) {
+        idleT += dt;
+        if (idleT > 0.3 && !still) setStill(true);
+        if (still) { head.rotation.set(0.02 * Math.sin(st.t * 0.8), 0.05 * Math.sin(st.t * 0.37), 0); return; }
+      } else { idleT = 0; if (still) setStill(false); }
+      st.w += ((moving ? 1 : 0) - st.w) * Math.min(1, dt * 9);
+      st.run += (clamp((speed - 1.7) / 2.2, 0, 1) - st.run) * Math.min(1, dt * 6);
+      // 걸음 박자는 속도에 비례하고, 빨라지면 보폭도 조금 길어진다
+      var stride = legLen * (1.75 + 0.75 * Math.max(0, speed - 1.2));
+      st.ph += dt * speed / stride * TAU;
+      pose(speed, st.w, st.run, Math.sin(st.ph), Math.cos(st.ph), Math.sin(st.t * 1.9));
     }
     update(0, 0);
     return { group: group, update: update };
@@ -1252,6 +1289,7 @@
       rockPiece(b, R, Math.cos(a) * d, Math.sin(a) * d, size * (0.3 + R() * 0.25), tone);
     }
     group.add(b.mesh(mat('flat')));
+    group.userData.stillProp = true;   /* 움직이지 않는 소품(props_ot.js mergeTagged) */
     return group;
   }
   function makeShrub(seed) {
@@ -1281,6 +1319,7 @@
     }
     group.add(wood.mesh(mat('flat')));
     group.add(leaf.mesh(mat('leaf')));
+    group.userData.stillProp = true;   /* 움직이지 않는 소품(props_ot.js mergeTagged) */
     return group;
   }
   function makeAcacia(seed) {
@@ -1308,6 +1347,7 @@
     pad(V(fork.x, top + 0.07 * h, fork.z), h * (0.3 + R() * 0.06));
     group.add(wood.mesh(mat('flat')));
     group.add(leaf.mesh(mat('flat')));
+    group.userData.stillProp = true;   /* 움직이지 않는 소품(props_ot.js mergeTagged) */
     return group;
   }
 
