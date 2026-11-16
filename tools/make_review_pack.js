@@ -78,6 +78,8 @@ const cleanHead = (lines) => lines.filter((l) => !DEV_LINE.test(l)).map((l) => l
 
 /* 3D 장면 설정 파일의 머리말 */
 const scene3d = {};
+/* 장면표(docs/09)의 3D 대표 12장면. 그 밖의 3D 장면 파일은 자동 작업 갈래가 더한 것(대표 결재지 마1) */
+const BASE3D = ['OT-03', 'OT-05', 'OT-09', 'OT-11', 'OT-13', 'OT-18', 'OT-19', 'OT-21', 'OT-26', 'OT-30', 'OT-36', 'OT-39'];
 fs.readdirSync(path.join(ROOT, 'web3d/js')).filter((f) => /^scene_.*\.js$/.test(f)).sort().forEach((f) => {
   const src = rd('web3d/js/' + f);
   const end = src.indexOf('*/');
@@ -85,6 +87,7 @@ fs.readdirSync(path.join(ROOT, 'web3d/js')).filter((f) => /^scene_.*\.js$/.test(
   const m = head[0].match(/OT-(\d\d)/);
   if (m) scene3d['OT-' + m[1]] = { file: 'web3d/js/' + f, head: cleanHead(head), strings: koStrings(src) };
 });
+const EXTRA3D = Object.keys(scene3d).filter((id) => !BASE3D.includes(id)).sort();
 
 /* 검증 기록의 "미해결" */
 function parseUnresolved(era) {
@@ -344,6 +347,7 @@ function sceneItems(d) {
   const s3 = scene3d[sid];
   const scr = [G('하나님 표현', d.design3d.god)].concat(d.design3d.never.map((x) => G('그리지 않는 것', x, { sub: true })));
   if (s3) {
+    if (!d.design3d.build) scr.push(N('지금 상태', '3D 장면 파일은 있으나 장면 자료에서 꺼져 있어, 아이에게는 이야기 카드로 나옵니다(대표 결재지 마1). 켜면 아래 설정대로 3D로 나옵니다.'));
     scr.push(N('3D 장면을 만들며 정한 것(본문에 맞춘 점, 감수가 필요한 설정)', '', { head: true }));
     s3.head.forEach((h) => scr.push(N('', h, { sub: true })));
     if (sid === 'OT-09') {
@@ -395,6 +399,12 @@ function sceneItems(d) {
   d.design3d.people.forEach((x) => rest.push(G('사람', x, { sub: true })));
   d.design3d.props.forEach((x) => rest.push(G('물건', x, { sub: true })));
   if (d.design3d.epic) rest.push(G('절정 장면', d.design3d.epic.why, { sub: true }));
+  /* 3D 갈래가 3D로 바꾸며 따로 보관한 원래 값(_story_only, _card, _card3dc 등 밑줄로 시작하는 칸). 지금 화면에는 안 나오고 3D를 끄면 돌아온다 */
+  Object.keys(d).filter((k) => k.startsWith('_')).forEach((k) => {
+    rest.push(N('3D 장면으로 바꾸며 따로 보관한 원래 글(' + k + '). 지금 화면에는 나오지 않고, 그 장면의 3D를 끄면 이 글로 돌아갑니다', '', { head: true }));
+    const walk = (o, pth) => { if (typeof o === 'string') { if (o) rest.push(G('보관 · ' + pth, o, { sub: true })); } else if (o && typeof o === 'object') Object.keys(o).forEach((x) => walk(o[x], pth + '.' + x)); };
+    walk(d[k], k);
+  });
   add(Object.assign({}, base, { id: idOf('기타'), kind: 'rest', label: '그 밖의 글(참고)', title: '통신·재료·관문·탐지기 물음·곁에서 보기·말씀 카드', refs: d.ref, core: false, fold: true, lines: rest }));
   /* 미해결 */
   const pastorOpen = [];
@@ -457,7 +467,8 @@ const COUNTS = [
   ['14~19세 "삶에 적용" 질문(규칙서 3.5)', '0', '—', true, '아직 쓰지 않았다. 지금은 사실을 적는 기록 물음 한 가지뿐이다("공통·마무리" 항목에서 방향을 여쭘)'],
   ['코드에 들어 있는 화면 글', (byId['공통·화면글'].lines.length + byId['공통·화면글참고'].lines.length + byId['추리·요단강'].lines.length) + '줄 + 3D 장면 12개의 도감·안내', '—', true, '장면 자료가 아니라 게임 코드에 있는 글. 독립 검증의 지적으로 더함'],
   ['동행 인물 문답', scenesWith('talk') + '장면 / 문답 ' + cnt('talk') + '개', '—', true, '진행표에 수가 없다. 동행 인물이 없는 장면 ' + (40 - scenesWith('talk')) + '개(본문에 그 장면에서 말한 사람이 없음)'],
-  ['3D 설정', String(cnt('scene3d')), '12(3D 장면)', cnt('scene3d') === 12, '호렙 산(OT-09) 포함'],
+  ['3D 설정', String(cnt('scene3d')), '12(3D 장면)' + (EXTRA3D.length ? ' + 장면표 밖 ' + EXTRA3D.length : ''), cnt('scene3d') === 12 + EXTRA3D.length && BASE3D.every((id) => scene3d[id]),
+    '호렙 산(OT-09) 포함' + (EXTRA3D.length ? '. 장면표 밖에 새로 만든 3D 장면: ' + EXTRA3D.join('·') + '(대표 결재지 마1)' : '')],
   ['검증자가 남긴 것(미해결)', String(cnt('open')), '—', true, '검증 기록 10개에서 뽑은 전체. 분류는 아래'],
   ['감수 필수 장면', String(REQ_N), '장면표(`docs/09`) "예" ' + TABLE_REQ, REQ_N === TABLE_REQ, '']
 ];
