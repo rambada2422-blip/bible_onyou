@@ -405,6 +405,7 @@
   function openDen() {
     var prev = state; state = 'den'; stick.x = stick.y = 0; stick.id = null; base.hidden = true;
     function render() {
+      U.stopSpeak();
       var ready = partsFound === PARTS.length && sceneDone;
       var slots = PARTS.map(function (p, i) {
         var on = partObjs[i].taken;
@@ -441,6 +442,8 @@
         el('div', { class: 'deco' }, el('span', { text: '타임머신 깃발 (시대 부속을 고칠 때마다 색이 하나씩 열려요 · ' + Math.min(cols.length - 1, openN - 1) + ' / ' + (cols.length - 1) + ')' }), el('div', { class: 'sws' }, sw)),
         el('div', { class: 'deco' }, el('span', { text: sceneDone ? '탐험 모자' : '탐험 모자 (첫 장면을 마치면 열려요)' }), hatBtn),
         el('div', { class: 'den-foot' }, btn('밖으로 나가기', function () { (U.stopSpeak(), overlay.hidden = true); state = prev; }, 'quiet'), go));
+      var sb = U.speakBtn(function () { return overlay; });   /* 8~10세는 아지트 글도 읽어 준다(일지·설정처럼 오른쪽 위) */
+      if (sb) { sb.classList.add('float'); overlay.insertBefore(sb, overlay.firstChild); }
       overlay.hidden = false;
     }
     render();

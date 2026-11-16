@@ -156,3 +156,5 @@ button.track3 { border: 0; font: inherit; font-family: var(--f-display); cursor:
 /* 재료를 주운 자리의 패널(재료 + 지켜본 대목)은 글이 길다. 아이들이 멈춰 선 동안이므로 패널을 더 키워 스크롤을 줄인다 */
 .panel3.sheet.tall { max-height: 70%; }
 @media (max-height: 700px) { .panel3.sheet { max-height: 58%; } .panel3.sheet.tall { max-height: 78%; } .overlay3.sheet3 .sheet { max-height: 88%; } }
+/* 키 작은 휴대폰에서 긴 재료 패널이 위쪽 안내를 반쯤 가리면 그 안내를 잠시 감춘다(패널을 닫으면 다시 보인다) */
+@media (max-height: 700px) { #ui:has(.panel3.tall:not([hidden])) .hud3 .obj, #ui:has(.panel3.tall:not([hidden])) .track3 { visibility: hidden; } }

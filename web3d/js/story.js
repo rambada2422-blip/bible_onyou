@@ -174,6 +174,14 @@
         /#log/.test(location.hash) ? btn('놀이 기록 보기', openLog, 'quiet') : null,
         btn('처음 화면', function () { closeAll(); var g = G(); if (g) g.menu(); }, 'quiet')),
       el('p', { class: 'fine', text: '감수 전 시험판입니다. 모든 장면은 목사님 감수를 마치기 전이며, 아이들에게 공개하지 않습니다.' }));
+    /* 읽어 주기(8~10세는 늘): 지도 전체가 아니라 진도와 열린 시대·장면 이름만 읽는다 */
+    var sb = U.speakBtn(function () {
+      var open = OT.eras.filter(function (e) { return eraOpen(e.era); }), shut = OT.eras.length - open.length;
+      return el('div', {}, el('p', { text: '시대 지도' }), el('p', { text: '마친 장면 ' + doneCount() + ' / ' + OT.order.length + '. 모은 재료 ' + matCount() + ' / ' + MAT_TOTAL }),
+        open.map(function (e) { return el('p', { text: '시대 ' + e.era + ', ' + e.name + '. ' + e.scenes.map(function (id) { return sc(id).title + (PG.done[id] ? ', 마침' : ''); }).join('. ') }); }),
+        shut ? el('p', { text: '아직 열리지 않은 시대가 ' + shut + '개 있어요. 앞 시대의 장면 하나를 마치면 다음 시대로 가는 길이 열려요.' }) : null);
+    });
+    if (sb) { sb.classList.add('float'); list.insertBefore(sb, list.firstChild); }
     box.appendChild(list);
     box.hidden = false;
     if (scrollTo) { var t = document.getElementById('ote-' + scrollTo); if (t) list.scrollTop = t.offsetTop - 8; }
@@ -568,7 +576,7 @@
       el('div', { class: 'setsample sheet-body' }, el('p', { class: 'narr', text: '이 크기로 이야기를 읽어요. 성경책을 곁에 펴 두세요.' })),
       seg3('소리', 'snd', [[1, '켜기'], [0, '끄기']]),
       U.canSpeak() ? seg3('읽어 주기 단추', 'read', [[0, '8~10세만'], [1, '모든 나이']]) : el('p', { class: 'den-msg', text: '이 기기에서는 읽어 주기를 쓸 수 없어요.' }),
-      el('p', { class: 'den-lead', text: '글자 크기는 이야기 글과 일지·지도의 글을 키워요. 읽어 주기는 화면의 글을 기기의 목소리로 읽어요(한국어 음성이 있는 기기에서). 성경 말씀은 읽어 주지 않아요. 말씀은 성경책에서 직접 읽어요.' }),
+      el('p', { class: 'den-lead', text: '글자 크기는 이야기 글, 일지·지도, 처음 화면, 3D의 위쪽 안내와 말풍선 글을 키워요. 아래 단추의 글은 그대로예요. 읽어 주기는 화면의 글을 기기의 목소리로 읽어요(한국어 음성이 있는 기기에서). 성경 말씀은 읽어 주지 않아요. 말씀은 성경책에서 직접 읽어요.' }),
       el('div', { class: 'otmap-foot' }, btn('돌아가기', function () { if (back) back(); else openMap(); }, 'wide'))]);
   }
 
