@@ -9,7 +9,8 @@
  *  - 24:28: 백성이 저마다 흩어져 돌아간다(아이들 쪽이 아닌 곳으로).
  *  - 여호와의 성소(24:26)는 그리지 않는다(본문은 "성소 곁"이라고만 한다). 세겜의 성과 산도 그리지 않는다. 하나님을 나타내는 빛·구름·소리 없음.
  * 감수가 필요한 설정: 모인 자리와 상수리나무의 자리, 사람 수(백성 예순넷, 앞줄 열둘. 일부만 그림)와 남녀·아이가 섞인 것, 감람원·포도원을 비탈 가장자리에 둔 것(24:13은 주신 땅을 두고 하신 말씀),
- *   율법 책을 두루마리로 그린 것, 돌의 크기와 여호수아가 혼자 일으켜 세우는 모습(본문은 "취하여 세우고"), 돌이 처음에 나무 곁에 누워 있는 것, 여호수아의 생김새(joshua.glb).
+ *   율법 책을 두루마리로 그리고 적는 몸짓 없이 들고만 있는 것, 돌의 크기와 여호수아가 혼자 곁에서 몸을 굽혀 일으켜 세우는 모습(본문은 "취하여 세우고"), 돌이 처음에 나무 곁에 누워 있는 것,
+ *   백성이 서·북·동쪽에서만 오고 그쪽으로 돌아가는 것(24:28 "각기 기업으로"에는 남쪽 지파의 땅도 있다. 아이들이 있는 남쪽을 비우려고 그렇게 함), 대목 6을 15초쯤으로 줄인 것, 여호수아의 생김새(joshua.glb).
  */
 (function () {
   'use strict';
@@ -19,7 +20,7 @@
   BO3D.scene3d['OT-20'] = function (api) {
     var T = THREE, MO = BO3D.models || {}, PR = BO3D.props, B = BO3D.p3b, FX = api.FX, R = PR.rng(2001);
     var sm = B.sm, noise = B.noise, hash = B.hash, std = B.std;
-    var OAK = [10, -36], STONE = [7.6, -32.6], LAY = [13.5, -31], JOSH = [2, -30], CROWD = [2, -16];
+    var OAK = [10, -36], STONE = [7.6, -32.6], LAY = [9.6, -32.0], JOSH = [2, -30], CROWD = [2, -16];
     function height(x, z) {
       return 2.4 * sm(0, 22, z) + 0.35 * noise(x * 0.05 + 6, z * 0.05 + 3) + sm(110, 230, Math.hypot(x, z + 10)) * 22 * (0.4 + 0.6 * noise(x * 0.015 + 2, z * 0.015));
     }
@@ -71,6 +72,9 @@
       var ang = Math.PI * (0.15 + 1.7 * hash(n, 11)) + Math.PI / 2;          /* 서·북·동쪽에서 온다(아이들이 있는 남쪽이 아닌 곳) */
       a.away = [a.home[0] + Math.cos(ang) * (70 + hash(n, 13) * 50), a.home[1] - Math.abs(Math.sin(ang)) * (40 + hash(n, 17) * 40) - 10];
       a.near = [a.home[0] + (a.away[0] - a.home[0]) * (0.12 + 0.25 * hash(n, 19)), a.home[1] + (a.away[1] - a.home[1]) * (0.12 + 0.25 * hash(n, 19))];
+      /* 24:28 돌아갈 때의 길: 여호수아·큰 돌·상수리나무가 있는 북쪽 가운데(x -3~15)를 비켜 서쪽이나 동쪽으로 먼저 빠진다 */
+      var west = a.home[0] < 6, sx = west ? Math.min(a.home[0], -5) - hash(n, 23) * 3 : Math.max(a.home[0], 17) + hash(n, 23) * 3;
+      a.leave = [[sx, a.home[1] - 1], [west ? Math.min(a.away[0], sx - 6) : Math.max(a.away[0], sx + 6), a.away[1]]];
     });
 
     var phase = 'gather', pt = 0;
@@ -95,7 +99,7 @@
       },
       P: { start: [10, 22], machine: [16, 27], machineRot: -0.4,
         /* 재료가 놓인 곳(quests[i].found): 감람원 가장자리 땅 / 포도원 가장자리 땅 / 모인 백성이 건너다보이는 빈 땅 */
-        parts: [[29, 19], [-32, 20], [2, 7.5]], lookSpot: [2, 7.5],
+        parts: [[29, 19], [-32, 20], [-10, 8]], lookSpot: [2, 7.5],
         look: { focus: JOSH, mid: CROWD, dy: 1.6, backE: 6, upE: 5 } },
       eventLook: function (n) {
         if (n <= 3) return { focus: JOSH, mid: [JOSH[0], JOSH[1] + 6], dy: 1.4, backE: 6, upE: 5 };
@@ -104,7 +108,7 @@
       /* 대목마다 보는 자리를 바꾼다: 여호수아 쪽(24:14-15), 대답하는 백성 쪽(24:16-24), 상수리나무와 큰 돌 쪽(24:25-28). 모두 멀찍이 */
       eventCam: function (n) {
         if (n === 4) return { pos: [-16, gy + 5.5, -8], look: [JOSH[0], gy + 1.4, JOSH[1]] };
-        if (n === 5) return { pos: [20, gy + 7, -44], look: [CROWD[0], gy + 1.2, CROWD[1] - 2] };
+        if (n === 5) return { pos: [-10, gy + 6, -42], look: [JOSH[0], gy + 1.2, JOSH[1] + 4] };   /* 여호수아와 대답하는 백성을 함께. 상수리나무는 화면 밖 */
         if (n === 6) return josh.did < 3 || pt < josh.t3 + 4 ? { pos: [27, gy + 3, -19], look: [(LAY[0] + STONE[0]) / 2, gy + 0.6, (LAY[1] + STONE[1]) / 2] } : { pos: [24, gy + 13, 4], look: [CROWD[0], gy + 1, CROWD[1] - 6] };   /* 돌을 세우는 동안은 나무 아래, 백성이 흩어질 때는 넓게 */
         return null;
       },
@@ -127,13 +131,14 @@
       update: function (dt) {
         pt += dt;
         if (phase === 'covenant') {
-          scroll.visible = pt > 1 && pt < 9;                                                                                     /* 24:26 율법 책에 적는다 */
-          if (pt > 9 && josh.did === 0) { josh.did = 1; A.go(josh, [[LAY[0] - 1.2, LAY[1] + 0.9]], 1.2, Math.PI * 0.4); }           /* 큰 돌을 취하여 */
-          if (josh.did === 1 && !A.moving(josh)) { josh.did = 2; raiseWant = 1; A.go(josh, [[STONE[0] - 1.5, STONE[1] + 1.2]], 0.5, Math.PI * 0.6); }   /* 상수리나무 아래 세운다 */
-          josh.bendWant = josh.did === 2 && raise < 0.9 ? 0.5 : 0;
-          if (josh.did === 2 && raise > 0.97 && !A.moving(josh)) { josh.did = 3; josh.g.rotation.y = 0; josh.t3 = pt; }             /* 24:27 백성에게 말한다 */
-          if (josh.did === 3 && pt > josh.t3 + 6) people.forEach(function (a) { if (!a.left) { a.left = true; A.go(a, [a.away], 1.25); } });   /* 24:28 */
-          if (Math.abs(raise - raiseWant) > 0.002) { raise += (raiseWant - raise) * Math.min(1, dt * 0.45); stoneAt(raise); }
+          /* 15초쯤 안에 끝나게: 율법 책에 적고(24:26) → 누워 있던 큰 돌로 가서 → 곁에서 몸을 굽혀 일으켜 세우고(24:26) → 백성에게 말하고(24:27) → 백성이 돌아간다(24:28) */
+          scroll.visible = pt > 0.5 && pt < 4;
+          if (pt > 4 && josh.did === 0) { josh.did = 1; A.go(josh, [[STONE[0] + 0.4, STONE[1] + 1.7]], 1.4, Math.PI * 0.85); }
+          if (josh.did === 1 && !A.moving(josh)) { josh.did = 2; raiseWant = 1; }                                                   /* 돌은 여호수아가 곁에 선 뒤에만 움직인다 */
+          josh.bendWant = josh.did === 2 && raise < 0.9 ? 0.55 : 0;
+          if (josh.did === 2 && raise > 0.97) { josh.did = 3; josh.t3 = pt; A.go(josh, [[STONE[0] - 1.6, STONE[1] + 1.4]], 0.8, 0); }   /* 24:27 돌 곁에서 백성을 보고 말한다 */
+          if (josh.did === 3 && pt > josh.t3 + 3) people.forEach(function (a) { if (!a.left) { a.left = true; A.go(a, a.leave, 1.3); } });   /* 24:28 */
+          if (Math.abs(raise - raiseWant) > 0.002) { raise += (raiseWant - raise) * Math.min(1, dt * 1.1); stoneAt(raise); }
         }
         all.forEach(function (a) { if (a.g.visible) A.step(a, dt); });
       },
