@@ -1,0 +1,673 @@
+#!/usr/bin/env node
+/* 목회자 감수 자료 생성기 (갈래 pack, 2026-11-16)
+ *
+ *   node tools/make_review_pack.js          → docs/감수/ 아래 파일을 다시 만든다
+ *   node tools/make_review_pack.js --check  → 만들지 않고 숫자 대조만 보여 준다
+ *
+ * 읽는 것(읽기만): content/ot/OT-NN.json 40개, content/ot/eras.json, content/ot/_verify/era-N.md,
+ *   web3d/js/scene_*.js 머리말, docs/00_공통규칙서.md(3절·13절), docs/감수/미해결_분류.json(있으면).
+ * 만드는 것: docs/감수/README.md, 감수자료.html(휴대폰·컴퓨터, 표시 저장·내보내기), 감수자료_인쇄용.html(A4),
+ *   먼저볼30_인쇄용.html, 참고_장면전체글_인쇄용.html, md/시대NN.md, 항목목록.json, 미해결_전체.md
+ *
+ * 원칙: 게임에 나오는 문장은 자료에서 글자 그대로 옮긴다(바꿔 쓰지 않는다). 성경 본문은 싣지 않는다(장절만).
+ *       내용이 바뀌면 이 스크립트를 다시 돌린다. 같은 내용이면 같은 파일이 나온다(날짜를 넣지 않는다).
+ *       검사는 node tools/test/check_review_pack.js
+ */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const ROOT = path.join(__dirname, '..');
+const OUT = path.join(ROOT, 'docs', '감수');
+const CHECK_ONLY = process.argv.includes('--check');
+const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+const sha = (s) => crypto.createHash('sha1').update(s).digest('hex');
+
+/* ───────── 1. 읽기 ───────── */
+const scenes = [];
+for (let i = 1; i <= 40; i++) scenes.push(JSON.parse(rd('content/ot/OT-' + String(i).padStart(2, '0') + '.json')));
+const erasDoc = JSON.parse(rd('content/ot/eras.json'));
+const rules = rd('docs/00_공통규칙서.md');
+const classPath = path.join(OUT, '미해결_분류.json');
+const CLASS = fs.existsSync(classPath) ? JSON.parse(fs.readFileSync(classPath, 'utf8')) : {};
+
+const WHO = { choeon: '최온', hyu: '휴', onwoo: '온우', doctor: '최현 박사', narr: '해설' };
+const TIER = { t1: '8~10세', t2: '11~13세', t3: '14~19세' };
+const TIERS = ['t1', 't2', 't3'];
+const who = (w) => WHO[w] || w;
+
+/* 규칙서의 한 소절(### N.N …)을 글자 그대로 */
+function ruleSection(no) {
+  const lines = rules.split('\n');
+  const s = lines.findIndex((l) => l.startsWith('### ' + no + ' '));
+  if (s < 0) throw new Error('규칙서에서 ' + no + '절을 찾지 못함');
+  let e = s + 1;
+  while (e < lines.length && !/^#{2,3} /.test(lines[e])) e++;
+  return { title: lines[s].replace(/^### /, ''), body: lines.slice(s + 1, e).filter((l) => l.trim() !== '') };
+}
+
+/* 3D 장면 설정 파일의 머리말 */
+const scene3d = {};
+fs.readdirSync(path.join(ROOT, 'web3d/js')).filter((f) => /^scene_.*\.js$/.test(f)).sort().forEach((f) => {
+  const src = rd('web3d/js/' + f);
+  const end = src.indexOf('*/');
+  const head = src.slice(0, end).split('\n').map((l) => l.replace(/^\/\*\s?/, '').replace(/^\s\*\s?/, '').replace(/\s+$/, '')).filter((l) => l !== '');
+  const m = head[0].match(/OT-(\d\d)/);
+  if (m) scene3d['OT-' + m[1]] = { file: 'web3d/js/' + f, head };
+});
+
+/* 검증 기록의 "미해결" */
+function parseUnresolved(era) {
+  const lines = rd('content/ot/_verify/era-' + era + '.md').split('\n');
+  const out = [];
+  let h2 = '', scene = null;
+  const isItem = (l) => /^\s*(-|\d+\.)\s+/.test(l);
+  const strip = (l) => l.replace(/^\s*(-|\d+\.)\s+/, '');
+  for (let i = 0; i < lines.length; i++) {
+    const L = lines[i];
+    let m = L.match(/^(#{1,4})\s+(.*)$/);
+    if (m) {
+      const lvl = m[1].length, t = m[2];
+      const om = t.match(/^OT-(\d\d)/);
+      const isUn = /^(미해결|감수 때 물을 것|두 시대에 공통으로)/.test(t);
+      if (lvl <= 2) { h2 = t; scene = om ? 'OT-' + om[1] : null; }
+      else if (!isUn) scene = om ? 'OT-' + om[1] : null;
+      if (!isUn) continue;
+      const items = [];
+      let j = i + 1;
+      while (j < lines.length && !/^#{1,4}\s/.test(lines[j])) {
+        if (isItem(lines[j])) items.push(strip(lines[j]));
+        else if (/^\s{2,}\S/.test(lines[j]) && items.length) items[items.length - 1] += ' ' + lines[j].trim();
+        j++;
+      }
+      items.forEach((x) => out.push({ era, h2, scene, text: x, line: i + 1 }));
+      continue;
+    }
+    m = L.match(/^미해결(\([^)]*\))?\s*:?\s*(.*)$/);
+    if (m) {
+      const rest = m[2].trim();
+      if (rest) { if (!/^없음/.test(rest)) out.push({ era, h2, scene, text: rest, line: i + 1 }); continue; }
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim() === '') j++;
+      const items = [];
+      while (j < lines.length && (isItem(lines[j]) || (/^\s{2,}\S/.test(lines[j]) && items.length))) {
+        if (isItem(lines[j]) && !/^\s{2,}/.test(lines[j])) items.push(strip(lines[j]));
+        else items[items.length - 1] += ' ' + lines[j].trim();
+        j++;
+      }
+      items.forEach((x) => out.push({ era, h2, scene, text: x, line: i + 1 }));
+    }
+  }
+  out.forEach((x) => { x.key = sha(x.text).slice(0, 10); });
+  return out;
+}
+/* 검증 기록에서 "(높음)" 지적이 있었던 곳 */
+function parseHigh(era) {
+  const lines = rd('content/ot/_verify/era-' + era + '.md').split('\n');
+  const out = [];
+  let scene = null;
+  lines.forEach((L) => {
+    const m = L.match(/^(#{1,4})\s+(.*)$/);
+    if (m) { const om = m[2].match(/^OT-(\d\d)/); scene = om ? 'OT-' + om[1] : null; return; }
+    if (/^\s*\d+\.\s*\(높음\)/.test(L) && scene) out.push({ scene, text: L.replace(/^\s*\d+\.\s*/, '') });
+  });
+  return out;
+}
+let unresolved = [], highs = [];
+for (let e = 1; e <= 10; e++) { unresolved = unresolved.concat(parseUnresolved(e)); highs = highs.concat(parseHigh(e)); }
+
+/* ───────── 2. 항목 만들기 ───────── */
+/* 줄(line): { k: 이름표, v: 글(게임 문장은 글자 그대로), t: 나이 단계, g: true면 게임에 나오는 글, ref: 장절, sub: 작은 글 } */
+const items = [];
+function add(it) { it.lines = it.lines.filter(Boolean); items.push(it); return it; }
+const G = (k, v, extra) => Object.assign({ k, v, g: true }, extra || {});
+const N = (k, v, extra) => Object.assign({ k, v, g: false }, extra || {});
+const tierLines = (obj, label) => TIERS.filter((t) => obj && obj[t] != null).map((t) => G((label ? label + ' ' : '') + TIER[t], obj[t], { t }));
+
+/* 물음 하나(find·multi·order·match)를 줄로 */
+function qLines(q, tier, label) {
+  const L = [];
+  const lab = (label ? label + ' ' : '') + (tier ? TIER[tier] : '');
+  const refs = q.refs ? q.refs.join(' · ') : q.ref;
+  const kind = { find: '찾아 읽고 고르기', multi: '여러 개 고르기', order: '순서 맞추기', match: '구절과 내용 잇기' }[q.type] || q.type;
+  L.push(G(lab + ' · ' + kind, q.prompt, { t: tier, ref: refs }));
+  if (q.confirm) {
+    L.push(G('물음', q.confirm.prompt, { t: tier, sub: true }));
+    q.confirm.options.forEach((o) => L.push(G(o.ok ? '맞는 보기' : '다른 보기', o.label, { t: tier, sub: true, ref: o.ok ? '' : o.basis, opt: o.ok ? 'ok' : 'no' })));
+  }
+  if (q.items) q.items.forEach((x, i) => L.push(G('차례 ' + (i + 1), x, { t: tier, sub: true })));
+  if (q.pairs) q.pairs.forEach((p) => L.push(G('잇기', p.text, { t: tier, sub: true, ref: p.ref })));
+  if (q.after) L.push(G('이은 뒤 글', q.after, { t: tier, sub: true }));
+  return L;
+}
+
+/* 원칙(규칙서) */
+const RULE_ITEMS = [
+  ['3.3', '성경에 없는 것을 만들지 않는다, 하나님을 형상으로 그리지 않는다, 아이들은 목격자다. 이 게임 전체의 울타리입니다. (천사도 그리지 않기로 좁게 정해 두었습니다.)'],
+  ['3.5', '아래 주제가 들어간 장면과 물음은 목사님이 보시기 전에는 확정하지 않습니다.'],
+  ['13.2', '타임머신이 고장 나 그 시대의 평범한 재료(떨어진 것)를 주워 고친다는 설정입니다. 성경 내용이 아닌 "탐험대 이야기"로 표시합니다. 거룩한 것·기적에 속한 것은 재료로 쓰지 않습니다.'],
+  ['13.3', '모세·다윗 같은 성경 인물이 아이들과 함께 걷습니다. 그 인물은 성경에 기록된 자기 말만(풀어 쓴 간접 서술과 장절로) 합니다.'],
+  ['13.4', '지금 아이들이 궁금해할 물음에 "최현 박사"(지어낸 인물)가 성경 장절을 근거로 답합니다. 성경 인물의 입으로 답하게 하지 않습니다. 모두 감수 대상입니다.'],
+  ['13.5', '모든 물음은 성경책을 펴야 답할 수 있게 했습니다. 나이에 따라 한 절 / 범위 / 떨어진 여러 곳을 읽습니다.'],
+  ['13.6', '아이들이 그 시대 사람들의 "평범한 일"을 돕습니다(예: 유월절 밤 허리띠·신·지팡이 챙기기). 거룩한 행위와 기적은 돕지 않고 곁에서 봅니다. 도운 뒤 본문으로 뜻을 깨닫는 단계가 있습니다.'],
+  ['13.7', '본문에 적힌 일이 없는 장면은 사건 곁의 일상 일(짐 나르기, 길 비켜 주기 등)을 돕습니다. 성경 사건이 아니므로 "탐험대 이야기"로 표시합니다.'],
+  ['13.8', '물음의 놀이 방식을 섞고, 3D 절정 장면에 소리·흔들림 같은 간접 연출을 더했습니다. 하나님의 형상과 음성은 만들지 않습니다.']
+];
+RULE_ITEMS.forEach(([no, sum]) => {
+  const sec = ruleSection(no);
+  add({ id: '원칙·' + no, group: 'rule', kind: 'rule', label: '원칙', title: sec.title, refs: '규칙서 ' + no + '절', core: true,
+    lines: [N('한 줄 요약', sum)].concat(sec.body.map((b) => N('규칙서', b.replace(/^- /, ''), { sub: true }))) });
+});
+/* 공통: 비상 착륙 이야기 */
+add({ id: '공통·비상착륙', group: 'rule', kind: 'story', label: '탐험대 이야기', title: '처음 이야기 "' + erasDoc.story.title + '"', refs: '성경 내용 아님(탐험대 이야기)', core: true,
+  lines: erasDoc.story.lines.map((l) => G(who(l.who), l.text)).concat([G('화면 아래 안내', erasDoc.story.rule)]) });
+
+const eraName = {};
+erasDoc.eras.forEach((e) => { eraName[e.era] = e.name; });
+
+function sceneItems(d) {
+  const sid = d.id, base = { scene: sid, era: d.era, group: 'scene' };
+  const req = !!d.review.required;
+  const m = d.mission, steps = m.help.steps;
+  const idOf = (suffix) => sid + '·' + suffix;
+
+  /* 대목 글: 감수 필수 장면은 표시하는 항목, 그 밖의 장면은 참고 */
+  add(Object.assign({}, base, { id: idOf('대목'), kind: 'beats', label: '대목 글(장면 전체)', title: '대목 ' + d.beats.length + '개', refs: d.ref, core: req, fold: true,
+    lines: [].concat.apply([], d.beats.map((b, i) => [N('대목 ' + (i + 1), '', { ref: b.ref, head: true })].concat(tierLines(b.text)).concat([G(who(b.say.who) + '의 말', b.say.text, { sub: true })]))) }));
+
+  /* 동행 인물 문답 */
+  if (m.companion && m.companion.talks) {
+    const c = m.companion;
+    c.talks.forEach((t, i) => add(Object.assign({}, base, { id: idOf('동행' + (i + 1)), kind: 'talk', label: '동행 인물 문답', title: c.who + '에게 묻기', refs: t.ref, core: true,
+      lines: [N('동행 인물', c.who + ' (이 자리에 있다는 근거 ' + c.ref + ', ' + (c.when === 'before' ? '사건 앞' : '사건과 관문 뒤') + '에 문답)'),
+        G(who(t.ask.who) + '의 물음', t.ask.text)].concat(tierLines(t.answer, '답')).concat([N('아이가 펼 곳', t.open)]) })));
+  }
+  /* 손으로 하는 돕기 */
+  steps.filter((s) => s.kind === 'do').forEach((s, i) => add(Object.assign({}, base, { id: idOf('돕기' + (i + 1)), kind: 'do', label: '손으로 하는 돕기', title: s.title, refs: s.basis, core: true,
+    lines: [N('돕는 상대', m.help.who)].concat(tierLines(s.text)).concat(s.tasks.map((x, j) => G('누르는 일 ' + (j + 1), x, { sub: true }))).concat([G('마친 뒤 ' + who(s.done.who) + '의 말', s.done.text, { sub: true })]) })));
+  /* 뜻 묻기 */
+  steps.filter((s) => s.kind === 'ask').forEach((s) => {
+    add(Object.assign({}, base, { id: idOf('뜻'), kind: 'ask', label: '뜻 묻기', title: s.title, refs: s.basis, core: true,
+      lines: [G(who(s.ask.who) + '의 물음', s.ask.text), N('답하는 사람', s.by)].concat(tierLines(s.answer, '답'))
+        .concat([N('성경을 펴서 뜻 확인하기', '', { head: true })]).concat([].concat.apply([], TIERS.map((t) => qLines(s.read[t], t, '')))) }));
+    if (s.nt) add(Object.assign({}, base, { id: idOf('신약'), kind: 'nt', label: '신약 연결', title: '14~19세에게만 보임 · 화면에 "감수 전" 표시', refs: s.nt.ref, core: true,
+      lines: [G('14~19세', s.nt.text, { t: 't3' })] }));
+  });
+  /* 오늘의 물음 */
+  m.today.forEach((t, i) => add(Object.assign({}, base, { id: idOf('오늘' + (i + 1)), kind: 'today', label: '오늘의 물음', title: '최현 박사가 답함', refs: t.refs.join(' · '), core: true,
+    lines: [G('물음', t.q)].concat(tierLines(t.a, '답')) })));
+  /* 마무리(적용) */
+  add(Object.assign({}, base, { id: idOf('적용'), kind: 'close', label: '마무리(기도·실천·적용)', title: '14~19세 적용 물음은 감수 필수(규칙서 3.5)', refs: d.ref, core: true,
+    lines: [G('8~10세 한 문장 기도', d.close.t1.text, { t: 't1' }), G('11~13세 한 주 실천', d.close.t2.text, { t: 't2' }), G('14~19세 적용·기록 물음', d.close.t3.prompt, { t: 't3' })] }));
+  /* 화면 설정 */
+  const s3 = scene3d[sid];
+  const scr = [G('하나님 표현', d.design3d.god)].concat(d.design3d.never.map((x) => G('그리지 않는 것', x, { sub: true })));
+  if (s3) s3.head.forEach((h, i) => scr.push(N(i === 0 ? '3D 장면 설정 파일 머리말' : '', h, { sub: i > 0 })));
+  add(Object.assign({}, base, { id: idOf(s3 ? '3D' : '화면'), kind: s3 ? 'scene3d' : 'screen', label: s3 ? '3D 설정' : '화면 원칙', title: s3 ? '3D로 만든 장면: 본문에 없는 배치·생김새' : '이야기 카드 장면: 하나님 표현과 그리지 않는 것', refs: d.ref, core: !!s3 || req, fold: !s3,
+    lines: scr }));
+  /* 나머지 글(참고): 통신, 재료, 관문, 탐지기 물음, 곁에서 보기·머물기, 말씀 카드, 장소 */
+  const rest = [];
+  rest.push(N('최현 박사의 통신(탐험대 이야기)', '', { head: true }));
+  tierLines(m.call).forEach((x) => rest.push(x));
+  rest.push(N('수리 재료(탐험대 이야기)', '', { head: true }));
+  m.materials.forEach((x) => {
+    rest.push(G('재료', x.name, { ref: x.basis }));
+    rest.push(G('박사의 말', x.use, { sub: true })); rest.push(G('얻는 방법', x.how, { sub: true })); rest.push(G('얻었을 때 아이의 말', x.line, { sub: true }));
+  });
+  rest.push(N('관문 물음', '', { head: true }));
+  TIERS.forEach((t) => d.gates[t].forEach((q, i) => qLines(q, t, '관문 ' + (i + 1)).forEach((x) => rest.push(x))));
+  if (d.quests) {
+    rest.push(N('3D 탐지기 물음', '', { head: true }));
+    d.quests.forEach((q, i) => {
+      rest.push(G('부품 ' + (i + 1), q.name, { sub: false })); rest.push(G('부품', q.part, { sub: true })); rest.push(G('있는 곳', q.found, { sub: true }));
+      rest.push(G(who(q.say.who) + '의 말', q.say.text, { sub: true })); rest.push(G('찾았을 때', q.line, { sub: true }));
+      TIERS.forEach((t) => qLines(q.q[t], t, '탐지기 ' + (i + 1)).forEach((x) => rest.push(x)));
+    });
+  }
+  const others = steps.filter((s) => s.kind === 'watch' || s.kind === 'stay');
+  if (others.length) rest.push(N('곁에서 보기 · 함께 머물기', '', { head: true }));
+  others.forEach((s) => {
+    rest.push(G(s.kind === 'watch' ? '보기' : '머물기', s.title, { ref: s.basis }));
+    tierLines(s.text).forEach((x) => rest.push(Object.assign(x, { sub: true })));
+    if (s.wait) rest.push(G('단추 글', s.wait, { sub: true }));
+    if (s.say) rest.push(G(who(s.say.who) + '의 말', s.say.text, { sub: true }));
+  });
+  rest.push(N('말씀 카드', '', { head: true }));
+  d.cards.forEach((c) => rest.push(G('카드', c.title, { ref: c.ref })));
+  rest.push(N('곳과 사람(설계 메모, 화면에 그릴 때의 근거)', '', { head: true }));
+  rest.push(G('곳', d.place)); rest.push(G('곳(설계)', d.design3d.place)); rest.push(G('땅', d.design3d.terrain));
+  d.design3d.people.forEach((x) => rest.push(G('사람', x, { sub: true })));
+  d.design3d.props.forEach((x) => rest.push(G('물건', x, { sub: true })));
+  if (d.design3d.epic) rest.push(G('절정 장면', d.design3d.epic.why, { sub: true }));
+  add(Object.assign({}, base, { id: idOf('기타'), kind: 'rest', label: '그 밖의 글(참고)', title: '통신·재료·관문·탐지기 물음·곁에서 보기·말씀 카드', refs: d.ref, core: false, fold: true, lines: rest }));
+  /* 미해결 */
+  unresolved.filter((u) => u.scene === sid).forEach((u, i) => {
+    const c = CLASS[u.key] || { to: '미분류', ask: '', why: '' };
+    add(Object.assign({}, base, { id: idOf('미해결' + (i + 1)), kind: 'open', label: '검증자가 남긴 것', title: c.ask || '검증자가 감수 때 확인해 달라고 남긴 것', refs: '', core: c.to === '목회자' || c.to === '미분류', to: c.to, same: c.same || '', why: c.why || '', ukey: u.key,
+      lines: [N('검증 기록(' + u.h2.replace(/\s*\(.*$/, '') + ')', u.text)] }));
+  });
+}
+erasDoc.eras.forEach((e) => {
+  add({ id: '시대' + e.era + '·안내', group: 'era', era: e.era, kind: 'era', label: '시대 안내', title: e.era + '. ' + e.name, refs: '', core: true,
+    lines: [G('최현 박사의 통신(탐험대 이야기)', e.intro), N('"이 사이에 성경이 기록한 곳"으로 보여 주는 장절(요약 없이 장절만)', e.between.join(' · '))].concat(e.between.map((b) => G('', b, { hide: true }))) });
+  scenes.filter((d) => d.era === e.era).forEach(sceneItems);
+  unresolved.filter((u) => !u.scene && u.era === e.era).forEach((u, i) => {
+    const c = CLASS[u.key] || { to: '미분류', ask: '', why: '' };
+    add({ id: '시대' + e.era + '·미해결' + (i + 1), group: 'era', era: e.era, kind: 'open', label: '검증자가 남긴 것', title: c.ask || '검증자가 남긴 것(시대 공통)', refs: '', core: c.to === '목회자' || c.to === '미분류', to: c.to, same: c.same || '', why: c.why || '', ukey: u.key,
+      lines: [N('검증 기록(' + u.h2.replace(/\s*\(.*$/, '') + ')', u.text)] });
+  });
+});
+
+/* 글자 수(읽는 시간 어림) */
+items.forEach((it) => { it.chars = it.lines.reduce((a, l) => a + (l.hide ? 0 : (l.v || '').length), 0); });
+const byId = {}; items.forEach((it) => { if (byId[it.id]) throw new Error('항목 번호 겹침 ' + it.id); byId[it.id] = it; });
+const sceneById = {}; scenes.forEach((d) => { sceneById[d.id] = d; });
+
+/* ───────── 3. 먼저 볼 30항목 ───────── */
+/* 급한 순서: ① 신약 연결(규칙서 3.5·13.6, 16) ② 독립 대조에서 높음 지적이 있었던 곳 ③ 주권과 책임·장자의 죽음이 걸린 장면의 대목 글
+ *            ④ 신약적 의미가 주제인데 신약 연결 항목이 따로 없는 장면(OT-02·27·40)의 오늘의 물음 ⑤ 주권과 책임 장면의 오늘의 물음. 같은 점수면 장면 번호 순서. */
+function highTarget(h) {
+  const t = h.text;
+  let m;
+  if ((m = t.match(/동행 문답 (\d)/))) return h.scene + '·동행' + m[1];
+  if (/^\(높음\)\s*do|돕기가|do의 자리/.test(t)) return h.scene + '·돕기1';
+  return h.scene + '·대목';
+}
+const highIds = {};
+highs.forEach((h) => { const id = highTarget(h); if (byId[id]) highIds[id] = h.text; });
+items.forEach((it) => {
+  let p = 0, why = '';
+  const d = it.scene ? sceneById[it.scene] : null;
+  const topics = d ? (d.review.topics || []).join(' ') : '';
+  const hasNt = d ? d.mission.help.steps.some((s) => s.nt) : false;
+  if (it.kind === 'nt') { p = 100; why = '구약 사건과 그리스도·신약의 연결(규칙서 3.5, 13.6)'; }
+  else if (highIds[it.id]) { p = 90; why = '독립 대조에서 높음 지적이 있어 고친 곳'; }
+  else if (it.kind === 'beats' && /장자의 죽음/.test(topics)) { p = 85; why = '재앙과 심판, 장자의 죽음(8~10세 글 포함)'; }
+  else if (it.kind === 'beats' && /주권과 사람의 책임/.test(topics)) { p = 80; why = '하나님의 주권과 사람의 책임'; }
+  else if (it.kind === 'today' && /신약적 의미/.test(topics) && !hasNt) { p = 70; why = '신약적 의미가 걸린 장면의 오늘의 물음'; }
+  else if (it.kind === 'today' && /주권과 사람의 책임/.test(topics)) { p = 60; why = '주권과 책임이 걸린 장면의 오늘의 물음'; }
+  else if (it.kind === 'ask' && /신약적 의미/.test(topics) && !hasNt) { p = 50; why = '신약적 의미가 걸린 장면의 뜻 묻기'; }
+  it.pscore = p; it.pwhy = why;
+});
+const first30 = items.filter((it) => it.pscore > 0).sort((a, b) => b.pscore - a.pscore || items.indexOf(a) - items.indexOf(b)).slice(0, 30);
+first30.forEach((it, i) => { it.pri = i + 1; });
+
+/* ───────── 4. 숫자 대조 ───────── */
+const REQ_N = scenes.filter((d) => d.review.required).length;
+const TABLE_REQ = rd('docs/09_구약전체_장면표.md').split('\n').filter((l) => /\| OT-\d\d \|/.test(l) && /\|\s*예[^|]*\|\s*$/.test(l)).length;
+const cnt = (k) => items.filter((it) => it.kind === k).length;
+const scenesWith = (k) => new Set(items.filter((it) => it.kind === k).map((it) => it.scene)).size;
+const COUNTS = [
+  ['오늘의 물음', scenesWith('today') + '장면 / 물음 ' + cnt('today') + '개', '40(장면)', scenesWith('today') === 40, '진행표는 장면 수(40)를 적었다. 물음은 장면마다 1~2개여서 ' + cnt('today') + '개다'],
+  ['뜻 묻기', String(cnt('ask')), '40', cnt('ask') === 40, ''],
+  ['신약 연결', String(cnt('nt')), '16', cnt('nt') === 16, ''],
+  ['손으로 하는 돕기', String(cnt('do')), '42', cnt('do') === 42, ''],
+  ['14~19세 적용 물음(마무리)', String(cnt('close')), '40(장면마다 하나)', cnt('close') === 40, '진행표에 수가 따로 없다. 장면마다 기도·실천·적용 한 묶음'],
+  ['동행 인물 문답', scenesWith('talk') + '장면 / 문답 ' + cnt('talk') + '개', '—', true, '진행표에 수가 없다. 동행 인물이 없는 장면 ' + (40 - scenesWith('talk')) + '개(본문에 그 장면에서 말한 사람이 없음)'],
+  ['3D 설정', String(cnt('scene3d')), '12(3D 장면)', cnt('scene3d') === 12, '호렙 산(OT-09) 포함'],
+  ['검증자가 남긴 것(미해결)', String(cnt('open')), '—', true, '검증 기록 10개에서 뽑은 전체. 분류는 아래'],
+  ['감수 필수 장면', String(REQ_N), '장면표(`docs/09`) "예" ' + TABLE_REQ, REQ_N === TABLE_REQ, '']
+];
+const openBy = {}; items.filter((it) => it.kind === 'open').forEach((it) => { openBy[it.to] = (openBy[it.to] || 0) + 1; });
+const coreItems = items.filter((it) => it.core);
+const CPM = 500; /* 꼼꼼히 읽을 때 1분에 읽는 글자 수(어림) */
+const mins = (list) => Math.round(list.reduce((a, it) => a + it.chars, 0) / CPM);
+const VERSION = sha(JSON.stringify(items.map((it) => [it.id, it.title, it.to, it.lines.map((l) => [l.k, l.v, l.ref])]))).slice(0, 8);
+
+if (CHECK_ONLY) { printCounts(); process.exit(COUNTS.every((c) => c[3]) ? 0 : 1); }
+function printCounts() {
+  COUNTS.forEach((c) => console.log((c[3] ? '맞음 ' : '다름 ') + c[0] + ': 뽑은 수 ' + c[1] + ' / 진행표 ' + c[2] + (c[4] ? ' — ' + c[4] : '')));
+  console.log('미해결 분류: ' + Object.keys(openBy).map((k) => k + ' ' + openBy[k]).join(' · '));
+  console.log('표시할 항목 ' + coreItems.length + '개, 글자 ' + coreItems.reduce((a, it) => a + it.chars, 0) + ' (어림 ' + mins(coreItems) + '분) · 전체 항목 ' + items.length + '개 · 자료 판 ' + VERSION);
+}
+
+/* ───────── 5. 글(md) ───────── */
+const KIND_ORDER = ['beats', 'talk', 'do', 'ask', 'nt', 'today', 'close', 'scene3d', 'screen', 'open', 'rest'];
+const refTxt = (l) => (l.ref ? ' (' + l.ref + ')' : '');
+function mdItem(it) {
+  const o = [];
+  o.push('#### ' + it.id + ' · ' + it.label + (it.pri ? ' · ★먼저 볼 ' + it.pri : '') + (it.core ? '' : ' · 참고'));
+  o.push('');
+  if (it.title) o.push('*' + it.title + '*' + (it.refs ? ' — ' + it.refs : ''));
+  if (it.kind === 'open' && it.to !== '목회자' && it.to !== '미분류') o.push('- 분류: ' + it.to + (it.same ? '(' + it.same + ')' : '') + (it.why ? ' — ' + it.why : ''));
+  it.lines.forEach((l) => {
+    if (l.hide) return;
+    if (l.head) { o.push('- **' + l.k + '**' + refTxt(l)); return; }
+    o.push((l.sub ? '  - ' : '- ') + (l.k ? l.k + ': ' : '') + l.v + refTxt(l));
+  });
+  if (it.core) { o.push(''); o.push('표시: ☐ 그대로 ☐ 고침 ☐ 뺌 　적을 칸: '); }
+  o.push('');
+  return o.join('\n');
+}
+function sceneHead(d) {
+  return '### ' + d.id + ' ' + d.title + ' (' + d.ref + ')\n\n- 곳: ' + d.place + '\n- 감수 필수: ' + (d.review.required ? '예 — ' + d.review.topics.join(' / ') : '아니오') + '\n- 화면: ' + (scene3d[d.id] ? '3D 장면' : '이야기 카드') + ' · 감수 상태: ' + d.review.status + '\n';
+}
+function eraMd(e) {
+  const o = ['# 감수 자료 · 시대 ' + e.era + '. ' + e.name, '', '자료 판 `' + VERSION + '` · `node tools/make_review_pack.js`가 만든 파일입니다(손으로 고치지 않습니다). 게임에 나오는 문장은 글자 그대로이고, 성경 본문은 싣지 않았습니다(장절만).', ''];
+  items.filter((it) => it.group === 'era' && it.era === e.era && it.kind === 'era').forEach((it) => o.push(mdItem(it)));
+  scenes.filter((d) => d.era === e.era).forEach((d) => {
+    o.push(sceneHead(d));
+    const list = items.filter((it) => it.scene === d.id).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
+    list.forEach((it) => o.push(mdItem(it)));
+  });
+  const eo = items.filter((it) => it.group === 'era' && it.era === e.era && it.kind === 'open');
+  if (eo.length) { o.push('### 시대 ' + e.era + ' 공통으로 검증자가 남긴 것\n'); eo.forEach((it) => o.push(mdItem(it))); }
+  return o.join('\n');
+}
+
+const GUIDE = {
+  what: [
+    '이 게임은 8~19세 아이들이 구약 40장면을 탐험하며 **자기 성경책을 직접 펴서** 답을 찾게 만든 게임입니다. 아직 아이들에게 공개하지 않았고, 목사님 감수를 마치기 전에는 공개하지 않습니다.',
+    '글은 모두 성경 본문(개역개정·개역한글)과 두 차례 이상 대조했지만, **신학 판단은 하지 않고 목사님께 남겨 두었습니다.** 이 자료가 그 목록입니다.'
+  ],
+  how: [
+    '항목마다 **그대로 / 고침 / 뺌** 가운데 하나를 골라 주세요. "고침"과 "뺌"에는 한 줄만 적어 주셔도 됩니다(어떻게 고칠지, 왜 빼는지).',
+    '**그대로**: 이대로 아이들에게 보여도 된다. **고침**: 적어 주신 대로 고친 뒤 쓴다. **뺌**: 아이들에게 보이지 않는다.',
+    '원칙(규칙) 항목에서는 **그대로 = 이 원칙에 동의, 고침 = 조건을 달아 동의, 뺌 = 이 방식은 쓰지 않는다**는 뜻입니다. 원칙에서 "뺌"이 나오면 그 원칙에 딸린 장면 항목은 보실 필요가 없습니다.',
+    '휴대폰·컴퓨터에서는 `감수자료.html`을 열면 표시한 것이 그 기기에 저장되고, "내보내기"로 글로 뽑아 보내실 수 있습니다. 종이가 편하시면 `감수자료_인쇄용.html`을 인쇄해 주세요(전체는 A4 약 190쪽으로 많습니다. `먼저볼30_인쇄용.html`은 약 20쪽).',
+    '성경 본문은 싣지 않았습니다(사용 허락 전). 장절을 보시고 성경책에서 확인해 주세요.'
+  ],
+  order: [
+    '① **원칙 9가지와 처음 이야기**: 여기서 방향이 정해집니다.',
+    '② **먼저 볼 30항목**: 가장 급한 것만 모았습니다. 시간이 넉넉하지 않으시면 ①과 ②를 먼저 보시고, 나머지는 나누어 보셔도 됩니다.',
+    '③ **시대별 10묶음**: 감수 필수 장면부터, 나머지는 여유 있을 때.'
+  ]
+};
+
+function readmeMd() {
+  const o = [];
+  o.push('# 목회자 감수 자료 (바이블 온유 · 구약 40장면)', '');
+  o.push('자료 판 `' + VERSION + '` · 이 폴더의 파일은 `node tools/make_review_pack.js`가 장면 자료에서 뽑아 만듭니다. 내용이 바뀌면 다시 돌리면 됩니다(손으로 고치지 않습니다). 검사: `node tools/test/check_review_pack.js`.', '');
+  o.push('## 한 장 안내 (목사님께)', '');
+  GUIDE.what.forEach((x) => o.push(x, ''));
+  o.push('### 무엇을, 얼마나', '');
+  o.push('| 묶음 | 항목 수 | 걸리는 시간(어림) |', '|---|---|---|');
+  const row = (name, list) => o.push('| ' + name + ' | ' + list.length + ' | 약 ' + fmtMin(mins(list)) + ' |');
+  row('① 원칙 9가지와 처음 이야기', items.filter((it) => it.group === 'rule'));
+  row('② 먼저 볼 30항목', first30);
+  row('③ 감수 필수 장면 ' + REQ_N + '개의 표시 항목(②와 겹치는 것 포함)', coreItems.filter((it) => it.scene && sceneById[it.scene].review.required));
+  row('④ 나머지 장면 ' + (40 - REQ_N) + '개의 표시 항목', coreItems.filter((it) => it.scene && !sceneById[it.scene].review.required));
+  row('전체(표시할 항목)', coreItems);
+  o.push('', '시간은 1분에 ' + CPM + '자를 꼼꼼히 읽는다고 보고 글자 수로 어림한 것입니다(성경을 펴 보시는 시간은 넣지 않았습니다). 실제로는 더 걸릴 수 있습니다.', '');
+  o.push('### 표시하는 방법', ''); GUIDE.how.forEach((x) => o.push('- ' + x)); o.push('');
+  o.push('### 보시는 순서(권함)', ''); GUIDE.order.forEach((x) => o.push('- ' + x)); o.push('');
+  o.push('### 항목의 종류', '');
+  o.push('| 종류 | 무엇인가 | 수 |', '|---|---|---|');
+  [['대목 글(장면 전체)', '장면의 사건을 나이 단계별로 풀어 쓴 글. 감수 필수 장면만 표시 항목이고, 나머지는 참고로 실었습니다', cnt('beats')],
+    ['동행 인물 문답', '성경 인물이 아이의 물음에 "기록된 자기 말"로 답하는 곳', cnt('talk')],
+    ['손으로 하는 돕기', '아이가 그 시대 사람들의 평범한 일을 돕는 단계', cnt('do')],
+    ['뜻 묻기', '도운 뒤 그 일의 뜻을 본문으로 깨닫는 단계', cnt('ask')],
+    ['신약 연결', '구약 사건을 신약 장절과 잇는 글(14~19세만)', cnt('nt')],
+    ['오늘의 물음', '지금 아이가 궁금해할 물음과 최현 박사의 답', cnt('today')],
+    ['마무리(기도·실천·적용)', '8~10세 기도, 11~13세 실천, 14~19세 적용 물음', cnt('close')],
+    ['3D 설정 / 화면 원칙', '하나님을 어떻게 표현하는지, 무엇을 그리지 않는지, 본문에 없는 배치', cnt('scene3d') + ' / ' + cnt('screen')],
+    ['검증자가 남긴 것', '본문 대조를 한 검증자가 "감수 때 정해 달라"고 남긴 것', (openBy['목회자'] || 0) + (openBy['미분류'] || 0)],
+    ['그 밖의 글(참고)', '관문 물음, 탐지기 물음, 재료, 곁에서 보기 등. 표시 항목은 아니지만 빠짐없이 실었습니다', cnt('rest')]
+  ].forEach((r) => o.push('| ' + r.join(' | ') + ' |'));
+  o.push('');
+  o.push('## 파일', '');
+  o.push('| 파일 | 쓰임 |', '|---|---|');
+  o.push('| `감수자료.html` | 휴대폰·컴퓨터에서 읽고 표시. 표시는 그 기기에 저장되고 "내보내기"로 글로 뽑습니다 |');
+  o.push('| `감수자료_인쇄용.html` | A4 인쇄(원칙 → 먼저 볼 30 → 시대별). 브라우저의 인쇄에서 "PDF로 저장"도 됩니다 |');
+  o.push('| `먼저볼30_인쇄용.html` | 먼저 볼 30항목만 A4로 |');
+  o.push('| `참고_장면전체글_인쇄용.html` | 대목 글과 그 밖의 글 전부(참고용, 깁니다) |');
+  o.push('| `md/시대01.md` ~ `md/시대10.md` | 같은 내용의 글 파일(시대별, 참고 글 포함) |');
+  o.push('| `항목목록.json` | 항목 번호와 그 글이 장면 자료의 어디에 있는지(감수 결과를 반영할 때 씁니다) |');
+  o.push('| `미해결_분류.json` · `미해결_전체.md` | 검증자가 남긴 것 ' + cnt('open') + '건을 목회자/대표/코드/이미 풀림으로 나눈 것과 그 까닭 |');
+  o.push('');
+  o.push('## 뽑은 수와 진행표의 수 대조', '');
+  o.push('| 항목 | 뽑은 수 | 진행표(`docs/11`)의 수 | 맞는가 | 까닭 |', '|---|---|---|---|---|');
+  COUNTS.forEach((c) => o.push('| ' + c[0] + ' | ' + c[1] + ' | ' + c[2] + ' | ' + (c[3] ? '맞음' : '**다름**') + ' | ' + c[4] + ' |'));
+  o.push('', '검증자가 남긴 것 ' + cnt('open') + '건의 분류: ' + Object.keys(openBy).sort().map((k) => k + ' ' + openBy[k]).join(' · ') + '. "목회자"와 "미분류"만 표시 항목으로 실었고, "대표"는 `대표_결재지.md`로, "코드"·"풀림"·"같음"은 `미해결_전체.md`에 까닭과 함께 적었습니다.', '');
+  o.push('## 먼저 볼 30항목', '');
+  o.push('뽑은 기준(급한 순서): ① 신약 연결 16곳(규칙서 3.5·13.6) ② 독립 대조에서 **높음** 지적이 있었던 곳 ③ 장자의 죽음, 주권과 책임이 걸린 장면의 대목 글 ④ 신약적 의미가 주제인데 신약 연결 항목이 따로 없는 장면(OT-02·27·40)의 오늘의 물음 ⑤ 주권과 책임 장면의 오늘의 물음.', '');
+  o.push('| 순서 | 항목 번호 | 장면 | 종류 | 왜 먼저인가 |', '|---|---|---|---|---|');
+  first30.forEach((it) => o.push('| ' + it.pri + ' | ' + it.id + ' | ' + sceneById[it.scene].title + ' (' + sceneById[it.scene].ref + ') | ' + it.label + ' | ' + it.pwhy + ' |'));
+  o.push('');
+  o.push('## 원칙 9가지와 처음 이야기', '', '규칙서(`docs/00_공통규칙서.md`) 3절과 13절(대표 결정, 목회자 감수 전)에서 목사님이 먼저 보실 것을 옮겼습니다. "규칙서" 줄은 규칙서의 글 그대로입니다.', '');
+  items.filter((it) => it.group === 'rule').forEach((it) => o.push(mdItem(it)));
+  return o.join('\n');
+}
+function fmtMin(m) { return m < 60 ? m + '분' : Math.floor(m / 60) + '시간 ' + (m % 60 ? (m % 60) + '분' : ''); }
+
+function unresolvedMd() {
+  const o = ['# 검증자가 남긴 것(미해결) 전체와 분류', '', '자료 판 `' + VERSION + '`. 검증 기록(`content/ot/_verify/era-N.md`)의 "미해결" ' + cnt('open') + '건을 스크립트로 뽑고, 분류(`미해결_분류.json`)를 붙였습니다. 분류는 작성 과정을 보지 않은 에이전트가 지금의 장면 자료를 열어 보고 정한 것이며, 신학 판단은 하지 않았습니다.', '',
+    '- **목회자**: 감수 자료에 표시 항목으로 실음 · **대표**: `대표_결재지.md`로 · **코드**: 화면·코드로 고칠 일(총괄에게) · **풀림**: 뒤 회차에서 이미 고쳐짐 · **같음**: 다른 항목과 같은 문제 · **미분류**: 분류가 없어 목회자 항목으로 실음', ''];
+  ['목회자', '미분류', '대표', '코드', '풀림', '같음'].forEach((to) => {
+    const list = items.filter((it) => it.kind === 'open' && it.to === to);
+    if (!list.length) return;
+    o.push('## ' + to + ' (' + list.length + ')', '');
+    list.forEach((it) => {
+      o.push('- **' + it.id + '**' + (it.title && it.to !== '풀림' && it.to !== '같음' && it.to !== '코드' ? ' ' + it.title : '') + (it.same ? ' (같은 항목: ' + (items.find((x) => x.ukey === it.same) || { id: it.same }).id + ')' : ''));
+      o.push('  - ' + it.lines[0].k + ': ' + it.lines[0].v);
+      if (it.why) o.push('  - 분류 까닭: ' + it.why);
+    });
+    o.push('');
+  });
+  return o.join('\n');
+}
+
+/* ───────── 6. HTML ───────── */
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const inl = (s) => esc(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+function htmlLines(it) {
+  return it.lines.map((l) => {
+    if (l.hide) return '';
+    const ref = l.ref ? ' <span class="rf">' + esc(l.ref) + '</span>' : '';
+    if (l.head) return '<p class="hd">' + esc(l.k) + ref + '</p>';
+    const cls = ['ln', l.sub ? 'sub' : '', l.g ? 'g' : 'n', l.t || '', l.opt || ''].filter(Boolean).join(' ');
+    return '<p class="' + cls + '">' + (l.k ? '<span class="k">' + esc(l.k) + '</span> ' : '') + '<span class="v">' + esc(l.v) + '</span>' + ref + '</p>';
+  }).join('\n');
+}
+function htmlItem(it, mode) {
+  const print = mode === 'print';
+  const mark = !it.core ? '' : print
+    ? '<div class="pm"><span>☐ 그대로</span><span>☐ 고침</span><span>☐ 뺌</span><span class="wr">적을 칸</span></div>'
+    : '<div class="mk" data-id="' + esc(it.id) + '"><label><input type="radio" name="m-' + esc(it.id) + '" value="ok"><span>그대로</span></label><label><input type="radio" name="m-' + esc(it.id) + '" value="fix"><span>고침</span></label><label><input type="radio" name="m-' + esc(it.id) + '" value="del"><span>뺌</span></label><button type="button" class="clr" title="표시 지우기">지움</button><textarea rows="1" placeholder="적을 칸(고칠 말, 빼는 까닭)"></textarea></div>';
+  const body = htmlLines(it);
+  const cls = ['it', 'k-' + it.kind, it.core ? 'core' : 'ref', it.pri ? 'pri' : ''].filter(Boolean).join(' ');
+  const head = '<header><span class="code">' + esc(it.id) + '</span><span class="kd">' + esc(it.label) + '</span>' + (it.pri && !print ? '<span class="star">먼저 볼 ' + it.pri + '</span>' : '') + (it.refs ? '<span class="rf">' + esc(it.refs) + '</span>' : '') + '</header>' + (it.title ? '<p class="tt">' + esc(it.title) + '</p>' : '');
+  const inner = it.fold && !print ? '<details><summary>' + esc(it.label) + ' 펼치기 (' + it.chars + '자)</summary>' + body + '</details>' : body;
+  return '<article class="' + cls + '" id="' + esc(it.id) + '" data-scene="' + esc(it.scene || '') + '">' + head + inner + mark + '</article>';
+}
+function htmlSceneHead(d) {
+  return '<h3 id="' + d.id + '">' + esc(d.id + ' ' + d.title) + ' <span class="rf">' + esc(d.ref) + '</span></h3><p class="sm">' + (d.review.required ? '<b class="req">감수 필수</b> ' + esc(d.review.topics.join(' / ')) : '감수 필수 아님') + ' · ' + (scene3d[d.id] ? '3D 장면' : '이야기 카드') + ' · ' + esc(d.place) + '</p>';
+}
+const CSS_COMMON = `
+:root{--bg:#faf8f3;--card:#fff;--ink:#1f2328;--mut:#5d6570;--line:#e3ddd0;--acc:#1f6f5c;--warn:#a23b2a;--soft:#f1ede3;--star:#8a5a00}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR","Noto Sans CJK KR",sans-serif;word-break:keep-all;overflow-wrap:anywhere}
+h1{font-size:1.45rem;margin:.2em 0}h2{font-size:1.25rem;margin:1.6em 0 .5em;padding-top:.4em;border-top:3px solid var(--acc)}h3{font-size:1.08rem;margin:1.5em 0 .2em}
+.rf{color:var(--acc);font-size:.86em;white-space:normal}.sm{color:var(--mut);font-size:.9em;margin:.1em 0 .6em}.req{color:var(--warn)}
+.it{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:10px 0}
+.it header{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.code{font-weight:700;font-size:.9em}.kd{background:var(--soft);border-radius:6px;padding:0 6px;font-size:.84em}.star{background:#fff3cf;color:var(--star);border-radius:6px;padding:0 6px;font-size:.8em;font-weight:700}
+.tt{margin:.15em 0 .3em;color:var(--mut);font-size:.9em}
+.ln{margin:.3em 0}.ln.sub{margin-left:1em;font-size:.95em}.ln .k{color:var(--mut);font-size:.82em;margin-right:2px}
+.ln.g .v{font-weight:500}.ln.n .v{color:#3b4350}.ln.ok .k{color:var(--acc);font-weight:700}
+.hd{margin:.7em 0 .1em;font-weight:700;font-size:.9em;border-bottom:1px dashed var(--line)}
+table{border-collapse:collapse;width:100%;font-size:.92em}th,td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top}th{background:var(--soft)}
+code{background:var(--soft);padding:0 4px;border-radius:4px;font-size:.9em}
+`;
+const CSS_SCREEN = `
+main{max-width:860px;margin:0 auto;padding:0 16px 120px}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:6px 16px}
+.top .row{max-width:860px;margin:0 auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.top b{font-size:.9em}.bar{flex:1 1 90px;height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:60px}.bar i{display:block;height:100%;background:var(--acc);width:0}
+button,select{font:inherit;font-size:.88em;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:5px 9px;min-height:36px}
+button.pr{background:var(--acc);color:#fff;border-color:var(--acc)}
+details>summary{cursor:pointer;color:var(--acc);font-size:.9em;padding:4px 0}
+.mk{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.mk label{display:inline-flex;align-items:center}.mk input{position:absolute;opacity:0;width:1px;height:1px}
+.mk label span{border:1px solid var(--line);border-radius:999px;padding:5px 13px;min-height:36px;display:inline-flex;align-items:center;font-size:.9em;background:var(--card)}
+.mk input:focus-visible+span{outline:2px solid var(--acc)}
+.mk input[value=ok]:checked+span{background:var(--acc);color:#fff;border-color:var(--acc)}
+.mk input[value=fix]:checked+span{background:#8a5a00;color:#fff;border-color:#8a5a00}
+.mk input[value=del]:checked+span{background:var(--warn);color:#fff;border-color:var(--warn)}
+.mk .clr{border:0;background:none;color:var(--mut);text-decoration:underline;padding:4px;min-height:32px}
+.mk textarea{flex:1 1 100%;font:inherit;font-size:.92em;border:1px solid var(--line);border-radius:8px;padding:6px 8px;resize:vertical;min-height:38px;background:#fffdf8;color:var(--ink)}
+.it.done{border-left:5px solid var(--acc)}.it.fix{border-left:5px solid #8a5a00}.it.del{border-left:5px solid var(--warn)}
+body.f-pri .it:not(.pri),body.f-req .sc:not(.rq),body.f-todo .it.done,body.f-todo .it.fix,body.f-todo .it.del,body.f-todo .it.ref,body.f-pri .ref{display:none}
+body.f-pri .sc.nopri,body.f-pri .noprisec{display:none}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px;margin:.6em 0}nav.toc a{border:1px solid var(--line);border-radius:8px;padding:4px 8px;text-decoration:none;color:var(--ink);background:var(--card);font-size:.88em}
+dialog{border:1px solid var(--line);border-radius:12px;max-width:min(680px,94vw);width:100%;padding:14px}
+dialog textarea{width:100%;height:42vh;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace}
+.note{background:var(--soft);border-radius:10px;padding:8px 12px;font-size:.93em}
+@media (prefers-color-scheme:dark){:root{--bg:#16181b;--card:#1f2226;--ink:#e8e6e1;--mut:#a3a9b3;--line:#363a40;--acc:#58c2a8;--warn:#ef8d7c;--soft:#2a2e33;--star:#f0c661}.star{background:#4a3a10}.ln.n .v{color:#c3c8d0}.mk textarea{background:#1a1c1f}}
+@media print{.top,.mk .clr,nav.toc{display:none}main{max-width:none;padding:0}.it{break-inside:avoid}}
+`;
+const CSS_PRINT = `
+@page{size:A4;margin:14mm 13mm}
+body{font-size:10.5pt;line-height:1.5;background:#fff}
+main{padding:0}h1{font-size:17pt}h2{font-size:14pt;break-before:page}h2.first{break-before:auto}h3{font-size:12pt;break-after:avoid}
+.it{border:1px solid #bbb;border-radius:0;padding:5px 8px;margin:6px 0;break-inside:avoid}
+.it.long{break-inside:auto}
+.pm{display:flex;gap:14px;margin-top:5px;padding-top:4px;border-top:1px solid #ccc;font-size:10pt}.pm .wr{flex:1;border-bottom:1px solid #888;color:#777;font-size:8.5pt}
+.ln{margin:.15em 0}.sm{margin-bottom:.3em}
+.cover{break-after:page}
+`;
+const JS_SCREEN = `
+(function(){
+var KEY='bo-review-'+document.body.getAttribute('data-version').slice(0,0)+'v1',st={};
+try{st=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){st={}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){document.getElementById('savewarn').hidden=false}}
+var mks=[].slice.call(document.querySelectorAll('.mk')),total=mks.length;
+function paint(mk){var id=mk.getAttribute('data-id'),s=st[id]||{},a=mk.parentNode;
+  [].forEach.call(mk.querySelectorAll('input'),function(i){i.checked=(i.value===s.m)});
+  var ta=mk.querySelector('textarea');if(ta.value!==(s.n||''))ta.value=s.n||'';
+  a.classList.toggle('done',s.m==='ok');a.classList.toggle('fix',s.m==='fix');a.classList.toggle('del',s.m==='del');}
+function count(){var n=0,c={ok:0,fix:0,del:0};mks.forEach(function(mk){var s=st[mk.getAttribute('data-id')];if(s&&s.m){n++;c[s.m]++}});
+  document.getElementById('cnt').textContent='표시 '+n+' / '+total;document.getElementById('bari').style.width=(total?100*n/total:0)+'%';return{n:n,c:c}}
+mks.forEach(function(mk){var id=mk.getAttribute('data-id');paint(mk);
+  mk.addEventListener('change',function(e){if(e.target.type==='radio'){st[id]=st[id]||{};st[id].m=e.target.value;save();paint(mk);count()}});
+  mk.querySelector('textarea').addEventListener('input',function(e){st[id]=st[id]||{};st[id].n=e.target.value;if(!st[id].m&&!st[id].n)delete st[id];save()});
+  mk.querySelector('.clr').addEventListener('click',function(){delete st[id];save();paint(mk);count()});});
+count();
+/* 걸러 보기 */
+[].forEach.call(document.querySelectorAll('.sc'),function(sc){if(!sc.querySelector('.it.pri'))sc.classList.add('nopri')});
+var sel=document.getElementById('flt');
+sel.addEventListener('change',function(){document.body.className=sel.value?('f-'+sel.value):'';window.scrollTo(0,0)});
+/* 내보내기 */
+var LAB={ok:'그대로',fix:'고침',del:'뺌'};
+function exportText(){var r=count(),L=[];L.push('바이블 온유 감수 표시');L.push('자료 판: '+document.body.getAttribute('data-version'));
+  L.push('표시 '+r.n+' / 전체 '+total+' (그대로 '+r.c.ok+' · 고침 '+r.c.fix+' · 뺌 '+r.c.del+')');
+  ['fix','del'].forEach(function(m){L.push('');L.push('== '+LAB[m]+' ==');mks.forEach(function(mk){var id=mk.getAttribute('data-id'),s=st[id];if(s&&s.m===m)L.push('['+id+'] '+LAB[m]+' | '+(s.n||'').replace(/\\n/g,' / '))})});
+  L.push('');L.push('== 표시 없이 적기만 한 것 ==');mks.forEach(function(mk){var id=mk.getAttribute('data-id'),s=st[id];if(s&&!s.m&&s.n)L.push('['+id+'] 메모 | '+s.n.replace(/\\n/g,' / '))});
+  L.push('');L.push('== 그대로 ==');var ok=[];mks.forEach(function(mk){var id=mk.getAttribute('data-id'),s=st[id];if(s&&s.m==='ok')ok.push('['+id+'] 그대로 | '+(s.n||'').replace(/\\n/g,' / '))});L=L.concat(ok);
+  return L.join('\\n')}
+function importText(t){var n=0,REV={'그대로':'ok','고침':'fix','뺌':'del','메모':''};t.split(/\\r?\\n/).forEach(function(line){var m=line.match(/^\\[([^\\]]+)\\]\\s*(그대로|고침|뺌|메모)\\s*\\|?\\s*(.*)$/);if(!m)return;var id=m[1];if(!document.getElementById(id))return;st[id]={};if(REV[m[2]])st[id].m=REV[m[2]];if(m[3])st[id].n=m[3].replace(/ \\/ /g,'\\n');n++});save();mks.forEach(paint);count();return n}
+var dlg=document.getElementById('dlg'),box=document.getElementById('box'),msg=document.getElementById('msg');
+document.getElementById('exp').addEventListener('click',function(){box.value=exportText();msg.textContent='';if(dlg.showModal)dlg.showModal();else dlg.setAttribute('open','')});
+document.getElementById('cpy').addEventListener('click',function(){box.select();var ok=false;try{ok=document.execCommand('copy')}catch(e){}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(box.value).then(function(){msg.textContent='복사했습니다. 문자나 메일에 붙여 넣어 보내 주세요.'},function(){msg.textContent=ok?'복사했습니다.':'복사가 안 되면 글상자를 길게 눌러 전체 선택 후 복사해 주세요.'})}else msg.textContent=ok?'복사했습니다.':'글상자를 길게 눌러 전체 선택 후 복사해 주세요.'});
+document.getElementById('dwn').addEventListener('click',function(){try{var b=new Blob([box.value],{type:'text/plain;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='감수표시_'+document.body.getAttribute('data-version')+'.txt';document.body.appendChild(a);a.click();a.remove();msg.textContent='파일로 저장했습니다.'}catch(e){msg.textContent='이 기기에서는 파일 저장이 안 됩니다. 복사를 써 주세요.'}});
+document.getElementById('imp').addEventListener('click',function(){var n=importText(box.value);msg.textContent=n+'개 항목의 표시를 불러왔습니다.'});
+document.getElementById('cls').addEventListener('click',function(){if(dlg.close)dlg.close();else dlg.removeAttribute('open')});
+document.getElementById('rst').addEventListener('click',function(){if(confirm('이 기기에 저장된 표시를 모두 지울까요? 되돌릴 수 없습니다.')){st={};save();mks.forEach(paint);count();box.value=exportText()}});
+window.__review={exportText:exportText,importText:importText,state:function(){return st}};
+})();
+`;
+function guideHtml(print) {
+  const o = [];
+  o.push('<section id="guide"' + (print ? ' class="cover"' : '') + '><h1>바이블 온유 · 목회자 감수 자료</h1><p class="sm">구약 40장면 · 자료 판 ' + VERSION + ' · 감수 상태: 40장면 모두 미감수</p>');
+  GUIDE.what.forEach((x) => o.push('<p>' + inl(x) + '</p>'));
+  o.push('<h3>무엇을, 얼마나</h3><table><tr><th>묶음</th><th>항목 수</th><th>걸리는 시간(어림)</th></tr>');
+  const row = (name, list) => o.push('<tr><td>' + name + '</td><td>' + list.length + '</td><td>약 ' + fmtMin(mins(list)) + '</td></tr>');
+  row('① 원칙 9가지와 처음 이야기', items.filter((it) => it.group === 'rule'));
+  row('② 먼저 볼 30항목', first30);
+  row('③ 감수 필수 장면 ' + REQ_N + '개의 표시 항목(②와 겹침)', coreItems.filter((it) => it.scene && sceneById[it.scene].review.required));
+  row('④ 나머지 장면 ' + (40 - REQ_N) + '개의 표시 항목', coreItems.filter((it) => it.scene && !sceneById[it.scene].review.required));
+  row('전체(표시할 항목)', coreItems);
+  o.push('</table><p class="sm">시간은 1분에 ' + CPM + '자를 꼼꼼히 읽는다고 보고 글자 수로 어림했습니다. 성경을 펴 보시는 시간은 넣지 않았습니다.</p>');
+  o.push('<h3>표시하는 방법</h3><ul>');
+  GUIDE.how.filter((x, i) => !(print && i === 3)).forEach((x) => o.push('<li>' + inl(x) + '</li>'));
+  if (print) o.push('<li>종이에서는 항목 아래의 ☐에 표시하고 "적을 칸"에 적어 주세요. 항목 번호(예: OT-10·오늘1)만 불러 주셔도 됩니다.</li>');
+  o.push('</ul><h3>보시는 순서(권함)</h3><ul>');
+  GUIDE.order.forEach((x) => o.push('<li>' + inl(x) + '</li>'));
+  o.push('</ul><p class="sm">글 앞의 "8~10세 / 11~13세 / 14~19세"는 그 나이 단계의 아이에게 보이는 글입니다. 굵은 글은 게임에 나오는 문장 그대로이고, 옅은 글은 설명입니다. 초록 글자는 근거 장절입니다.</p></section>');
+  return o.join('\n');
+}
+function first30Html(print) {
+  const o = ['<section id="first30"><h2' + (print ? '' : ' class="first"') + '>먼저 볼 30항목</h2><p class="sm">① 신약 연결 16곳 ② 독립 대조에서 높음 지적이 있었던 곳 ③ 장자의 죽음, 주권과 책임이 걸린 장면의 대목 글 ④ 신약적 의미가 주제인데 신약 연결 항목이 따로 없는 장면의 오늘의 물음 ⑤ 주권과 책임 장면의 오늘의 물음.</p>'];
+  if (print) first30.forEach((it) => { o.push('<p class="sm"><b>' + it.pri + '.</b> ' + esc(sceneById[it.scene].id + ' ' + sceneById[it.scene].title) + ' · ' + esc(it.pwhy) + '</p>'); o.push(htmlItem(it, 'print')); });
+  else {
+    o.push('<table><tr><th>순서</th><th>항목</th><th>장면</th><th>왜 먼저인가</th></tr>');
+    first30.forEach((it) => o.push('<tr><td>' + it.pri + '</td><td><a href="#' + esc(it.id) + '">' + esc(it.id) + '</a><br>' + esc(it.label) + '</td><td>' + esc(sceneById[it.scene].title) + '</td><td>' + esc(it.pwhy) + '</td></tr>'));
+    o.push('</table><p class="sm">위 "걸러 보기"에서 <b>먼저 볼 30</b>을 고르면 이 항목들만 차례로 보입니다.</p>');
+  }
+  o.push('</section>');
+  return o.join('\n');
+}
+function rulesHtml(mode) {
+  return '<section id="rules" class="noprisec"><h2>원칙 9가지와 처음 이야기</h2><p class="sm">규칙서 3절과 13절(대표 결정, 목회자 감수 전)에서 먼저 보실 것을 옮겼습니다. "규칙서" 줄은 규칙서의 글 그대로입니다.</p>' + items.filter((it) => it.group === 'rule').map((it) => htmlItem(it, mode)).join('\n') + '</section>';
+}
+function erasHtml(mode, filter) {
+  const print = mode === 'print';
+  const o = [];
+  erasDoc.eras.forEach((e) => {
+    o.push('<section class="era" id="era' + e.era + '"><h2>시대 ' + e.era + '. ' + esc(e.name) + '</h2>');
+    items.filter((it) => it.group === 'era' && it.era === e.era && it.kind === 'era' && filter(it)).forEach((it) => o.push(htmlItem(it, mode)));
+    scenes.filter((d) => d.era === e.era).forEach((d) => {
+      const list = items.filter((it) => it.scene === d.id && filter(it)).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
+      if (!list.length) return;
+      o.push('<div class="sc' + (d.review.required ? ' rq' : '') + '">' + htmlSceneHead(d));
+      list.forEach((it) => o.push(htmlItem(it, mode).replace('class="it ', it.chars > 1500 && print ? 'class="it long ' : 'class="it ')));
+      o.push('</div>');
+    });
+    const eo = items.filter((it) => it.group === 'era' && it.era === e.era && it.kind === 'open' && filter(it));
+    if (eo.length) { o.push('<div class="sc"><h3>시대 ' + e.era + ' 공통으로 검증자가 남긴 것</h3>'); eo.forEach((it) => o.push(htmlItem(it, mode))); o.push('</div>'); }
+    o.push('</section>');
+  });
+  return o.join('\n');
+}
+function countsHtml() {
+  return '<section id="counts" class="noprisec"><h2>뽑은 수와 진행표의 수 대조</h2><table><tr><th>항목</th><th>뽑은 수</th><th>진행표의 수</th><th>맞는가</th><th>까닭</th></tr>' +
+    COUNTS.map((c) => '<tr><td>' + esc(c[0]) + '</td><td>' + esc(c[1]) + '</td><td>' + esc(c[2]) + '</td><td>' + (c[3] ? '맞음' : '<b class="req">다름</b>') + '</td><td>' + esc(c[4]) + '</td></tr>').join('') +
+    '</table><p class="sm">검증자가 남긴 것 ' + cnt('open') + '건의 분류: ' + esc(Object.keys(openBy).sort().map((k) => k + ' ' + openBy[k]).join(' · ')) + '. 목회자·미분류만 표시 항목으로 실었습니다.</p></section>';
+}
+function page(title, css, body, js) {
+  return '<!doctype html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>' + esc(title) + '</title><style>' + css + '</style></head>\n<body data-version="' + VERSION + '">\n' + body + (js ? '\n<script>' + js + '</script>' : '') + '\n</body></html>\n';
+}
+/* 표시 항목이면서 감수 대상(목회자)인 것만. 화면용은 참고 글도 접어서 함께 */
+const screenFilter = (it) => it.kind !== 'open' || it.core;
+const printFilter = (it) => it.core;
+const refFilter = (it) => it.kind === 'beats' || it.kind === 'rest' || (it.kind === 'screen' && !it.core);
+
+function screenHtml() {
+  const top = '<div class="top"><div class="row"><b id="cnt">표시 0 / 0</b><span class="bar"><i id="bari"></i></span><select id="flt" aria-label="걸러 보기"><option value="">전체</option><option value="pri">먼저 볼 30</option><option value="req">감수 필수 장면만</option><option value="todo">아직 표시 안 한 것</option></select><button type="button" class="pr" id="exp">내보내기</button></div></div>';
+  const toc = '<nav class="toc"><a href="#guide">안내</a><a href="#rules">원칙</a><a href="#first30">먼저 볼 30</a>' + erasDoc.eras.map((e) => '<a href="#era' + e.era + '">' + e.era + '. ' + esc(e.name) + '</a>').join('') + '<a href="#counts">숫자 대조</a></nav>';
+  const dlg = '<dialog id="dlg"><h3 style="margin-top:0">표시 내보내기 · 불러오기</h3><p class="sm">아래 글을 복사해 문자·메일로 보내 주세요. 다른 기기에서 이어 하시려면 그 기기의 이 창에 글을 붙여 넣고 "불러오기"를 누르세요.</p><textarea id="box" spellcheck="false"></textarea><p id="msg" class="sm" role="status"></p><p><button type="button" class="pr" id="cpy">글 복사</button> <button type="button" id="dwn">파일로 저장</button> <button type="button" id="imp">불러오기</button> <button type="button" id="rst">모두 지우기</button> <button type="button" id="cls">닫기</button></p></dialog>';
+  const body = top + '<main>' + guideHtml(false) + '<p class="note" id="savewarn" hidden>이 기기에서는 표시가 저장되지 않습니다(사생활 보호 모드 등). 창을 닫기 전에 "내보내기"로 글을 복사해 두세요.</p><p class="note">표시는 <b>이 기기의 이 브라우저에만</b> 저장됩니다. 서버로 보내지 않습니다. 다 하셨거나 중간에라도 "내보내기"로 글을 뽑아 보내 주세요.</p>' + toc + rulesHtml('screen') + first30Html(false) + erasHtml('screen', screenFilter) + countsHtml() + '</main>' + dlg;
+  return page('바이블 온유 · 목회자 감수 자료', CSS_COMMON + CSS_SCREEN, body, JS_SCREEN);
+}
+function printHtml() {
+  const body = '<main>' + guideHtml(true) + rulesHtml('print').replace('<h2>', '<h2 class="first">') + first30Html(true) + erasHtml('print', (it) => printFilter(it) && it.kind !== 'beats') + countsHtml() +
+    '<p class="sm">감수 필수 장면의 대목 글 전체는 길어서 <code>참고_장면전체글_인쇄용.html</code>에 따로 실었습니다. 대목 글에 대한 표시는 그 파일의 항목 번호(예: OT-10·대목)로 적어 주세요.</p></main>';
+  return page('바이블 온유 · 목회자 감수 자료(인쇄용)', CSS_COMMON + CSS_PRINT, body, '');
+}
+function first30PrintHtml() {
+  return page('바이블 온유 · 먼저 볼 30항목(인쇄용)', CSS_COMMON + CSS_PRINT, '<main>' + guideHtml(true) + first30Html(true).replace('<h2>', '<h2 class="first">') + '</main>', '');
+}
+function refPrintHtml() {
+  const body = '<main><section class="cover"><h1>바이블 온유 · 참고: 장면 전체 글</h1><p class="sm">자료 판 ' + VERSION + '</p><p>감수 자료의 표시 항목에 넣지 않은 글을 빠짐없이 실었습니다: 대목 글(8~10세·11~13세·14~19세), 최현 박사의 통신, 수리 재료, 관문 물음, 3D 탐지기 물음, 곁에서 보기·함께 머물기, 말씀 카드, 화면 원칙. <b>감수 필수 장면의 대목 글</b>은 표시 항목입니다(☐가 있습니다).</p></section>' + erasHtml('print', refFilter) + '</main>';
+  return page('바이블 온유 · 참고: 장면 전체 글(인쇄용)', CSS_COMMON + CSS_PRINT, body, '');
+}
+
+/* ───────── 7. 쓰기 ───────── */
+function itemsJson() {
+  return JSON.stringify({ version: VERSION, note: '감수 자료의 항목 목록. node tools/make_review_pack.js 가 만든다. core=목회자가 표시하는 항목, src=그 글이 있는 곳', counts: COUNTS.map((c) => ({ name: c[0], got: c[1], expect: c[2], ok: c[3] })),
+    items: items.map((it) => ({ id: it.id, kind: it.kind, label: it.label, scene: it.scene || null, era: it.era || null, core: !!it.core, first30: it.pri || 0, to: it.to || undefined, chars: it.chars,
+      src: it.scene ? 'content/ot/' + it.scene + '.json' : it.group === 'rule' ? (it.kind === 'story' ? 'content/ot/eras.json' : 'docs/00_공통규칙서.md') : 'content/ot/eras.json' })) }, null, 1) + '\n';
+}
+fs.mkdirSync(path.join(OUT, 'md'), { recursive: true });
+const W = (rel, s) => fs.writeFileSync(path.join(OUT, rel), s);
+W('README.md', readmeMd() + '\n');
+erasDoc.eras.forEach((e) => W('md/시대' + String(e.era).padStart(2, '0') + '.md', eraMd(e) + '\n'));
+W('미해결_전체.md', unresolvedMd() + '\n');
+W('감수자료.html', screenHtml());
+W('감수자료_인쇄용.html', printHtml());
+W('먼저볼30_인쇄용.html', first30PrintHtml());
+W('참고_장면전체글_인쇄용.html', refPrintHtml());
+W('항목목록.json', itemsJson());
+printCounts();
+console.log('만든 곳: docs/감수/ (README.md, 감수자료.html, 감수자료_인쇄용.html, 먼저볼30_인쇄용.html, 참고_장면전체글_인쇄용.html, md/시대01~10.md, 항목목록.json, 미해결_전체.md)');
