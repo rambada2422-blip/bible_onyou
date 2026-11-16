@@ -17,10 +17,13 @@ fs.mkdirSync(out, { recursive: true });
   p.on('pageerror', (e) => errs.push('pageerror: ' + e.message));
   p.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
   const shot = async (label) => { n++; await p.screenshot({ path: path.join(out, String(n).padStart(2, '0') + '-' + label + '.png') }); };
+  const GR = require('./lib/growth.js'), seedN = Number(process.env.GROWTH_SEED || '0');   /* 성장 시스템: GROWTH_SEED=n */
+  if (seedN) await GR.seed(p, seedN, { exclude: ['OT-09'] });
   await p.goto('file:///home/user/bible_onyou/dist/preview3d.html' + (process.env.BO3D_HASH || ''));   // 예: BO3D_HASH=#moses2
   await p.waitForTimeout(2500);
   await p.evaluate(() => document.fonts.ready);
   await shot('menu');
+  await GR.install(p);
   await enter3d(p, ti, 'OT-09');
   await p.waitForTimeout(600);
   await p.click('.route-opts .btn:has-text("모세")');
@@ -169,6 +172,9 @@ fs.mkdirSync(out, { recursive: true });
   await p.waitForSelector('text=/처음부터 다시|시대 지도로/', { timeout: 40000 }); await p.waitForTimeout(400); await shot('endcard');
   const helpN = await p.evaluate(() => { const h = BO3D.ot && BO3D.ot.scenes['OT-09'].mission && BO3D.ot.scenes['OT-09'].mission.help; return h ? h.steps.length : 0; });
   if (helpSeen !== helpN) probs.push('현장 돕기 ' + helpN + '단계 가운데 ' + helpSeen + '단계만 나옴');
+  { const g = await GR.report(p);   /* 호렙(OT-09)은 떨기나무 앞이라 손목 빛이 장면 내내 꺼진다(규칙서·보완2-3) */
+    if (g.vis) probs.push('호렙에서 손목 빛이 ' + g.vis + '화면 보임 ' + g.bad.slice(0, 3).join(' | '));
+    console.log('GROWTH OT-09 seed', seedN, '빛 화면', g.vis + '/' + g.frames, '카드', g.cards.length, '어긋남', g.bad.length); }
   console.log(tier, 'shots:', n, JSON.stringify(await st()), errs.length ? '\nERR ' + errs.slice(0, 8).join('\n') : 'no errors', '· 돕기', helpSeen + '/' + helpN, probs.length ? '\n문제 ' + probs.join('\n') : '· 문제 0');
   await b.close();
   if (errs.length || probs.length) process.exit(1);

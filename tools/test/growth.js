@@ -77,6 +77,7 @@ const ok = (cond, where, what) => { if (!cond) probs.push(where + ': ' + what); 
           const k = BO3D.story.debug.seek(); if (k === null) return { skip: 1 };
           const w = () => new Promise((r) => setTimeout(r, 40));
           const t = () => [...document.querySelectorAll('.ot3 .seek-t')], sb = document.querySelector('.ot3 .scanbtn');
+          if (!t().length) return { skip: 1, again: 1 };   /* 다시 마치는 장면: 이미 얻은 재료는 찾기 없이 카드만 보인다 */
           const out = { hasScan: !!sb };
           if (scan && sb) { sb.click(); await w(); out.lit = t().map((x, i) => (x.classList.contains('scan') ? i : -1)).filter((i) => i >= 0); out.spot = k; out.msg = document.querySelector('.ot3 .seek-msg').textContent; }
           t()[k].click(); await w();

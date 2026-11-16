@@ -16,11 +16,14 @@ fs.mkdirSync(out, { recursive: true });
   p.on('console', (m) => { if (m.type() === 'error' && !/ERR_FILE_NOT_FOUND|Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
   const shot = async (label) => { n++; await p.screenshot({ path: path.join(out, String(n).padStart(2, '0') + '-' + label + '.png') }); };
   const st = () => p.evaluate(() => BO3D.debug.state());
+  const GR = require('./lib/growth.js'), seedN = Number(process.env.GROWTH_SEED || '0');   /* 성장 시스템: GROWTH_SEED=n */
+  if (seedN) await GR.seed(p, seedN, { exclude: ['OT-09'] });
   await p.goto(url);
   await p.waitForTimeout(2500);
   await p.evaluate(() => document.fonts.ready);
   const { C, C3 } = await p.evaluate(() => ({ C: BO.content, C3: BO.content3d }));
   const tier = C.tiers[Number(ti)].id, JD = C3.jordan, ALT = C.scenes['ALT-02'];
+  await GR.install(p);
   await enter3d(p, ti, 'OT-09');
   await p.waitForTimeout(600);
   await shot('route');
@@ -89,6 +92,10 @@ fs.mkdirSync(out, { recursive: true });
   await next();
   await p.waitForSelector('text=출발하자', { timeout: 40000 }); await p.waitForTimeout(1500);
   await shot('horeb');
+  { const g = await GR.report(p);   /* 요단 경로: 여호수아·제사장(glb) 6m 안, 언약궤 10m 안에서는 빛이 꺼져야 한다(T23·T24) */
+    if (g.bad.length) errs.push('손목 빛이 보이면 안 되는 때 보임 ' + g.bad.slice(0, 3).join(' | '));
+    console.log('GROWTH 요단 경로 seed', seedN, '빛 화면', g.vis + '/' + g.frames, 'maxOp', g.maxOp.toFixed(2), '인물', g.figs, '어긋남', g.bad.length); }
   console.log(tier, 'shots:', n, 'level', await p.evaluate(() => BO3D.debug.level()), JSON.stringify(await st()), errs.length ? '\nERR ' + errs.slice(0, 8).join('\n') : 'no errors');
+  if (errs.length) process.exit(1);
   await b.close();
 })().catch((e) => { console.error('FAIL', e.message.split('\n').slice(0, 6).join('\n')); process.exit(1); });
