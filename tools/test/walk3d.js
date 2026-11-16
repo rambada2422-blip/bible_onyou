@@ -107,7 +107,17 @@ fs.mkdirSync(out, { recursive: true });
   await p.waitForTimeout(2500);
   const fc = await p.evaluate(() => BO3D.debug.flock());
   console.log('flock', JSON.stringify(fc));
-  await aim(fc.c.x, fc.c.z); await shot('flock-follow'); await snap('photo-sheep');
+  /* 양 떼 사진은 사진 거리(17m, 카메라에서)가 짧아 양 떼 가까이(가운데에서 7m) 걸어간 뒤 찍는다(전에는 멀리서 찍어 도감에 들지 않았다) */
+  { const s0 = await st(), dx = s0.x - fc.c.x, dz = s0.z - fc.c.z, dl = Math.hypot(dx, dz) || 1;
+    if (dl > 7.5) await walkTo(fc.c.x + dx / dl * 7, fc.c.z + dz / dl * 7, 'to-sheep'); }
+  const fc2 = await p.evaluate(() => BO3D.debug.flock());
+  await aim(fc2.c.x, fc2.c.z); await shot('flock-follow');
+  console.log('sheep-dist', JSON.stringify(await p.evaluate(() => {
+    const cam = BO3D.debug.three().camera, c = cam.position, s = BO3D.debug.state();
+    return BO3D.debug.dexTargets().filter((t) => t.id === 'sheep' || t.id === 'moses').map((t) => { const w = new THREE.Vector3(t.p[0], t.p[1], t.p[2]), cs = w.clone().applyMatrix4(cam.matrixWorldInverse), n = w.clone().project(cam);
+      return { id: t.id, range: t.range, cam: +w.distanceTo(c).toFixed(1), kid: +Math.hypot(s.x - w.x, s.z - w.z).toFixed(1), csz: +cs.z.toFixed(1), nx: +n.x.toFixed(2), ny: +n.y.toFixed(2) }; }); })));
+  await snap('photo-sheep');
+  if (!(await p.evaluate(() => BO3D.debug.dex())).includes('sheep')) probs.push('양 떼 사진이 도감에 들지 않음');
   await walkTo(P.parts[1][0], P.parts[1][1], 'to-path');
   await shot('part2');
   await p.click('text=계속 탐험하기'); await p.waitForTimeout(500);
