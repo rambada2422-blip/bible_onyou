@@ -7,6 +7,7 @@
  *   BO3D.p3b.mergeColored(objs)     움직이지 않는 물건을 재질별로 합친다(꼭짓점 색을 지킨다. props_ot.js의 mergeStatic은 색을 버린다)
  *   BO3D.p3b.actors(height)         사람을 걷게 하고 굽히고 앉히는 도우미 → { make, at, go, step, swap }
  *   BO3D.p3b.man(seed) / woman(seed) / child(seed)   백성 모형(짐 없음). 본문이 정한 사람은 씨앗값을 고정해 쓴다
+ *   BO3D.p3b.lite(모형, 그림자)      멀리 선 무리용: 백성 모형 한 사람을 한 덩이로 합친다(그리기 호출 5회 → 1회). 다리는 움직이지 않고 걸을 때 살짝 들썩인다
  *   BO3D.p3b.house(w, h, d, mat) / jar(h) / ox(색) / tree(seed, 키, 잎색, 줄기색) / olive(seed) / polyDist(pts, x, z)
  * 본문이 모양을 말하지 않는 것은 단순한 꼴로만 둔다. 글자·무늬·신상은 넣지 않는다(스타일가이드 2절).
  */
@@ -177,7 +178,14 @@
     return best;
   }
 
-  BO3D.p3b = { on: on, sm: sm, hash: hash, noise: noise, std: std, sky: sky, ground: ground, tod: tod, mergeColored: mergeColored, actors: actors,
+  function lite(o, shadow) {
+    o.group.position.set(0, 0, 0); o.group.rotation.set(0, 0, 0);
+    var g = mergeColored([o.group]), body = g.children[0], t = 0;
+    g.children.forEach(function (m) { m.castShadow = !!shadow; m.receiveShadow = false; });
+    return { group: g, update: function (dt, mv) { if (!body) return; if (mv) { t += dt * 7; body.position.y = Math.abs(Math.sin(t)) * 0.05; } else body.position.y = 0; } };
+  }
+
+  BO3D.p3b = { on: on, lite: lite, sm: sm, hash: hash, noise: noise, std: std, sky: sky, ground: ground, tod: tod, mergeColored: mergeColored, actors: actors,
     man: function (s) { return person(s, 'man'); }, woman: function (s) { return person(s, 'woman'); }, child: function (s) { return person(s, s % 2 ? 'boy' : 'girl'); },
     house: house, jar: jar, ox: ox, tree: tree, olive: olive, polyDist: polyDist };
 })();

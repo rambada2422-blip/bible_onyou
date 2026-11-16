@@ -27,7 +27,7 @@ const fonts = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;70
 /* 구약 장면 자료를 먼저 묶는다(web3d/js/otdata.js) */
 require('./build_ot.js')();
 const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/otdata.js', 'web3d/js/ui.js', 'web3d/js/eraart.js', 'web3d/js/models.js', 'web3d/js/models_jordan.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/flock.js', 'web3d/js/jordan.js', 'web3d/js/fx.js', 'web3d/js/story.js', 'web3d/js/props_ot.js', 'web3d/js/scene_horeb.js', 'web3d/js/scene_jordan18.js', 'web3d/js/scene_redsea11.js', 'web3d/js/scene_jericho19.js', 'web3d/js/scene_elah26.js', 'web3d/js/scene_carmel30.js', 'web3d/js/scene_ark03.js', 'web3d/js/scene_manna13.js', 'web3d/js/scene_abram05.js', 'web3d/js/scene_gideon21.js', 'web3d/js/scene_lions36.js', 'web3d/js/scene_wall39.js',
-  'web3d/js/props_3d-b.js', 'web3d/js/scene_ruth23.js', 'web3d/js/scene_rahab17.js', 'web3d/js/scene_shiloh24.js',   /* 자동 작업 3d-b: 시대 5~6의 새 3D 장면 */
+  'web3d/js/props_3d-b.js', 'web3d/js/scene_ruth23.js', 'web3d/js/scene_rahab17.js', 'web3d/js/scene_shiloh24.js', 'web3d/js/scene_shechem20.js',   /* 자동 작업 3d-b: 시대 5~6의 새 3D 장면 */
   'web3d/js/game.js'];
 const page = [
   '<title>성경 탐험대 3D</title>',

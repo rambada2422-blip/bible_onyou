@@ -92,7 +92,13 @@
     var phase = 'day', pt = 0, runs = 0;
     var RUN = [[1.2, -26.6], [9.5, -24.6], [RDOOR[0], RDOOR[1] + 0.4]];   /* 문에서 엘리의 처소 문간까지 */
     function show(list, v) { list.forEach(function (a) { a.g.visible = v; }); }
-    function seatEli() { A.at(eli, SEAT[0], SEAT[1] + 0.5, Math.PI * 0.9); eli.sit = eli.sitWant = 0.7; }   /* 의자 앞쪽에 걸터앉은 높이로(1:9) */
+    function seatEli() { A.at(eli, SEAT[0], SEAT[1] - 0.05, -0.35); eli.sit = eli.sitWant = 0.8; eli.seated = true; }   /* 의자에 앉아 한나 쪽을 본다(1:9, 1:12). 다리 굽힘은 update에서 */
+    /* eli.glb에는 앉는 동작이 없어, 동작을 적용한 뒤 넓적다리·정강이 뼈만 굽혀 앉은 모습을 만든다(이 장면 안에서만) */
+    var qThigh = new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), -1.5), qShin = new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), 1.5);
+    function sitBones(a) {
+      if (!a.glb) return; if (!a.bones) a.bones = ['thigh.L', 'thigh.R', 'shin.L', 'shin.R'].map(function (nm) { var b = a.g.getObjectByName(nm); return b ? { b: b, q0: b.quaternion.clone() } : null; });
+      a.bones.forEach(function (e, k) { if (e) e.b.quaternion.copy(e.q0).multiply(k < 2 ? qThigh : qShin); });
+    }
     /* 대목마다 모든 상태를 처음부터 정한다('이전'으로 돌아와도 뒤 대목의 것이 남지 않게) */
     function setPhase(p) {
       phase = p; pt = 0; runs = 0; boy.step = 0;
@@ -101,18 +107,18 @@
       glowM.opacity = night ? 0.9 : 0; doorSet(night ? 0 : 1, true);
       hannah.g.visible = d1 || p === 'bring'; elkanah.g.visible = d1 || p === 'bring'; show(kin, d1); campG.visible = d1; sack.visible = p === 'bring';
       eli.g.visible = d1 || p === 'bring' || p === 'morning'; boy.g.visible = p === 'bring'; grown.g.visible = p === 'grown'; show(oxen, p === 'bring');
-      A.at(elkanah, CAMP[0] + 3.4, CAMP[1] + 2.6, Math.PI * 0.6); kin.forEach(function (a, n) { A.at(a, CAMP[0] + 1.6 + n * 1.2, CAMP[1] + 3.6 + (n % 2) * 0.8, Math.PI * 0.8); a.sitWant = a.sit = n < 2 ? 0.8 : 0; });
+      A.at(elkanah, CAMP[0] + 3.4, CAMP[1] + 2.6, Math.PI * 0.6); kin.forEach(function (a, n) { A.at(a, CAMP[0] + 1.6 + n * 1.2, CAMP[1] + 3.6 + (n % 2) * 0.8, Math.PI * 0.8); });
       if (d1) { seatEli(); A.at(hannah, PRAY[0], PRAY[1], Math.PI); }                                   /* 1:9-18 한나는 엘리 곁에 서서 여호와께 기도한다(1:26) */
       if (p === 'went') { A.go(hannah, [[-4, -18], [CAMP[0] + 4.6, CAMP[1] + 1.2]], 1.2, -Math.PI / 2); }   /* 1:18 */
       if (p === 'bring') {                                                                             /* 1:24-28 */
         seatEli();
-        A.at(hannah, -9, -7, Math.PI * 0.75); A.go(hannah, [[-5, -9], [-1, -19], [PRAY[0] + 0.3, PRAY[1] + 0.6]], 1.2, Math.PI * 0.95);
-        A.at(boy, -10, -6.2, Math.PI * 0.75); A.go(boy, [[-5.8, -8.4], [-2, -18.4], [PRAY[0] - 0.9, PRAY[1] + 0.2]], 1.2, Math.PI);
-        A.at(elkanah, -12, -5, Math.PI * 0.75); A.go(elkanah, [[-7, -7.5], [-3.4, -17.5], [PRAY[0] - 2.6, PRAY[1] + 1.4]], 1.2, Math.PI);
-        oxen.forEach(function (o, n) { A.at(o, -15 - n * 2.6, -3.5 + n * 1.2, Math.PI * 0.75); A.go(o, [[-9 - n * 1.5, -6], [-7 - n * 1.2, -15], [-7.5 - n * 2.4, -19.5 - (n % 2) * 1.2]], 1.15, Math.PI * 0.6); });
+        A.at(hannah, -4.6, -14, Math.PI * 0.85); A.go(hannah, [[-1, -19], [PRAY[0] + 0.3, PRAY[1] + 0.6]], 1.2, Math.PI * 0.95);   /* 화면에 바로 들어오게 가까운 데서 출발 */
+        A.at(boy, -5.6, -13.4, Math.PI * 0.85); A.go(boy, [[-2, -18.4], [PRAY[0] - 0.9, PRAY[1] + 0.2]], 1.2, Math.PI);
+        A.at(elkanah, -7.4, -12.2, Math.PI * 0.85); A.go(elkanah, [[-3.4, -17.5], [PRAY[0] - 2.6, PRAY[1] + 1.4]], 1.2, Math.PI);
+        oxen.forEach(function (o, n) { A.at(o, -10.5 - n * 2.2, -10.5 + n * 1.0, Math.PI * 0.8); A.go(o, [[-7 - n * 1.2, -15], [-7.5 - n * 2.4, -19.5 - (n % 2) * 1.2]], 1.15, Math.PI * 0.6); });
       }
       if (night) { boy.g.visible = false; }
-      if (p === 'morning') { A.at(eli, RDOOR[0] - 0.4, RDOOR[1] + 1.2, -Math.PI * 0.55); doorSet(0, true); boy.g.visible = false; }   /* 3:15-18 */
+      if (p === 'morning') { eli.seated = false; if (eli.bones) eli.bones.forEach(function (e) { if (e) e.b.quaternion.copy(e.q0); }); A.at(eli, RDOOR[0] - 0.4, RDOOR[1] + 1.2, -Math.PI * 0.55); doorSet(0, true); boy.g.visible = false; }   /* 3:15-18 */
       if (p === 'grown') { A.at(grown, COURT[0] + 1, COURT[1] - 1.5, Math.PI * 0.1); }                 /* 3:19-21 */
     }
     /* 3:4-8: 문에서 나와 엘리의 처소로 달려갔다가 돌아와 다시 눕는다. n번 되풀이 */
@@ -148,6 +154,7 @@
         if (n === 2) return '이 대목은 여러 해에 걸친 일이에요. 라마의 집에서 있었던 일은 여기서 보이지 않아요. 한나가 아이를 데리고 다시 실로에 온 때를 봐요.';
         if (n === 3) return '그 뒤 어느 밤의 일이에요. 여호와의 전 안은 보이지 않아요. 부르시는 음성은 우리가 지어내지 않아요.';
         if (n === 4) return '전 안에서 있었던 일은 보이지 않아요. 하신 말씀은 성경책에서 읽어요.';
+        if (n === 5) return '글의 앞부분(삼상 3:11-14)은 그 밤에 전 안에서 있었던 일이라 보이지 않아요. 화면은 다음 날 아침이에요(삼상 3:15).';
         if (n === 6) return '사무엘이 자란 뒤의 일이에요. 타임머신 창 너머로 봐요.';
         return null;
       },
@@ -172,7 +179,7 @@
       beatPose: function (n) { setPhase(['day', 'day', 'bring', 'night1', 'night2', 'morning', 'grown'][n] || 'day'); },
       update: function (dt) {
         pt += dt; tod.update(dt);
-        if (phase === 'bring') { var here = !A.moving(boy) && !A.moving(hannah); boy.bendWant = here && pt > 4 ? 0.9 : 0; boy.sitWant = here && pt > 4 ? 0.6 : 0; }   /* 1:28 아이가 거기서 경배한다 */
+        if (phase === 'bring') { var here = !A.moving(boy) && !A.moving(hannah); boy.bendWant = here && pt > 4 ? 0.55 : 0; }   /* 1:28 아이가 거기서 경배한다 */
         if (phase === 'night1') nightRuns(2, dt);        /* 3:4-6 두 번 */
         if (phase === 'night2') nightRuns(1, dt);        /* 3:8-9 세 번째. 그 뒤(3:10)에는 아무것도 움직이지 않는다 */
         if (phase === 'morning') {
@@ -181,7 +188,9 @@
         }
         if (Math.abs(doorOpen - doorWant) > 0.002) doorOpen += (doorWant - doorOpen) * Math.min(1, dt * 1.8);
         leaves.forEach(function (l) { l.rotation.y = l.userData.s * doorOpen * 1.5; });
+        g1.visible = doorOpen < 0.08;   /* 문짝 사이의 틈빛은 문이 닫혀 있을 때만(열리면 문간에 떠 보이지 않게). 문지방 밑 빛은 그대로 */
         all.forEach(function (a) { if (a.g.visible) A.step(a, dt); });
+        if (eli.seated && eli.g.visible) sitBones(eli);
       },
       audio: function (Au) { Au.setFlock(999); Au.setFire(999); },
       menuCam: function (camera, now) { var a2 = now * 0.05; camera.position.set(6 + Math.sin(a2) * 8, height(6, 10) + 6, 12); camera.lookAt(0, G0 + 3, -28); },

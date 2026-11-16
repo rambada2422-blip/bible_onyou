@@ -62,9 +62,9 @@
     var josh = mk({ group: api.fallback('#8A4B34', 1.78, 0.27), update: function () {} });
     api.person('joshua', function (nm) { A.swap(josh, nm, scene); if (scroll) nm.group.add(scroll); });
     var scroll = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, 0.42, 8), std('#EFE4C8')); scroll.rotation.z = Math.PI / 2; scroll.position.set(0.05, 1.12, 0.3); scroll.visible = false; josh.g.add(scroll);   /* 하나님의 율법 책(24:26): 생김새는 본문에 없음 */
-    for (i = 0; i < 12; i++) { var ld = mk(B.man(2010 + i * 7)); ld.home = [JOSH[0] - 11 + i * 2.0, JOSH[1] + 6 + Math.abs(i - 5.5) * 0.25]; people.push(ld); }
+    for (i = 0; i < 12; i++) { var ld = mk(B.lite(B.man(2010 + i * 7), true)); ld.home = [JOSH[0] - 11 + i * 2.0, JOSH[1] + 6 + Math.abs(i - 5.5) * 0.25]; people.push(ld); }
     for (i = 0; i < 64; i++) {
-      var kd = i % 9 === 8 ? B.child(2100 + i * 3) : (i % 2 ? B.woman(2100 + i * 3) : B.man(2100 + i * 3)), pp = mk(kd), row = Math.floor(i / 13), col = i % 13;
+      var kd = i % 9 === 8 ? B.child(2100 + i * 3) : (i % 2 ? B.woman(2100 + i * 3) : B.man(2100 + i * 3)), pp = mk(B.lite(kd, false)), row = Math.floor(i / 13), col = i % 13;   /* 뒤쪽 백성은 한 덩이로(휴대폰 가볍게) */
       pp.home = [CROWD[0] - 14.4 + col * 2.4 + (hash(i, 3) - 0.5) * 0.9 + (row % 2) * 1.1, JOSH[1] + 9 + row * 2.3 + (hash(i, 7) - 0.5) * 0.7]; people.push(pp);
     }
     people.forEach(function (a, n) {
@@ -105,7 +105,7 @@
       eventCam: function (n) {
         if (n === 4) return { pos: [-16, gy + 5.5, -8], look: [JOSH[0], gy + 1.4, JOSH[1]] };
         if (n === 5) return { pos: [20, gy + 7, -44], look: [CROWD[0], gy + 1.2, CROWD[1] - 2] };
-        if (n === 6) return pt < 22 ? { pos: [-8, gy + 5, -14], look: [STONE[0] + 1, gy + 2.2, STONE[1]] } : { pos: [24, gy + 13, 4], look: [CROWD[0], gy + 1, CROWD[1] - 6] };
+        if (n === 6) return josh.did < 3 || pt < josh.t3 + 4 ? { pos: [27, gy + 3, -19], look: [(LAY[0] + STONE[0]) / 2, gy + 0.6, (LAY[1] + STONE[1]) / 2] } : { pos: [24, gy + 13, 4], look: [CROWD[0], gy + 1, CROWD[1] - 6] };   /* 돌을 세우는 동안은 나무 아래, 백성이 흩어질 때는 넓게 */
         return null;
       },
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
