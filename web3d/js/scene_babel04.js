@@ -12,7 +12,9 @@
  *  - 그 이름을 바벨이라 함(11:9): 사람이 없는, 쌓다가 그친 성읍과 탑. 이름을 글자로 새기지 않는다.
  * 감수가 필요한 설정: 탑의 생김새와 높이(네모난 벽돌 탑 하나, 약 17m, 다 지어지지 않은 모습), 성읍의 생김새와 크기(낮은 성벽과 집 몇 채), 가마와 역청 통의 생김새,
  *   사람 수(36명)와 옷차림(이 게임의 백성 모델을 그대로 썼다. 남자와 여자), 성 위에 올라선 사람 몇, 흩어지는 무리의 수(여섯)와 가는 쪽, 한 무리가 아이들이 다니는 곳 곁을 지나가는 것(돕기 "길 비켜 주기"),
- *   마지막 대목에서 가마의 연기가 그친 것(본문은 성 쌓기를 그쳤다고만 한다), 평지의 풀과 덤불, 낮 시간으로 둔 것(본문에 때가 없다).
+ *   마지막 대목에서 가마의 연기가 그친 것(본문은 성 쌓기를 그쳤다고만 한다), 평지의 풀과 덤불, 낮 시간으로 둔 것(본문에 때가 없다),
+ *   가마 곁의 진흙을 파낸 자리, 굽기 전 벽돌을 마당에 줄지어 늘어놓은 것, 가마 수(셋)와 아궁이 불빛, 여자도 벽돌을 나르고 쌓는 일을 하는 것(11:5는 '인생들'이라고만 한다),
+ *   탑과 성벽의 문 자리, 아이들이 도착한 때(이미 성과 탑을 쌓는 중. 대목 0·1의 안내 글로 그 앞의 일은 성경이 말한다고 알린다).
  */
 (function () {
   'use strict';
@@ -152,7 +154,7 @@
     for (i = 0; i < NF; i++) {
       var o = null, role = i < 12 ? 'carry' : i < 20 ? 'kiln' : i < 24 ? 'top' : i < 32 ? 'build' : 'pitch', kind = (i % 3 === 2 && role !== 'top') ? 'woman' : 'man';
       try { if (M2.israelite) o = M2.israelite(i * 23 + 11, { kind: kind, carry: 'none' }); } catch (e) { o = null; }
-      if (!o) o = PR.soldier(i, '#7A6A4A', null);
+      if (!o) { o = PR.soldier(i, '#7A6A4A', null); o.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); }   /* 대신 쓰는 모델의 창은 본문에 없어 숨긴다 */
       var f = { o: o, role: role, grp: i % 6, off: [((Math.floor(i / 6) % 2) - 0.5) * 1.5 + (hash(i, 5) - 0.5) * 0.6, (Math.floor(i / 12) - 1) * 1.6 + (hash(i, 6) - 0.5) * 0.6], home: [0, 0], lift: 0, ry: 0, s: 0, load: null };
       if (role === 'carry') { f.load = new T.Mesh(new T.BoxGeometry(0.44, 0.2, 0.26), carryMat); f.load.position.set(0.2, 1.5, 0.02); o.group.add(f.load); }
       if (role === 'kiln') { var kq = KILNS[(i - 12) % 3], ka = [0.5, 1.6, 2.7, 0.9, 2.2, 1.2, 0.2, 2.9][i - 12]; f.home = [kq[0] + Math.cos(ka) * 3.3, kq[1] + Math.sin(ka) * 3.3]; f.ry = Math.atan2(kq[0] - f.home[0], kq[1] - f.home[1]); }
@@ -167,7 +169,7 @@
       var px = ax + (bx - ax) * t + side, pz = az + (bz - az) * t;
       f.o.group.position.set(px, height(px, pz), pz); f.o.group.rotation.y = Math.atan2((bx - ax) * (go ? 1 : -1), (bz - az) * (go ? 1 : -1)); if (f.load) f.load.visible = go;
     }
-    var phase = 'work', goS = 0;
+    var phase = 'work', goS = 0, scT = 0;
     /* 대목마다 모든 상태를 처음부터 정한다('이전'으로 돌아와도 뒤 대목의 것이 남지 않게) */
     function setPhase(p) {
       phase = p; smokeWant = p === 'babel' ? 0 : 1; if (p === 'work') smokeAmt = 1; if (p === 'babel') smokeAmt = 0;
@@ -177,7 +179,8 @@
         if (f.role === 'carry') { f.s = k / 12 * 2 * CARRY_L; carryAt(f, f.s); }
         else { f.o.group.position.set(f.home[0], height(f.home[0], f.home[1]) + f.lift, f.home[1]); f.o.group.rotation.set(0, f.ry, 0); }
       });
-      if (p === 'scatter') goS = 7;      /* 11:8: 일을 멈추고 무리 지어 떠나기 시작한다 */
+      if (p === 'scatter') goS = 10;     /* 11:8: 일을 멈추고 무리 지어 여러 쪽으로 갈라져 떠나간다(대목이 열릴 때 이미 몇 걸음 갈라져 있다) */
+      scT = 0;
       if (p === 'babel') goS = 125;      /* 11:9: 이미 멀리 떠나가고 있다 */
       if (p !== 'work') { folk.forEach(function (f) { if (f.load) f.load.visible = false; }); placeGroups(); }
     }
@@ -206,13 +209,14 @@
         return { who: 'hyu', text: '평지 가장자리에서 너무 멀리 가지는 말자.' };
       },
       P: { start: [-7, 54], machine: [2, 63], machineRot: -2.2,
-        /* 재료가 놓인 곳(quests[i].found): 성과 탑에서 멀리 떨어진 평지의 끝 / 벽돌 굽는 곳에서 멀찍이 떨어진 빈 땅 / 성과 탑이 멀리 보이는 평지 가장자리 */
-        parts: [[7, 78], [-23, 39], [-7, 38]], lookSpot: [-7, 38],
+        /* 재료가 놓인 곳(quests[i].found): 성과 탑에서 멀리 떨어진 평지의 끝 / 벽돌 굽는 곳이 멀리 바라보이는 빈 땅 / 성과 탑이 멀리 보이는 평지 가장자리.
+           재료를 주울 때 화면은 걸어온 쪽을 보므로, 재료 2(11:3 대목)는 재료 1에서 가마 쪽으로 곧게 걸어가며 줍게 둔다 */
+        parts: [[7, 78], [-1.5, 40], [-22, 44]], lookSpot: [-22, 44],
         look: { focus: TOWER, mid: [-7, -10], dy: 6, backE: 7, upE: 2.6 } },
       eventCam: function (i) {
-        if (i === 2) return cam([4, 10], 4.5, [GATE[0], 5.5, GATE[1] - 8]);          /* 11:4: 벽돌을 나르는 사람들 너머로 쌓고 있는 성과 탑 */
+        if (i === 2) return cam([12, 12], 4.5, [GATE[0], 5.5, GATE[1] - 8]);         /* 11:4: 벽돌을 나르는 사람들 너머로 쌓고 있는 성과 탑(가마 연기에서 비켜 선다) */
         if (i === 3) return cam([36, 12], 11, [TOWER[0] + 2, 6, TOWER[1] + 10]);     /* 11:5-7: 쌓는 모습 그대로. 다른 것은 없다 */
-        if (i === 4) return cam([34, 58], 30, [MUSTER[0], 0, MUSTER[1]]);            /* 11:8: 여러 쪽으로 떠나가는 무리를 멀리서 */
+        if (i === 4) { var dd = Math.min(200, 62 + 8 * scT), tx = MUSTER[0] + 2, tz = MUSTER[1] + 1; return cam([tx + 0.379 * dd, tz + 0.925 * dd], 0.3 * dd, [tx, 0, tz]); }   /* 무리가 퍼지는 만큼 카메라가 천천히 뒤로 물러난다 */        /* 11:8: 여러 쪽으로 떠나가는 무리와 쌓다 만 성읍을 멀리서 */
         if (i === 5) return cam([8, 36], 9, [TOWER[0], 5, TOWER[1] + 12]);           /* 11:9: 쌓다가 그친 성읍과 탑 */
         return null;
       },
@@ -221,16 +225,18 @@
       lookText: '바벨 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
       partBeats: [0, 1], eventStart: 2,
       beatNote: function (i) {
-        if (i === 2) return '탑의 생김새와 높이는 성경에 적혀 있지 않아요. 이 모습은 쌓는 중인 단순한 꼴로만 그린 거예요.';
-        if (i === 3) return '여호와께서 내려오신 일과 하신 말씀은 모습이나 소리로 만들지 않아요. 성경책에서 읽어요.';
-        if (i === 4) return '사람들의 말이 뒤섞인 것은 소리로 들려주지 않아요. 우리는 멀리서 지켜봐요.';
+        if (i === 0) return '우리가 왔을 때는 이미 성과 탑을 쌓고 있었어요. 그 앞의 일은 성경이 이렇게 말해요.';
+        if (i === 1) return '벽돌을 굽기 시작한 일은 성경이 이렇게 말해요.';
+        if (i === 2) return '탑의 생김새와 높이는 성경에 없어요. 단순한 꼴로만 그렸어요.';
+        if (i === 3) return '여호와께서 하신 일과 말씀은 모습이나 소리로 만들지 않아요.';
+        if (i === 4) return '뒤섞인 말은 소리로 들려주지 않아요.';
         if (i === 5) return '성경은 성 쌓기를 그쳤다고만 말해요. 탑이 무너졌다는 말은 없어요.';
         return null;
       },
       sceneDoneText: '바벨 이야기를 끝까지 지켜봐야 떠날 수 있어요.',
       dex: [
         { id: 'tower', name: '쌓고 있는 탑', desc: '사람들은 성과 탑을 쌓아 탑 꼭대기를 하늘에 닿게 하자고 했다. 생김새와 높이는 성경에 적혀 있지 않다', ref: '창 11:4', hint: '평지 저편에 쌓고 있는 것을 담아 보세요.', range: 260, crop: 0.5, pos: function () { return v3(TOWER[0], 8, TOWER[1]); } },
-        { id: 'city', name: '쌓고 있는 성읍', desc: '여호와께서 사람들을 흩으시자 그들은 성 쌓기를 그쳤다', ref: '창 11:8', hint: '탑을 둘러싼 낮은 성벽을 담아 보세요.', range: 260, crop: 0.8, pos: function () { return v3(GATE[0] + 14, 2, CITY.z1); } },
+        { id: 'city', name: '쌓고 있는 성읍', desc: '사람들이 성과 탑을 쌓아 탑 꼭대기를 하늘에 닿게 하자고 했다', ref: '창 11:4', hint: '탑을 둘러싼 낮은 성벽을 담아 보세요.', range: 260, crop: 0.8, pos: function () { return v3(GATE[0] + 14, 2, CITY.z1); } },
         { id: 'kiln', name: '벽돌 굽는 곳', desc: '사람들은 서로 벽돌을 만들어 단단히 굽자고 했다. 돌 대신 벽돌을 썼다', ref: '창 11:3', hint: '연기가 오르는 곳을 담아 보세요.', range: 120, crop: 0.5, pos: function () { return v3(KILN[0], 1.5, KILN[1] - 3); } },
         { id: 'pitch', name: '역청', desc: '사람들은 진흙 대신 역청을 썼다', ref: '창 11:3', hint: '벽돌 굽는 곳 곁, 검은 것이 담긴 통이에요.', range: 90, crop: 0.25, pos: function () { return v3(KILN[0] + 12.8, 0.6, KILN[1] + 1.6); } }
       ],
@@ -245,7 +251,7 @@
           if (f.role === 'carry') { f.s += 1.25 * dt; carryAt(f, f.s); if (f.o.update) f.o.update(dt, 1.0, now); }
           else if (f.o.update) f.o.update(dt, 0, now);
         });
-        else { goS += 1.9 * dt; placeGroups(); folk.forEach(function (f) { if (f.o.group.visible && f.o.update) f.o.update(dt, 1.1, now); }); }
+        else { goS += 1.9 * dt; if (phase === 'scatter') scT += dt; placeGroups(); folk.forEach(function (f) { if (f.o.group.visible && f.o.update) f.o.update(dt, 1.1, now); }); }
         if (Math.abs(smokeAmt - smokeWant) > 0.002) smokeAmt += (smokeWant - smokeAmt) * Math.min(1, dt * 0.8);
         if (smoke) {
           for (var k = 0; k < smoke.n; k++) {
