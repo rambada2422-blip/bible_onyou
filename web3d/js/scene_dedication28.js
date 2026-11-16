@@ -131,7 +131,8 @@
       var e = cloudAmt * cloudAmt * (3 - 2 * cloudAmt);
       for (var n = 0; n < CN; n++) {
         var dr = 0.6 * Math.sin(now * 0.25 + cseed[n]);
-        cpos[n * 3] = cp0[n * 3] * e + dr; cpos[n * 3 + 1] = (TERR + 3) + (cp0[n * 3 + 1] - TERR - 3) * e + 0.4 * Math.sin(now * 0.3 + cseed[n] * 2); cpos[n * 3 + 2] = DOOR[1] + (cp0[n * 3 + 2] - DOOR[1]) * e;
+        var k0 = 0.22 + 0.78 * e;   /* 전 안(벽에 가려 보이지 않는 곳)에서 시작해 전을 둘러싸며 퍼진다. 문 한곳에 몰려 빛줄기처럼 보이지 않게 */
+        cpos[n * 3] = cp0[n * 3] * k0 + dr; cpos[n * 3 + 1] = (TERR + HH * 0.45) + (cp0[n * 3 + 1] - TERR - HH * 0.45) * k0 + 0.4 * Math.sin(now * 0.3 + cseed[n] * 2); cpos[n * 3 + 2] = HOUSE_C[1] + (cp0[n * 3 + 2] - HOUSE_C[1]) * k0;
       }
       cloudG.attributes.position.needsUpdate = true;
     }
@@ -156,7 +157,7 @@
       }
       placeCloud(0); cloudM.opacity = 0.55 * cloudAmt;
     }
-    if (window.BO3D_TEST) C3.t28 = { skip: function (sec) { pt += sec; } };   /* 시험에서 때를 건너뛰어 볼 때만 쓴다 */
+    if (window.BO3D_TEST) C3.t28 = { skip: function (sec) { pt += sec; if (phase === 'cloud' && pt > 2) cloudAmt = 1 - (1 - cloudAmt) * Math.exp(-0.35 * Math.min(sec, pt - 2)); } };   /* 시험에서 때를 건너뛰어 볼 때만 쓴다 */
     if (FX) FX.sortLayers(scene);
     setPhase('gather');
 

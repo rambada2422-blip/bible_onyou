@@ -1,6 +1,6 @@
 /* 3D 장면 설정: OT-31 요나와 니느웨 (욘 1:1-4:11).
  * 방향: 니느웨 성은 서쪽(-X)에 남북으로 길게 서 있다(성벽과 성문 하나). 성문에서 동쪽으로 길이 나 있고, 남쪽 들에 소 떼와 양 떼가 있다(3:7).
- *   성 동쪽 언덕(북동쪽)이 요나가 초막을 지은 자리다(4:5). 아이들은 성 밖 동쪽 들과 길에서만 다닌다(성 가까이, 언덕 위, 떼 쪽으로 가지 않는다).
+ *   성 동쪽 언덕(성문에서 동북쪽)이 요나가 초막을 지은 자리다(4:5). 아이들은 성 밖 동쪽 들과 길에서만 다닌다(성 가까이, 언덕 위, 떼 쪽으로 가지 않는다).
  * 아이들이 다니는 때: 요나가 니느웨에 오기 전(3:3 앞). 1:1-12는 재료를 주울 때 "그 앞의 일"로 글만 읽는다.
  *   1:13-2:10(바다와 바닷가)은 타임머신 창 너머로 멀리서 본다(아이들은 화면에 없음). 3:1-4:11은 니느웨 성 밖에서 지켜본다.
  * 본문에 맞춘 점 (content/ot/OT-31.json design3d)
@@ -16,7 +16,10 @@
  * 감수가 필요한 설정: 니느웨 성의 방향·성벽·성문·집의 생김새, 바다와 바닷가를 같은 화면 세계의 먼 곳에 둔 것(창 너머), 배의 생김새(돛 하나, 노 여덟)와 뱃사람 수,
  *   물고기를 어두운 그림자로만 둔 것과 그 크기, 바닷가에 선 요나, 요나의 생김새(tools/blender/people/jonah.json: 수염, 푸른 잿빛 겉옷), 요나가 동쪽 길로 온 것,
  *   굵은 베를 입은 백성의 수(20)와 성문 밖에 모인 자리, 굵은 베의 빛깔, 소와 양의 수와 덮은 베의 꼴, 초막과 박 넝쿨의 생김새와 자라는 빠르기,
- *   요나가 앉은 모습(앉는 동작이 없어 몸을 낮춤), 새벽과 뜨거운 동풍의 빛과 먼지, 폭풍 때의 빛, 재료(양털 3:7, 소털 3:7, 작은 돌 — 성 밖 길과 들).
+ *   요나가 앉은 모습(앉는 동작이 없어 몸을 낮춤), 새벽과 뜨거운 동풍의 빛과 먼지, 폭풍 때의 빛, 재료(양털 3:7, 소꼬리 털 3:7, 작은 돌 — 성 밖 길과 들),
+ *   초막을 언덕 위에 둔 것(4:5는 성 동편만 말함), 성문에서 동쪽으로 난 길과 들로 난 좁은 길, 남쪽 들의 떼 자리, 배 위의 사람 가운데 요나를 가려 두지 않은 것,
+ *   백성이 성문에서 걸어 나와 4장 끝까지 그 자리에 서 있는 것, 초막이 요나가 다다른 뒤 짧게 세워지는 모습(짓는 동작은 없음), 4:7-8의 해가 동쪽에서 낮게 비추는 것,
+ *   바다와 바닷가를 서쪽 먼 곳에 두었는데 요나는 동쪽 길로 오는 것(장면 안 지리는 본문에 없음).
  */
 (function () {
   'use strict';
@@ -25,12 +28,13 @@
   if (!(BO3D.c3d && BO3D.c3d.on('OT-31'))) return;   /* design3d.build가 false면 이야기 카드로만 간다 */
   BO3D.scene3d['OT-31'] = function (api) {
     var T = THREE, M2 = BO3D.models2 || {}, MO = BO3D.models || {}, PR = BO3D.props, FX = api.FX, C3 = BO3D.c3d, R = PR.rng(3131), sm = C3.sm, noise = C3.noise, hash = C3.hash, i, k;
-    var WALL_X = -48, GATE = [-48, 0], BOOTH = [18, -32], PAST = [0, 46], SEA = [-340, -340], SHORE_J = [-340, -202];
+    var WALL_X = -48, GATE = [-48, 0], BOOTH = [-14, -36], PAST = [0, 46], SEA = [-340, -340], SHORE_J = [-340, -202];
+    var SUNOFF = [-30, 50, 30];
     function height(x, z) {
       var hill = 2.4 * sm(15, 4, Math.hypot(x - BOOTH[0], z - BOOTH[1]));
       return hill + 0.35 * noise(x * 0.05 + 4, z * 0.05 + 2) + sm(120, 230, Math.hypot(x, z)) * 12 * noise(x * 0.02, z * 0.02);
     }
-    function walkable(x, z) { return x >= -36 && x <= 30 && z >= -22 && z <= 30; }
+    function walkable(x, z) { return x >= -34 && x <= 30 && z >= -22 && z <= 30 && Math.hypot(x - BOOTH[0], z - BOOTH[1]) > 17; }   /* 초막 둘레와 성 가까이는 걷지 않는다 */
 
     var scene = new T.Scene();
     scene.background = new T.Color('#ECE0C4'); scene.fog = new T.Fog('#ECE0C4', 80, 320);
@@ -44,7 +48,7 @@
       var x = pos.getX(i), z = pos.getZ(i), y = height(x, z); pos.setY(i, y);
       c.copy(s1).lerp(s2, noise(x * 0.06, z * 0.06));
       if (z > 32 && z < 64 && Math.abs(x) < 34) c.lerp(grass, 0.55 * sm(64, 56, z) * sm(34, 26, Math.abs(x)));   /* 떼가 있는 들 */
-      if (Math.abs(z) < 2.4 && x > WALL_X && x < 80) c.lerp(lane, 0.75);                                         /* 성문에서 동쪽으로 난 길 */
+      if ((Math.abs(z) < 2.4 && x > WALL_X && x < 80) || (Math.abs(x + 22) < 1.6 && z > 2 && z < 34)) c.lerp(lane, 0.75);   /* 들로 난 좁은 길 */                                         /* 성문에서 동쪽으로 난 길 */
       col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
     }
     g.setAttribute('color', new T.BufferAttribute(col, 3)); g.computeVertexNormals();
@@ -67,7 +71,7 @@
     var dark = new T.Mesh(new T.PlaneGeometry(5, 9), new T.MeshBasicMaterial({ color: '#2A2420' })); dark.rotation.y = Math.PI / 2; dark.position.set(WALL_X + 1.3, 4.5, GATE[1]); scene.add(dark);   /* 성문 안 그늘 */
 
     /* 둘레의 땅: 바위와 떨기(꼭짓점 색을 지켜 합친다). 아이들 길과 재료 자리는 비운다 */
-    var deco = [], KEEP = [[-24, 4], [10, 28], [-2, -19], [8, 14], [14, 20]];
+    var deco = [], KEEP = [[-22, 14], [10, 28], [-2, -19], [8, 14], [14, 20]];
     function freeAt(x, z) { if (Math.abs(z) < 4 && x > WALL_X) return false; for (var q = 0; q < KEEP.length; q++) if (Math.hypot(x - KEEP[q][0], z - KEEP[q][1]) < 5) return false; return Math.hypot(x - BOOTH[0], z - BOOTH[1]) > 9 && x > WALL_X + 6; }
     if (MO.rock) for (i = 0; i < 40; i++) { var rx = -40 + R() * 200, rz = -150 + R() * 300; if (!freeAt(rx, rz) || (rz > 32 && rz < 64 && Math.abs(rx) < 34)) continue; var ro = MO.rock(3140 + i); ro.scale.multiplyScalar(0.5 + R() * 1.4); ro.position.set(rx, height(rx, rz) - 0.08, rz); deco.push(ro); }
     if (MO.shrub) for (i = 0; i < 40; i++) { var hx2 = -40 + R() * 200, hz2 = -150 + R() * 300; if (!freeAt(hx2, hz2)) continue; var sh = MO.shrub(310 + i); sh.position.set(hx2, height(hx2, hz2), hz2); deco.push(sh); }
@@ -84,7 +88,7 @@
     }
     for (i = 0; i < 16; i++) {
       var isCow = i < 5, fx = PAST[0] - 20 + (i % 6) * 7.5 + (hash(i, 2) - 0.5) * 3, fz = PAST[1] - 8 + Math.floor(i / 6) * 7 + (hash(i, 4) - 0.5) * 3, ry = hash(i, 6) * 6.28, o;
-      if (isCow) o = cow(1.2, i % 4); else o = MO.sheep ? MO.sheep(3150 + i).group : cow(0.6, 2);
+      if (isCow) o = cow(1.2, i % 4); else { o = MO.sheep ? MO.sheep(3150 + i).group : cow(0.6, 2); o.traverse(function (q) { if (q.isGroup && Math.abs(q.position.y - 0.5) < 0.01 && Math.abs(q.position.z - 0.2) < 0.01) q.rotation.x = 0.05; }); }   /* 3:7 풀을 뜯지 않는다: 고개를 든다 */
       o.position.set(fx, height(fx, fz), fz); o.rotation.y = ry; flockL.push(o);
       var bw = isCow ? 0.84 : 0.7, bl = isCow ? 1.3 : 0.86, by = isCow ? 1.48 : 0.64;   /* 등에 덮은 굵은 베(3:8) */
       var bk = new T.Mesh(new T.BoxGeometry(bw, 0.07, bl), sackM); bk.position.set(fx, height(fx, fz) + by, fz); bk.rotation.y = ry; blankL.push(bk);
@@ -113,14 +117,14 @@
     var folk = [];
     for (i = 0; i < 20; i++) {
       var p = man(i * 29 + 900, { carry: 'none' }); sack(p);
-      p.spot = [WALL_X + 5 + (i % 4) * 2.4 + (hash(i, 1) - 0.5) * 0.8, -14 + Math.floor(i / 4) * 6 + (i % 2) * 1.2 + (hash(i, 2) - 0.5) * 0.8];
+      p.spot = [WALL_X + 3 + (i % 4) * 1.8 + (hash(i, 1) - 0.5) * 0.5, -14 + Math.floor(i / 4) * 6 + (i % 2) * 1.2 + (hash(i, 2) - 0.5) * 0.8];
       if (Math.abs(p.spot[1]) < 3) p.spot[1] += p.spot[1] < 0 ? -3 : 3;   /* 성문 앞 길은 비워 둔다 */
       p.ry = Math.PI / 2 + (hash(i, 3) - 0.5) * 0.9; p.group.visible = false; folk.push(p);
     }
     var jonah = { group: api.fallback('#56707E', 1.75, 0.27), update: function () {} }; jonah.group.rotation.order = 'YXZ'; scene.add(jonah.group); jonah.group.visible = false;
     api.person('jonah', function (nm) { nm.group.rotation.order = 'YXZ'; nm.group.position.copy(jonah.group.position); nm.group.rotation.copy(jonah.group.rotation); nm.group.visible = jonah.group.visible; scene.remove(jonah.group); scene.add(nm.group); jonah = nm; });
-    var J_IN = mkPath([[10, 1.2], [-30, 0.8], [WALL_X - 3, 0.2]]), T_IN = 1 + J_IN.tot / 3;                                         /* 3:3-4 동쪽 길로 와서 성에 들어간다 */
-    var J_OUT = mkPath([[-6, -5], [6, -9], [BOOTH[0] - 1, BOOTH[1] + 3.2], [BOOTH[0], BOOTH[1] + 0.6]]);   /* 4:5 성에서 나와 동쪽에 앉는다 */
+    var J_IN = mkPath([[-14, 1.2], [-30, 0.8], [WALL_X - 3, 0.2]]), T_IN = 1 + J_IN.tot / 3;                                         /* 3:3-4 동쪽 길로 와서 성에 들어간다 */
+    var J_OUT = mkPath([[WALL_X - 1, 0.3], [-30, 0.5], [-24, -12], [BOOTH[0] - 1, BOOTH[1] + 3.2], [BOOTH[0], BOOTH[1] + 0.6]]);   /* 4:5 성에서 나와 동쪽에 앉는다 */
 
     /* 초막(4:5)과 박 넝쿨(4:6). 생김새는 본문에 없다 */
     var booth = new T.Group(), poleM = std('#7A5A3A'), thatchM = std('#9A8456');
@@ -128,8 +132,9 @@
     var roofB = new T.Mesh(new T.BoxGeometry(3, 0.22, 2.6), thatchM); roofB.position.y = 2.3; booth.add(roofB);
     booth.position.set(BOOTH[0], height(BOOTH[0], BOOTH[1]), BOOTH[1]); scene.add(booth); booth.visible = false;
     var vine = new T.Group(), vineM = new T.MeshStandardMaterial({ color: '#5E8A3A', flatShading: true, roughness: 0.9 }), LEAF0 = new T.Color('#5E8A3A'), LEAF1 = new T.Color('#8A7A4A');
-    for (i = 0; i < 16; i++) { var lf = new T.Mesh(new T.IcosahedronGeometry(0.42 + hash(i, 5) * 0.2, 0), vineM); lf.position.set((hash(i, 1) - 0.5) * 3.2, 2.45 + hash(i, 2) * 0.3, (hash(i, 3) - 0.5) * 2.8); vine.add(lf); }
-    [-1.2, 1.2].forEach(function (dx) { var st = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, 2.3, 5), vineM); st.position.set(dx + 0.12, 1.15, 1.1); vine.add(st); });
+    var leaves = [];
+    for (i = 0; i < 16; i++) { var lf = new T.Mesh(new T.IcosahedronGeometry(0.42 + hash(i, 5) * 0.2, 0), vineM); lf.position.set((hash(i, 1) - 0.5) * 3.2, 2.45 + hash(i, 2) * 0.3, (hash(i, 3) - 0.5) * 2.8); vine.add(lf); leaves.push(lf); }   /* 잎은 지붕 위에서만 자라고 시든다 */
+    [-1.2, 1.2].forEach(function (dx) { var st = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, 2.3, 5), vineM); st.geometry.translate(0, 1.15, 0); st.position.set(dx + 0.12, 0, 1.1); vine.add(st); leaves.push(st); });
     booth.add(vine); vine.visible = false;
     /* 뜨거운 동풍(4:8): 동쪽에서 서쪽으로 날리는 먼지 */
     var DN = 220, dustG = new T.BufferGeometry(), dp = new Float32Array(DN * 3);
@@ -151,7 +156,7 @@
     var hull = new T.Mesh(hg, hullM); hull.position.y = 0.4; ship.add(hull);
     var deck = new T.Mesh(new T.BoxGeometry(1.8, 0.1, 6), deckM); deck.position.y = 1.02; ship.add(deck);
     var mast = new T.Mesh(new T.CylinderGeometry(0.08, 0.1, 6, 6), hullM); mast.position.y = 4; ship.add(mast);
-    var sail = new T.Mesh(new T.PlaneGeometry(3.2, 3.4), new T.MeshStandardMaterial({ color: '#E8DCC0', side: T.DoubleSide, flatShading: true })); sail.position.set(0, 4.4, 0.05); ship.add(sail);
+    var sail = new T.Mesh(new T.PlaneGeometry(3.2, 3.4), new T.MeshStandardMaterial({ color: '#E8DCC0', side: T.DoubleSide, flatShading: true })); sail.position.set(0, 4.4, 0.16); ship.add(sail);
     var oars = []; for (i = 0; i < 8; i++) { var side = i < 4 ? -1 : 1, oz = -2.1 + (i % 4) * 1.4, oar = new T.Group(); var ob = new T.Mesh(new T.BoxGeometry(2.8, 0.06, 0.12), deckM); ob.position.x = side * 1.4; oar.add(ob); oar.position.set(side * 0.9, 0.95, oz); oar.rotation.z = side * 0.35; ship.add(oar); oars.push(oar); }
     var crew = []; for (i = 0; i < 5; i++) { var cw = PR.soldier(i + 3170, ['#6A5E4A', '#5A4E6A', '#7A5A44', '#4E5E5A', '#6E6A54'][i], null); cw.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); cw.group.scale.setScalar(0.9); cw.group.position.set((i % 2 ? 0.45 : -0.45), 1.05, -1.8 + i * 0.9); ship.add(cw.group); crew.push(cw); }
     ship.position.set(SEA[0], 0, SEA[1]); scene.add(ship);
@@ -179,7 +184,7 @@
       phase = p; pt = 0; slump = 0;
       var town = p !== 'sea' && p !== 'shore';
       jonah.group.visible = false; jonah.group.rotation.x = 0; booth.visible = p === 'gourd'; vine.visible = p === 'gourd'; booth.scale.y = 1;
-      grow = 0; wither = 0; dustM.opacity = 0; vineM.color.copy(LEAF0); vine.scale.setScalar(0.001);
+      grow = 0; wither = 0; dustM.opacity = 0; vineM.color.copy(LEAF0); leaves.forEach(function (q) { q.scale.setScalar(0.001); }); SUNOFF[0] = -30; SUNOFF[1] = 50; SUNOFF[2] = 30;
       folk.forEach(function (o) { o.group.visible = p === 'decree' || p === 'booth' || p === 'gourd'; if (o.group.visible) { setAt(o, o.spot[0], o.spot[1], o.ry); if (o.update) o.update(0.016, 0); } });
       blankets.visible = p === 'decree' || p === 'booth' || p === 'gourd';
       shadowM.opacity = 0; seaT = 0;
@@ -198,7 +203,7 @@
     setPhase('wait');
 
     return {
-      id: 'OT-31', scene: scene, sun: sun, sunOff: [-30, 50, 30],
+      id: 'OT-31', scene: scene, sun: sun, sunOff: SUNOFF,
       height: height, walkable: walkable,
       edge: function (x, z) {
         if (x < -36) return { who: 'hyu', text: '성 가까이로는 가지 말자. 이 들에서만 다니자.' };
@@ -207,14 +212,14 @@
         return { who: 'hyu', text: '이 길과 들에서만 다니자.' };
       },
       P: { start: [8, 14], machine: [14, 20], machineRot: -0.5,
-        /* 재료가 놓인 곳(quests[i].found): 성 밖 길가 / 들의 울타리 가 / 동쪽 언덕 아래. 성문·언덕 위 초막 자리·떼에서 떨어진 곳 */
-        parts: [[-24, 4], [10, 28], [-2, -19]], lookSpot: [-2, -19],
+        /* 재료가 놓인 곳(quests[i].found): 성 밖 길가(요나가 걷는 길에서 13) / 들 가장자리 / 동쪽 언덕 아래. 성문·초막 자리·떼·백성에서 떨어진 곳 */
+        parts: [[-22, 14], [10, 28], [-2, -19]], lookSpot: [-2, -19],
         look: { focus: GATE, mid: [-30, 0], dy: 4, backE: 10, upE: 5 } },
       eventCam: function (i) {
         if (i === 2) return { pos: [SEA[0] + 34, 13, SEA[1] + 46], look: [SEA[0], 1.5, SEA[1]] };                 /* 창 너머: 바다 위의 배 */
         if (i === 3) return { pos: [SHORE_J[0] + 9, 6.5, SHORE_J[1] - 30], look: [SHORE_J[0], 1.4, SHORE_J[1]] };   /* 창 너머: 바닷가 */
         if (i === 5) return { pos: [-16, height(-16, 22) + 9, 22], look: [0, 0.8, 46] };   /* 3:7-8 굵은 베를 덮은 소 떼와 양 떼 */
-        if (i === 6 || i === 7) return { pos: [5, height(5, -13) + 5.5, -13], look: [BOOTH[0], height(BOOTH[0], BOOTH[1]) + 1.4, BOOTH[1]] };   /* 성 동쪽 언덕의 초막 */
+        if (i === 6 || i === 7) return { pos: [-2, height(-2, -16) + 6, -16], look: [BOOTH[0], height(BOOTH[0], BOOTH[1]) + 1.4, BOOTH[1]] };   /* 성 동쪽 언덕의 초막 */
         return null;
       },
       eventLook: function (i) { if (i === 4) return { focus: [WALL_X + 6, 0], mid: [-30, 6], dy: 2.5, backE: 12, upE: 5 }; return null; },
@@ -226,7 +231,7 @@
         if (i === 3) return '타임머신 창 너머로 바닷가를 멀리서 봐요. 물고기 배 속에서 드린 기도는 글로만 읽어요. 물고기는 그리지 않았어요.';
         if (i === 4) return '이제 우리가 있는 니느웨 성 밖의 일이에요.';
         if (i === 5) return '니느웨 왕은 성 안에 있어서 그리지 않았어요.';
-        if (i === 7) return '박 넝쿨을 씹은 벌레는 그리지 않았어요. 요나가 죽기를 구한 말은 그림으로 만들지 않았어요.';
+        if (i === 7) return '박 넝쿨을 씹은 벌레는 그리지 않았어요.';
         return null;
       },
       helpNote: function (after) {
@@ -261,25 +266,26 @@
             ship.rotation.z = rock * 0.2 * Math.sin(seaT * 1.9); ship.rotation.x = rock * 0.1 * Math.sin(seaT * 1.3); ship.position.y = amp * 0.5 * Math.sin(seaT * 1.6) - 0.1;
             oars.forEach(function (o, n) { o.rotation.y = (pt < 9 ? 0.4 * Math.sin(seaT * 2.6) : 0) * (n < 4 ? 1 : -1); });   /* 1:13 힘써 노를 젓는다 */
             var s = pt - 11, op = s < 0 ? 0 : s < 2 ? s / 2 : s < 6 ? 1 : Math.max(0, 1 - (s - 6) / 2);         /* 1:17 물속 그림자가 배 곁을 지나 사라진다 */
-            shadowM.opacity = 0.42 * op; shadow.position.set(SEA[0] + 5 - Math.max(0, s) * 1.6, 0.12, SEA[1] + 3 + Math.max(0, s) * 0.6); shadow.rotation.z = 0.35;
+            shadowM.opacity = 0.42 * op; shadow.position.set(SEA[0] + 5 - Math.max(0, s) * 1.6, 0.32, SEA[1] + 3 + Math.max(0, s) * 0.6); shadow.rotation.z = 0.35;
           } else {
-            var s2 = pt; shadowM.opacity = 0.35 * Math.max(0, 1 - s2 / 5); shadow.position.set(SHORE_J[0] + 1, 0.12, SHORE_J[1] - 9 - s2 * 1.4); shadow.rotation.z = 0;   /* 2:10 바다 쪽으로 사라지는 그림자 */
+            var s2 = pt, op2 = s2 < 1.5 ? s2 / 1.5 : Math.max(0, 1 - (s2 - 1.5) / 4); shadowM.opacity = 0.3 * op2; shadow.position.set(SHORE_J[0] + 1, 0.32, SHORE_J[1] - 26 - s2 * 1.4); shadow.rotation.z = 0;   /* 2:10 바다 쪽으로 사라지는 그림자 */
             if (jonah.update) jonah.update(dt, false);
           }
           waves();
         }
         if (phase === 'enter') {
           var mv = walk(jonah, J_IN, Math.max(0, pt - 1) * 3, -Math.PI / 2, dt); if (!mv && pt > 2 && jonah.group.position.x < WALL_X) jonah.group.visible = false;
-          folk.forEach(function (o, n) { var s3 = (pt - T_IN - 3 - n * 0.35) * 1.6; if (s3 > 0) { if (!o.P) o.P = mkPath([[WALL_X - 2, (n % 2 ? 0.6 : -0.6)], [WALL_X + 3, (n % 2 ? 0.6 : -0.6)], o.spot]); walk(o, o.P, s3, o.ry, dt); } });   /* 3:5 그 뒤에 굵은 베를 입은 백성이 성문 밖에 모인다 */
+          folk.forEach(function (o, n) { var s3 = (pt - T_IN - 0.5 - n * 0.25) * 1.8; if (s3 > 0) { if (!o.P) o.P = mkPath([[WALL_X - 2, (n % 2 ? 0.6 : -0.6)], [WALL_X + 3, (n % 2 ? 0.6 : -0.6)], o.spot]); walk(o, o.P, s3, o.ry, dt); } });   /* 3:5 그 뒤에 굵은 베를 입은 백성이 성문 밖에 모인다 */
         }
         if (phase === 'booth') {
-          var tj = J_OUT.tot / 2.4, wv = walk(jonah, J_OUT, Math.max(0, pt - 1) * 2.4, -Math.PI / 2, dt); booth.visible = !wv && pt > 1 + tj;
-          if (!wv && pt > 1 + tj) { booth.scale.y = Math.min(1, Math.max(0.001, (pt - 1 - tj) / 4)); if (booth.scale.y >= 1) { jonah.group.position.y = height(BOOTH[0], BOOTH[1] + 0.6) - 0.45; } }   /* 4:5 초막을 짓고 그 그늘에 앉는다 */
+          var tj = J_OUT.tot / 3.4, wv = walk(jonah, J_OUT, Math.max(0, pt - 1) * 3.4, -Math.PI / 2, dt); booth.visible = !wv && pt > 1 + tj;
+          if (!wv && pt > 1 + tj) { booth.scale.y = Math.min(1, Math.max(0.001, (pt - 1 - tj) / 2)); if (booth.scale.y >= 1) { jonah.group.position.y = height(BOOTH[0], BOOTH[1] + 0.6) - 0.45; } }   /* 4:5 초막을 짓고 그 그늘에 앉는다 */
         }
         if (phase === 'gourd') {
-          grow = Math.min(1, pt / 6); vine.scale.setScalar(Math.max(0.001, 0.2 + 0.8 * grow));                    /* 4:6 박 넝쿨이 자라 그늘이 된다 */
+          grow = Math.min(1, pt / 6); leaves.forEach(function (q) { q.scale.setScalar(Math.max(0.001, grow * (1 - 0.4 * wither))); });                    /* 4:6 박 넝쿨이 자라 그늘이 된다 */
           if (pt > 8 && lightKey === 'day') lightKey = 'dawn';                                                   /* 4:7 이튿날 새벽 */
-          if (pt > 10) { wither = Math.min(1, (pt - 10) / 4); vineM.color.copy(LEAF0).lerp(LEAF1, wither); vine.scale.setScalar(1 - 0.4 * wither); }
+          if (pt > 10) { wither = Math.min(1, (pt - 10) / 4); vineM.color.copy(LEAF0).lerp(LEAF1, wither); }
+          SUNOFF[0] = pt > 13 ? 50 : -30; SUNOFF[1] = pt > 13 ? 16 : 50; SUNOFF[2] = pt > 13 ? 0 : 30;   /* 4:8 해가 동쪽에서 뜬다 */
           if (pt > 15) { if (lightKey !== 'hot') lightKey = 'hot'; dustM.opacity = Math.min(0.55, (pt - 15) * 0.2); slump = Math.min(0.32, (pt - 15) * 0.1); }   /* 4:8 해와 뜨거운 동풍 */
           jonah.group.rotation.x = slump;
           if (dustM.opacity > 0) { for (var n = 0; n < DN; n++) { var px = dp[n * 3] - dt * (9 + (n % 7)); if (px < BOOTH[0] - 40) px += 70; dp[n * 3] = px; } dustG.attributes.position.needsUpdate = true; }
