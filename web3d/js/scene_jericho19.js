@@ -190,7 +190,8 @@
       if (p === 'march6') { marching = true; lapsLeft = 1; speed = 4.2; dawnWant = 0; }          /* 수 6:14: 엿새 동안(한 바퀴로 보여 줌). 돈 뒤 진으로 돌아온다 */
       if (p === 'march7') { marching = true; lapsLeft = 7; speed = 16; dawnWant = 1; }           /* 수 6:15: 새벽, 일곱 번(빠르게) */
       if (p === 'fall') { var L7 = pathPos(0)[3]; marching = false; lapS = Math.max(lapS, Math.ceil((lapS - order[order.length - 1].s) / L7) * L7); dawnWant = 1; if (fallT < 0) fallT = -2.5; }   /* 수 6:20: 일곱 바퀴를 마친 뒤 나팔과 외침, 그 뒤 무너진다(-2.5초는 그 사이) */
-      if (p === 'after') { marching = false; dawnWant = 0.4; if (fallT < 0) fallT = 99; }
+      if (p === 'after') { var LA = pathPos(0)[3]; lapS = Math.max(lapS, Math.ceil((lapS - order[order.length - 1].s) / LA) * LA);   /* 대목을 건너뛰어 와도 행렬이 성 둘레에 다 서 있게(무너진 뒤) */
+        marching = false; dawnWant = 0.4; if (fallT < 0) fallT = 99; }
     }
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
     placeMarch(0);
@@ -222,6 +223,7 @@
       dex: [
         { id: 'jericho', name: '여리고 성', desc: '이스라엘 자손 때문에 굳게 닫혀 드나드는 사람이 없던 성', ref: '수 6:1', hint: '북쪽 멀리 보이는 성을 담아 보세요.', range: 260, crop: 0.7, pos: function () { return v3(CITY[0], height(CITY[0], CITY[1]) + 6, CITY[1]); } },
         { id: 'horns', name: '양각 나팔을 든 제사장들', desc: '양각 나팔 일곱을 들고 여호와의 궤 앞에서 간 제사장 일곱', ref: '수 6:8', hint: '성을 도는 행렬을 보세요.', range: 120, crop: 0.4,
+          visible: function () { return order[16].p.group.visible; },   /* 행렬이 보일 때만(출발 전에는 진 앞 줄이 숨어 있다) */
           pos: function () { var o = order[16], g = o.p.group; if (g.visible) return v3(g.position.x, g.position.y + 1.4, g.position.z); var pp = pathPos(lapS + o.s); return v3(pp[0], height(pp[0], pp[1]) + 1.4, pp[1]); } },
         { id: 'ark', name: '여호와의 언약궤', desc: '제사장들이 메고 성을 돈 여호와의 궤', ref: '수 6:6', hint: '나팔 부는 제사장들 뒤를 보세요.', range: 120, crop: 0.4, pos: function () { return v3(ark.position.x, ark.position.y + 0.4, ark.position.z); } },
         { id: 'joshua', name: '여호수아', desc: '제사장들에게 언약궤를 메게 한 사람', ref: '수 6:6', hint: '진 앞에 서 있어요.', range: 40, crop: 0.36, pos: function () { var p = josh.group.position; return v3(p.x, p.y + 1.1, p.z); } }

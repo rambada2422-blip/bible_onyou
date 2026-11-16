@@ -1245,6 +1245,7 @@
     hudRef: function () { return hudRef.lastChild ? hudRef.lastChild.textContent : ''; },
     quality: function (lv, auto) { if (auto !== undefined) Q.auto = !!auto; if (lv !== undefined && lv !== null) setQuality(lv); return { level: Q.level, auto: Q.auto, pr: renderer.getPixelRatio() }; },
     now: function () { return now; },   /* 게임 시각(초). 고치기 전·후 화면을 같은 시각에 찍으려고 */
+    dexTargets: function () { return DEX.map(function (d) { var v = d.pos(); return { id: d.id, name: d.name, range: d.range, vis: d.visible ? !!d.visible() : null, p: [v.x, v.y, v.z] }; }); },   /* 시험: 도감 대상의 자리 */
     walk: function (x, z) { return !!WALK(x, z); }, h: function (x, z) { return H(x, z); }, edge: function (x, z) { return cur === 'scene' && SCN.edge ? SCN.edge(x, z) : null; },
     camAt: function (x, z, yaw) { var y = H(x, z), fx = Math.sin(yaw), fz = Math.cos(yaw), wx = x - fx * camDist, wz = z - fz * camDist, wy = Math.max(y + camPitchH + 1.3, H(wx, wz) + 1.0); return [wx, wy, wz, y]; },   /* 탐험 때 카메라가 설 자리(시험: 카메라가 아이들을 가리는 곳 찾기) */
     three: function () { return { scene: cur === 'jordan' && JL ? JL.scene : SCN.scene, camera: camera, renderer: renderer }; }

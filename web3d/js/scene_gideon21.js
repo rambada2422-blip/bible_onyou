@@ -157,7 +157,8 @@
       sceneDoneText: '기드온 장면을 끝까지 지켜봐야 떠날 수 있어요.',
       dex: [
         { id: 'spring', name: '하롯 샘', desc: '기드온과 백성이 진을 친 곳 곁의 샘', ref: '삿 7:1', hint: '진 아래쪽을 보세요.', range: 60, pos: function () { return v3(SPRING[0], height(SPRING[0], SPRING[1]) + 0.6, SPRING[1]); } },
-        { id: 'midian', name: '미디안의 진', desc: '모레 산 앞 골짜기에 메뚜기 떼처럼 많이 누운 사람들과 셀 수 없는 낙타', ref: '삿 7:12', hint: '북쪽 골짜기를 담아 보세요.', range: 200, crop: 0.7, pos: function () { return v3(MCAMP[0], height(MCAMP[0], MCAMP[1]) + 1, MCAMP[1]); } },
+        { id: 'midian', name: '미디안의 진', desc: '모레 산 앞 골짜기에 메뚜기 떼처럼 많이 누운 사람들과 셀 수 없는 낙타', ref: '삿 7:12', hint: '북쪽 골짜기를 담아 보세요.', range: 200, crop: 0.7,
+          visible: function () { return flee < 0.5; },   /* 누운 사람들이 달아난 뒤(7:21-22)에는 이 설명과 맞지 않아 찍히지 않는다 */ pos: function () { return v3(MCAMP[0], height(MCAMP[0], MCAMP[1]) + 1, MCAMP[1]); } },
         { id: 'gideon', name: '기드온', desc: '요아스의 아들. 삼백 명을 세 무리로 나눈 사람', ref: '삿 7:16', hint: '진 앞쪽에서 찾아보세요.', range: 50, crop: 0.36, pos: function () { var p = gid.group.position; return v3(p.x, p.y + 1.1, p.z); } }
       ],
       reset: function () { setPhase('camp'); },
