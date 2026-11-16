@@ -322,7 +322,7 @@
         return b;
       });
       return head.concat([el('p', { class: 'narr', text: tx(hs.text) }), el('div', { class: 'narr-meta' }, refChip(hs.basis)),
-        el('p', { class: 'ot-soft', text: '눌러서 도와요. 본문에 이 사람들이 했다고 적힌 일만 도와요.' }), el('div', { class: 'opts' }, tasks), got]);
+        el('p', { class: 'ot-soft', text: '눌러서 해 보세요. 성경의 사건은 바꾸지 않고, 곁에서 평범한 일만 해요.' }), el('div', { class: 'opts' }, tasks), got]);
     }
     if (hs.kind === 'watch') {
       setTimeout(ok, 0);
