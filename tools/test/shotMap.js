@@ -15,6 +15,9 @@ fs.mkdirSync(out, { recursive: true });
   await p.click('.tier >> nth=1'); await p.click('text=탐험 시작'); await p.waitForTimeout(300);
   /* 지도 목록만 떼어 길게 찍는다(카드는 접어 띠 그림끼리 가깝게) */
   const n = await p.evaluate(() => { const m = document.querySelector('.otmap'); m.style.overflow = 'visible'; m.style.height = 'auto'; m.style.flex = 'none'; document.querySelectorAll('.otcs').forEach((x) => { x.style.display = 'none'; }); return document.querySelectorAll('.ote-h svg').length; });
+  /* 화면 높이에 잘리지 않게 창을 목록 길이만큼 늘린다 */
+  const hh = await p.evaluate(() => document.querySelector('.otmap').scrollHeight);
+  await p.setViewportSize({ width: 390, height: hh + 40 }); await p.waitForTimeout(200);
   await p.locator('.otmap').screenshot({ path: path.join(out, 'map' + (locked ? '-locked' : '') + '.png') });
   console.log('띠 그림 ' + n + '개 · 오류 ' + errs.length); errs.forEach((e) => console.log(e));
   await b.close(); process.exit(errs.length ? 1 : 0);
