@@ -30,6 +30,8 @@ const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js'
 /* 자동 작업 3d-c의 파일(시대 7~10의 새 3D 장면). game.js 앞에 끼운다. 장면을 더할 때 이 목록에 한 줄씩 */
 scripts.splice(scripts.indexOf('web3d/js/game.js'), 0, ...[
   'web3d/js/props_3d-c.js',
+  'web3d/js/scene_josiah34.js',
+  'web3d/js/scene_temple37.js',
 ]);
 const page = [
   '<title>성경 탐험대 3D</title>',

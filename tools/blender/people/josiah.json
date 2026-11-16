@@ -1,0 +1,3 @@
+{ "name": "Josiah", "note": "요시야 왕(왕하 22:1-23:3). 이 본문은 생김새와 옷을 말하지 않는다. 여덟 살에 왕이 되어 재위 십팔년의 일이므로(22:1, 22:3) 젊은 어른으로, 수염 없이 둔다. 왕관은 그리지 않는다. 지팡이 없음. 옷 색과 머리쓰개 색은 감수 대상.",
+  "beard": "none", "staff": false,
+  "colors": { "ROBE": "#2F4F8F", "ROBE_SH": "#213866", "ROBE_HI": "#4565A6", "TUNIC": "#EADFC6", "BEARD": "#2E2420", "BEARD_SH": "#241C18", "BROW": "#2E2420", "HAIR": "#2E2420", "CLOTH": "#D9B868", "CLOTH_SH": "#BC9A4E", "BELT": "#B9893E", "BELT_SH": "#8E6A2E" } }
