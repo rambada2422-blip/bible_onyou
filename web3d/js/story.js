@@ -373,7 +373,8 @@
     } else if (s.k === 'talk') {
       var cp = m.companion, t = cp.talks[s.i];
       body = [el('div', { class: 'q-kicker', text: kick + ' · ' + cp.who }),
-        s.i === 0 ? el('p', { class: 'ot-soft', text: cp.who + josa(cp.who, '와', '과') + ' 함께 걸어요. ' + cp.who + josa(cp.who, '는', '은') + ' 성경에 기록된 자기 말만 해요. 실제 말은 성경책에서 읽어요.' }) : null,
+        s.i === 0 ? ((cur.screen === 'seg' && cur.helpNote && cur.helpNote('companion')) ? el('div', { class: 'note story3' }, el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: cur.helpNote('companion') })))   /* 3D 장면 설정이 동행 인물이 그 자리에 없다고 밝힐 때(더하기, 자동 작업 3d-a) */
+          : el('p', { class: 'ot-soft', text: cp.who + josa(cp.who, '와', '과') + ' 함께 걸어요. ' + cp.who + josa(cp.who, '는', '은') + ' 성경에 기록된 자기 말만 해요. 실제 말은 성경책에서 읽어요.' })) : null,
         U.say(t.ask.who, t.ask.text),
         el('div', { class: 'otans' }, el('b', { text: cp.who }), el('p', { text: tx(t.answer) }), refChip(t.ref)),
         el('div', { class: 'openbible' }, icon('book'), el('span', {}, cp.who + '의 말은 성경책에서 직접 읽어요. ', el('b', { text: U.bookName(t.open) })))];

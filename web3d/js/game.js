@@ -98,8 +98,10 @@
     rt.partObjs = rt.PARTS.map(function (p, i) {
       var grp = new T.Group(), mesh = p.mat ? matMesh(p.mat) : partMesh(p.id);
       mesh.position.y = 0.95; grp.add(mesh);
-      var beam = new T.Mesh(new T.CylinderGeometry(0.05, 0.22, 5, 8, 1, true), new T.MeshBasicMaterial({ color: '#8FE3DA', transparent: true, opacity: 0.16, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
-      beam.position.y = 2.7; if (FX) beam.layers.set(FX.GLOW); grp.add(beam);
+      if (rt.partBeam !== false) {   /* 장면 설정이 partBeam: false면 재료 자리의 빛줄기를 만들지 않는다(더하기, 자동 작업 3d-a: 밤하늘로 솟는 빛이 본문의 일로 읽히지 않게) */
+        var beam = new T.Mesh(new T.CylinderGeometry(0.05, 0.22, 5, 8, 1, true), new T.MeshBasicMaterial({ color: '#8FE3DA', transparent: true, opacity: 0.16, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
+        beam.position.y = 2.7; if (FX) beam.layers.set(FX.GLOW); grp.add(beam);
+      }
       place(grp, p.at[0], p.at[1]); rt.scene.add(grp);
       if (rt.partRocks && M.rock && i < 2) { var rk = M.rock(40 + i); rk.scale.multiplyScalar(1.7); place(rk, p.at[0] + 1.5, p.at[1] - 1.1, -0.05); rt.scene.add(rk); }
       return { group: grp, mesh: mesh, taken: false };

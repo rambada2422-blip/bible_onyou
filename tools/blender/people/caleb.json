@@ -1,0 +1,3 @@
+{ "name": "Caleb", "note": "갈렙(민 13:6, 13:30, 14:6-9). 유다 지파 여분네의 아들. 이 본문은 생김새와 옷을 말하지 않는다. 지팡이 없음. 옷을 찢는 모습(14:6)은 모델에 넣지 않고 멀리서 글로만. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#7A4A3A", "ROBE_SH": "#56332A", "ROBE_HI": "#8E5E4C", "TUNIC": "#E0D2B0", "BEARD": "#2E2420", "BEARD_SH": "#221A16", "BROW": "#2E2420", "HAIR": "#2E2420", "CLOTH": "#D8C8A0", "CLOTH_SH": "#BEAE86" } }
