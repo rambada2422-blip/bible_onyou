@@ -1085,5 +1085,14 @@
    "beats.2.text.t3"
   ],
   "note": "검증 기록의 '대목 3'은 지금 셋째 대목이다."
+ },
+ "e471a6c8a1": {
+  "at": [
+   "mission.help.steps.0.text.t2",
+   "mission.help.steps.0.tasks.0",
+   "mission.help.steps.0.tasks.1",
+   "mission.help.steps.0.tasks.2"
+  ],
+  "note": ""
  }
 }

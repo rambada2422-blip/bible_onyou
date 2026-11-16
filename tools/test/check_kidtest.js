@@ -27,7 +27,7 @@ const log = [
   { w: 'OT-10 finish', exit: 1, at: t + 210400 }, { w: 'OT-11 arrive', ms: 1000, at: t + 700000 }, { w: 'OT-11 finish', ms: 4000, at: t + 701000 }, { w: 'map', ms: 500, at: t + 705000 }
 ];
 const r = C.fromLog(JSON.stringify(log));
-ok(r.screens === 16 && r.quick === 3, '본 화면 16, 2초 안 넘김 3 (얻은 값 ' + r.screens + ', ' + r.quick + ')');
+ok(r.screens === 15 && r.quick === 3, '본 화면 15(재료 찾은 순간 표시는 세지 않음), 2초 안 넘김 3 (얻은 값 ' + r.screens + ', ' + r.quick + ')');
 ok(r.doN === 2 && r.doFast === 1, '돕기 2(help1·help3), 15초 안 1 (얻은 값 ' + r.doN + ', ' + r.doFast + ')');
 ok(r.qN === 3 && r.qSec === 120, '장절 물음 3(관문 2 + 뜻 묻기 1), 합 120초 (얻은 값 ' + r.qN + ', ' + r.qSec + ')');
 ok(r.matGot === 1 && r.closeN === 2 && r.closeSec === 22 && r.sceneDone === 2 && r.fin10 === 1, '재료 1, 마무리 2회 22초, 마친 장면 2, 10분 안 1 (얻은 값 ' + [r.matGot, r.closeN, r.closeSec, r.sceneDone, r.fin10].join(', ') + ')');
@@ -53,6 +53,15 @@ ok(it({})[3].pass === null, '항목 4: 절정도 마무리도 없으면 기회 �
 ok(it({ qN: 4, qSec: 180, fin10: 1 })[4].pass === true, '항목 5: 평균 45초·1장면은 통과(경계)');
 ok(it({ qN: 4, qSec: 184, fin10: 1 })[4].pass === false, '항목 5: 평균 46초는 미달');
 ok(it({ qN: 4, qSec: 100, fin10: 0 })[4].pass === false, '항목 5: 10분 안에 마친 장면이 없으면 미달');
+
+/* 3.5) 앞뒤가 안 맞는 수 */
+ok(C.checkInput(Z({ wrong: 2, wrongDone: 5 })).length > 0 && C.checkInput(Z({ climaxN: 1, climaxSkip: 3 })).length > 0 && C.checkInput(Z({ screens: 5, quick: 9 })).length > 0, '그중 칸이 전체보다 크면 받지 않는다(끝까지 5/오답 2, 그만둠 3/들어감 1, 넘김 9/화면 5)');
+ok(C.checkInput(Z({ closeSec: 4 })).length > 0, '마무리 초만 있고 마무리 화면 수가 0이면 받지 않는다');
+ok(C.checkInput(Z({ wrong: 5, quit10: 1, wrongDone: 4, screens: 20, quick: 3, closeN: 1, closeSec: 20 })).length === 0, '앞뒤가 맞는 수는 받는다');
+ok(C.RELIABLE.indexOf('closeSec') < 0 && C.RELIABLE.indexOf('doFast') < 0 && C.RELIABLE.indexOf('fin10') < 0 && C.RELIABLE.indexOf('sceneDone') < 0, '놀이 기록에서 마무리 초·돕기 15초·마친 장면·10분 안은 자동으로 채우지 않는다(3D를 걸은 시간이 섞임)');
+(function () { const one = { matGot: 1, opened: 1, sceneDone: 1, nextPicked: 1, qN: 2, qSec: 60, fin10: 1 }, none = { matGot: 1, opened: 0, sceneDone: 0, nextPicked: 0, qN: 2, qSec: 60, fin10: 0 };
+  const L = [1, 2, 3, 4, 5, 6].map((c) => Z(Object.assign({ child: c }, c === 1 ? one : none)));
+  const pc = C.perChild(L); ok(pc[1].pass === 1 && pc[1].chance === 6 && pc[4].pass === 1, '아이별로 보면: 6명 가운데 1명만 열고 마친 경우 항목 2·5는 1명만 통과로 나온다'); })();
 
 /* 4) 판정 */
 const demo = C.demoData();

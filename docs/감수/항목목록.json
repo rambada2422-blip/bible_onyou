@@ -1,5 +1,5 @@
 {
- "version": "02bd8cbd",
+ "version": "b6fa7210",
  "note": "감수 자료의 항목 목록. node tools/make_review_pack.js 가 만든다. core=목회자가 표시하는 항목, src=그 글이 있는 곳",
  "counts": [
   {
@@ -298,7 +298,7 @@
    "era": null,
    "core": true,
    "first30": 0,
-   "chars": 85,
+   "chars": 113,
    "src": "docs/00_공통규칙서.md"
   },
   {
@@ -4280,12 +4280,12 @@
    "label": "검증자가 남긴 것",
    "scene": "OT-23",
    "era": 6,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "to": "대표",
+   "to": "목회자",
    "ukey": "e471a6c8a1",
    "ask": "아이들이 룻이 떤 보리(룻 2:17-18)를 모아 성읍까지 함께 나르는 돕기를 그대로 둘까요?",
-   "chars": 126,
+   "chars": 295,
    "src": "content/ot/OT-23.json"
   },
   {

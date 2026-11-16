@@ -851,15 +851,15 @@ function refPrintHtml() {
   let n = 0;
   items.filter((it) => it.kind === 'open' && it.to === '대표' && !covered.has(it.id)).forEach((it) => {
     n++;
-    SIGN.decisions.push({ id: '라' + n, sec: 'D', q: it.title, rec: '지금대로', why: '검증자가 신학 판단이 아닌 놀이 설계의 일로 보아 대표에게 넘겼습니다. 지금 자료에 그대로 있고, 바꾸면 그 장면의 작성과 대조를 다시 합니다.', now: '지금대로', src: it.id + (it.scene ? ' · ' + sceneById[it.scene].title : ''), auto: true });
+    SIGN.decisions.push({ id: '라' + n, sec: 'D', q: it.title, rec: '지금대로', why: '검증 기록에 남은 것 가운데, 신학 판단보다 놀이 설계에 가깝다고 이 작업에서 분류한 것입니다. 지금대로 두면 더 할 일이 없고, 바꾸면 그 장면의 작성과 본문 대조를 다시 합니다.', now: '지금대로', src: it.id + (it.scene ? ' · ' + sceneById[it.scene].title : ''), auto: true });
   });
 })();
 const signCount = (sec) => SIGN.decisions.filter((d) => d.sec === sec).length;
 function signMd() {
-  const o = ['# 대표 결재지 (바이블 온유)', '', '> **🟡 내부 결정 · 대표가 정할 것 ' + SIGN.decisions.length + '가지** (모두 예/아니오로 답할 수 있게 썼고, 추천과 까닭을 붙였습니다.)',
+  const o = ['# 대표 결재지 (바이블 온유)', '', '> **🟡 내부 결정 · 대표가 정할 것 ' + SIGN.decisions.length + '가지** (예/아니오 또는 지금대로/바꿈으로 답할 수 있게 썼고, 추천과 까닭을 붙였습니다. 가4·가7은 여러 가지를 한 줄에 묶었습니다.)',
     '> - 급한 것은 **"가" 묶음 ' + signCount('A') + '가지**입니다. 나머지는 모두 지금대로 두기를 추천하므로, 다르게 하실 것만 표시하셔도 됩니다.',
     '> - 신학 판단이 섞인 것은 여기서 정하지 않고 **목회자 감수 자료로 옮겼습니다**("목회자에게" 칸).',
-    '> - 돈이 드는 결정은 없습니다. 밖으로 나가는 일(목사님께 자료 드리기, 공회 문의, 아이 시험)은 대표가 직접 하시는 일로 적었습니다.', '',
+    '> - **추천대로 하시면 드는 돈은 없습니다.** 돈과 이어진 것은 가5·가6(개역개정 사용료)과 마7(서버 운영비)이며, 모두 "돈이 들지 않는 쪽"을 추천했습니다. 밖으로 나가는 일(목사님께 자료 드리기, 공회 문의, 아이 시험)은 대표가 직접 하시는 일로 적었습니다.', '',
     '자료 판 `' + VERSION + '` · `docs/감수/대표_결재_자료.json`을 고치고 `node tools/make_review_pack.js`를 돌리면 다시 만들어집니다. 휴대폰에서는 `대표_결재지.html`을 열어 표시하고 "내보내기"로 글을 뽑을 수 있습니다.', ''];
   SIGN.sections.forEach((sec) => {
     const list = SIGN.decisions.filter((d) => d.sec === sec.key);
@@ -879,7 +879,7 @@ function signMd() {
 function signHtml() {
   const o = ['<div class="top"><div class="row"><b id="cnt">표시 0 / 0</b><span class="bar"><i id="bari"></i></span><select id="flt" hidden><option value=""></option></select><button type="button" class="pr" id="exp">내보내기</button></div></div><main>',
     '<section id="guide"><h1>대표 결재지</h1><p class="sm">바이블 온유 · 자료 판 ' + VERSION + '</p>',
-    '<div class="note"><b>🟡 내부 결정 · 대표가 정할 것 ' + SIGN.decisions.length + '가지</b><ul><li>급한 것은 <b>"가" 묶음 ' + signCount('A') + '가지</b>입니다. 나머지는 모두 "예(지금대로)"를 추천하므로 다르게 하실 것만 표시하셔도 됩니다.</li><li>신학 판단이 섞인 것은 여기서 정하지 않고 목회자 감수 자료로 옮겼습니다.</li><li>돈이 드는 결정은 없습니다. 밖으로 나가는 일(목사님께 자료 드리기, 공회 문의, 아이 시험)은 대표가 직접 하시는 일입니다.</li><li>표시는 이 기기에만 저장됩니다. 다 하신 뒤 "내보내기"의 글을 복사해 보내 주세요.</li></ul></div></section>'];
+    '<div class="note"><b>🟡 내부 결정 · 대표가 정할 것 ' + SIGN.decisions.length + '가지</b><ul><li>급한 것은 <b>"가" 묶음 ' + signCount('A') + '가지</b>입니다. 나머지는 모두 "예(지금대로)"를 추천하므로 다르게 하실 것만 표시하셔도 됩니다.</li><li>신학 판단이 섞인 것은 여기서 정하지 않고 목회자 감수 자료로 옮겼습니다.</li><li><b>추천대로 하시면 드는 돈은 없습니다.</b> 돈과 이어진 것은 가5·가6(개역개정 사용료)과 마7(서버 운영비)입니다. 밖으로 나가는 일(목사님께 자료 드리기, 공회 문의, 아이 시험)은 대표가 직접 하시는 일입니다.</li><li>표시는 이 기기에만 저장됩니다. 다 하신 뒤 "내보내기"의 글을 복사해 보내 주세요.</li></ul></div></section>'];
   SIGN.sections.forEach((sec) => {
     const list = SIGN.decisions.filter((d) => d.sec === sec.key);
     if (!list.length) return;
