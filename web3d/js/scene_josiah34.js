@@ -188,8 +188,8 @@
       if (!o) o = PR.soldier(i, '#7A6A54', null);
       o.group.rotation.order = 'YXZ'; scene.add(o.group); o.k = i;
       o.home = [-6.65 + cl * 1.9 + (hash(i, 1) - 0.5) * 0.6, -39.6 + row * 1.75 + (hash(i, 2) - 0.5) * 0.4];
-      o.from = [o.home[0] * 1.15 + (hash(i, 3) - 0.5) * 0.5, 3 + row * 1.6 + (hash(i, 4) - 0.5) * 0.4];   /* 23:2 남쪽 길 아래 빈 땅에 모였다가(앞줄이 장로) */
-      o.sx = o.home[0] * 0.85; o.wait = row * 0.9 + cl * 0.12 + 0.8;                                                     /* 가운데 층계(너비 ±6)로 줄지어 올라간다 */
+      o.from = [o.home[0] * 1.15 + (hash(i, 3) - 0.5) * 0.5, -1 + row * 1.5 + (hash(i, 4) - 0.5) * 0.4];   /* 23:2 남쪽 길 아래 빈 땅에 모였다가(앞줄이 장로) */
+      o.sx = o.home[0] * 0.85; o.wait = row * 0.8 + cl * 0.1 + 0.5;                                                     /* 가운데 층계(너비 ±6)로 줄지어 올라간다 */
       if (i >= 56) { o.walkA = -44 + hash(i, 5) * 20; o.walkB = 4 + hash(i, 6) * 20; o.walkZ = ROAD_Z - 0.7 + (hash(i, 7) - 0.5) * 1.8; o.walkS = 1.3 + hash(i, 8) * 0.7; o.walkP = hash(i, 9) * 60; }
       crowd.push(o);
     }
@@ -206,7 +206,7 @@
     var BACK = FIVE.map(function (o, n) { return mkPath([[-10 - n * 1.5, ROAD_Z + (n % 2 ? 0.7 : -0.5)], [26, ROAD_Z + (n % 2 ? 0.7 : -0.5)], GATHER[n]]); });
     var HIL_IN = mkPath([[19, -3.6], GATHER[0]]);
     crowd.forEach(function (o) { o.P = mkPath([o.from, [o.sx, ROAD_Z - 1], [o.sx, EDGE_Z - 0.6], o.home]); });
-    var KPROC = mkPath([[0.4, 1.2], [0.4, ROAD_Z - 1], [0.4, EDGE_Z - 0.6], [0, DAIS[1] + 2.4]]), KSP = 2.0;   /* 23:2 왕이 맨 앞에서 올라가 대에 선다 */
+    var KPROC = mkPath([[0.4, -2.6], [0.4, ROAD_Z - 1], [0.4, EDGE_Z - 0.6], [0, DAIS[1] + 2.4]]), KSP = 2.0;   /* 23:2 왕이 맨 앞에서 올라가 대에 선다 */
 
     var phase = 'work', pt = 0, tod = 0, todWant = 0, lean = 0, wt = 0;
     var ca = new T.Color(), cb = new T.Color();
