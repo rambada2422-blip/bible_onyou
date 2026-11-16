@@ -206,6 +206,7 @@ window.BO3D = window.BO3D || {};
    * 압도 장면에서 하나님이 부르시는 순간에는 효과음 묶음 전체를 멎게 한다(지시서 6.2). 하나님의 음성은 소리로 만들지 않는다. */
   var audio = (function () {
     var ctx = null, master, sfx, music, windG, fireG, crackleG, padG, bleatG, muted = false, nextPop = 0, nextBleat = 0, fireOverride = -1, flockNear = 0;
+    var want = { wind: 0.16, fire: 0 };   /* 마지막으로 맞춘 바람·불 크기(점검용: 3D에서 나간 뒤 장면 소리가 남지 않았는지) */
     function noiseBuf(sec) {
       var b = ctx.createBuffer(1, ctx.sampleRate * sec, ctx.sampleRate), d = b.getChannelData(0), last = 0;
       for (var i = 0; i < d.length; i++) { var wn = Math.random() * 2 - 1; last = (last + 0.02 * wn) / 1.02; d[i] = last * 3.2 + wn * 0.12; }
@@ -246,6 +247,7 @@ window.BO3D = window.BO3D || {};
       if (!ctx) return;
       var v = Math.max(0, Math.min(1, 1 - (dist - 8) / 34)); v = v * v;
       if (fireOverride >= 0) v = fireOverride;
+      want.fire = v;
       fireG.gain.setTargetAtTime(0.02 + v * 0.5, ctx.currentTime, 0.3);
       fireG._roar.gain.setTargetAtTime(v * v * 0.55, ctx.currentTime, 0.4);
       crackleG.gain.setTargetAtTime(v * 0.55, ctx.currentTime, 0.3);
@@ -319,7 +321,7 @@ window.BO3D = window.BO3D || {};
       var f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(3200, t + 3.6);
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t + 4.0);
       o.connect(f); f.connect(g); g.connect(sfx); o.start(t); o.stop(t + 4.1); }
-    function wind(v) { if (ctx) windG.gain.setTargetAtTime(v, ctx.currentTime, 0.8); }
+    function wind(v) { want.wind = v; if (ctx) windG.gain.setTargetAtTime(v, ctx.currentTime, 0.8); }
     /* 3D 절정의 간접 연출(규칙서 13.8): 땅울림(성벽·물), 쿵(쓰러짐), 낮은 고동(긴장되는 밤) */
     function rumble(sec, v) {
       if (!ctx) return; sec = sec || 3; v = v || 0.5;
@@ -407,7 +409,7 @@ window.BO3D = window.BO3D || {};
     }
     try { document.addEventListener('click', function (e) { var b = e.target && e.target.closest ? e.target.closest('#game button') : null; if (b && !b.classList.contains('cam3')) tick(); }, true); } catch (e) { /* 무시 */ }
     function mute(m) { muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); }
-    return { start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, rumble: rumble, thud: thud, pulse: pulse, mute: mute, isMuted: function () { return muted; },
+    return { levels: function () { return { wind: want.wind, fire: want.fire, flock: flockNear, pulse: !!pulseT, on: !!ctx }; }, start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, rumble: rumble, thud: thud, pulse: pulse, mute: mute, isMuted: function () { return muted; },
       ambience: ambience, tick: tick, ambBuild: ambBuild, ambChirps: ambChirps, ambState: function () { return { on: ambNow.slice(), built: Object.keys(amb), ctx: ctx ? ctx.state : 'none' }; } };
   })();
 

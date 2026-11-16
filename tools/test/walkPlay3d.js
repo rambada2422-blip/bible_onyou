@@ -267,6 +267,7 @@ const errs = [], probs = [], notes = [];
   need(hid && hid.w === id + '·3D' && hid.exit, '놀이 기록: 3D 안에서 창을 가린 것이 "나간 곳"에 남지 않음 ' + JSON.stringify(hid));
   /* 3D 마침 시트를 닫고 걷다가 "지도" 단추로 나온다. 관문까지 마쳤으므로 장면을 마친 것으로 남아야 한다(걸린 시간도 여기서 멈춘다) */
   await p.click('.overlay3 .sheet-foot .btn.onpaper'); await p.waitForTimeout(400);
+  await p.evaluate(() => { BO3D.fx.audio.wind(0.5); BO3D.fx.audio.pulse(true); });   /* 장면이 센 바람·맥박 소리를 켜 둔 때처럼 */
   await p.click('.map3'); await p.waitForTimeout(300);
   need(await p.evaluate(() => /이 장면을 마치고/.test(document.querySelector('.overlay3').innerText)), '3D: 마친 뒤 "지도"의 묻는 글이 마침을 알려 주지 않음');
   await p.click('.overlay3 .sheet-foot .btn:has-text("시대 지도로")'); await p.waitForTimeout(500);
@@ -275,6 +276,15 @@ const errs = [], probs = [], notes = [];
   need(dn.done && dn.done.d3, '3D: 관문까지 마치고 "지도"로 나왔는데 장면이 마친 것으로 남지 않음 ' + JSON.stringify(dn));
   need(dn.time > 0 && dn.time <= Date.now() - t3dStart + 1500, '기록: 3D 시간이 실제 걸린 시간보다 많음(겹쳐 셈) ' + JSON.stringify({ time: dn.time, real: Date.now() - t3dStart }));
   need(dn.mapBtn, '3D: 시대 지도로 나온 뒤에도 "지도" 단추가 보임');
+  /* 3D 장면 소리를 3D 밖으로 가져가지 않는다: 지도로 나온 뒤, 그리고 처음 화면 → 탐험 시작으로 지도에 올 때(독립 검증 ⑥⑦) */
+  const calm = (lv) => lv.wind <= 0.17 && lv.fire === 0 && lv.flock === 0 && !lv.pulse;
+  const lv1 = await p.evaluate(() => BO3D.fx.audio.levels());
+  need(calm(lv1), '소리: 3D에서 지도로 나온 뒤에도 장면 소리가 남음 ' + JSON.stringify(lv1));
+  await p.click('.ot3 button:has-text("처음 화면")'); await p.waitForTimeout(800);
+  await p.evaluate(() => { BO3D.fx.audio.wind(0.5); BO3D.fx.audio.pulse(true); });
+  await p.click('text=탐험 시작'); await p.waitForTimeout(500);
+  const lv2 = await p.evaluate(() => ({ lv: BO3D.fx.audio.levels(), screen: BO3D.story.debug.state().screen }));
+  need(lv2.screen === 'map' && calm(lv2.lv), '소리: 처음 화면에서 탐험 시작으로 지도에 왔는데 3D 소리가 남음 ' + JSON.stringify(lv2));
   /* 놀이 기록: 3D 안의 문답·돕기 조각은 "OT-NN·3D …" 이름으로 남고, 장면별 걸린 시간에는 들어가지 않는다 */
   const L3 = await p.evaluate(() => JSON.parse(localStorage.getItem('bo3d.log.v1') || '[]').map((x) => x.w));
   need(L3.some((w) => new RegExp('^' + id + '·3D (help|talk|today)\\d').test(w)), '놀이 기록: 3D 안 조각이 따로 기록되지 않음 ' + JSON.stringify(L3.slice(-8)));

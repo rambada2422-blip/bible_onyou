@@ -176,11 +176,12 @@
   var flash = el('div', { class: 'flash3', hidden: '' });
   /* 3D 장면 도중에 시대 지도로 나가는 길(pack 갈래 2차 검증). 한 번 묻고 나간다. 모은 재료와 사진은 이미 이 기기에 남아 있다 */
   var mapBtn = el('button', { class: 'map3', hidden: '', 'aria-label': '시대 지도로 나가기', on: { click: function () { askMap(); } } }, icon('arrow'), el('span', { text: '지도' }));
+  var askPrev = null;
   var NOMAP = { menu: 1, route: 1, lookup: 1, vision: 1, depart: 1, end2: 1, ask: 1 };   /* 올려다보기·영상·출발 같은 연출 중에는 지도 단추를 감춘다 */
   function askMap() {
     if (NOMAP[state]) return;
     stick.x = stick.y = 0; stick.id = null;
-    var prevState = state, prevClass = overlay.className, prevKids = Array.prototype.slice.call(overlay.childNodes), wasHidden = overlay.hidden;
+    var prevState = askPrev = state, prevClass = overlay.className, prevKids = Array.prototype.slice.call(overlay.childNodes), wasHidden = overlay.hidden;
     var done = cur !== 'jordan' && partsFound === PARTS.length && sceneDone;   /* 관문까지 마치고 걷던 중이면 나갈 때 장면을 마친 것으로 남긴다(타임머신 출발과 같게) */
     state = 'ask';   /* 묻는 동안 걷기·대목 진행을 멈춘다 */
     sheetOverlay([el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
@@ -989,7 +990,7 @@
     kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 도감' }), el('p', { text: '지금까지 ' + dexCount() + ' / ' + DEX.length + '장을 담았어요. 더 둘러보며 남은 사진을 찍을 수 있어요.' })));
     var wd = PARTS.length && PARTS[0].mat ? '재료' : '부품';
     kids_.push(el('div', { class: 'closebox reward3' }, el('h3', { text: '탐험대 이야기' }), el('p', { text: (partsFound < PARTS.length ? '남은 ' + wd + ' ' + (PARTS.length - partsFound) + '개를 찾아 타임머신으로 돌아가요. ' : wd + '를 다 찾았으니 타임머신으로 돌아가요. ') + '아지트에서 탐험 모자를 쓸 수 있게 됐어요. 믿음의 점수가 아니라, 다녀온 곳을 기념하는 물건이에요.' })));
-    sheetOverlay(kids_, [btn('처음부터', menu, 'plain'), btn('계속 탐험하기', function () {
+    sheetOverlay(kids_, [btn('처음부터', function () { if (BO3D.story && cur !== 'jordan' && partsFound === PARTS.length) BO3D.story.complete3d(SCN.id); menu(); }, 'plain'), btn('계속 탐험하기', function () {   /* 관문까지 마치고 처음 화면으로 가도 장면은 마친 것으로(지도 단추와 같은 기준, 독립 검증 ⑦) */
       (U.stopSpeak(), overlay.hidden = true); sceneDone = true; state = 'free'; hud.hidden = false; camBtn.hidden = false; dexBtn.hidden = false;
       setObjective(partsFound < PARTS.length ? '남은 ' + wd + '를 찾아 타임머신으로 돌아가자' : '타임머신으로 돌아가자')
     })]);
@@ -1151,7 +1152,7 @@
       if (horeb) updateTracker();
       var mh = snd.hidden || !BO3D.story || !!NOMAP[state] && state !== 'ask'; if (mapBtn.hidden !== mh) { mapBtn.hidden = mh; hud.classList.toggle('withmap', !mh); }
       if (!hudRO) placeToast();
-      updateCamera(dt);
+      if (state === 'ask') { state = askPrev; updateCamera(dt); state = 'ask'; } else updateCamera(dt);   /* 묻는 동안 카메라는 묻기 전 그대로(독립 검증 ⑦) */
       var pp2 = player.group.position, sun = horeb ? env.sun : JL.sun;
       var so = horeb ? (SCN.sunOff || [-38, 46, 30]) : [30, 50, 34];
       sun.position.set(pp2.x + so[0], pp2.y + so[1], pp2.z + so[2]);
@@ -1163,7 +1164,7 @@
     }
     if (horeb && SCN.render) SCN.render(camera, renderer);
     if (FX && player) {
-      if (horeb && SCN.audio) SCN.audio(FX.audio, player.group.position); else { FX.audio.setFlock(999); FX.audio.setFire(999); }
+      if (horeb && SCN.audio && state !== 'menu') SCN.audio(FX.audio, player.group.position); else { FX.audio.setFlock(999); FX.audio.setFire(999); }   /* 처음 화면 뒤 풍경에서는 장면 소리를 내지 않는다 */
     }
     var rs = horeb ? SCN.scene : JL.scene;
     renderer.info.autoReset = false; renderer.info.reset();   /* 한 화면(후처리 포함)의 그리기 수를 모아 센다(perf3d.js) */
@@ -1177,8 +1178,9 @@
   function toMap() { if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } calmAudio(); BO3D.story.open(); }
   BO3D.scenes3d = {}; Object.keys(BO3D.scene3d || {}).forEach(function (k) { BO3D.scenes3d[k] = true; });
   BO3D.game = {
-    toStory: function () { state = 'story'; paused = true; hideAll3d(); },
-    forget: function () { for (var k in built) built[k].dexShots = null; flagColor = null; if (flag && machine) { machine.group.remove(flag); flag = null; } hatOn = false; },   /* 진행을 지울 때: 이미 만든 3D 장면이 기억하던 사진·깃발도 잊는다 */
+    toStory: function () { state = 'story'; paused = true; hideAll3d(); calmAudio(); },
+    in3d: function () { return !paused && state !== 'menu' && state !== 'story'; },   /* 3D 장면 안인지(창을 가렸다 돌아올 때 3D 시간을 다시 셀지) */   /* 처음 화면에서 '탐험 시작'으로 지도에 갈 때도 3D 소리를 남기지 않는다(독립 검증 ⑦) */
+    forget: function () { for (var k in built) built[k].dexShots = null; flagColor = null; if (flag && flag.parent) flag.parent.remove(flag); flag = null; hatOn = false; },   /* 진행을 지울 때: 이미 만든 3D 장면이 기억하던 사진·깃발도 잊는다 */
     menu: menu,
     start3d: function (id) {
       paused = false; hideAll3d(); root.className = 'g3 app ' + S.tier;

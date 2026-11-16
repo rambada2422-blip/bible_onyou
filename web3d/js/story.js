@@ -28,14 +28,21 @@
     lastMark = where ? { w: where, t: t } : null;
   }
   var t3dWas = null;   /* 창을 가렸을 때 3D 안이었으면, 돌아왔을 때 3D 시간을 다시 센다 */
-  try { window.addEventListener('pagehide', function () {
+  /* 창을 닫거나 가릴 때(휴대폰 홈 단추는 보통 visibilitychange만 온다): 화면 시간과 3D 시간을 멈추고 "나간 곳"에 남긴다. 돌아오면 3D 시간을 다시 센다 */
+  function onHide() {
     var in3d = t3d ? t3d.id : null;
     try { stop3d(); U.stopSpeak(); } catch (e0) { /* 무시 */ }
-    t3dWas = in3d;
+    if (in3d) t3dWas = in3d;
     if (lastMark) { var w = lastMark.w; mark(null); LOG.push({ w: w, exit: 1, at: Date.now() }); }
     else if (in3d) LOG.push({ w: in3d + '·3D', exit: 1, at: Date.now() });   /* 3D 안에서 나간 것도 "나간 곳"에 */
     try { localStorage.setItem(LOGK, JSON.stringify(LOG)); } catch (e) { /* 무시 */ }
-  }); window.addEventListener('pageshow', function (ev) { if (ev.persisted && t3dWas && !t3d) t3d = { id: t3dWas, t: Date.now() }; t3dWas = null; }); } catch (e) { /* 무시 */ }
+  }
+  function onShow() { if (t3dWas && !t3d) { var g = G(); if (g && g.in3d && g.in3d()) t3d = { id: t3dWas, t: Date.now() }; } t3dWas = null; }
+  try {
+    window.addEventListener('pagehide', onHide);
+    window.addEventListener('pageshow', function (ev) { if (ev.persisted) onShow(); });
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') onHide(); else onShow(); });
+  } catch (e) { /* 무시 */ }
   function exit3d(kind) { if (t3d) { LOG.push({ w: t3d.id + '·3D', exit: kind || 1, at: Date.now() }); try { localStorage.setItem(LOGK, JSON.stringify(LOG)); } catch (e) { /* 무시 */ } } }   /* 3D 도중 "지도"로 나감(game.js askMap) */
   function save() { try { localStorage.setItem(KEY, JSON.stringify(PG)); } catch (e) { /* 저장할 수 없는 환경이면 이번 방문 동안만 기억한다 */ } }
   load();
