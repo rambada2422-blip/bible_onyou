@@ -26,7 +26,14 @@ fs.mkdirSync(out, { recursive: true });
   await p.evaluate(() => document.fonts.ready);
   await GR.install(p);
   await enter3d(p, ti, id);
-  await p.waitForSelector('text=출발하자', { timeout: 60000 }); await p.waitForTimeout(1500);
+  await p.waitForSelector('text=출발하자', { timeout: 60000 });
+  /* 3D 장비 점검(보완 3차 ④): 새 단계를 얻은 뒤 처음 들어온 3D 장면이면 도착 때 한 번 */
+  const gc0 = await p.evaluate(() => (BO3D.debug.gearCheck ? BO3D.debug.gearCheck() : 'none'));
+  const wantGc = GR.stageAt(seedN) >= 1 && seedN > 0;
+  if (wantGc && !gc0) probs.push('3D 장비 점검이 나오지 않음');
+  if (!wantGc && gc0 && gc0 !== 'none') probs.push('3D 장비 점검이 나오면 안 되는데 나옴 ' + JSON.stringify(gc0));
+  if (gc0 && gc0 !== 'none') await shot('gear-check');
+  await p.waitForTimeout(1500);
   const info = await p.evaluate(() => BO3D.debug.scene());
   if (info.id !== id) probs.push('다른 장면이 열림: ' + info.id);
   const D = await p.evaluate((sid) => BO3D.ot.scenes[sid], id);
