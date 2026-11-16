@@ -7,7 +7,7 @@
 .ot-stage::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14, 23, 48, .35) 0%, rgba(14, 23, 48, 0) 28%); pointer-events: none; }
 .ot-top { position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); left: 0; right: 0; z-index: 3; display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ot-top .place { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ot-back { flex: none; display: inline-flex; align-items: center; gap: 6px; background: rgba(14, 23, 48, .78); color: var(--paper); border-radius: 999px; padding: 7px 13px 7px 9px; font-family: var(--f-display); font-size: 14px; backdrop-filter: blur(4px); }
+.ot-back { flex: none; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; background: rgba(14, 23, 48, .78); color: var(--paper); border-radius: 999px; padding: 7px 13px 7px 9px; font-family: var(--f-display); font-size: 14px; backdrop-filter: blur(4px); }
 .ot-back svg { width: 15px; height: 15px; transform: rotate(-90deg); color: var(--brass); }
 .ot-sheet.sheet { position: absolute; left: 0; right: 0; bottom: 0; top: 35%; margin: 0; animation: sheetup .28s ease both; }
 .ot3.intro .ot-sheet.sheet, .ot3.era .ot-sheet.sheet, .ot3.pick .ot-sheet.sheet { top: 40%; }
@@ -137,9 +137,49 @@
 .seek-msg { font-size: 16px; font-weight: 600; }
 .closefold { border-radius: 14px; box-shadow: inset 0 0 0 2px var(--paper-line); padding: 10px 14px; }
 .closefold summary { cursor: pointer; font-weight: 600; }
-.speak3 { margin-left: auto; font-size: 13.5px; padding: 6px 10px; border-radius: 999px; background: #FFF6DA; box-shadow: inset 0 0 0 1.5px #F0D58A; }
+/* 읽어 주기 단추: 시트 아래 왼쪽의 둥근 단추(모든 글 화면). 읽는 동안은 색이 바뀌고, 다시 누르면 멈춘다 */
+.speak3 { flex: none; width: 48px; min-height: 48px; border-radius: 50%; display: grid; place-items: center; background: #FFF6DA; color: #6B4A12; box-shadow: inset 0 0 0 2px #F0D58A; }
+.speak3 svg { width: 24px; height: 24px; }
+.speak3[aria-pressed="true"] { background: var(--teal); color: var(--ink-3); box-shadow: inset 0 0 0 2px #2F7C74; }
 .narr-meta { display: flex; align-items: center; gap: 8px; }
 .logt { width: 100%; border-collapse: collapse; font-size: 13px; }
 .logt td, .logt th { border-bottom: 1px solid rgba(255,255,255,.2); padding: 4px 2px; text-align: left; }
 .otmap textarea { width: 100%; height: 90px; font-size: 11px; }
 
+
+/* ── play 갈래(2026-11-16): 탐험 일지, 설정, 부모·교사 화면, 소리 끄기, 글자 크기 ── */
+.ot-snd { flex: none; margin-left: auto; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; position: relative; background: rgba(14, 23, 48, .78); color: var(--paper); backdrop-filter: blur(4px); }
+.ot-snd svg { width: 22px; height: 22px; }
+.ot-snd[aria-pressed="true"] { color: #8FA0C8; }
+.ot-snd[aria-pressed="true"]::after { content: ""; position: absolute; width: 28px; height: 3px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
+.jtabs, .setopts { display: flex; flex-wrap: wrap; gap: 8px; }
+.jtab { flex: 1 1 auto; min-height: 46px; padding: 0 14px; border-radius: 999px; font-family: var(--f-display); font-size: 16px; color: var(--paper); background: rgba(251, 247, 238, .08); box-shadow: inset 0 0 0 2px rgba(251, 247, 238, .3); }
+.jtab[aria-pressed="true"] { background: var(--brass); color: var(--ink-3); box-shadow: none; }
+.otmap .vcard { box-shadow: inset 0 0 0 1.5px rgba(233, 180, 76, .4); }
+.otmap .dexcell b, .otmap .dexcell span { color: var(--text); }
+.otmap .dexcell span { color: var(--text-soft); }
+.jempty { opacity: .8; padding: 10px 12px; border-radius: 12px; border: 2px dashed rgba(251, 247, 238, .25); }
+.jnote, .arow { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 12px; border-radius: 14px; background: rgba(251, 247, 238, .07); box-shadow: inset 0 0 0 1.5px rgba(251, 247, 238, .14); }
+.jnote small, .arow small { font-size: 12.5px; color: #AFBDDF; }
+.jnote b, .arow b { font-family: var(--f-display); font-weight: 400; font-size: 17px; color: var(--paper); line-height: 1.3; }
+.jnote p, .arow p { font-size: 15px; line-height: 1.55; color: #E6ECFA; }
+.jnote p i { font-style: normal; font-family: var(--f-display); font-size: 13px; color: var(--brass); display: block; }
+.jnote textarea { width: 100%; box-sizing: border-box; min-height: 84px; height: auto; border-radius: 12px; border: 2px solid rgba(251, 247, 238, .3); background: #fff; font: inherit; font-size: 15.5px; padding: 10px; color: var(--text); }
+.setrow { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: rgba(251, 247, 238, .07); }
+.setrow > b { font-family: var(--f-display); font-weight: 400; font-size: 17px; color: var(--teal); }
+.setsample { flex: none; border-radius: 14px; background: var(--paper); color: var(--text); padding: 12px 14px; overflow: visible; }
+.otmap textarea.movet { height: 96px; font-size: 12px; border-radius: 12px; border: 2px solid rgba(251, 247, 238, .3); padding: 8px; box-sizing: border-box; word-break: break-all; }
+.otmap textarea.movet[hidden] { display: none; }
+.adultq { display: flex; align-items: center; gap: 10px; font-size: 26px; color: var(--paper); }
+.adultq b { font-family: var(--f-display); font-weight: 400; }
+.adultq input { width: 110px; height: 54px; border-radius: 12px; border: 2px solid rgba(251, 247, 238, .4); background: #fff; font: inherit; text-align: center; color: var(--ink); }
+.otmap.adult .logt { font-size: 14px; }
+.otmap.adult .logt td, .otmap.adult .logt th { padding: 7px 4px; }
+/* 글자 크기 고르기(설정): 글이 있는 시트와 한 장짜리 화면을 통째로 키운다. 줄바꿈도 함께 다시 잡힌다 */
+html.fs1 .sheet-body, html.fs1 .otmap { zoom: 1.12; }
+html.fs2 .sheet-body, html.fs2 .otmap { zoom: 1.25; }
+html.fs1 .setsample.sheet-body, html.fs2 .setsample.sheet-body { zoom: 1; }
+/* 어두운 바탕의 표와 글 상자: 글이 보이게, 긴 화면에서 눌려 줄어들지 않게 */
+.otmap > * { flex-shrink: 0; }
+.otmap .logt th { background: rgba(251, 247, 238, .12); color: var(--teal); font-size: 13px; padding: 7px 4px; white-space: normal; }
+.otmap .logt td { color: #E6ECFA; background: transparent; }

@@ -115,7 +115,7 @@
     var rt = buildScene(id);
     SCN = rt; cur = 'scene'; scene = rt.scene; env = { sun: rt.sun }; P = rt.P; SC = rt.data; if (U.setScene) U.setScene(SC);
     machine = rt.machine; PARTS = rt.PARTS; partObjs = rt.partObjs; DEX = rt.DEX; machineY = rt.machineY; departGlow = rt.departGlow;
-    dex = rt.dexShots = rt.dexShots || {};
+    dex = rt.dexShots = rt.dexShots || (BO3D.story && BO3D.story.shots ? BO3D.story.shots(id) : {});   /* 전에 찍어 이 기기에 남긴 사진(탐험 일지의 사진 도감) */
     return rt;
   }
 
@@ -167,8 +167,9 @@
   var overlay = el('div', { class: 'overlay3', hidden: '' });
   var touch = el('div', { class: 'touch3' });
   var snd = el('button', { class: 'snd3', hidden: '', 'aria-label': '소리 끄기', 'aria-pressed': 'false', on: { click: function () {
-    var m = !FX.audio.isMuted(); FX.audio.mute(m); snd.setAttribute('aria-pressed', String(m)); snd.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기');
+    var m = !FX.audio.isMuted(); FX.audio.mute(m); U.set.snd = m ? 0 : 1; U.saveSet(); syncSnd();
   } } }, icon('speaker'));
+  function syncSnd() { var m = !U.set.snd; snd.setAttribute('aria-pressed', String(m)); snd.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기'); }   /* 설정·이야기 카드의 소리 끄기와 같은 값 */
   var dexLabel = el('span', { text: '도감 0 / 5' });
   var dexBtn = el('button', { class: 'dex3', hidden: '', on: { click: function () { if (cur === 'jordan') openClues(); else openDex(); } } }, icon('journal'), dexLabel);
   var camBtn = el('button', { class: 'cam3', hidden: '', 'aria-label': '사진 찍기', on: { click: function () { wantShot = true; } } }, icon('camera'));
@@ -187,7 +188,8 @@
   }
   function showPanel(kids_, foot) {
     panelBody.replaceChildren(); panelFoot.replaceChildren();
-    add(panelBody, kids_); add(panelFoot, foot);
+    U.stopSpeak();
+    add(panelBody, kids_); add(panelFoot, [U.speakBtn(function () { return panelBody; }), foot]);
     panel.hidden = false; panelBody.scrollTop = 0;
     base.hidden = true; stick.x = stick.y = 0; stick.id = null;
   }
@@ -233,6 +235,8 @@
       var cv = document.createElement('canvas'); cv.width = cv.height = 220;
       try { cv.getContext('2d').drawImage(canvas, sx, sy, size, size, 0, 0, 220, 220); dex[f.d.id] = cv.toDataURL('image/jpeg', 0.82); }
       catch (e) { dex[f.d.id] = ''; }
+      /* 탐험 일지의 사진 도감에 남긴다(이 기기에만). 저장은 작게 줄여서 */
+      if (BO3D.story && BO3D.story.saveShot) { var small = ''; try { var c2 = document.createElement('canvas'); c2.width = c2.height = 176; c2.getContext('2d').drawImage(cv, 0, 0, 176, 176); small = c2.toDataURL('image/jpeg', 0.72); } catch (e2) { small = ''; } BO3D.story.saveShot(SCN.id, f.d, small); }
     });
     updateDexBtn();
     if (fresh.length) {
@@ -348,6 +352,7 @@
     }, 'wide');
     go.disabled = true;
     var foundBox = el('div', {});
+    U.onMiss = BO3D.story && BO3D.story.missFor ? BO3D.story.missFor(SCN.id, 'part' + quest) : null;   /* 엇나간 횟수(부모·교사 화면) */
     /* 탐지기는 탐험대 이야기, 물음은 성경 물음이다. 성경 찾기 안내는 나이 단계에 따라 (규칙서 5절) */
     var where = S.tier === 't1' ? U.chapterOf(q.ref || SC.ref) : (S.tier === 't2' ? bookName(q.ref || SC.ref) : U.bookOf(SC.ref) + '에서 찾아보세요');
     sheetOverlay([el('div', { class: 'eyebrow', text: '탐험대 이야기' }),
@@ -737,6 +742,7 @@
       el('h2', { text: '몇 살 탐험대인가요?' }), el('div', { class: 'tier-list' }, tb),
       el('h2', { text: '누가 되어 탐험할까요?' }), el('div', { class: 'char-row' }, cb),
       btn('탐험 시작', function () { S.tier = tier; S.ch = ch; if (BO3D.story) { paused = true; BO3D.story.open(); } else if (C3 && BO3D.jordan) route(); else begin(); }, 'wide'),
+      BO3D.story && BO3D.story.openSettings ? btn('설정 (글자 크기 · 소리 · 읽어 주기)', function () { S.tier = tier; BO3D.story.openSettings(function () { BO3D.story.close(); }); }, 'quiet') : null,
       el('p', { class: 'fine', text: '감수 전 시험판입니다. 목사님 감수를 마치기 전에는 아이들에게 공개하지 않습니다.' }));
     overlay.hidden = false;
   }
@@ -744,7 +750,7 @@
   function begin() {
     root.className = 'g3 app ' + S.tier;
     overlay.hidden = true;
-    if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; }
+    if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; U.applySet(); syncSnd(); }
     useScene(SCN.id); hudMode(); makeVision();
     spawnKids();
     quest = 0; questOpen = false; evIdx = SCN.eventStart || 0; afterVision = false;
@@ -892,7 +898,8 @@
   /* ── 관문 (2D 시범판과 같은 방식) ── */
   function sheetOverlay(kids_, foot) {
     var body = el('div', { class: 'sheet-body pad' }), ft = el('div', { class: 'sheet-foot pad' });
-    add(body, kids_); add(ft, foot);
+    U.stopSpeak();
+    add(body, kids_); add(ft, [U.speakBtn(function () { return body; }), foot]);
     overlay.className = 'overlay3 sheet3';
     overlay.replaceChildren(el('div', { class: 'sheet' }, body, ft));
     overlay.hidden = false;
@@ -905,6 +912,7 @@
       var q = gates[gi], last = gi === gates.length - 1;
       var nb = btn(last ? '관문 통과' : '다음 관문', function () { if (last) { overlay.hidden = true; seg('after', function () { seg('help:gates', function () { seg('today', finish); }); }); } else { gi++; show(); } });
       nb.disabled = true;
+      U.onMiss = BO3D.story && BO3D.story.missFor ? BO3D.story.missFor(SCN.id, 'gate' + gi) : null;
       sheetOverlay([el('div', { class: 'q-kicker', text: '다음으로 가는 관문 ' + (gi + 1) + ' / ' + gates.length }), blockFor(q, function () { nb.disabled = false; }, gi)], nb);
     })();
   }
@@ -938,7 +946,9 @@
     if (c.kind === 'prayer') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '한 문장 기도' }), el('p', { text: c.text })));
     if (c.kind === 'practice') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '이번 주 실천 한 가지' }), el('p', { text: c.text })));
     if (c.kind === 'note') {
-      kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 기록' }), el('p', { text: c.prompt }), el('textarea', { id: 'g-note', 'aria-label': '기록', placeholder: '여기에 적어 보세요.' })));
+      var nta = el('textarea', { id: 'g-note', 'aria-label': '기록', placeholder: '여기에 적어 보세요. 이 기기에만 저장돼요.' });
+      if (BO3D.story && BO3D.story.note) { nta.value = BO3D.story.note(SCN.id); nta.addEventListener('input', function () { BO3D.story.note(SCN.id, nta.value); }); }   /* 탐험 일지에서 다시 본다 */
+      kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 기록' }), el('p', { text: c.prompt }), nta));
       kids_.push(el('p', { class: 'pending', text: '뜻과 삶의 적용을 묻는 질문은 목사님 감수를 마친 뒤 이 자리에 열립니다.' }));
     }
     kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 도감' }), el('p', { text: '지금까지 ' + dexCount() + ' / ' + DEX.length + '장을 담았어요. 더 둘러보며 남은 사진을 찍을 수 있어요.' })));

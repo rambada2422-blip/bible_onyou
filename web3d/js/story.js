@@ -12,23 +12,42 @@
   var box = el('div', { class: 'ot3', hidden: '' });
   root.appendChild(box);
   var FX = function () { return BO3D.fx || null; };
+  U.applySet();   /* 소리 끄기 설정을 소리 장치(fx.js)에 알린다 */
   var G = function () { return BO3D.game || null; };
 
   /* ── 진행 저장 (이 기기에만) ── */
   var KEY = 'bo3d.ot.v1', PG = {};
-  function load() { try { PG = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { PG = {}; } ['done', 'mats', 'notes'].forEach(function (k) { if (!PG[k] || typeof PG[k] !== 'object') PG[k] = {}; }); }
+  function load() { try { PG = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { PG = {}; } ['done', 'mats', 'notes', 'q', 'time'].forEach(function (k) { if (!PG[k] || typeof PG[k] !== 'object' || Array.isArray(PG[k])) PG[k] = {}; }); }
   /* 놀이 기록(흥미 분석의 이탈 지점 재기, 이 기기에만 저장, 이름 없음): 화면마다 머문 시간, 2초 안에 넘긴 화면, 마지막 화면 */
   var LOGK = 'bo3d.log.v1', LOG = [];
   try { LOG = JSON.parse(localStorage.getItem(LOGK) || '[]') || []; } catch (e) { LOG = []; }
   var lastMark = null;
   function mark(where) {
     var t = Date.now();
-    if (lastMark) { LOG.push({ w: lastMark.w, ms: t - lastMark.t, at: lastMark.t }); if (LOG.length > 800) LOG = LOG.slice(-800); try { localStorage.setItem(LOGK, JSON.stringify(LOG)); } catch (e) { /* 저장 못 하면 이번만 */ } }
+    if (lastMark) { addTime(String(lastMark.w).split(' ')[0], t - lastMark.t); LOG.push({ w: lastMark.w, ms: t - lastMark.t, at: lastMark.t }); if (LOG.length > 800) LOG = LOG.slice(-800); try { localStorage.setItem(LOGK, JSON.stringify(LOG)); } catch (e) { /* 저장 못 하면 이번만 */ } }
     lastMark = where ? { w: where, t: t } : null;
   }
   try { window.addEventListener('pagehide', function () { if (lastMark) { var w = lastMark.w; mark(null); LOG.push({ w: w, exit: 1, at: Date.now() }); try { localStorage.setItem(LOGK, JSON.stringify(LOG)); } catch (e) { /* 무시 */ } } }); } catch (e) { /* 무시 */ }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(PG)); } catch (e) { /* 저장할 수 없는 환경이면 이번 방문 동안만 기억한다 */ } }
   load();
+  /* 어른용 화면에 쓰는 기록(이 기기에만, 이름 없음): 장면별 걸린 시간, 물음마다 엇나간 횟수, 마친 날 */
+  var IDLE = 5 * 60 * 1000;   /* 한 화면에 5분 넘게 머문 시간은 5분으로 센다(자리를 비운 시간) */
+  function addTime(id, ms) { if (!/^OT-\d\d$/.test(id) || !(ms > 0)) return; PG.time[id] = (PG.time[id] || 0) + Math.min(ms, IDLE); save(); }
+  function missFor(id, key, ref) { return function () { var k = id + ':' + S.tier + ':' + key, o = PG.q[k] || (PG.q[k] = { m: 0 }); o.m++; if (ref) o.r = ref; save(); }; }
+  function setDone(id, extra) { var o = extra || {}; o.t = S.tier; o.at = Date.now(); if (PG.done[id] && PG.done[id].first) o.first = PG.done[id].first; else o.first = (PG.done[id] && PG.done[id].at) || o.at; PG.done[id] = o; if (!PG.start) PG.start = o.at; save(); }
+  var t3d = null;   /* 3D 장면에 머문 시간 */
+  function stop3d() { if (t3d) { PG.time[t3d.id] = (PG.time[t3d.id] || 0) + Math.min(Date.now() - t3d.t, 45 * 60 * 1000); save(); t3d = null; } }   /* 3D는 화면 구분이 없어 한 번에 45분까지만 센다 */
+  /* 사진 도감(3D 장면에서 찍은 사진)을 이 기기에 남긴다. 설명은 장면 설정의 글(본문 사실과 장절)을 그대로 함께 적어 둔다 */
+  var DEXK = 'bo3d.dex.v1', DX = {};
+  try { DX = JSON.parse(localStorage.getItem(DEXK) || '{}') || {}; } catch (e) { DX = {}; }
+  function saveDex() {
+    try { localStorage.setItem(DEXK, JSON.stringify(DX)); }
+    catch (e) { /* 자리가 모자라면 사진 없이 이름과 설명만 남긴다 */
+      try { var lite = {}; Object.keys(DX).forEach(function (id) { lite[id] = {}; Object.keys(DX[id]).forEach(function (k) { var o = DX[id][k]; lite[id][k] = { n: o.n, d: o.d, r: o.r }; }); }); localStorage.setItem(DEXK, JSON.stringify(lite)); } catch (e2) { /* 이번 방문 동안만 */ }
+    }
+  }
+  function saveShot(id, d, img) { if (!d || !d.id) return; (DX[id] || (DX[id] = {}))[d.id] = { n: d.name, d: d.desc, r: d.ref || '', img: img || '' }; saveDex(); }
+  function shotCount() { return Object.keys(DX).reduce(function (a, id) { return a + Object.keys(DX[id]).length; }, 0); }
 
   function sc(id) { return OT.scenes[id]; }
   function eraOf(n) { return OT.eras.filter(function (e) { return e.era === n; })[0]; }
@@ -51,12 +70,8 @@
       el('div', {}, el('small', { text: kicker || '탐험대 이야기 · 최현 박사의 통신' }), el('p', { text: text })));
   }
   function story(text) { return el('div', { class: 'note story3' }, icon('compass'), el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: text }))); }
-  function speakBtn(text) {
-    if (S.tier !== 't1' || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return null;
-    return el('button', { class: 'speak3', 'aria-label': '읽어 주기', on: { click: function () { try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); u.lang = 'ko-KR'; u.rate = 0.95; speechSynthesis.speak(u); } catch (e) { /* 음성이 없으면 조용히 */ } } } }, '🔊 읽어 주기');
-  }
   function beatNodes(b) {
-    return [el('div', { class: 'narr-meta' }, refChip(b.ref), speakBtn(tx(b.text))), el('p', { class: 'narr', text: tx(b.text) }),
+    return [el('div', { class: 'narr-meta' }, refChip(b.ref)), el('p', { class: 'narr', text: tx(b.text) }),
       b.say ? U.say(b.say.who, b.say.text) : null,
       b.open ? el('div', { class: 'openbible' }, icon('book'), el('span', {}, '하나님이 하신 말씀은 성경책에서 직접 읽어요. ', el('b', { text: U.bookName(b.open) }))) : null];
   }
@@ -70,14 +85,22 @@
     if (eraKey) add(box, el('div', { class: 'ot-stage', html: ART ? ART.art(eraKey, opts.art) : '' }));
     if (top) add(box, el('div', { class: 'ot-top pad' }, top));
     var b = el('div', { class: 'sheet-body pad' }), f = el('div', { class: 'sheet-foot pad' });
-    add(b, body); add(f, foot);
+    U.stopSpeak();
+    add(b, body); add(f, [U.speakBtn(function () { return b; }), foot]);
     add(box, el('div', { class: 'ot-sheet sheet' }, b, f));
     box.hidden = false; b.scrollTop = 0;
     return b;
   }
   function topBar(label) {
     return [el('button', { class: 'ot-back', 'aria-label': '시대 지도', on: { click: function () { openMap(); } } }, icon('arrow'), el('span', { text: '시대 지도' })),
-      label ? el('span', { class: 'place', text: label }) : null];
+      label ? el('span', { class: 'place', text: label }) : null, sndBtn()];
+  }
+  /* 소리 끄기·켜기(설정과 같은 값). 이야기 카드 위쪽 오른쪽 */
+  function sndBtn() {
+    var b = el('button', { class: 'ot-snd', 'aria-label': U.set.snd ? '소리 끄기' : '소리 켜기', 'aria-pressed': String(!U.set.snd), on: { click: function () {
+      U.set.snd = U.set.snd ? 0 : 1; U.saveSet(); b.setAttribute('aria-pressed', String(!U.set.snd)); b.setAttribute('aria-label', U.set.snd ? '소리 끄기' : '소리 켜기');
+    } } }, icon('speaker'));
+    return b;
   }
   function enterStory() {
     root.className = 'g3 app ' + S.tier;
@@ -105,6 +128,7 @@
 
   /* ── 시대 지도 ── */
   function openMap(scrollTo) {
+    stop3d(); U.stopSpeak(); U.onMiss = null; mark(null);
     enterStory();
     if (!PG.seenIntro) { intro(function () { openMap(); }); return; }
     cur.screen = 'map'; cur.id = null;
@@ -137,8 +161,9 @@
       el('p', { class: 'den-lead', text: '시대마다 타임머신 부속을 고쳐요. 앞 시대의 장면 하나를 마치면 다음 시대로 가는 길이 열려요.' }),
       eras,
       el('div', { class: 'otmap-foot' },
-        btn('수리 현황', openRepair, 'quiet'), btn('비상 착륙 이야기', function () { intro(function () { openMap(); }); }, 'quiet'),
-        btn(PG.unlockAll ? '시대 잠금 다시 켜기' : '모든 시대 열기(부모·교사)', function () { PG.unlockAll = !PG.unlockAll; save(); openMap(); }, 'quiet'),
+        btn('탐험 일지', function () { openJournal(); }, 'quiet'), btn('수리 현황', openRepair, 'quiet'),
+        btn('설정', function () { openSettings(function () { openMap(); }); }, 'quiet'), btn('비상 착륙 이야기', function () { intro(function () { openMap(); }); }, 'quiet'),
+        btn('부모·교사 화면', openAdultGate, 'quiet'),
         /#log/.test(location.hash) ? btn('놀이 기록 보기', openLog, 'quiet') : null,
         btn('처음 화면', function () { closeAll(); var g = G(); if (g) g.menu(); }, 'quiet')),
       el('p', { class: 'fine', text: '감수 전 시험판입니다. 모든 장면은 목사님 감수를 마치기 전이며, 아이들에게 공개하지 않습니다.' }));
@@ -168,7 +193,8 @@
     box.replaceChildren(el('div', { class: 'otmap pad' }, el('div', { class: 'eyebrow', text: '아이 시험용 · 이 기기에만 저장' }), el('h1', { class: 'den-title', text: '놀이 기록' }),
       el('table', { class: 'logt' }, el('tr', {}, el('th', { text: '장면' }), el('th', { text: '화면' }), el('th', { text: '2초 안에 넘김' }), el('th', { text: '머문 시간' })), rows),
       el('p', { class: 'den-lead', text: '나간 곳: ' + (exits.slice(-10).join(', ') || '없음') }), ta,
-      el('div', { class: 'otmap-foot' }, btn('기록 지우기', function () { LOG = []; try { localStorage.removeItem(LOGK); } catch (e) { /* 무시 */ } openLog(); }, 'quiet'), btn('시대 지도', function () { openMap(); }, 'quiet'))));
+      el('div', { class: 'otmap-foot' }, btn('기록 지우기', function () { LOG = []; try { localStorage.removeItem(LOGK); } catch (e) { /* 무시 */ } openLog(); }, 'quiet'), btn('부모·교사 화면', openAdult, 'quiet'), btn('시대 지도', function () { openMap(); }, 'quiet'))));
+    box.className = 'ot3 map'; box.hidden = false;
   }
 
   /* ── 시대 안내: 최현 박사의 통신과 "이 사이에 성경이 기록한 곳"(장절만) ── */
@@ -207,7 +233,7 @@
         [el('div', { class: 'eyebrow dark', text: id + ' · 시대 ' + e.era }), el('h2', { class: 'ot-title', text: d.title }), refChip(d.ref),
           el('p', { class: 'ot-soft', text: '이 장면은 직접 걸어 다니며 볼 수 있어요. 휴대폰이 느리면 이야기 카드로 볼 수도 있어요.' })],
         [btn('이야기 카드로', function () { warp(d.title, U.bookName(d.ref), function () { play(id); }); }, 'plain'),
-          btn('걸어서 탐험 (3D)', function () { warp(d.title, U.bookName(d.ref), function () { closeAll(); var g = G(); if (g) g.start3d(id); }); })]);
+          btn('걸어서 탐험 (3D)', function () { warp(d.title, U.bookName(d.ref), function () { closeAll(); t3d = { id: id, t: Date.now() }; var g = G(); if (g) g.start3d(id); }); })]);
       return;
     }
     warp(d.title, U.bookName(d.ref), function () { play(id); });
@@ -242,7 +268,7 @@
   function nOf(k) { return cur.steps.filter(function (s) { return s.k === k; }).length; }
   function render() {
     var d = sc(cur.id), e = eraOf(d.era), s = cur.steps[cur.step], m = d.mission || {};
-    cur.k = s.k; mark(cur.id + ' ' + s.k + (s.i !== undefined ? s.i : ''));
+    cur.k = s.k; U.onMiss = null; mark(cur.id + ' ' + s.k + (s.i !== undefined ? s.i : ''));
     var last = cur.step === cur.steps.length - 1, next = cur.steps[cur.step + 1];
     var kick = s.k in KICK ? KICK[s.k] + ' ' + (s.i + 1) + ' / ' + (s.k === 'help' ? m.help.steps.length : nOf(s.k)) : '';
     var nextLabel = !next ? '' : (next.k === 'gate' && s.k !== 'gate' ? '다음으로 가는 관문' : (next.k === 'finish' ? '탐험 마치기' : '다음'));
@@ -266,14 +292,17 @@
     } else if (s.k === 'beat') {
       body = [el('div', { class: 'q-kicker', text: kick }), beatNodes(d.beats[s.i])];
     } else if (s.k === 'help') {
+      U.onMiss = missFor(cur.id, 'help' + s.i);
       body = helpNodes(m.help, m.help.steps[s.i], kick, ok); gated = true;
       var hn = cur.screen === 'seg' && cur.helpNote ? cur.helpNote(m.help.steps[s.i].after) : null;
       if (hn) body.splice(2, 0, el('div', { class: 'note story3' }, el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: hn }))));   /* 3D에서 때가 앞선 돕기(되돌아보는 대목 뒤)를 밝힌다 */
     } else if (s.k === 'gate') {
       var q = (d.gates[S.tier] || d.gates.t2)[s.i];
+      U.onMiss = missFor(cur.id, 'gate' + s.i);
       body = [el('div', { class: 'q-kicker', text: kick }), U.blockFor(q, ok, 'og' + s.i)]; gated = true;
     } else if (s.k === 'quest') {
       var Q = d.quests[s.i], mt = m.materials[s.i], qq = Q.q[S.tier] || Q.q.t2, got = el('div', {});
+      U.onMiss = missFor(cur.id, 'quest' + s.i);
       body = [el('div', { class: 'eyebrow dark', text: '탐험대 이야기' }), el('div', { class: 'q-kicker', text: kick + ' · ' + mt.name }),
         el('div', { class: 'bibleq3' }, icon('bookline'), el('span', { text: '성경 물음 · ' + (S.tier === 't1' ? U.chapterOf(qq.ref || d.ref) : (S.tier === 't2' ? U.bookName(qq.ref || d.ref) : U.bookOf(d.ref) + '에서 찾아보세요')) })),
         U.blockFor(U.quizTier(qq), function () { got.replaceChildren(matCard(mt, Q)); take(mt); ok(); got.scrollIntoView({ block: 'nearest' }); }, 'oq' + s.i), got];
@@ -378,7 +407,7 @@
   }
   function finish(d) {
     var c = d.close[S.tier] || d.close.t2, e = eraOf(d.era), nx = nextOf(d.id);
-    PG.done[d.id] = { t: S.tier }; save();
+    setDone(d.id);
     var kids_ = [el('div', { class: 'q-kicker', text: '탐험을 마치며' }),
       el('p', { class: 'q-prompt', text: '탐험 일지에 말씀 카드가 들어왔어요.' }),
       el('div', { class: 'vcards' }, d.cards.map(function (cd) {
@@ -419,7 +448,208 @@
     box.className = 'ot3 map'; box.hidden = false;
   }
 
-  function closeAll() { box.hidden = true; box.replaceChildren(); cur.screen = 'none'; cur.seg = null; }
+  /* ── 어두운 바탕의 한 장짜리 화면(일지·설정·어른용)의 틀 ── */
+  function page(kind, kids_) {
+    U.stopSpeak(); mark(null);
+    var pg = el('div', { class: 'otmap pad ' + kind }, kids_);
+    box.replaceChildren(pg); box.className = 'ot3 map'; box.hidden = false; pg.scrollTop = 0;
+    return pg;
+  }
+  function dateText(ms) { if (!ms) return ''; var d = new Date(ms); return d.getFullYear() + '. ' + (d.getMonth() + 1) + '. ' + d.getDate() + '.'; }
+  function minText(ms) { var sec = Math.round((ms || 0) / 1000); return sec < 60 ? sec + '초' : Math.floor(sec / 60) + '분' + (sec % 60 ? ' ' + (sec % 60) + '초' : ''); }
+  function tierLabel(t) { var x = (C.tiers || []).filter(function (y) { return y.id === t; })[0]; return x ? x.label : ''; }
+  function doneIds() { return OT.order.filter(function (id) { return PG.done[id]; }); }
+  function cardCount() { return doneIds().reduce(function (a, id) { return a + sc(id).cards.length; }, 0); }
+  var CARD_TOTAL = OT.order.reduce(function (a, id) { return a + sc(id).cards.length; }, 0);
+
+  /* ── 탐험 일지: 말씀 카드 모음(장절만), 사진 도감, 내 기록. 모은 것을 다시 본다(규칙서 2절 보상, 4.1 기록, 12절) ── */
+  var jtab = 'cards';
+  function openJournal(tab) {
+    enterStory();
+    if (tab) jtab = tab;
+    cur.screen = 'journal'; cur.id = null;
+    var tabs = [['cards', '말씀 카드'], ['photos', '사진 도감'], ['notes', '내 기록']].map(function (t) {
+      return el('button', { class: 'jtab', 'aria-pressed': String(jtab === t[0]), 'data-tab': t[0], on: { click: function () { openJournal(t[0]); } } }, t[1]);
+    });
+    var body = [];
+    if (jtab === 'cards') {
+      body.push(el('p', { class: 'den-lead', text: '장면을 마칠 때마다 말씀 카드가 들어와요. 카드에는 장절만 적혀 있어요. 말씀은 성경책에서 직접 찾아 읽어요.' }));
+      OT.eras.forEach(function (e) {
+        var got = e.scenes.filter(function (id) { return PG.done[id]; }), all = e.scenes.reduce(function (a, id) { return a + sc(id).cards.length; }, 0), n = got.reduce(function (a, id) { return a + sc(id).cards.length; }, 0);
+        body.push(el('h2', { text: '시대 ' + e.era + ' · ' + e.name + ' (' + n + ' / ' + all + ')' }));
+        if (!got.length) { body.push(el('p', { class: 'den-msg jempty', text: '아직 다녀오지 않았어요.' })); return; }
+        body.push(el('div', { class: 'vcards' }, got.map(function (id) {
+          return sc(id).cards.map(function (cd) { return el('div', { class: 'vcard' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }), el('div', { class: 'm', text: sc(id).title + ' · 성경책에서 직접 읽어 보세요' })); });
+        })));
+      });
+    } else if (jtab === 'photos') {
+      body.push(el('p', { class: 'den-lead', text: '걸어서 탐험하는 장면(3D)에서 사진기 단추로 찍은 사진이에요. 과거에서 가져오는 것은 사진과 기록뿐이에요. 사진은 이 기기에만 남아요.' }));
+      var ids = OT.order.filter(function (id) { return DX[id] && Object.keys(DX[id]).length; });
+      if (!ids.length) body.push(el('p', { class: 'den-msg jempty', text: '아직 찍은 사진이 없어요. 시대 지도에서 "3D" 표시가 있는 장면을 걸어서 탐험하면 사진을 찍을 수 있어요.' }));
+      ids.forEach(function (id) {
+        body.push(el('h2', { text: sc(id).title }));
+        body.push(el('div', { class: 'dexgrid' }, Object.keys(DX[id]).map(function (k) {
+          var o = DX[id][k];
+          return el('div', { class: 'dexcell' }, o.img ? el('img', { src: o.img, alt: o.n }) : el('div', { class: 'ph', text: '' }), el('b', { text: o.n }), el('span', { text: o.d }), o.r ? refChip(o.r) : null);
+        })));
+      });
+    } else {
+      body.push(el('p', { class: 'den-lead', text: '장면을 마치며 남긴 기도, 실천, 기록이에요. 이 기기에만 저장돼요.' }));
+      var dn = doneIds();
+      if (!dn.length) body.push(el('p', { class: 'den-msg jempty', text: '아직 마친 장면이 없어요.' }));
+      dn.forEach(function (id) {
+        var d = sc(id), o = PG.done[id], c = d.close[o.t] || d.close.t2, kids_ = [el('small', { text: d.id.replace('OT-', '') + ' · ' + dateText(o.at) + (o.d3 ? ' · 걸어서 탐험' : '') }), el('b', { text: d.title }), el('div', { class: 'ot-refs' }, refChip(d.ref, true))];
+        if (c.kind === 'prayer') kids_.push(el('p', {}, el('i', { text: '한 문장 기도 ' }), c.text));
+        if (c.kind === 'practice') kids_.push(el('p', {}, el('i', { text: '이번 주 실천 ' }), c.text));
+        if (c.kind === 'note') {
+          var ta = el('textarea', { 'aria-label': d.title + ' 기록', placeholder: '여기에 적어 보세요. 이 기기에만 저장돼요.' }); ta.value = PG.notes[id] || '';
+          ta.addEventListener('input', function () { PG.notes[id] = ta.value.slice(0, 2000); save(); });
+          kids_.push(el('p', {}, el('i', { text: '탐험 기록 ' }), c.prompt)); kids_.push(ta);
+        }
+        var ms = mats(id).filter(function (x) { return PG.mats[id + ':' + x.key]; });
+        if (ms.length) kids_.push(el('p', { class: 'jmat' }, el('i', { text: '탐험대 이야기 · 얻은 재료 ' }), ms.map(function (x) { return x.name; }).join(', ')));
+        body.push(el('div', { class: 'jnote' }, kids_));
+      });
+    }
+    page('journal', [el('div', { class: 'eyebrow', text: '탐험대 이야기 · 이 기기에만 저장' }), el('h1', { class: 'den-title', text: '탐험 일지' }),
+      el('div', { class: 'otstat' },
+        el('span', { class: 'count teal', text: '다녀온 장면 ' + doneCount() + ' / ' + OT.order.length }),
+        el('span', { class: 'count', text: '말씀 카드 ' + cardCount() + ' / ' + CARD_TOTAL }),
+        el('span', { class: 'count', text: '사진 ' + shotCount() })),
+      el('div', { class: 'jtabs' }, tabs), body,
+      el('div', { class: 'otmap-foot' }, btn('수리 현황', openRepair, 'quiet'), btn('시대 지도', function () { openMap(); }, 'quiet'))]);
+  }
+
+  /* ── 설정: 글자 크기, 소리, 읽어 주기 (이 기기에만) ── */
+  function openSettings(back) {
+    cur.screen = 'settings';
+    function seg3(label, key, opts) {
+      return el('div', { class: 'setrow' }, el('b', { text: label }), el('div', { class: 'setopts' }, opts.map(function (o) {
+        return el('button', { class: 'jtab', 'aria-pressed': String(U.set[key] === o[0]), 'data-set': key + o[0], on: { click: function () { U.set[key] = o[0]; U.saveSet(); openSettings(back); } } }, o[1]);
+      })));
+    }
+    page('settings', [el('div', { class: 'eyebrow', text: '이 기기에만 저장' }), el('h1', { class: 'den-title', text: '설정' }),
+      seg3('글자 크기', 'fs', [[0, '보통'], [1, '크게'], [2, '아주 크게']]),
+      el('div', { class: 'setsample sheet-body' }, el('p', { class: 'narr', text: '이 크기로 이야기를 읽어요. 성경책을 곁에 펴 두세요.' })),
+      seg3('소리', 'snd', [[1, '켜기'], [0, '끄기']]),
+      U.canSpeak() ? seg3('읽어 주기 단추', 'read', [[0, '8~10세만'], [1, '모든 나이']]) : el('p', { class: 'den-msg', text: '이 기기에는 글을 읽어 주는 한국어 음성이 없어서 읽어 주기 단추가 보이지 않아요.' }),
+      el('p', { class: 'den-lead', text: '읽어 주기는 화면의 글을 기기의 목소리로 읽어요. 성경 말씀은 읽어 주지 않아요. 말씀은 성경책에서 직접 읽어요.' }),
+      el('div', { class: 'otmap-foot' }, btn('돌아가기', function () { if (back) back(); else openMap(); }, 'wide'))]);
+  }
+
+  /* ── 진행 내보내기·가져오기: 기기를 바꿀 때 글로 복사해 옮긴다. 이름·연락처는 들어 있지 않다. 사진은 커서 옮기지 않는다 ── */
+  function exportCode() { return 'BO1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, pg: PG })))); }
+  function parseCode(txt) {
+    var m = /BO1:([A-Za-z0-9+\/=]+)/.exec(String(txt || '').replace(/\s+/g, ''));
+    if (!m) return null;
+    try {
+      var o = JSON.parse(decodeURIComponent(escape(atob(m[1])))), pg = o && o.pg, out = { done: {}, mats: {}, notes: {}, q: {}, time: {} };
+      if (!o || o.v !== 1 || !pg || typeof pg !== 'object') return null;
+      /* 아는 장면·재료만 받는다(다른 글이 섞여 들어오지 않게) */
+      OT.order.forEach(function (id) {
+        var dn = pg.done && pg.done[id];
+        if (dn && typeof dn === 'object') out.done[id] = { t: /^t[123]$/.test(dn.t) ? dn.t : 't2', at: +dn.at || 0, first: +dn.first || +dn.at || 0 }, dn.d3 && (out.done[id].d3 = 1);
+        mats(id).forEach(function (x) { if (pg.mats && pg.mats[id + ':' + x.key]) out.mats[id + ':' + x.key] = 1; });
+        if (pg.notes && typeof pg.notes[id] === 'string') out.notes[id] = pg.notes[id].slice(0, 2000);
+        if (pg.time && +pg.time[id] > 0) out.time[id] = +pg.time[id];
+      });
+      Object.keys(pg.q || {}).forEach(function (k) { var x = pg.q[k]; if (/^OT-\d\d:t[123]:(gate|quest|help|part)\d+$/.test(k) && x && +x.m > 0) out.q[k] = { m: +x.m }; });
+      if (pg.seenIntro) out.seenIntro = 1; if (pg.unlockAll) out.unlockAll = true; if (+pg.start) out.start = +pg.start;
+      return out;
+    } catch (e) { return null; }
+  }
+  function moveNodes() {
+    var out = el('textarea', { readonly: '', hidden: '', class: 'movet', 'aria-label': '내보낼 글' }), msg = el('p', { class: 'den-msg', 'aria-live': 'polite' });
+    var inp = el('textarea', { class: 'movet', 'aria-label': '가져올 글', placeholder: '다른 기기에서 복사한 글을 여기에 붙여 넣어요.' }), msg2 = el('p', { class: 'den-msg', 'aria-live': 'polite' }), apply = el('div', {});
+    return [el('h2', { text: '진행 옮기기 (기기를 바꿀 때)' }),
+      el('p', { class: 'den-lead', text: '이 기기의 진행을 글로 바꿔 복사한 뒤, 새 기기의 이 화면에 붙여 넣어요. 글에는 이름이나 연락처가 없어요. 14~19세가 적은 탐험 기록은 들어 있어요. 사진은 옮겨지지 않아요.' }),
+      el('div', { class: 'otmap-foot' }, btn('내보낼 글 만들기', function () {
+        out.value = exportCode(); out.hidden = false; out.focus(); out.select();
+        var done = function (ok) { msg.textContent = ok ? '복사했어요. 새 기기에서 붙여 넣으세요.' : '글을 길게 눌러 모두 고른 뒤 복사하세요.'; };
+        try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(out.value).then(function () { done(true); }, function () { done(false); }); else done(document.execCommand && document.execCommand('copy')); } catch (e) { done(false); }
+      }, 'quiet')), out, msg,
+      inp, el('div', { class: 'otmap-foot' }, btn('가져올 글 확인', function () {
+        var pg = parseCode(inp.value); apply.replaceChildren();
+        if (!pg) { msg2.textContent = '글을 알아볼 수 없어요. "BO1:"으로 시작하는 글을 처음부터 끝까지 붙여 넣었는지 봐 주세요.'; return; }
+        var nd = Object.keys(pg.done).length, nm = Object.keys(pg.mats).length;
+        msg2.textContent = '가져올 진행: 마친 장면 ' + nd + ', 재료 ' + nm + '. 지금 이 기기의 진행(마친 장면 ' + doneCount() + ', 재료 ' + matCount() + ')은 이것으로 바뀌어요.';
+        apply.replaceChildren(el('div', { class: 'otmap-foot' }, btn('이 진행으로 바꾸기', function () { PG = pg; save(); load(); openAdult(); var t = box.querySelector('.movemsg'); if (t) t.textContent = '진행을 가져왔어요.'; }, 'quiet')));
+      }, 'quiet')), msg2, apply, el('p', { class: 'den-msg movemsg', 'aria-live': 'polite' })];
+  }
+
+  /* ── 부모·교사 화면: 진도, 찾은 구절, 여러 번 엇나간 물음, 장면별 걸린 시간(규칙서 2절). 이 기기의 기록만 보여 준다 ── */
+  var adultQ = null;
+  function openAdultGate() {
+    cur.screen = 'adultgate';
+    var a = 12 + Math.floor(Math.random() * 8), b = 3 + Math.floor(Math.random() * 7); adultQ = a * b;
+    var inp = el('input', { id: 'adult-in', type: 'text', inputmode: 'numeric', autocomplete: 'off', maxlength: '4', 'aria-label': '답' }), msg = el('p', { class: 'den-msg', 'aria-live': 'polite' });
+    function tryIt() { if (parseInt(inp.value, 10) === adultQ) openAdult(); else { msg.textContent = '답이 달라요. 이 화면은 부모님이나 선생님이 보는 곳이에요.'; inp.value = ''; } }
+    inp.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') tryIt(); });
+    page('adultgate', [el('div', { class: 'eyebrow', text: '부모·교사용' }), el('h1', { class: 'den-title', text: '어른 확인' }),
+      el('p', { class: 'den-lead', text: '이 화면은 부모님과 선생님이 보는 곳이에요. 아래 곱셈의 답을 적어 주세요.' }),
+      el('div', { class: 'adultq' }, el('b', { text: a + ' × ' + b + ' = ' }), inp),
+      msg, el('div', { class: 'otmap-foot' }, btn('시대 지도', function () { openMap(); }, 'quiet'), btn('확인', tryIt, 'quiet'))]);
+  }
+  /* 엇나간 기록의 열쇠('OT-10:t1:gate0')로 물음 글과 읽을 곳을 찾는다 */
+  function qOf(key) {
+    var m = /^(OT-\d\d):(t[123]):(gate|quest|help|part)(\d+)$/.exec(key), d = m && sc(m[1]), q = null, i = m ? +m[4] : 0;
+    if (!d) return null;
+    try {
+      if (m[3] === 'gate') q = (d.gates[m[2]] || d.gates.t2)[i];
+      else if (m[3] === 'quest' || m[3] === 'part') q = d.quests[i].q[m[2]] || d.quests[i].q.t2;
+      else { var hs = d.mission.help.steps[i]; q = hs.read[m[2]] || hs.read.t2; }
+    } catch (e) { q = null; }
+    if (!q) return null;
+    var pr = q.confirm && q.confirm.prompt ? q.confirm.prompt : q.prompt; if (pr && typeof pr !== 'string') pr = pr[m[2]] || pr.t2;
+    return { d: d, tier: m[2], kind: { gate: '관문', quest: '재료 찾기 물음', part: '탐지기 물음', help: '뜻 묻기' }[m[3]], prompt: pr || '', refs: q.refs || (q.ref ? [q.ref] : [d.ref]) };
+  }
+  function openAdult() {
+    enterStory();
+    cur.screen = 'adult'; cur.id = null;
+    var dn = doneIds(), lastAt = dn.reduce(function (a, id) { return Math.max(a, PG.done[id].at || 0); }, 0);
+    var byTier = {}; dn.forEach(function (id) { var t = PG.done[id].t; byTier[t] = (byTier[t] || 0) + 1; });
+    var eraRows = OT.eras.map(function (e) {
+      var em = eraMats(e), nd = e.scenes.filter(function (id) { return PG.done[id]; }).length, ms = e.scenes.reduce(function (a, id) { return a + (PG.time[id] || 0); }, 0);
+      return el('tr', {}, el('td', { text: e.era + '. ' + e.name }), el('td', { text: nd + ' / ' + e.scenes.length }), el('td', { text: em.got + ' / ' + em.all }), el('td', { text: ms ? minText(ms) : '-' }));
+    });
+    var refRows = dn.map(function (id) {
+      var d = sc(id);
+      return el('div', { class: 'arow' }, el('b', { text: d.id.replace('OT-', '') + ' ' + d.title }), el('small', { text: tierLabel(PG.done[id].t) + ' · ' + dateText(PG.done[id].at) + (PG.time[id] ? ' · ' + minText(PG.time[id]) : '') }),
+        el('div', { class: 'ot-refs' }, [d.ref].concat(d.cards.map(function (c) { return c.ref; })).filter(function (r, k, a) { return a.indexOf(r) === k; }).map(function (r) { return refChip(r, true); })));
+    });
+    var stuck = Object.keys(PG.q).map(function (k) { return { k: k, m: PG.q[k].m, q: qOf(k) }; }).filter(function (x) { return x.q && x.m >= 2; }).sort(function (a, b) { return b.m - a.m; }).slice(0, 30);
+    var stuckRows = stuck.map(function (x) {
+      return el('div', { class: 'arow' }, el('b', { text: x.q.d.id.replace('OT-', '') + ' ' + x.q.d.title + ' · ' + x.q.kind }), el('small', { text: tierLabel(x.q.tier) + ' · 엇나간 횟수 ' + x.m }),
+        el('p', { text: x.q.prompt }), el('div', { class: 'ot-refs' }, x.q.refs.map(function (r) { return refChip(r, true); })));
+    });
+    var slow = OT.order.filter(function (id) { return PG.time[id]; }).map(function (id) { return el('tr', {}, el('td', { text: id.replace('OT-', '') + ' ' + sc(id).title }), el('td', { text: minText(PG.time[id]) }), el('td', { text: PG.done[id] ? '마침' : '하는 중' })); });
+    var wipe = btn('이 기기의 진행 지우기', function () {
+      if (wipe.getAttribute('data-sure')) { PG = {}; save(); load(); DX = {}; try { localStorage.removeItem(DEXK); } catch (e) { /* 무시 */ } LOG = []; try { localStorage.removeItem(LOGK); } catch (e2) { /* 무시 */ } openAdult(); }
+      else { wipe.setAttribute('data-sure', '1'); wipe.textContent = '정말 지울까요? 한 번 더 누르면 모두 지워요'; }
+    }, 'quiet');
+    page('adult', [el('div', { class: 'eyebrow', text: '부모·교사용 · 이 기기의 기록만' }), el('h1', { class: 'den-title', text: '부모·교사 화면' }),
+      el('p', { class: 'den-lead', text: '이 기기에서 한 탐험의 기록이에요. 이름이나 연락처는 받지 않고, 기록은 이 기기 밖으로 나가지 않아요. 점수나 순위가 아니라, 아이가 어디까지 읽었고 어디에서 머뭇거렸는지 함께 보기 위한 것이에요.' }),
+      el('h2', { text: '진도' }),
+      el('div', { class: 'otstat' }, el('span', { class: 'count teal', text: '마친 장면 ' + dn.length + ' / ' + OT.order.length }), el('span', { class: 'count', text: '모은 재료 ' + matCount() + ' / ' + MAT_TOTAL }), el('span', { class: 'count', text: '말씀 카드 ' + cardCount() + ' / ' + CARD_TOTAL })),
+      el('p', { class: 'den-msg', text: dn.length ? '처음 한 날 ' + dateText(PG.start || lastAt) + ' · 마지막으로 한 날 ' + dateText(lastAt) + ' · 나이 단계: ' + Object.keys(byTier).sort().map(function (t) { return tierLabel(t) + ' ' + byTier[t] + '장면'; }).join(', ') : '아직 마친 장면이 없어요.' }),
+      el('table', { class: 'logt' }, el('tr', {}, el('th', { text: '시대' }), el('th', { text: '장면' }), el('th', { text: '재료' }), el('th', { text: '걸린 시간' })), eraRows),
+      el('h2', { text: '찾은 구절 (마친 장면의 본문과 말씀 카드)' }),
+      refRows.length ? refRows : el('p', { class: 'den-msg jempty', text: '아직 없어요.' }),
+      el('h2', { text: '여러 번 엇나간 물음 (함께 다시 읽어 볼 곳)' }),
+      el('p', { class: 'den-lead', text: '두 번 넘게 다른 보기를 고른 물음이에요. 아이와 함께 그 장절을 다시 읽어 보세요.' }),
+      stuckRows.length ? stuckRows : el('p', { class: 'den-msg jempty', text: '두 번 넘게 엇나간 물음이 없어요.' }),
+      el('h2', { text: '장면별 걸린 시간' }),
+      slow.length ? el('table', { class: 'logt' }, el('tr', {}, el('th', { text: '장면' }), el('th', { text: '시간' }), el('th', { text: '상태' })), slow) : el('p', { class: 'den-msg jempty', text: '아직 없어요.' }),
+      el('p', { class: 'den-lead', text: '한 화면에 5분 넘게 머문 시간은 5분으로 세요(자리를 비운 시간).' }),
+      el('h2', { text: '시대 잠금' }),
+      el('p', { class: 'den-lead', text: '앞 시대의 장면 하나를 마치면 다음 시대가 열려요. 반에서 한 시대만 함께 볼 때는 모두 열어 둘 수 있어요.' }),
+      el('div', { class: 'otmap-foot' }, btn(PG.unlockAll ? '시대 잠금 다시 켜기' : '모든 시대 열기', function () { PG.unlockAll = !PG.unlockAll; save(); openAdult(); }, 'quiet')),
+      moveNodes(),
+      el('h2', { text: '그 밖에' }),
+      el('div', { class: 'otmap-foot' }, btn('놀이 기록', openLog, 'quiet'), wipe, btn('시대 지도', function () { openMap(); }, 'quiet'))]);
+  }
+
+  function closeAll() { U.stopSpeak(); U.onMiss = null; box.hidden = true; box.replaceChildren(); cur.screen = 'none'; cur.seg = null; }
 
   /* ── 3D 장면 안에서 쓰는 조각: 동행 문답(앞·뒤)과 오늘의 물음을 3D 화면 위의 시트로 보여 준다 ──
    * kinds: 'before' | 'after' | 'today'. 보여 줄 것이 없으면 바로 done()을 부른다. */
@@ -436,14 +666,17 @@
 
   /* 3D 장면을 마치면 game.js가 부른다 */
   function complete3d(id) {
-    PG.done[id] = { t: S.tier, d3: 1 };
+    setDone(id, { d3: 1 }); stop3d();
     mats(id).forEach(function (x) { PG.mats[id + ':' + x.key] = 1; });
     save();
   }
 
   BO3D.story = {
     fixedEras: function () { return OT.eras.filter(function (e) { var em = eraMats(e); return em.all && em.got === em.all; }).length; },   /* 아지트 꾸미기 해금에 쓴다 */
-    open: function () { openMap(); }, openMap: openMap, openScene: openScene, play: play, complete3d: complete3d, close: closeAll, segment: segment, take: function (id, key) { PG.mats[id + ':' + key] = 1; save(); },
+    open: function () { openMap(); }, openMap: openMap, openJournal: openJournal, openSettings: openSettings, openAdult: openAdult,
+    /* game.js(3D)가 쓰는 기록: 엇나감, 사진, 14~19세 기록 */
+    missFor: missFor, saveShot: saveShot, shots: function (id) { var o = {}, x = DX[id] || {}; Object.keys(x).forEach(function (k) { o[k] = x[k].img || ''; }); return o; },
+    note: function (id, v) { if (v === undefined) return PG.notes[id] || ''; PG.notes[id] = String(v).slice(0, 2000); save(); }, openScene: openScene, play: play, complete3d: complete3d, close: closeAll, segment: segment, take: function (id, key) { PG.mats[id + ':' + key] = 1; save(); },
     reset: function () { PG = {}; save(); load(); },
     debug: {
       state: function () { return { screen: cur.screen, id: cur.id, step: cur.step, k: cur.k, n: cur.steps.length, done: doneCount(), mats: matCount(), total: MAT_TOTAL }; },
@@ -451,6 +684,7 @@
       /* 지금 화면의 물음(관문·재료 찾기). 자동 시험이 답을 고를 때 쓴다 */
       seek: function () { var s = cur.steps[cur.step], d = cur.id && sc(cur.id); return s && s.k === 'mat' ? seekSpot(d.mission.materials[s.i]) : null; },
       unlockAll: function () { PG.unlockAll = true; save(); },
+      adultAnswer: function () { return adultQ; }, pg: function () { return JSON.parse(JSON.stringify(PG)); }, exportCode: exportCode, parseCode: parseCode, dex: function () { return DX; },
       log: function () { return LOG; },
       help: function () { var s = cur.steps[cur.step], d = cur.id && sc(cur.id); return s && s.k === 'help' ? d.mission.help.steps[s.i] : null; },
       q: function () {

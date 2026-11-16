@@ -84,13 +84,15 @@
         : '바늘이 ' + bookName(basis) + ' 쪽으로 흔들렸어요. 그곳은 이 장면과 다른 이야기예요. 그 절도 읽어 보고, 이 장면의 본문으로 돌아와 다시 골라 보세요.' }),
       el('div', { class: 'ot-refs' }, refChip(basis), ref ? (Array.isArray(ref) ? ref.map(function (r) { return refChip(r); }) : refChip(ref)) : null));
   }
+  /* 엇나간 횟수 세기(어른용 화면의 "여러 번 엇나간 물음"): 물음을 띄우는 쪽이 U.onMiss에 받을 함수를 넣어 둔다. 점수가 아니고 아이 화면에는 보이지 않는다 */
+  function miss() { try { if (BO3D.ui.onMiss) BO3D.ui.onMiss(); } catch (e) { /* 기록 못 해도 놀이는 계속 */ } }
   function realBasis(o) { return o && o.basis && o.basis !== '본문에 없음' ? o.basis : null; }
   function choiceBlock(q, ref, onOk) {
     var pics = q.options.some(function (o) { return o.icon; }), noteBox = el('div', {});
     var btns = q.options.map(function (o) {
       var b = el('button', { class: 'opt', on: { click: function () {
         if (o.ok) { btns.forEach(function (x) { x.disabled = true; if (x !== b) x.classList.add('rest'); }); b.classList.add('ok'); noteBox.replaceChildren(goodNote(ref)); onOk(); }
-        else { b.classList.add('rest'); b.disabled = true; noteBox.replaceChildren(realBasis(o) ? detourNote(o.basis, ref) : lookNote(q.lookRef !== undefined ? q.lookRef : ref, q.lookText)); }
+        else { miss(); b.classList.add('rest'); b.disabled = true; noteBox.replaceChildren(realBasis(o) ? detourNote(o.basis, ref) : lookNote(q.lookRef !== undefined ? q.lookRef : ref, q.lookText)); }
         noteBox.scrollIntoView({ block: 'nearest' });
       } } }, o.icon && IC[o.icon] ? icon(o.icon) : null, el('span', { text: o.label }));
       return b;
@@ -111,7 +113,7 @@
       var c0 = parseInt(ch.value, 10), v0 = parseInt(vs.value, 10), v = c0 + ':' + v0;
       if (!(c0 > 0) || !(v0 > 0)) { noteBox.replaceChildren(el('div', { class: 'note look fadein' }, el('b', { text: '장과 절을 숫자로 적어 보세요.' }), el('span', { text: q.hint }))); return; }
       if (q.accept.indexOf(v) >= 0) { ch.disabled = vs.disabled = check.disabled = true; noteBox.replaceChildren(goodNote(null, '맞게 찾았어요. ' + q.book + ' ' + ch.value.trim() + '장 ' + vs.value.trim() + '절.')); onOk(); }
-      else noteBox.replaceChildren(el('div', { class: 'note look fadein' }, el('b', { text: '그 장과 절에서는 찾는 내용을 확인하지 못했어요. 다시 찾아볼까요?' }), el('span', { text: q.hint })));
+      else { miss(); noteBox.replaceChildren(el('div', { class: 'note look fadein' }, el('b', { text: '그 장과 절에서는 찾는 내용을 확인하지 못했어요. 다시 찾아볼까요?' }), el('span', { text: q.hint }))); }
       noteBox.scrollIntoView({ block: 'nearest' });
     } } }, '확인');
     return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'refin' }, el('span', { text: q.book }), ch, el('span', { text: '장' }), vs, el('span', { text: '절' }), check), noteBox];
@@ -133,6 +135,7 @@
         var good = cq.options.every(function (o, k) { return (btns[k].getAttribute('aria-pressed') === 'true') === !!o.ok; });
         if (good) { btns.forEach(function (b, k) { b.disabled = true; b.classList.add(cq.options[k].ok ? 'ok' : 'rest'); }); check.disabled = true; noteBox.replaceChildren(goodNote(q.ref, '맞는 것을 모두 찾았어요.')); onOk(); }
         else {
+          miss();
           var wrong = picked.filter(function (o) { return !o.ok && realBasis(o); })[0];
           noteBox.replaceChildren(wrong ? detourNote(wrong.basis, q.ref) : lookNote(q.ref, picked.some(function (o) { return !o.ok; }) ? '그 절에 없는 것이 섞여 있어요. 다시 읽고 골라 보세요.' : '그 절에 나오는 것이 더 있어요. 다시 읽고 모두 골라 보세요.'));
         }
@@ -159,7 +162,7 @@
         if (sel === p) {
           var lb = left[q.pairs.indexOf(p)]; lb.disabled = true; lb.classList.add('ok'); lb.setAttribute('aria-pressed', 'false'); b.disabled = true; b.classList.add('ok'); sel = null; done++;
           if (done === q.pairs.length) { noteBox.replaceChildren(goodNote(q.refs, q.after || '구절마다 맞게 이었어요.')); onOk(); } else noteBox.replaceChildren();
-        } else noteBox.replaceChildren(lookNote(sel.ref, '그 구절에는 그 내용이 없어요. ' + bookName(sel.ref) + '을 다시 읽어 볼까요?'));
+        } else { miss(); noteBox.replaceChildren(lookNote(sel.ref, '그 구절에는 그 내용이 없어요. ' + bookName(sel.ref) + '을 다시 읽어 볼까요?')); }
         noteBox.scrollIntoView({ block: 'nearest' });
       } } }, el('span', { text: p.text }));
       return b;
@@ -182,7 +185,7 @@
     function reset() { picked = []; btns.forEach(function (b) { b._num.textContent = ''; b.setAttribute('aria-pressed', 'false'); }); }
     function check() {
       if (picked.every(function (v, k) { return v === k; })) { btns.forEach(function (b) { b.classList.add('ok'); b.disabled = true; }); rb.disabled = true; noteBox.replaceChildren(goodNote(q.ref, '성경에 기록된 순서예요.')); onOk(); }
-      else { noteBox.replaceChildren(lookNote(q.lookRef !== undefined ? q.lookRef : q.ref, '순서를 다시 살펴볼까요? 성경책을 차례로 읽으며 다시 눌러 보세요.')); reset(); }
+      else { miss(); noteBox.replaceChildren(lookNote(q.lookRef !== undefined ? q.lookRef : q.ref, '순서를 다시 살펴볼까요? 성경책을 차례로 읽으며 다시 눌러 보세요.')); reset(); }
       noteBox.scrollIntoView({ block: 'nearest' });
     }
     var rb = el('button', { class: 'btn plain', on: { click: function () { reset(); noteBox.replaceChildren(); } } }, '다시 놓기');
@@ -206,7 +209,44 @@
   }
   function btn(label, fn, cls) { return el('button', { class: 'btn ' + (cls || 'onpaper'), on: { click: fn } }, label); }
 
-  BO3D.ui = { S: S, el: el, add: add, tx: tx, icon: icon, refChip: refChip, avatar: avatar, say: say, bookName: bookName, bookOf: bookOf, chapterOf: chapterOf, books: BOOKS,
+  /* ── 설정(이 기기에만): 글자 크기, 소리, 읽어 주기 ── */
+  var SETK = 'bo3d.set.v1', SET = { fs: 0, snd: 1, read: 0 };
+  try { var s0 = JSON.parse(localStorage.getItem(SETK) || '{}') || {}; ['fs', 'snd', 'read'].forEach(function (k) { if (typeof s0[k] === 'number') SET[k] = s0[k]; }); } catch (e) { /* 기본값 */ }
+  function applySet() {
+    var h = document.documentElement; h.classList.remove('fs1', 'fs2'); if (SET.fs === 1 || SET.fs === 2) h.classList.add('fs' + SET.fs);
+    var a = BO3D.fx && BO3D.fx.audio; if (a && a.mute) a.mute(!SET.snd);
+  }
+  function saveSet() { try { localStorage.setItem(SETK, JSON.stringify(SET)); } catch (e) { /* 이번 방문 동안만 */ } applySet(); }
+  /* 읽어 주기: 기기의 한국어 음성으로 화면의 글을 읽는다. 8~10세는 늘 보이고, 다른 나이는 설정에서 켠다.
+     성경 본문은 화면에 없으므로 읽지 않는다(장절은 "출애굽기 3장 5절"처럼 풀어 읽는다). 하나님의 음성을 소리로 만들지 않는다. */
+  function canSpeak() { return !!(window.speechSynthesis && window.SpeechSynthesisUtterance); }
+  function speakOn() { return (S.tier === 't1' || SET.read === 1) && canSpeak(); }
+  var REFRE = new RegExp('(^|[^가-힣])((?:' + BOOKS.map(function (b) { return b[0]; }).sort(function (a, b) { return b.length - a.length; }).join('|') + ') \\d+(?::\\d+)?(?:-(?:\\d+:)?\\d+)?)', 'g');
+  function speakText(node) {
+    var c = node.cloneNode(true);
+    Array.prototype.forEach.call(c.querySelectorAll('.speak3, textarea, input, svg, [hidden], .nospeak'), function (x) { x.remove(); });
+    Array.prototype.forEach.call(c.querySelectorAll('p, div, b, small, h1, h2, h3, button, li, summary, .ref, .ot-place, .count'), function (x) { x.appendChild(document.createTextNode('. ')); });
+    return (c.textContent || '').replace(REFRE, function (m, pre, r) { return pre + bookName(r); }).replace(/OT-0?(\d+)/g, '$1번 장면').replace(/🔒|🔊|·/g, ' ').replace(/(\s*\.\s*){2,}/g, '. ').replace(/([.!?…])\s*\./g, '$1').replace(/\s+/g, ' ').trim();
+  }
+  var speaking = null;
+  function stopSpeak() { try { if (canSpeak()) speechSynthesis.cancel(); } catch (e) { /* 무시 */ } if (speaking) { speaking.setAttribute('aria-pressed', 'false'); speaking = null; } }
+  /* 시트 아래 왼쪽에 놓는 읽어 주기 단추. 다시 누르면 멈춘다. 읽을 수 없는 기기면 null */
+  function speakBtn(getNode) {
+    if (!speakOn()) return null;
+    var b = el('button', { class: 'speak3', 'aria-label': '읽어 주기', 'aria-pressed': 'false', on: { click: function () {
+      if (speaking === b) { stopSpeak(); return; }
+      stopSpeak();
+      try {
+        var u = new SpeechSynthesisUtterance(speakText(getNode())); u.lang = 'ko-KR'; u.rate = 0.95;
+        u.onend = u.onerror = function () { if (speaking === b) { b.setAttribute('aria-pressed', 'false'); speaking = null; } };
+        speaking = b; b.setAttribute('aria-pressed', 'true'); speechSynthesis.speak(u);
+      } catch (e) { speaking = null; b.setAttribute('aria-pressed', 'false'); }
+    } } }, icon('speaker'));
+    return b;
+  }
+  applySet();
+
+  BO3D.ui = { S: S, set: SET, saveSet: saveSet, applySet: applySet, canSpeak: canSpeak, speakOn: speakOn, speakBtn: speakBtn, speakText: speakText, stopSpeak: stopSpeak, onMiss: null, el: el, add: add, tx: tx, icon: icon, refChip: refChip, avatar: avatar, say: say, bookName: bookName, bookOf: bookOf, chapterOf: chapterOf, books: BOOKS,
     goodNote: goodNote, lookNote: lookNote, choiceBlock: choiceBlock, findBlock: findBlock, findrefBlock: findrefBlock, orderBlock: orderBlock, blockFor: blockFor, quizTier: quizTier, btn: btn,
     setScene: setScene, inScene: inScene };
 })();
