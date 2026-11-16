@@ -7,7 +7,7 @@
  *   BO3D.p3b.mergeColored(objs)     움직이지 않는 물건을 재질별로 합친다(꼭짓점 색을 지킨다. props_ot.js의 mergeStatic은 색을 버린다)
  *   BO3D.p3b.actors(height)         사람을 걷게 하고 굽히고 앉히는 도우미 → { make, at, go, step, swap }
  *   BO3D.p3b.man(seed) / woman(seed) / child(seed)   백성 모형(짐 없음). 본문이 정한 사람은 씨앗값을 고정해 쓴다
- *   BO3D.p3b.house(w, h, d, mat) / jar(h) / ox(색) / polyDist(pts, x, z)
+ *   BO3D.p3b.house(w, h, d, mat) / jar(h) / ox(색) / tree(seed, 키, 잎색, 줄기색) / olive(seed) / polyDist(pts, x, z)
  * 본문이 모양을 말하지 않는 것은 단순한 꼴로만 둔다. 글자·무늬·신상은 넣지 않는다(스타일가이드 2절).
  */
 (function () {
@@ -156,6 +156,16 @@
     g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
     return { group: g, update: function (dt, speed) { t += dt * (speed || 0) * 4; var a2 = speed > 0.05 ? Math.sin(t) * 0.4 : 0; legs.forEach(function (l, i) { l.rotation.x = (i === 0 || i === 3) ? a2 : -a2; }); } };
   }
+  /* 큰 나무(상수리나무 등): 굵은 줄기와 둥근 잎 덩이 여럿. size는 키(m). 감람나무는 낮고 잿빛 도는 잎으로(olive) */
+  function tree(seed, size, leaf, bark) {
+    var r = BO3D.props.rng(seed + 91), g = new T.Group(), H = size || 9, bm = std(bark || '#6A4E36'), lm = [std(leaf || '#55703A'), std(leaf ? leaf : '#637E42')];
+    var tr = new T.Mesh(new T.CylinderGeometry(H * 0.045, H * 0.085, H * 0.5, 7), bm); tr.position.y = H * 0.25; g.add(tr);
+    for (var i = 0; i < 4; i++) { var a2 = i * 1.6 + r(), br = new T.Mesh(new T.CylinderGeometry(H * 0.02, H * 0.04, H * 0.34, 5), bm); br.position.set(Math.cos(a2) * H * 0.1, H * 0.55, Math.sin(a2) * H * 0.1); br.rotation.set(Math.sin(a2) * 0.7, 0, -Math.cos(a2) * 0.7); g.add(br); }
+    for (i = 0; i < 9; i++) { var a3 = r() * 6.28, d = i ? (0.12 + r() * 0.26) * H : 0, cl = new T.Mesh(new T.IcosahedronGeometry(H * (0.2 + r() * 0.1), 0), lm[i % 2]); cl.position.set(Math.cos(a3) * d, H * (0.66 + r() * 0.22), Math.sin(a3) * d); cl.scale.y = 0.75; cl.rotation.y = r() * 3; g.add(cl); }
+    g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
+    return g;
+  }
+  function olive(seed) { return tree(seed + 300, 3.6 + (seed % 3) * 0.5, '#7C8A62', '#7A6A54'); }
   /* 꺾은선 pts에서 (x, z)까지의 거리 */
   function polyDist(pts, x, z) {
     var best = 1e9, i;
@@ -169,5 +179,5 @@
 
   BO3D.p3b = { on: on, sm: sm, hash: hash, noise: noise, std: std, sky: sky, ground: ground, tod: tod, mergeColored: mergeColored, actors: actors,
     man: function (s) { return person(s, 'man'); }, woman: function (s) { return person(s, 'woman'); }, child: function (s) { return person(s, s % 2 ? 'boy' : 'girl'); },
-    house: house, jar: jar, ox: ox, polyDist: polyDist };
+    house: house, jar: jar, ox: ox, tree: tree, olive: olive, polyDist: polyDist };
 })();
