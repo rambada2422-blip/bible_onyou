@@ -341,7 +341,9 @@ window.BO3D = window.BO3D || {};
       else if (!on && pulseT) { clearInterval(pulseT); pulseT = null; }
     }
     function mute(m) { muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); }
-    return { start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, rumble: rumble, thud: thud, pulse: pulse, mute: mute, isMuted: function () { return muted; } };
+    /* 배경음악(bgm.js)이 음악 묶음에 연결할 수 있게 소리 장치와 음악 묶음을 내어 준다 (2026-11-16) */
+    return { start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, rumble: rumble, thud: thud, pulse: pulse, mute: mute, isMuted: function () { return muted; },
+      context: function () { return ctx; }, musicBus: function () { return music; } };
   })();
 
   BO3D.fx = { fire: fire, upgradeBush: upgradeBush, sortLayers: sortLayers, Post: Post, audio: audio, GLOW: GLOW, SOFT: SOFT };

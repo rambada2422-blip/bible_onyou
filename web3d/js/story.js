@@ -13,6 +13,24 @@
   root.appendChild(box);
   var FX = function () { return BO3D.fx || null; };
   var G = function () { return BO3D.game || null; };
+  /* 장면 배경음악(bgm.js·bgmplan.js, 2026-11-16). 표에 그 칸이 있으면 틀고 true, 없으면 false(예전 소리 그대로) */
+  function bgm(id, part) {
+    var b = BO3D.bgm, p = BO3D.bgmPlan;
+    if (!b || !p || !p[id] || !p[id][part]) return false;
+    try { b.play(id, part); } catch (e) { return false; }
+    return true;
+  }
+  function bgmStop() { if (BO3D.bgm) { try { BO3D.bgm.stop(); } catch (e) { /* 무시 */ } } }
+  /* 이야기 카드에도 소리 끄기 버튼: 효과음과 배경음악을 함께 끈다(3D의 버튼과 같은 상태를 쓴다) */
+  function sndBtn() {
+    var f = FX(), m0 = !!(f && f.audio && f.audio.isMuted());
+    var b = el('button', { class: 'ot-snd', 'aria-label': m0 ? '소리 켜기' : '소리 끄기', 'aria-pressed': String(m0), on: { click: function () {
+      var a = FX() && FX().audio; if (!a) return;
+      var m = !a.isMuted(); a.mute(m); if (BO3D.bgm) BO3D.bgm.mute(m);
+      b.setAttribute('aria-pressed', String(m)); b.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기');
+    } } }, icon('speaker'));
+    return b;
+  }
 
   /* ── 진행 저장 (이 기기에만) ── */
   var KEY = 'bo3d.ot.v1', PG = {};
@@ -77,7 +95,7 @@
   }
   function topBar(label) {
     return [el('button', { class: 'ot-back', 'aria-label': '시대 지도', on: { click: function () { openMap(); } } }, icon('arrow'), el('span', { text: '시대 지도' })),
-      label ? el('span', { class: 'place', text: label }) : null];
+      label ? el('span', { class: 'place', text: label }) : null, sndBtn()];
   }
   function enterStory() {
     root.className = 'g3 app ' + S.tier;
@@ -105,7 +123,7 @@
 
   /* ── 시대 지도 ── */
   function openMap(scrollTo) {
-    enterStory();
+    enterStory(); bgmStop();
     if (!PG.seenIntro) { intro(function () { openMap(); }); return; }
     cur.screen = 'map'; cur.id = null;
     var eras = OT.eras.map(function (e) {
@@ -140,6 +158,7 @@
         btn('수리 현황', openRepair, 'quiet'), btn('비상 착륙 이야기', function () { intro(function () { openMap(); }); }, 'quiet'),
         btn(PG.unlockAll ? '시대 잠금 다시 켜기' : '모든 시대 열기(부모·교사)', function () { PG.unlockAll = !PG.unlockAll; save(); openMap(); }, 'quiet'),
         /#log/.test(location.hash) ? btn('놀이 기록 보기', openLog, 'quiet') : null,
+        BO3D.bgmCredits ? btn('음악 출처', openCredits, 'quiet') : null,
         btn('처음 화면', function () { closeAll(); var g = G(); if (g) g.menu(); }, 'quiet')),
       el('p', { class: 'fine', text: '감수 전 시험판입니다. 모든 장면은 목사님 감수를 마치기 전이며, 아이들에게 공개하지 않습니다.' }));
     box.appendChild(list);
@@ -235,7 +254,7 @@
   function play(id) {
     var d = sc(id);
     cur.screen = 'play'; cur.id = id; cur.steps = buildSteps(d); cur.step = 0;
-    var f = FX(); if (f && f.audio) { try { f.audio.start(); f.audio.pad(true); } catch (e) { /* 무시 */ } }
+    var f = FX(); if (f && f.audio) { try { f.audio.start(); if (!bgm(id, 'story')) f.audio.pad(true); } catch (e) { /* 무시 */ } }
     render();
   }
   var KICK = { talk: '동행', beat: '지켜보기', help: '현장 돕기', gate: '다음으로 가는 관문', quest: '재료 찾기', mat: '재료 얻기', today: '오늘의 물음' };
@@ -380,6 +399,7 @@
   function finish(d) {
     var c = d.close[S.tier] || d.close.t2, e = eraOf(d.era), nx = nextOf(d.id);
     PG.done[d.id] = { t: S.tier }; save();
+    bgm(d.id, 'after');
     var kids_ = [el('div', { class: 'q-kicker', text: '탐험을 마치며' }),
       el('p', { class: 'q-prompt', text: '탐험 일지에 말씀 카드가 들어왔어요.' }),
       el('div', { class: 'vcards' }, d.cards.map(function (cd) {
@@ -417,6 +437,23 @@
       el('div', { class: 'eyebrow', text: '탐험대 이야기' }), el('h1', { class: 'den-title', text: '타임머신 수리 현황' }),
       el('p', { class: 'den-lead', text: '모은 재료 ' + matCount() + ' / ' + MAT_TOTAL + '. 그 시대의 평범한 재료로 부속을 대신 만들어요. 기념품은 가져오지 않아요.' }),
       rows, el('div', { class: 'otmap-foot' }, btn('시대 지도', function () { openMap(); }, 'wide'))));
+    box.className = 'ot3 map'; box.hidden = false;
+  }
+
+  /* ── 음악 출처 (CC BY 4.0: 제목·작가·출처·라이선스 링크·바꾼 점을 보여 준다. 자료는 bgmplan.js의 BO3D.bgmCredits) ── */
+  function openCredits() {
+    var c = BO3D.bgmCredits; if (!c) return;
+    cur.screen = 'credits';
+    var rows = c.titles.map(function (t) {
+      return el('div', { class: 'credit' }, el('b', { text: '"' + t + '" ' + c.author }), el('span', { text: c.license }));
+    });
+    box.replaceChildren(el('div', { class: 'otmap pad' },
+      el('div', { class: 'eyebrow', text: '만든 사람들' }), el('h1', { class: 'den-title', text: '음악 출처' }),
+      el('p', { class: 'den-lead', text: '이 게임의 배경음악 ' + c.titles.length + '곡은 Kevin MacLeod가 만들고 누구나 쓸 수 있게 공개한 곡이에요.' }),
+      el('div', { class: 'credits' }, rows),
+      el('p', { class: 'fine' }, el('a', { href: c.licenseUrl, target: '_blank', rel: 'noopener', text: c.licenseUrl })),
+      el('p', { class: 'fine', text: c.changesKo }), el('p', { class: 'fine', text: c.changes }),
+      el('div', { class: 'otmap-foot' }, btn('시대 지도', function () { openMap(); }, 'wide'))));
     box.className = 'ot3 map'; box.hidden = false;
   }
 

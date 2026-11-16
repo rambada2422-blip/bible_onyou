@@ -9,6 +9,11 @@
 .ot-top .place { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ot-back { flex: none; display: inline-flex; align-items: center; gap: 6px; background: rgba(14, 23, 48, .78); color: var(--paper); border-radius: 999px; padding: 7px 13px 7px 9px; font-family: var(--f-display); font-size: 14px; backdrop-filter: blur(4px); }
 .ot-back svg { width: 15px; height: 15px; transform: rotate(-90deg); color: var(--brass); }
+/* 이야기 카드의 소리 끄기 버튼 (2026-11-16 배경음악) */
+.ot-snd { flex: none; margin-left: auto; position: relative; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: rgba(14, 23, 48, .78); color: var(--paper); backdrop-filter: blur(4px); }
+.ot-snd svg { width: 19px; height: 19px; }
+.ot-snd[aria-pressed="true"] { color: #8FA0C8; background: rgba(14, 23, 48, .5); }
+.ot-snd[aria-pressed="true"]::after { content: ""; position: absolute; width: 26px; height: 3px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
 .ot-sheet.sheet { position: absolute; left: 0; right: 0; bottom: 0; top: 35%; margin: 0; animation: sheetup .28s ease both; }
 .ot3.intro .ot-sheet.sheet, .ot3.era .ot-sheet.sheet, .ot3.pick .ot-sheet.sheet { top: 40%; }
 .ot3 .sheet-foot { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
@@ -84,6 +89,12 @@
 .otmap-foot .btn { flex: 1 1 140px; min-height: 46px; font-size: 16px; }
 .otmap .slots { grid-template-columns: repeat(3, 1fr); }
 .otmap .slot b { font-size: 13.5px; }
+/* 음악 출처 */
+.otmap .credits { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.otmap .credit { display: flex; flex-direction: column; gap: 1px; padding: 8px 12px; border-radius: 12px; background: rgba(251, 247, 238, .06); }
+.otmap .credit b { font-family: var(--f-display); font-weight: 400; font-size: 14.5px; color: var(--paper); overflow-wrap: anywhere; }
+.otmap .credit span { font-size: 12.5px; color: #8FA0C8; }
+.otmap .fine a { color: var(--brass); overflow-wrap: anywhere; }
 
 /* 시간 이동 */
 .ot3.warpbox { justify-content: center; }
