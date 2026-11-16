@@ -22,7 +22,7 @@
   BO3D.scene3d['OT-23'] = function (api) {
     var T = THREE, M2 = BO3D.models2 || {}, MO = BO3D.models || {}, PR = BO3D.props, B = BO3D.p3b, FX = api.FX, R = PR.rng(2301);
     var sm = B.sm, noise = B.noise, hash = B.hash, std = B.std;
-    var ROAD = [[170, 7], [60, 4], [0, 3], [-30, 1], [-46, -8], [-56, -17]];           /* 유다 땅으로 가는 길(1:7), 성읍으로 이어진다(1:19) */
+    var ROAD = [[170, 7], [60, 4], [0, 3], [-30, 1], [-46, -8], [-56, -17]];           /* 베들레헴 성읍으로 이어지는 길(1:19) */
     var FX0 = -24, FX1 = 46, FZ0 = -36, FZ1 = -7, REAPX = 8;                            /* 보리밭(2:3). REAPX의 동쪽은 아직 베지 않은 보리 */
     var TOWNC = [-80, -44], HOME = [-55, -20], JARS = [-20, -9.5], MEAL = [-13, -12], SERV = [3, -9.5], FIELDC = [8, -20];
     function inField(x, z) { return x > FX0 && x < FX1 && z > FZ0 && z < FZ1; }
@@ -134,7 +134,7 @@
     }
     function gleanWalk(t) {   /* 베는 사람들 뒤를 따라가며 굽혀 줍는다(2:3, 2:7) */
       var u = (Math.sin(t * 0.16) + 1) / 2, z = -13 - u * 15, x = REAPX - 6.5 + Math.sin(t * 0.5) * 1.2;
-      ruth.g.rotation.y = Math.cos(t * 0.16) < 0 ? 0 : Math.PI; ruth.g.position.x = x; ruth.g.position.z = z; ruth.bendWant = Math.sin(t * 1.3) > 0.1 ? 0.85 : 0.1;
+      ruth.g.rotation.y = Math.cos(t * 0.16) < 0 ? 0 : Math.PI; ruth.g.position.x = x; ruth.g.position.z = z; var dn = Math.sin(t * 1.3) > 0.1; ruth.bendWant = dn ? 0.6 : 0.05; ruth.sitWant = dn ? 0.45 : 0;
     }
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
     function near(a, dy) { var p = a.g.position; return v3(p.x, p.y + (dy || 1.1), p.z); }
@@ -149,7 +149,7 @@
         return { who: 'hyu', text: '이 비탈 위에서만 다니자.' };
       },
       P: { start: [8, 25], machine: [14, 30], machineRot: -0.4,
-        /* 재료가 놓인 곳(quests[i].found): 유다 땅으로 가는 길가의 빈 땅 / 성읍으로 들어가는 길목이 보이는 비탈 / 보리밭이 건너다보이는 비탈 */
+        /* 재료가 놓인 곳(quests[i].found): 베들레헴으로 이어지는 길가의 빈 땅 / 성읍으로 들어가는 길목이 보이는 비탈 / 보리밭이 건너다보이는 비탈 */
         parts: [[40, 10.5], [-31, 12], [8, 10.5]], lookSpot: [8, 10.5],
         look: { focus: FIELDC, mid: [2, -12], dy: 1.4, backE: 7, upE: 6 } },
       eventLook: function (i) {
@@ -170,16 +170,18 @@
         if (i === 6) return '보리 추수와 밀 추수를 마친 뒤의 일이에요. 타임머신 창 너머로 봐요.';
         return null;
       },
+      /* 3D에서는 대목 4(2:8-16) 뒤에 저녁때의 돕기(2:17-18)가 먼저 나오므로 때를 밝힌다(배치 독립 검증, 2026-11-16) */
+      helpNote: function (after) { return after === 4 ? '이 돕기는 저녁때의 일이에요(룻 2:17-18). 바로 다음 대목에서 그때의 모습을 멀리서 봐요.' : null; },
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 낮은 비탈에 내려앉았어요. 길 건너 밭에서 사람들이 보리를 베고 있어요.', say: { who: 'hyu', text: '길과 밭에는 들어가지 말자. 이 비탈 위에서만 다니자.' } },
       lookText: '룻과 나오미의 이야기를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
       partBeats: [0, 1], eventStart: 2,
       sceneDoneText: '룻과 나오미의 장면을 끝까지 지켜봐야 떠날 수 있어요.',
       dex: [
-        { id: 'field', name: '보리밭', desc: '보리 추수를 시작할 때의 밭. 룻이 이른 곳은 보아스에게 속한 밭이었다', ref: '룻 1:22, 2:3', hint: '길 건너 북쪽을 보세요.', range: 90, crop: 0.6, pos: function () { return v3(FIELDC[0] + 14, height(FIELDC[0], FIELDC[1]) + 1, FIELDC[1]); } },
+        { id: 'field', name: '보리밭', desc: '보리 추수를 시작할 때의 보리밭', ref: '룻 1:22', hint: '길 건너편을 보세요.', range: 90, crop: 0.6, pos: function () { return v3(FIELDC[0] + 14, height(FIELDC[0], FIELDC[1]) + 1, FIELDC[1]); } },
         { id: 'sheaf', name: '곡식 단', desc: '룻이 그 사이에서 이삭을 줍게 해 달라고 한 단', ref: '룻 2:7, 2:15', hint: '벤 자리에 서 있어요.', range: 60, crop: 0.3, visible: function () { return sheaves.visible; }, pos: function () { return v3(SH[0][0], height(SH[0][0], SH[0][1]) + 0.5, SH[0][1]); } },
-        { id: 'town', name: '베들레헴', desc: '나오미와 룻이 이른 성읍', ref: '룻 1:19', hint: '서북쪽 언덕을 보세요.', range: 150, crop: 0.5, pos: function () { return v3(TOWNC[0] + 12, height(TOWNC[0], TOWNC[1]) + 3, TOWNC[1] + 10); } },
-        { id: 'reapers', name: '베는 사람들', desc: '보아스의 밭에서 보리를 베는 사람들', ref: '룻 2:3-4', hint: '밭 한가운데 줄지어 있어요.', range: 70, crop: 0.4, visible: function () { return reapers[0].g.visible; }, pos: function () { return near(reapers[2]); } },
+        { id: 'town', name: '베들레헴', desc: '나오미와 룻이 이른 성읍', ref: '룻 1:19', hint: '길이 이어지는 쪽 멀리를 보세요.', range: 150, crop: 0.5, pos: function () { return v3(TOWNC[0] + 12, height(TOWNC[0], TOWNC[1]) + 3, TOWNC[1] + 10); } },
+        { id: 'reapers', name: '베는 사람들', desc: '밭에서 보리를 베는 사람들', ref: '룻 2:3', hint: '밭 한가운데 줄지어 있어요.', range: 70, crop: 0.4, visible: function () { return reapers[0].g.visible; }, pos: function () { return near(reapers[2]); } },
         { id: 'ruth', name: '룻', desc: '나오미를 따라 모압 지방에서 온 며느리. 베는 사람들을 따라 이삭을 주웠다', ref: '룻 1:22, 2:3', hint: '베는 사람들 뒤쪽을 보세요.', range: 70, crop: 0.34, visible: function () { return ruth.g.visible; }, pos: function () { return near(ruth); } },
         { id: 'boaz', name: '보아스', desc: '엘리멜렉의 친족. 베들레헴에서 밭으로 왔다', ref: '룻 2:1, 2:4', hint: '밭 가장자리를 보세요.', range: 70, crop: 0.34, visible: function () { return boaz.g.visible; }, pos: function () { return near(boaz); } }
       ],
@@ -193,7 +195,7 @@
         var work = phase === 'explore' || phase === 'arrive' || phase === 'glean' || (phase === 'boaz' && pt < 14) || (phase === 'evening' && pt < 6);
         if (phase !== 'baby') reapers.forEach(function (a) {
           if (phase === 'boaz' && pt >= 14) { if (!a.meal) { a.meal = true; A.go(a, [a.seat], 1.4, Math.atan2(MEAL[0] - a.seat[0], MEAL[1] - a.seat[1])); } a.bendWant = 0; a.sitWant = A.moving(a) ? 0 : 1; }   /* 식사할 때(2:14) */
-          else { a.meal = false; a.bendWant = work ? 0.45 + 0.4 * Math.sin(now * 1.5 + a.ph) : 0; a.sitWant = 0; }
+          else { a.meal = false; a.bendWant = work ? 0.3 + 0.25 * Math.sin(now * 1.5 + a.ph) : 0; a.sitWant = 0; }
         });
         if (phase === 'glean') { gleanWalk(pt + 20); }
         if (phase === 'boaz') {

@@ -7,7 +7,7 @@
  *   BO3D.p3b.mergeColored(objs)     움직이지 않는 물건을 재질별로 합친다(꼭짓점 색을 지킨다. props_ot.js의 mergeStatic은 색을 버린다)
  *   BO3D.p3b.actors(height)         사람을 걷게 하고 굽히고 앉히는 도우미 → { make, at, go, step, swap }
  *   BO3D.p3b.man(seed) / woman(seed) / child(seed)   백성 모형(짐 없음). 본문이 정한 사람은 씨앗값을 고정해 쓴다
- *   BO3D.p3b.house(w, h, d, mat) / jar(h) / polyDist(pts, x, z)
+ *   BO3D.p3b.house(w, h, d, mat) / jar(h) / ox(색) / polyDist(pts, x, z)
  * 본문이 모양을 말하지 않는 것은 단순한 꼴로만 둔다. 글자·무늬·신상은 넣지 않는다(스타일가이드 2절).
  */
 (function () {
@@ -143,6 +143,19 @@
     var pts = [[0.0, 0], [0.16, 0], [0.26, 0.25], [0.28, 0.5], [0.2, 0.8], [0.11, 0.92], [0.14, 1]].map(function (p) { return new T.Vector2(p[0] * (h || 0.8), p[1] * (h || 0.8)); });
     var m = new T.Mesh(new T.LatheGeometry(pts, 10), std('#B07A52', { side: T.DoubleSide })); m.castShadow = true; return m;
   }
+  /* 수소: 몸통·목·머리·뿔·다리. 서 있거나 걷는 모습만(잡는 모습은 그리지 않는다). → { group, update(dt, speed) } */
+  function ox(col) {
+    var g = new T.Group(), m = std(col || '#7A5A3E'), dk = std('#3A2A20'), hn = std('#E6DCC4'), legs = [], t = 0;
+    var body = new T.Mesh(new T.BoxGeometry(0.75, 0.8, 1.7), m); body.position.y = 1.05; g.add(body);
+    var hump = new T.Mesh(new T.BoxGeometry(0.6, 0.3, 0.6), m); hump.position.set(0, 1.5, 0.45); g.add(hump);
+    var neck = new T.Mesh(new T.BoxGeometry(0.45, 0.55, 0.5), m); neck.position.set(0, 1.25, 1.0); neck.rotation.x = 0.5; g.add(neck);
+    var head = new T.Mesh(new T.BoxGeometry(0.42, 0.4, 0.6), m); head.position.set(0, 1.2, 1.38); head.rotation.x = 0.5; g.add(head);
+    [-1, 1].forEach(function (s) { var h = new T.Mesh(new T.ConeGeometry(0.05, 0.36, 5), hn); h.position.set(s * 0.26, 1.5, 1.22); h.rotation.z = -s * 0.9; g.add(h); });
+    var tail = new T.Mesh(new T.BoxGeometry(0.07, 0.7, 0.07), dk); tail.position.set(0, 1.0, -0.9); tail.rotation.x = 0.15; g.add(tail);
+    [[-0.25, 0.62], [0.25, 0.62], [-0.25, -0.62], [0.25, -0.62]].forEach(function (q) { var pv = new T.Group(); pv.position.set(q[0], 0.7, q[1]); var lg = new T.Mesh(new T.BoxGeometry(0.17, 0.7, 0.17), m); lg.position.y = -0.35; pv.add(lg); g.add(pv); legs.push(pv); });
+    g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
+    return { group: g, update: function (dt, speed) { t += dt * (speed || 0) * 4; var a2 = speed > 0.05 ? Math.sin(t) * 0.4 : 0; legs.forEach(function (l, i) { l.rotation.x = (i === 0 || i === 3) ? a2 : -a2; }); } };
+  }
   /* 꺾은선 pts에서 (x, z)까지의 거리 */
   function polyDist(pts, x, z) {
     var best = 1e9, i;
@@ -156,5 +169,5 @@
 
   BO3D.p3b = { on: on, sm: sm, hash: hash, noise: noise, std: std, sky: sky, ground: ground, tod: tod, mergeColored: mergeColored, actors: actors,
     man: function (s) { return person(s, 'man'); }, woman: function (s) { return person(s, 'woman'); }, child: function (s) { return person(s, s % 2 ? 'boy' : 'girl'); },
-    house: house, jar: jar, polyDist: polyDist };
+    house: house, jar: jar, ox: ox, polyDist: polyDist };
 })();

@@ -12,12 +12,13 @@ const d = JSON.parse(fs.readFileSync(f, 'utf8')), out = {};
 if (mode === 'off') {
   if (!d.design3d.build) { console.log(id, '이미 꺼져 있음'); process.exit(0); }
   d._3d = { quests: d.quests, materials: d.mission.materials.slice(1), epic: d.design3d.epic };
-  d.design3d.build = false; d.mission.materials = [d.mission.materials[0]];
+  d._3d.material0 = d.mission.materials[0];
+  d.design3d.build = false; d.mission.materials = [d._card && d._card.material ? d._card.material : d.mission.materials[0]];   /* 이야기 카드 때의 원래 재료 글로 */
   Object.keys(d).forEach((k) => { if (k !== 'quests') out[k] = d[k]; });
 } else {
   if (d.design3d.build) { console.log(id, '이미 켜져 있음'); process.exit(0); }
   if (!d._3d) { console.log(id, '되살릴 `_3d`가 없음'); process.exit(1); }
-  d.design3d.build = true; d.mission.materials = [d.mission.materials[0]].concat(d._3d.materials);
+  d.design3d.build = true; d.mission.materials = [d._3d.material0 || d.mission.materials[0]].concat(d._3d.materials);
   Object.keys(d).forEach((k) => { if (k === '_3d') return; if (k === 'mission') out.quests = d._3d.quests; out[k] = d[k]; });
 }
 fs.writeFileSync(f, JSON.stringify(out, null, 2) + '\n');
