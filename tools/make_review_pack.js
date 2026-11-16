@@ -32,6 +32,9 @@ const rules = rd('docs/00_공통규칙서.md');
 const classPath = path.join(OUT, '미해결_분류.json');
 const CLASS = fs.existsSync(classPath) ? JSON.parse(fs.readFileSync(classPath, 'utf8')) : {};
 
+/* 검증자 항목이 가리키는 게임 글의 자리(하위 에이전트가 지금 자료에서 찾아 적은 것). 없으면 붙이지 않는다 */
+const atPath = path.join(OUT, '미해결_자리.json');
+const AT = fs.existsSync(atPath) ? JSON.parse(fs.readFileSync(atPath, 'utf8')) : {};
 const WHO = { choeon: '최온', hyu: '휴', onwoo: '온우', doctor: '최현 박사', narr: '해설' };
 const TIER = { t1: '8~10세', t2: '11~13세', t3: '14~19세' };
 const TIERS = ['t1', 't2', 't3'];
@@ -250,8 +253,46 @@ const JARGON = [[/`/g, ''], [/\bt1\b/g, '8~10세 글'], [/\bt2\b/g, '11~13세 �
   [/design3d\.never/g, '그리지 않는 것 목록'], [/design3d\.people/g, '화면 설계의 사람 목록'], [/design3d\.props/g, '화면 설계의 물건 목록'], [/design3d\.god/g, '하나님 표현 메모'], [/design3d/g, '화면 설계 메모'], [/review\.required/g, '감수 필수 표시'], [/review\.topics|\btopics\b/g, '감수 주제'],
   [/\bbasis\b/g, '근거 장절'], [/\bquests\b(\[\d\])?/g, '탐지기 물음'], [/\bgates\b/g, '관문'], [/mission\.today|\btoday\b/g, '오늘의 물음'], [/\bcompanion\b/g, '동행 인물'], [/\bmaterials\b/g, '재료'], [/\bbeats\b/g, '대목'], [/help\.steps|\bhelp\b/g, '현장 돕기'], [/\bwatch\b/g, '곁에서 보기'], [/\bstay\b/g, '함께 머물기'], [/\bask\b/g, '뜻 묻기'], [/\bdo\b/g, '손으로 하는 돕기'], [/\bnt\b/g, '신약 연결'], [/\bcall\b/g, '박사의 통신'], [/\bcards\b/g, '말씀 카드'], [/\bclose\b/g, '마무리'], [/\bsay\b/g, '아이의 말'], [/\bfound\b/g, '있는 곳 글'], [/\bafter\b/g, '뒤 글'], [/\bopen\b/g, '펼 곳'], [/\bref\b/g, '장절']];
 const plain = (t) => JARGON.reduce((a, [re, to]) => a.replace(re, to), t);
+/* 자리(경로)를 사람 말로: beats.1.text.t1 → "대목 2 · 8~10세" */
+function pathLabel(pth) {
+  const p = pth.split('.'), T = { t1: '8~10세', t2: '11~13세', t3: '14~19세' };
+  const tier = p.filter((x) => T[x]).map((x) => T[x])[0];
+  const num = (i) => (/^\d+$/.test(p[i]) ? Number(p[i]) + 1 : '');
+  let w;
+  if (p[0] === 'beats') w = '대목 ' + num(1) + (p[2] === 'say' ? ' · 아이의 말' : '');
+  else if (p[0] === 'gates') w = '관문 물음 ' + num(2) + (p.includes('options') ? ' · 보기' : p.includes('items') ? ' · 차례 항목' : p.includes('pairs') ? ' · 잇기' : p.includes('after') ? ' · 이은 뒤 글' : '');
+  else if (p[0] === 'quests') w = '탐지기 물음 ' + num(1) + (p.includes('options') ? ' · 보기' : '');
+  else if (p[0] === 'cards') w = '말씀 카드 ' + num(1);
+  else if (p[0] === 'close') w = '마무리';
+  else if (p[0] === 'title') w = '장면 제목';
+  else if (p[0] === 'place') w = '곳';
+  else if (p[0] === 'design3d') w = { god: '하나님 표현', never: '그리지 않는 것', people: '화면 설계의 사람', props: '화면 설계의 물건', place: '화면 설계의 곳', terrain: '화면 설계의 땅' }[p[1]] || '화면 설계';
+  else if (p[0] === 'review') w = '감수 주제';
+  else if (p[0] === 'mission') {
+    if (p[1] === 'today') w = '오늘의 물음 ' + num(2) + (p[3] === 'q' ? ' · 물음' : ' · 답');
+    else if (p[1] === 'companion') w = p[2] === 'talks' ? '동행 문답 ' + num(3) + (p[4] === 'ask' ? ' · 아이의 물음' : ' · 답') : '동행 인물';
+    else if (p[1] === 'materials') w = '재료 ' + num(2) + ({ name: '', how: ' · 얻는 방법', use: ' · 박사의 말', line: ' · 아이의 말' }[p[3]] || '');
+    else if (p[1] === 'call') w = '박사의 통신';
+    else if (p[1] === 'help') w = p[2] === 'steps' ? '현장 돕기 단계 ' + num(3) + (p[4] === 'nt' ? ' · 신약 연결' : p[4] === 'answer' ? ' · 뜻 묻기의 답' : p[4] === 'read' ? ' · 성경 읽기 물음' : p[4] === 'ask' ? ' · 아이의 물음' : p[4] === 'title' ? ' · 제목' : p[4] === 'tasks' ? ' · 누르는 일' : p[4] === 'done' ? ' · 마친 뒤 말' : '') : '돕는 상대';
+    else w = '임무';
+  } else w = pth;
+  return w + (tier ? ' · ' + tier : '');
+}
+function atLines(u, sid) {
+  const a = AT[u.key]; if (!a) return [];
+  const L = [];
+  (a.at || []).forEach((raw) => {
+    const m = raw.match(/^(OT-\d\d):(.*)$/), sc = m ? m[1] : sid, pth = m ? m[2] : raw;
+    const d = scenes.find((x) => x.id === sc); if (!d) return;
+    const v = pth.split('.').reduce((o, k) => (o == null ? o : o[k]), d);
+    if (typeof v !== 'string' || !v) { console.warn('자리 없음(건너뜀): ' + u.key + ' ' + raw); return; }
+    L.push(G('지금 게임의 글 · ' + (sc !== sid ? sc + ' ' : '') + pathLabel(pth), v, { sub: true }));
+  });
+  if (a.note) L.push(N('덧붙임', a.note, { sub: true }));
+  return L;
+}
 function openLines(u, sid) {
-  return [N('검증 기록(' + u.h2.replace(/\s*\(.*$/, '') + ')', plain(u.text))];
+  return [N('검증 기록(' + u.h2.replace(/\s*\(.*$/, '') + ')', plain(u.text))].concat(atLines(u, sid));
 }
 function sceneItems(d) {
   const sid = d.id, base = { scene: sid, era: d.era, group: 'scene' };
