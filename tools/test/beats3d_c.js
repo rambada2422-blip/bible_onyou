@@ -1,4 +1,4 @@
-// 3d-c 장면의 지켜보기 대목을 하나씩, 카메라가 다 옮겨 간 뒤에 찍는다. 사용: node tools/test/beats3d_c.js <장면 OT-NN> <저장 폴더> [대목마다 기다릴 초(기본 14)]
+// 3d-c 장면의 지켜보기 대목을 하나씩, 카메라가 다 옮겨 간 뒤에 찍는다. 사용: node tools/test/beats3d_c.js <장면 OT-NN> <저장 폴더> [대목마다 기다릴 초(기본 14)] [건너뛸 장면 시간(초)]
 // 까닭: 화면 없는 시험 컴퓨터는 한 장면 그리기가 느려서(초당 몇 장), 게임 시간(한 장면에 최대 0.05초)이 실제보다 느리게 흐른다.
 //       walk3dScene.js는 대목마다 1.8초 뒤에 찍으므로 카메라가 옮겨 가는 도중의 화면이 찍힌다. 이 도구는 대목 화면이 휴대폰에서처럼 자리 잡은 뒤를 본다.
 // 재료 줍기·물음은 건너뛴다(BO3D.debug.lookup). 대목 사이의 돕기 조각은 lib/help.js로 마친다. 글 잘림을 보려고 글 상자도 함께 찍힌다.
@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const enter3d = require('./lib/enter.js');
 const doHelp = require('./lib/help.js');
-const id = process.argv[2] || 'OT-37', out = process.argv[3] || '/tmp/beats3d_c', waitS = Number(process.argv[4] || '14');
+const id = process.argv[2] || 'OT-37', out = process.argv[3] || '/tmp/beats3d_c', waitS = Number(process.argv[4] || '14'), skipS = Number(process.argv[5] || '0');   /* 다섯째: 대목마다 장면 시간을 이만큼 건너뛰고 찍는다(장면이 BO3D.c3d.tNN.skip을 줄 때만) */
 fs.mkdirSync(out, { recursive: true });
 (async () => {
   const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
@@ -36,6 +36,7 @@ fs.mkdirSync(out, { recursive: true });
   const nb = D.beats.length - info.eventStart;
   for (let i = 0; i < nb; i++) {
     await p.waitForTimeout(waitS * 1000);
+    if (skipS) { await p.evaluate(([n, s]) => { const t = BO3D.c3d && BO3D.c3d['t' + n]; if (t) t.skip(s); }, [id.slice(3), skipS]); await p.waitForTimeout(2500); }
     const ph = await p.evaluate(() => BO3D.debug.phase());
     await p.screenshot({ path: path.join(out, 'beat' + (info.eventStart + i) + '.png') });
     console.log('대목', info.eventStart + i, JSON.stringify(ph));

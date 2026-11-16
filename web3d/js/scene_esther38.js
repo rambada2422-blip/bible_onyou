@@ -174,6 +174,7 @@
       var gp = scrollWith.group.position, ry = scrollWith.group.rotation.y;
       scroll.position.set(gp.x + Math.sin(ry) * 0.32, gp.y + 1.05, gp.z + Math.cos(ry) * 0.32); scroll.rotation.y = ry;
     }
+    if (window.BO3D_TEST) C3.t38 = { skip: function (sec) { pt += sec; } };   /* 시험에서 때를 건너뛰어 볼 때만 쓴다 */
     if (FX) FX.sortLayers(scene);
     setPhase('mourn');
 
