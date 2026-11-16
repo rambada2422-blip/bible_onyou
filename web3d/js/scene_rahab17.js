@@ -99,7 +99,7 @@
     var leaves = [];
     [-1, 1].forEach(function (s) { var pv = new T.Group(), lf = new T.Mesh(new T.BoxGeometry(1.8, 4.8, 0.25), doorM); lf.position.set(-s * 0.9, 2.4, 0); pv.add(lf); pv.position.set(s * 1.8, 0, -1.0); pv.userData.s = s; gateG.add(pv); leaves.push(pv); });
     var gateTop = new T.Group(); gateTop.position.copy(gateG.position); gateTop.rotation.copy(gateG.rotation); leaves.forEach(function (l) { gateTop.add(l); }); scene.add(gateTop);
-    var gateOpen = 1, gateWant = 1;
+    var gateOpen = 1, gateWant = 1, gateShut = false;
     function gateSet(v, now) { gateWant = v; if (now) gateOpen = v; }
     /* 성 밖 빈 땅의 덤불과 바위(자리 표시용) */
     [[-41, 5, 1], [-30, 12, 2], [12, 12, 3], [38, -4, 4], [26, 18, 5], [-14, 20, 6], [-41, 4, 7]].forEach(function (q) { if (MO.shrub) { var sb = MO.shrub(q[2] + 30); sb.position.set(q[0] - 1.6, height(q[0] - 1.6, q[1] + 1), q[1] + 1); scene.add(sb); } if (MO.rock && q[2] % 2) { var rk = MO.rock(q[2] + 60); rk.position.set(q[0] + 1.7, height(q[0] + 1.7, q[1] - 1) - 0.05, q[1] - 1); scene.add(rk); } });
@@ -190,6 +190,7 @@
         if (phase === 'pursue' && chasers[3].g.position.z > GATE[1] + 3) gateSet(0);                 /* 그들이 나가자 곧 성문을 닫았다(2:7) */
         if (phase === 'after' && pt > 0.5 && !A.moving(chasers[3])) gateSet(0);
         if (Math.abs(gateOpen - gateWant) > 0.002) gateOpen += (gateWant - gateOpen) * Math.min(1, dt * 1.6);
+        if (gateWant > 0.5) gateShut = false; else if (gateOpen < 0.04 && !gateShut) { gateShut = true; if (FX && phase === 'pursue') FX.audio.thud(0.3); }   /* 성문이 닫히는 소리(2:7). 한 번만 */
         leaves.forEach(function (l) { l.rotation.y = -l.userData.s * gateOpen * 1.45; });
         if (phase === 'enter') spies.forEach(function (s) { if (!A.moving(s)) s.g.visible = false; });
         if ((phase === 'pursue' && pt > 2) || phase === 'after') chasers.forEach(function (c) { if (!A.moving(c)) c.g.visible = false; });

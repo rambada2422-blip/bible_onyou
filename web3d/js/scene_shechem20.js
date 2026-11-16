@@ -81,7 +81,7 @@
     function faceJ(a) { return Math.atan2(JOSH[0] - a.home[0], JOSH[1] - a.home[1]); }
     /* 대목마다 모든 상태를 처음부터 정한다('이전'으로 돌아와도 뒤 대목의 것이 남지 않게) */
     function setPhase(p) {
-      phase = p; pt = 0; josh.did = 0;
+      phase = p; pt = 0; josh.did = 0; josh.thud = false;
       raise = raiseWant = 0; stoneAt(0); scroll.visible = false;
       A.at(josh, JOSH[0], JOSH[1], 0);
       people.forEach(function (a) { a.left = false; if (p === 'gather') { A.at(a, a.near[0], a.near[1], 0); A.go(a, [a.home], 1.1 + hash(a.home[0], 2) * 0.4, faceJ(a)); } else A.at(a, a.home[0], a.home[1], faceJ(a)); });
@@ -139,6 +139,7 @@
           if (josh.did === 2 && raise > 0.97) { josh.did = 3; josh.t3 = pt; A.go(josh, [[STONE[0] - 1.6, STONE[1] + 1.4]], 0.8, 0); }   /* 24:27 돌 곁에서 백성을 보고 말한다 */
           if (josh.did === 3 && pt > josh.t3 + 3) people.forEach(function (a) { if (!a.left) { a.left = true; A.go(a, a.leave, 1.3); } });   /* 24:28 */
           if (Math.abs(raise - raiseWant) > 0.002) { raise += (raiseWant - raise) * Math.min(1, dt * 1.1); stoneAt(raise); }
+          if (raise > 0.97 && !josh.thud) { josh.thud = true; if (FX) FX.audio.thud(0.35); }   /* 큰 돌이 서는 소리(24:26). 한 번만 */
         }
         all.forEach(function (a) { if (a.g.visible) A.step(a, dt); });
       },
