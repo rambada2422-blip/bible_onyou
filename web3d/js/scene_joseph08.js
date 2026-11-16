@@ -75,7 +75,8 @@
     scene.add(sun); scene.add(sun.target);
     function put(o, x, z, lift) { o.position.set(x, height(x, z) + (lift || 0), z); scene.add(o); return o; }
     function near(x, z, p, r) { return Math.hypot(x - p[0], z - p[1]) < r; }
-    var PARTS = [[27, 30], [56, 40], [28, 0]], START = [40, 20], MACHINE = [50, 12];
+    var PARTS = [[34, 4], [24.5, 8.1], [28, 0]], START = [44.4, -5.4], MACHINE = [52, 6];
+    /* 재료를 주울 때 화면은 걸어온 쪽을 본다. 재료 1(37:12-17 대목)은 양 떼 너머로 멀리서 걸어오는 요셉 쪽으로, 재료 2(37:18-22 대목)는 형들과 요셉이 다가오는 길 쪽으로 걸어가며 줍게 둔다 */
     function clear(x, z) {   /* 사람·양 떼·구덩이·길·재료 자리는 비워 둔다 */
       if (near(x, z, PIT, 16) || near(x, z, FLOCK, 15) || near(x, z, [4, 12], 14) || ROAD.dist(x, z) < 7 || JP.dist(x, z) < 6) return false;
       if (near(x, z, START, 5) || near(x, z, MACHINE, 6)) return false;
