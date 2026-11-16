@@ -706,6 +706,7 @@ dialog textarea{width:100%;height:42vh;font:13px/1.5 ui-monospace,Menlo,Consolas
 `;
 const CSS_PRINT = `
 @page{size:A4;margin:14mm 13mm}
+figure{width:31%;margin:.3em .8% .3em 0;break-inside:avoid}figure img{max-height:62mm;width:auto;max-width:100%}
 body{font-size:10.5pt;line-height:1.5;background:#fff}
 main{padding:0}h1{font-size:17pt}h2{font-size:14pt;break-before:page}h2.first{break-before:auto}h3{font-size:12pt;break-after:avoid}
 .it{border:1px solid #bbb;border-radius:0;padding:5px 8px;margin:6px 0;break-inside:avoid}
