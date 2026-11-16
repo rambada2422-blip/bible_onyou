@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>바이블 온유 · 아이 시험 집계 도구</title>
+<style>
+:root{--bg:#faf8f3;--card:#fff;--ink:#1f2328;--mut:#5d6570;--line:#e3ddd0;--acc:#1f6f5c;--warn:#a23b2a;--soft:#f1ede3;--amb:#8a5a00}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;word-break:keep-all;overflow-wrap:anywhere}
+main{max-width:900px;margin:0 auto;padding:0 16px 80px}
+h1{font-size:1.4rem;margin:.6em 0 .2em}h2{font-size:1.15rem;margin:1.5em 0 .4em;padding-top:.4em;border-top:3px solid var(--acc)}h3{font-size:1rem;margin:1em 0 .3em}
+.sm{color:var(--mut);font-size:.9em}.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:10px 0}
+label{display:block;font-size:.9em;margin:.4em 0 .1em}
+input,select,textarea,button{font:inherit}
+input[type=number],input[type=text],select{width:100%;min-height:40px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fffdf8;color:var(--ink)}
+textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;background:#fffdf8;color:var(--ink)}
+button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:7px 12px;min-height:40px}
+button.pr{background:var(--acc);color:#fff;border-color:var(--acc)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 10px}
+fieldset{border:1px solid var(--line);border-radius:10px;margin:10px 0;padding:6px 10px 10px}legend{font-weight:700;font-size:.95em;padding:0 4px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.9em;min-width:520px}th,td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top}th{background:var(--soft)}
+.ok{color:var(--acc);font-weight:700}.no{color:var(--warn);font-weight:700}.na{color:var(--amb);font-weight:700}
+.verdict{border-left:6px solid var(--acc);font-size:1.05em}.verdict.b{border-left-color:var(--warn)}.verdict.u{border-left-color:var(--amb)}
+.auto{font-size:.8em;color:var(--acc)}
+@media (prefers-color-scheme:dark){:root{--bg:#16181b;--card:#1f2226;--ink:#e8e6e1;--mut:#a3a9b3;--line:#363a40;--acc:#58c2a8;--warn:#ef8d7c;--soft:#2a2e33;--amb:#f0c661}input[type=number],input[type=text],select,textarea{background:#1a1c1f}}
+@media print{button,.noprint{display:none}main{max-width:none}}
+</style></head>
+<body>
+<main>
+<h1>아이 시험 집계 도구</h1>
+<p class="sm">바이블 온유 · <code>docs/12_아이시험_계획.md</code>의 5개 항목과 판정을 그대로 계산합니다. 인터넷 없이 이 파일 하나로 돕니다. 넣은 자료는 <b>이 기기의 이 브라우저에만</b> 저장되고 어디로도 보내지 않습니다.</p>
+<p class="card"><b>아이의 이름·사진·연락처를 적지 않습니다.</b> 아이는 번호(1, 2, 3…)로만 적고, 나이는 단계(8~10 / 11~13 / 14~19)만 고릅니다. 메모에도 이름을 쓰지 마세요.</p>
+
+<h2>1. 구간 하나 넣기 <span class="sm">(관찰지 한 장 = 구간 하나, 아이 한 명에 두 장)</span></h2>
+<form id="f" class="card" autocomplete="off">
+  <div class="grid">
+    <div><label for="no">관찰지 번호</label><input type="text" id="no" inputmode="numeric" maxlength="6" placeholder="예: 3-1"></div>
+    <div><label for="child">아이 번호(이름 아님)</label><input type="number" id="child" min="1" max="99"></div>
+    <div><label for="tier">나이 단계</label><select id="tier"><option value="t1">8~10세</option><option value="t2">11~13세</option><option value="t3">14~19세</option></select></div>
+    <div><label for="ver">본 판</label><select id="ver"><option value="prev">앞 판(11/15)</option><option value="new">개선 판</option></select></div>
+    <div><label for="seg">몇째 구간</label><select id="seg"><option value="1">첫 10분</option><option value="2">둘째 10분</option></select></div>
+  </div>
+  <label for="log">놀이 기록 원본(게임 주소 끝에 <code>#log</code> → "놀이 기록 보기"의 글상자를 복사해 붙여 넣기). 앞 판에는 놀이 기록이 없으니 비워 두고 아래 칸을 손으로 채웁니다.</label>
+  <textarea id="log" spellcheck="false" placeholder='[{"w":"OT-10 arrive","ms":5300,"at":...}, ...]'></textarea>
+  <p><button type="button" id="parse">놀이 기록에서 채우기</button> <span id="pmsg" class="sm" role="status"></span></p>
+
+  <fieldset><legend>항목 1 · 오답 뒤 포기</legend><div class="grid">
+    <div><label for="wrong">마주친 오답 화면 수</label><input type="number" id="wrong" min="0"></div>
+    <div><label for="quit10">그중 10초 안에 포기한 수</label><input type="number" id="quit10" min="0"></div>
+    <div><label for="wrongDone">그중 다시 읽고 끝까지 간 수</label><input type="number" id="wrongDone" min="0"></div>
+  </div></fieldset>
+  <fieldset><legend>항목 2 · 보상</legend><div class="grid">
+    <div><label for="matGot">재료를 얻은 횟수 <span class="auto" data-a="matGot"></span></label><input type="number" id="matGot" min="0"></div>
+    <div><label for="opened">수리 막대·아지트·사진 화면을 스스로 연 횟수</label><input type="number" id="opened" min="0"></div>
+    <div><label for="sceneDone">마친 장면 수 <span class="auto" data-a="sceneDone"></span></label><input type="number" id="sceneDone" min="0"></div>
+    <div><label for="nextPicked">마친 뒤 다음 장면을 고른 수</label><input type="number" id="nextPicked" min="0"></div>
+  </div></fieldset>
+  <fieldset><legend>항목 3 · 넘기기</legend><div class="grid">
+    <div><label for="screens">본 화면 수 <span class="auto" data-a="screens"></span></label><input type="number" id="screens" min="0"></div>
+    <div><label for="quick">2초 안에 넘긴 화면 수 <span class="auto" data-a="quick"></span></label><input type="number" id="quick" min="0"></div>
+    <div><label for="doN">한 돕기 단계 수 <span class="auto" data-a="doN"></span></label><input type="number" id="doN" min="0"></div>
+    <div><label for="doFast">그중 15초 안에 마친 수 <span class="auto" data-a="doFast"></span></label><input type="number" id="doFast" min="0"></div>
+  </div></fieldset>
+  <fieldset><legend>항목 4 · 절정·마무리</legend><div class="grid">
+    <div><label for="climaxN">들어간 3D 절정·마무리 화면 수</label><input type="number" id="climaxN" min="0"></div>
+    <div><label for="climaxSkip">그중 건너뛰기·끝내기를 누른 수</label><input type="number" id="climaxSkip" min="0"></div>
+    <div><label for="closeN">마무리 화면 수 <span class="auto" data-a="closeN"></span></label><input type="number" id="closeN" min="0"></div>
+    <div><label for="closeSec">마무리에 머문 초(합) <span class="auto" data-a="closeSec"></span></label><input type="number" id="closeSec" min="0"></div>
+  </div></fieldset>
+  <fieldset><legend>항목 5 · 성경 찾기</legend><div class="grid">
+    <div><label for="qN">나온 장절 물음 수 <span class="auto" data-a="qN"></span></label><input type="number" id="qN" min="0"></div>
+    <div><label for="qSec">찾아 답하기까지 걸린 초(합) <span class="auto" data-a="qSec"></span></label><input type="number" id="qSec" min="0"></div>
+    <div><label for="fin10">10분 안에 끝까지 마친 장면 수 <span class="auto" data-a="fin10"></span></label><input type="number" id="fin10" min="0"></div>
+  </div></fieldset>
+  <fieldset><legend>반대 가설 확인용 · 포기한 순간</legend><div class="grid">
+    <div><label for="quitAll">이 구간에서 포기한(그만하겠다고 한) 횟수</label><input type="number" id="quitAll" min="0"></div>
+    <div><label for="quitBible">그중 성경을 찾던 순간이었던 수</label><input type="number" id="quitBible" min="0"></div>
+  </div></fieldset>
+  <label for="memo">메모(이름을 쓰지 않습니다)</label><input type="text" id="memo" maxlength="200">
+  <p><button type="submit" class="pr" id="addbtn">이 구간 넣기</button> <button type="reset">칸 비우기</button> <span id="fmsg" class="sm" role="status"></span></p>
+</form>
+
+<h2>2. 넣은 구간</h2>
+<div class="tw"><table id="list"><thead><tr><th>관찰지</th><th>아이</th><th>나이</th><th>판</th><th>구간</th><th>1 오답</th><th>2 보상</th><th>3 넘기기</th><th>4 절정</th><th>5 성경</th><th></th></tr></thead><tbody></tbody></table></div>
+
+<h2>3. 결과</h2>
+<div id="warn"></div>
+<div class="tw"><table id="sum"><thead><tr><th>항목</th><th>통과 기준</th><th>앞 판</th><th>개선 판</th></tr></thead><tbody></tbody></table></div>
+<div id="verdict" class="card verdict u"></div>
+<p class="sm">같은 판의 구간을 모두 합쳐(분자끼리, 분모끼리 더해) 계산합니다. "기회 없음"은 그 항목을 잴 일이 없었다는 뜻이며 통과로 세지 않습니다.</p>
+
+<h2 class="noprint">4. 자료 옮기기</h2>
+<div class="card noprint">
+  <p class="sm">아래 글상자의 글이 넣은 자료 전부입니다. 복사해 두면 다른 기기에서 붙여 넣고 "불러오기"로 이어 할 수 있습니다.</p>
+  <textarea id="io" spellcheck="false"></textarea>
+  <p><button type="button" id="exp">내보내기(글상자에 쓰기)</button> <button type="button" id="imp">불러오기</button> <button type="button" id="demo">꾸민 자료로 시험해 보기</button> <button type="button" id="wipe">모두 지우기</button> <span id="iomsg" class="sm" role="status"></span></p>
+</div>
+</main>
+
+<script id="calc">
+/* ── 계산(화면 없이도 도는 순수 함수. tools/test/check_kidtest.js가 이 부분을 꺼내 꾸민 자료로 시험한다) ── */
+/* 장면마다 현장 돕기 단계 가운데 손으로 하는 돕기(d)와 뜻 묻기(a)의 번호. content/ot에서 뽑은 것(시험이 같은지 확인한다) */
+var HELPMAP = {"OT-01":{"d":[1,2],"a":[3]},"OT-02":{"d":[0],"a":[2]},"OT-03":{"d":[1],"a":[3]},"OT-04":{"d":[1],"a":[2]},"OT-05":{"d":[0],"a":[2]},"OT-06":{"d":[1],"a":[2]},"OT-07":{"d":[0],"a":[3]},"OT-08":{"d":[0],"a":[2]},"OT-09":{"d":[0],"a":[3]},"OT-10":{"d":[1,3],"a":[4]},"OT-11":{"d":[0],"a":[3]},"OT-12":{"d":[0],"a":[3]},"OT-13":{"d":[0],"a":[4]},"OT-14":{"d":[1],"a":[3]},"OT-15":{"d":[0],"a":[3]},"OT-16":{"d":[2],"a":[3]},"OT-17":{"d":[2],"a":[3]},"OT-18":{"d":[1],"a":[4]},"OT-19":{"d":[1],"a":[4]},"OT-20":{"d":[2],"a":[3]},"OT-21":{"d":[0],"a":[4]},"OT-22":{"d":[0],"a":[2]},"OT-23":{"d":[0],"a":[1]},"OT-24":{"d":[1],"a":[3]},"OT-25":{"d":[2],"a":[3]},"OT-26":{"d":[1],"a":[3]},"OT-27":{"d":[1],"a":[2]},"OT-28":{"d":[0],"a":[3]},"OT-29":{"d":[0],"a":[3]},"OT-30":{"d":[1],"a":[4]},"OT-31":{"d":[2],"a":[3]},"OT-32":{"d":[1],"a":[2]},"OT-33":{"d":[0],"a":[3]},"OT-34":{"d":[1],"a":[4]},"OT-35":{"d":[1],"a":[3]},"OT-36":{"d":[2],"a":[3]},"OT-37":{"d":[0],"a":[4]},"OT-38":{"d":[1],"a":[3]},"OT-39":{"d":[2],"a":[3]},"OT-40":{"d":[1],"a":[2]}};
+var FIELDS = ['wrong','quit10','wrongDone','matGot','opened','sceneDone','nextPicked','screens','quick','doN','doFast','climaxN','climaxSkip','closeN','closeSec','qN','qSec','fin10','quitAll','quitBible'];
+/* 놀이 기록(JSON 글)에서 잴 수 있는 것을 뽑는다. 이야기 카드의 화면만 기록된다(3D 장면 안은 기록되지 않는다) */
+function fromLog(text) {
+  var log = typeof text === 'string' ? JSON.parse(text) : text;
+  if (!Array.isArray(log)) throw new Error('놀이 기록이 목록이 아닙니다');
+  var r = { screens: 0, quick: 0, doN: 0, doFast: 0, qN: 0, qSec: 0, matGot: 0, closeN: 0, closeSec: 0, sceneDone: 0, fin10: 0 };
+  var t0 = null, qms = 0, cms = 0;
+  log.forEach(function (x) {
+    if (!x || typeof x.w !== 'string' || x.exit) return;
+    var p = x.w.split(' '), id = p[0], k = p[1] || '', ms = Number(x.ms) || 0, m = k.match(/^([a-z-]+?)(\d+)?$/) || [], kind = m[1] || k, idx = m[2] === undefined ? -1 : Number(m[2]);
+    if (!/^OT-\d\d$/.test(id)) return;
+    if (t0 === null && x.at) t0 = x.at;
+    r.screens++; if (ms < 2000) r.quick++;
+    var hm = HELPMAP[id] || { d: [], a: [] };
+    if (kind === 'help' && hm.d.indexOf(idx) >= 0) { r.doN++; if (ms <= 15000) r.doFast++; }
+    if (kind === 'gate' || kind === 'quest' || (kind === 'help' && hm.a.indexOf(idx) >= 0)) { r.qN++; qms += ms; }
+    if (kind === 'mat' || kind === 'quest') r.matGot++;
+    if (kind === 'finish') { r.closeN++; cms += ms; r.sceneDone++; if (t0 !== null && x.at && x.at - t0 <= 600000) r.fin10++; }
+  });
+  r.qSec = Math.round(qms / 1000); r.closeSec = Math.round(cms / 1000);
+  return r;
+}
+function num(v) { return v === '' || v === null || v === undefined || isNaN(Number(v)) ? null : Number(v); }
+/* 구간 여러 개를 합친다: 분자끼리, 분모끼리 */
+function pool(list) {
+  var s = { n: list.length, children: {} };
+  FIELDS.forEach(function (k) { s[k] = 0; });
+  list.forEach(function (x) { FIELDS.forEach(function (k) { s[k] += num(x[k]) || 0; }); s.children[x.child] = 1; });
+  s.kids = Object.keys(s.children).length;
+  return s;
+}
+function pct(a, b) { return b ? a / b : null; }
+/* 계획서의 5개 항목. pass: true/false, 기회 없음이면 null */
+function items(s) {
+  var I = [];
+  /* 1 오답 뒤 포기: 오답 화면 2회 이상일 때만 */
+  var a = pct(s.quit10, s.wrong), b = pct(s.wrongDone, s.wrong);
+  I.push({ no: 1, name: '오답 뒤 포기', chance: s.wrong >= 2, pass: s.wrong >= 2 ? (a <= 0.20 && b >= 0.80) : null,
+    text: s.wrong >= 2 ? '10초 안 포기 ' + P(a) + ' (' + s.quit10 + '/' + s.wrong + ') · 끝까지 ' + P(b) + ' (' + s.wrongDone + '/' + s.wrong + ')' : '기회 없음(오답 화면 ' + s.wrong + '회)' });
+  /* 2 보상: 재료를 얻은 적이 있을 때만 */
+  var c = pct(s.nextPicked, s.sceneDone);
+  I.push({ no: 2, name: '보상', chance: s.matGot >= 1, pass: s.matGot >= 1 ? (s.opened >= 1 && c !== null && c >= 0.75) : null,
+    text: s.matGot >= 1 ? '스스로 연 횟수 ' + s.opened + ' · 다음 장면 고름 ' + (c === null ? '마친 장면 없음' : P(c) + ' (' + s.nextPicked + '/' + s.sceneDone + ')') : '기회 없음(재료 0회)' });
+  /* 3 넘기기 */
+  var d = pct(s.quick, s.screens), e = pct(s.doFast, s.doN);
+  /* 돕기 단계가 한 번도 없었으면(앞 판에는 드물다) 2초 넘김만으로 본다 */
+  I.push({ no: 3, name: '넘기기', chance: s.screens >= 1, pass: s.screens >= 1 ? (d <= 0.15 && (e === null || e >= 0.80)) : null, quickRate: d,
+    text: s.screens >= 1 ? '2초 안 넘김 ' + P(d) + ' (' + s.quick + '/' + s.screens + ') · 돕기 15초 안 ' + (e === null ? '돕기 없음' : P(e) + ' (' + s.doFast + '/' + s.doN + ')') : '기회 없음(본 화면 0)' });
+  /* 4 절정·마무리 */
+  var f = pct(s.climaxN - s.climaxSkip, s.climaxN), g = s.closeN ? s.closeSec / s.closeN : null;
+  /* 절정 화면이나 마무리 가운데 하나만 있었으면 있는 쪽만으로 본다 */
+  I.push({ no: 4, name: '절정·마무리', chance: s.climaxN >= 1 || s.closeN >= 1, pass: s.climaxN >= 1 || s.closeN >= 1 ? ((f === null || f >= 0.85) && (g === null || g >= 15)) : null,
+    text: (s.climaxN >= 1 ? '건너뛰지 않고 마침 ' + P(f) + ' (' + (s.climaxN - s.climaxSkip) + '/' + s.climaxN + ')' : '절정 화면 없음') + ' · 마무리 평균 ' + (g === null ? '없음' : R1(g) + '초') });
+  /* 5 성경 찾기 */
+  var h = s.qN ? s.qSec / s.qN : null;
+  I.push({ no: 5, name: '성경 찾기', chance: s.qN >= 1, pass: s.qN >= 1 ? (h <= 45 && s.fin10 >= 1) : null, avgSec: h,
+    text: s.qN >= 1 ? '물음마다 평균 ' + R1(h) + '초 (' + s.qN + '개) · 10분 안에 마친 장면 ' + s.fin10 : '기회 없음(물음 0)' });
+  return I;
+}
+function P(x) { return x === null ? '—' : Math.round(x * 1000) / 10 + '%'; }
+function R1(x) { return Math.round(x * 10) / 10; }
+/* 판정(계획서 "판정" 그대로) */
+function verdict(prev, now) {
+  var ip = items(prev), inw = items(now), passN = inw.filter(function (x) { return x.pass === true; }).length, naN = inw.filter(function (x) { return x.pass === null; }).length;
+  var qp = ip[2].quickRate, qn = inw[2].quickRate;
+  var half = (qp === null || qn === null) ? null : (qp === 0 ? (qn === 0) : qn <= qp / 2);
+  var A = passN >= 4 && half === true;
+  var avg = inw[4].avgSec, share = now.quitAll ? now.quitBible / now.quitAll : null;
+  var B = avg !== null && avg > 60 && share !== null && share >= 0.5;
+  var code = A && B ? 'both' : A ? 'A' : B ? 'B' : 'none';
+  var why = ['개선 판 통과 ' + passN + '/5' + (naN ? ' (기회 없음 ' + naN + ')' : ''),
+    '2초 안 넘김: 앞 판 ' + P(qp) + ' → 개선 판 ' + P(qn) + (half === null ? ' (견줄 수 없음)' : half ? ' (절반 이하)' : ' (절반 이하 아님)'),
+    '개선 판 물음마다 평균 ' + (avg === null ? '—' : R1(avg) + '초') + ' · 포기 가운데 성경 찾던 순간 ' + (share === null ? '포기 없음' : P(share) + ' (' + now.quitBible + '/' + now.quitAll + ')')];
+  var text = { A: '흥미 분석의 진단이 맞았다고 본다 → 이번 개선을 그대로 두고 다음 다듬기로.',
+    B: '반대 가설(실물 성경 찾기의 부담)이 맞다고 본다 → 장면당 물음 수를 줄이거나, 가족이 함께 구절을 찾는 안내부터.',
+    both: '두 판정의 조건이 모두 맞았다 → 계획서가 정하지 않은 경우다. 관찰 메모를 보고 사람이 정한다.',
+    none: '어느 판정의 조건도 채우지 못했다 → 아직 판정하지 않는다. 통과하지 못한 항목부터 본다.' }[code];
+  return { code: code, text: text, why: why, passN: passN, naN: naN, itemsPrev: ip, itemsNew: inw };
+}
+/* 표본이 계획(6명 이상, 나이 단계마다 2명 이상, 한 아이가 두 판을 모두)에 맞는지 */
+function sampleWarnings(list) {
+  var w = [], kids = {}, tiers = { t1: {}, t2: {}, t3: {} };
+  list.forEach(function (x) { var k = kids[x.child] || (kids[x.child] = { v: {}, t: {}, order: {} }); k.v[x.ver] = 1; k.t[x.tier] = 1; k.order[x.seg] = x.ver; if (tiers[x.tier]) tiers[x.tier][x.child] = 1; });
+  var ids = Object.keys(kids);
+  if (ids.length < 6) w.push('아이가 ' + ids.length + '명입니다. 계획은 6명 이상입니다.');
+  [['t1', '8~10세'], ['t2', '11~13세'], ['t3', '14~19세']].forEach(function (t) { var n = Object.keys(tiers[t[0]]).length; if (n < 2) w.push(t[1] + ' 아이가 ' + n + '명입니다. 계획은 단계마다 2명 이상입니다.'); });
+  ids.forEach(function (id) { var k = kids[id]; if (!(k.v.prev && k.v.new)) w.push('아이 ' + id + ': 두 판(앞 판·개선 판)을 모두 넣지 않았습니다.'); if (Object.keys(k.t).length > 1) w.push('아이 ' + id + ': 나이 단계가 구간마다 다르게 적혀 있습니다.');
+    var want = Number(id) % 2 === 1 ? 'prev' : 'new'; if (k.order[1] && k.order[1] !== want) w.push('아이 ' + id + ': 첫 구간이 ' + (want === 'prev' ? '앞 판' : '개선 판') + '이어야 합니다(홀수 번째는 앞 판 먼저, 짝수 번째는 개선 판 먼저).'); });
+  return w;
+}
+/* 꾸민 자료(시험용): 6명, 개선 판이 좋은 경우 */
+function demoData() {
+  var L = [], tiers = ['t1', 't1', 't2', 't2', 't3', 't3'];
+  for (var c = 1; c <= 6; c++) {
+    var first = c % 2 === 1 ? 'prev' : 'new';
+    ['prev', 'new'].forEach(function (v) {
+      var good = v === 'new';
+      L.push({ no: c + '-' + (v === first ? 1 : 2), child: c, tier: tiers[c - 1], ver: v, seg: v === first ? 1 : 2, memo: '꾸민 자료',
+        wrong: 3, quit10: good ? 0 : 2, wrongDone: good ? 3 : 1, matGot: 1, opened: good ? 2 : 0, sceneDone: 1, nextPicked: good ? 1 : 0,
+        screens: 20, quick: good ? 2 : 9, doN: good ? 1 : 0, doFast: good ? 1 : 0, climaxN: 1, climaxSkip: good ? 0 : 1, closeN: 1, closeSec: good ? 22 : 6,
+        qN: 3, qSec: good ? 105 : 150, fin10: 1, quitAll: good ? 0 : 1, quitBible: 0 });
+    });
+  }
+  return L;
+}
+if (typeof module !== 'undefined') module.exports = { HELPMAP: HELPMAP, FIELDS: FIELDS, fromLog: fromLog, pool: pool, items: items, verdict: verdict, sampleWarnings: sampleWarnings, demoData: demoData };
+</script>
+<script>
+(function () {
+  var KEY = 'bo-kidtest-v1', DATA = [];
+  try { DATA = JSON.parse(localStorage.getItem(KEY) || '[]') || []; } catch (e) { DATA = []; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(DATA)); } catch (e) { /* 저장 못 하는 환경이면 이번만 */ } }
+  var $ = function (id) { return document.getElementById(id); };
+  var TN = { t1: '8~10', t2: '11~13', t3: '14~19' }, VN = { prev: '앞 판', 'new': '개선 판' };
+  function cell(it) { return '<span class="' + (it.pass === null ? 'na' : it.pass ? 'ok' : 'no') + '">' + (it.pass === null ? '기회 없음' : it.pass ? '통과' : '미달') + '</span>'; }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function draw() {
+    var tb = $('list').tBodies[0]; tb.innerHTML = '';
+    DATA.forEach(function (x, i) {
+      var it = items(pool([x])), tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + esc(x.no || '') + '</td><td>' + esc(x.child) + '</td><td>' + TN[x.tier] + '</td><td>' + VN[x.ver] + '</td><td>' + x.seg + '</td>' + it.map(function (q) { return '<td>' + cell(q) + '</td>'; }).join('') + '<td><button type="button" data-del="' + i + '">빼기</button></td>';
+      tb.appendChild(tr);
+    });
+    var prev = pool(DATA.filter(function (x) { return x.ver === 'prev'; })), now = pool(DATA.filter(function (x) { return x.ver === 'new'; })), v = verdict(prev, now);
+    var crit = ['10초 안 포기 20% 이하, 다시 읽고 끝까지 80% 이상', '보상 화면을 스스로 1회 이상 엶, 다음 장면 고름 75% 이상', '2초 안 넘김 15% 이하, 돕기 15초 안 마침 80% 이상', '건너뛰지 않고 마침 85% 이상, 마무리 평균 15초 이상', '물음마다 평균 45초 이하, 10분 안에 1장면 이상'];
+    $('sum').tBodies[0].innerHTML = v.itemsNew.map(function (q, i) { var p = v.itemsPrev[i]; return '<tr><td>' + q.no + ' ' + q.name + '</td><td>' + crit[i] + '</td><td>' + cell(p) + '<br><span class="sm">' + esc(p.text) + '</span></td><td>' + cell(q) + '<br><span class="sm">' + esc(q.text) + '</span></td></tr>'; }).join('') +
+      '<tr><th colspan="2">구간 수 · 아이 수</th><td>' + prev.n + '구간 · ' + prev.kids + '명</td><td>' + now.n + '구간 · ' + now.kids + '명</td></tr>';
+    var vd = $('verdict'); vd.className = 'card verdict ' + (v.code === 'A' ? '' : v.code === 'B' ? 'b' : 'u');
+    vd.innerHTML = DATA.length ? '<b>판정: ' + esc(v.text) + '</b><ul>' + v.why.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' : '<span class="sm">구간을 넣으면 여기에 판정이 나옵니다.</span>';
+    var ws = DATA.length ? sampleWarnings(DATA) : [];
+    $('warn').innerHTML = ws.length ? '<div class="card"><b class="na">표본 확인</b><ul>' + ws.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul><p class="sm">표본이 계획에 못 미치면 판정은 참고로만 봅니다.</p></div>' : '';
+  }
+  $('parse').addEventListener('click', function () {
+    try { var r = fromLog($('log').value.trim()); Object.keys(r).forEach(function (k) { if ($(k)) $(k).value = r[k]; var a = document.querySelector('[data-a="' + k + '"]'); if (a) a.textContent = '(기록에서 ' + r[k] + ')'; }); $('pmsg').textContent = '놀이 기록에서 화면 ' + r.screens + '개를 읽어 초록 표시 칸을 채웠습니다. 나머지 칸은 관찰지를 보고 넣어 주세요.'; }
+    catch (e) { $('pmsg').textContent = '놀이 기록을 읽지 못했습니다. 글상자 전체를 그대로 붙여 넣었는지 확인해 주세요.'; }
+  });
+  $('f').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    if (!$('child').value) { $('fmsg').textContent = '아이 번호를 넣어 주세요.'; return; }
+    var x = { no: $('no').value.trim(), child: Number($('child').value), tier: $('tier').value, ver: $('ver').value, seg: Number($('seg').value), memo: $('memo').value.trim() };
+    FIELDS.forEach(function (k) { x[k] = $(k).value === '' ? 0 : Number($(k).value); });
+    DATA.push(x); save(); draw(); $('fmsg').textContent = '넣었습니다(모두 ' + DATA.length + '구간).';
+    $('f').reset(); [].forEach.call(document.querySelectorAll('.auto'), function (a) { a.textContent = ''; });
+  });
+  $('f').addEventListener('reset', function () { [].forEach.call(document.querySelectorAll('.auto'), function (a) { a.textContent = ''; }); $('pmsg').textContent = ''; });
+  $('list').addEventListener('click', function (ev) { var i = ev.target.getAttribute && ev.target.getAttribute('data-del'); if (i !== null && i !== undefined && confirm('이 구간을 뺄까요?')) { DATA.splice(Number(i), 1); save(); draw(); } });
+  $('exp').addEventListener('click', function () { $('io').value = JSON.stringify(DATA); $('iomsg').textContent = '글상자에 썼습니다. 전체를 복사해 두세요.'; });
+  $('imp').addEventListener('click', function () { try { var d = JSON.parse($('io').value); if (!Array.isArray(d)) throw 0; DATA = d; save(); draw(); $('iomsg').textContent = d.length + '구간을 불러왔습니다.'; } catch (e) { $('iomsg').textContent = '불러오지 못했습니다. 내보낸 글 전체를 붙여 넣어 주세요.'; } });
+  $('demo').addEventListener('click', function () { if (DATA.length && !confirm('지금 넣은 자료를 꾸민 자료로 바꿀까요?')) return; DATA = demoData(); save(); draw(); $('iomsg').textContent = '꾸민 자료 12구간을 넣었습니다. 실제 시험 전에 "모두 지우기"를 눌러 주세요.'; });
+  $('wipe').addEventListener('click', function () { if (confirm('넣은 자료를 모두 지울까요? 되돌릴 수 없습니다.')) { DATA = []; save(); draw(); $('iomsg').textContent = '모두 지웠습니다.'; } });
+  draw();
+})();
+</script>
+</body></html>
