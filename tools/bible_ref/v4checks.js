@@ -174,6 +174,7 @@ function checkScene(d) {
   addKeys(d.ref); beats.forEach((b) => addKeys(b.ref));
   const beatRefs = [d.ref].concat(beats.map((b) => b.ref)).filter((r) => r && R.parse(r));
   const sceneKrv = beatRefs.map((r) => textOf(r, 'krv')).join(' '), sceneKjv = beatRefs.map((r) => textOf(r, 'kjv')).join(' ');
+  const sceneVerseList = []; beatRefs.forEach((r) => { const v = R.verses(r); if (v) v.list.forEach((x) => sceneVerseList.push(x)); });
   const sceneVerses = []; beatRefs.forEach((r) => { const v = R.verses(r); if (v) v.list.forEach((x) => sceneVerses.push(x.krv)); });
   const inScene = (ref) => { const k = keysOf(ref); return !!k && k.every((x) => sceneKeys.has(x)); };
   const partlyInScene = (ref) => { const k = keysOf(ref); return !!k && k.some((x) => sceneKeys.has(x)); };
@@ -277,6 +278,9 @@ function checkScene(d) {
           } else if (x.basis === '본문에 없음' && refText) {
             /* "본문에 없음"이라 한 보기가 읽을 곳의 본문과 많이 겹치면 사실은 본문에 있는 내용일 수 있다 */
             const s = score(x.label, refText), s2 = score(x.label, sceneKrv);
+            /* 보기 글이 장면 본문에 글자 그대로 있으면 "본문에 없음"이라 할 수 없다(근거를 그 장절로) */
+            const nl = norm(x.label);
+            if (nl.length >= 3) { const hit = sceneVerseList.find((v) => norm(v.krv).includes(nl)); if (hit) F('CHK', '없음인데본문에있음', `${ww}[${k}]`, `"본문에 없음" 보기 "${x.label}"이(가) 장면 본문 ${hit.c}:${hit.v}에 글자 그대로 있음`); }
             if (s >= 0.6 && norm(x.label).length >= 4) F('CHK', '없음인데겹침', `${ww}[${k}]`, `"본문에 없음" 보기 "${x.label}"이(가) 읽을 곳 본문과 많이 겹침(${Math.round(s * 100)}%)`);
             else if (s2 >= 0.75 && norm(x.label).length >= 5) F('CHK', '없음인데겹침-장면', `${ww}[${k}]`, `"본문에 없음" 보기 "${x.label}"이(가) 장면 본문과 많이 겹침(${Math.round(s2 * 100)}%)`);
           }
@@ -349,7 +353,12 @@ function checkScene(d) {
   const m = d.mission;
   if (m) {
     ['t1', 't2', 't3'].forEach((t) => { if (m.call && m.call[t]) { scanInline(m.call[t], `mission.call.${t}`); factCheck(m.call[t], `mission.call.${t}`, [], { story: true }); } });
-    (m.materials || []).forEach((x, i) => { refField(x.basis, `mission.materials[${i}].basis`); if (R.parse(x.basis) && !inScene(x.basis)) F('CHK', '범위밖', `mission.materials[${i}]`, `재료의 근거 ${x.basis}이(가) 장면의 본문 범위 밖`); ['name', 'use', 'how', 'line'].forEach((k) => { if (x[k]) { scanInline(x[k], `mission.materials[${i}].${k}`); factCheck(x[k], `mission.materials[${i}].${k}`, [x.basis], { story: true }); } }); });
+    (m.materials || []).forEach((x, i) => { refField(x.basis, `mission.materials[${i}].basis`); if (R.parse(x.basis) && !inScene(x.basis)) F('CHK', '범위밖', `mission.materials[${i}]`, `재료의 근거 ${x.basis}이(가) 장면의 본문 범위 밖`); { /* 재료의 근거 절에 그 물건(이름의 마지막 낱말)이 나오는가(작성규칙 7절: basis는 그 물건이 본문에 나오는 장절) */
+      const head = String(x.name || '').trim().split(/\s+/).pop().replace(/(조각|토막|부스러기|가루|덩이|줄기|가지|알|한 줌)$/, '') || String(x.name || '');
+      const words = String(x.name || '').split(/\s+/).concat([head]).filter((w) => w.length >= 1);
+      const bt = norm(textOf(x.basis, 'krv'));
+      if (bt && !words.some((w) => bt.includes(norm(w)))) F('CHK', '재료-절에없음', `mission.materials[${i}]`, `재료 "${x.name}"이(가) 근거 ${x.basis} 본문에 안 보임${words.some((w) => norm(sceneKrv).includes(norm(w))) ? '(장면의 다른 절에는 있음)' : '(장면 본문 어디에도 안 보임)'}`); }
+    ['name', 'use', 'how', 'line'].forEach((k) => { if (x[k]) { scanInline(x[k], `mission.materials[${i}].${k}`); factCheck(x[k], `mission.materials[${i}].${k}`, [x.basis], { story: true }); } }); });
     const cp = m.companion;
     if (cp) {
       refField(cp.ref, 'mission.companion.ref');
