@@ -158,7 +158,7 @@ button.track3 { border: 0; font: inherit; font-family: var(--f-display); cursor:
 .gc-ring { position: absolute; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; box-shadow: 0 0 0 3px #F2C14E, 0 0 0 7px rgba(242, 193, 78, .35); animation: gcRing .8s ease-in-out infinite; }
 .gcheck3.calm .gc-ring { animation: none; }
 @keyframes gcRing { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
-.gc-chip { position: absolute; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); pointer-events: auto; padding: 6px 14px; border-radius: 999px; background: #F2C14E; color: var(--ink-3); font-family: var(--f-display); font-size: 15px; }
+.gc-chip { position: absolute; left: 50%; top: calc(150px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); pointer-events: auto; padding: 6px 14px; border-radius: 999px; background: #F2C14E; color: var(--ink-3); font-family: var(--f-display); font-size: 15px; }
 .witness { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
 .witness h3 { font-family: var(--f-display); font-weight: 400; font-size: 16px; }
 .wit-row { display: flex; flex-direction: column; gap: 3px; padding: 8px 12px; border-radius: 12px; background: rgba(0, 0, 0, .05); }

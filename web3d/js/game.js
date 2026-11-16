@@ -1307,7 +1307,7 @@
       if (horeb) updateTracker();
       updateAura(dt); updateDexDet(dt); updateGearCheck(dt);
       /* 3단계 사용 연출: 사진에 담을 것이 가까우면 이끄는 아이가 서서 손목 탐지기를 들여다본다(걸으면 모형이 알아서 내린다) */
-      if (player.look) player.look(dexNear && (state === 'explore' || state === 'free'));
+      if (player.look) player.look((dexNear && (state === 'explore' || state === 'free')) || !!(gcheck && gcheck.part === 'wrist'));   /* 장비 점검 때도 들여다본다 */
       updateCamera(dt);
       var pp2 = player.group.position, sun = horeb ? env.sun : JL.sun;
       var so = horeb ? (SCN.sunOff || [-38, 46, 30]) : [30, 50, 34];
