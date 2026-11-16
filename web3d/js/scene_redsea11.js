@@ -153,6 +153,7 @@
 
     /* 구름 기둥: 처음에는 진 앞(바다 쪽), 출 14:19-20부터 두 진 사이 */
     var pillar = PR.cloudPillar(40), PIL_FRONT = [-30, 4], PIL_MID = [0, 74], pilAt = PIL_FRONT.slice(), pilTo = null;
+    var ISR_C = [-20, 24], PIL_LEN = Math.sqrt(30 * 30 + 70 * 70);   /* 이스라엘 진의 가운데쯤(사람 9~39, 장막 8~58), 기둥이 옮겨 가는 거리 */
     put(pillar.group, pilAt[0], pilAt[1]);
 
     /* 모세 (출 14:1, 14:16): 바닷가에 서 있다. 손을 내밀 때는 지팡이 든 오른팔을 바다 쪽으로 든다 */
@@ -195,8 +196,12 @@
     applyTod();
 
     var phase = 'camp';
+    function placePillar(at) { pilAt = at.slice(); pilTo = null; pillar.group.position.set(pilAt[0], height(pilAt[0], pilAt[1]), pilAt[1]); }
     function setPhase(p) {
       phase = p;
+      /* 구름 기둥의 자리: 14:19 전에는 진 앞, 14:19-20부터 두 진 사이. 대목을 건너뛰거나 '이전'으로 돌아와도 그 대목의 자리에 둔다 */
+      if (p === 'camp' || p === 'approach' || p === 'command') placePillar(PIL_FRONT);
+      if (p === 'return' || p === 'shore') placePillar(PIL_MID);
       if (p !== 'return' && p !== 'shore' && p !== 'camp') { retT = 0; if (chMode === 'pursue' || chMode === 'gone') { chMode = 'camp'; chariots.forEach(function (ch) { ch.group.visible = true; ch.group.position.set(ch.home[0], height(ch.home[0], ch.home[1]), ch.home[1]); ch.group.rotation.y = Math.PI; }); }
         moses.group.position.set(MOS[0], height(MOS[0], MOS[1]), MOS[1]); moses.group.rotation.y = Math.PI; if (p !== 'part') { partWant = 0; crossing = 'camp'; stretchWant = 0; } }   /* '이전'으로 돌아올 때 */
       if (p === 'camp') { todWant = 0; tod = 0; partWant = 0; part = 0; crossing = 'camp'; chMode = 'far'; pilAt = PIL_FRONT.slice(); pilTo = null; stretchWant = 0; stretch = 0;
@@ -205,7 +210,7 @@
       if (p === 'approach') chMode = chMode === 'far' ? 'approach' : chMode;          /* 출 14:9-10: 애굽 진이 가까이 */
       if (p === 'command') { todWant = 0.55; chMode = 'camp'; }                         /* 출 14:15-18: 저녁 */
       if (p === 'pillar') { todWant = 1; chMode = 'camp'; pilTo = PIL_MID; }            /* 출 14:19-20: 밤, 구름 기둥이 두 진 사이로 */
-      if (p === 'part') { todWant = 1; chMode = 'camp'; pilTo = null; pilAt = PIL_MID.slice(); stretchWant = 1; partWant = 1; crossing = 'cross'; if (FX) FX.audio.wind(0.5); }
+      if (p === 'part') { todWant = 1; chMode = 'camp'; placePillar(PIL_MID); stretchWant = 1; partWant = 1; crossing = 'cross'; if (FX) FX.audio.wind(0.5); }
       if (p === 'return') { todWant = 2; crossing = 'far'; partWant = 1; part = Math.max(part, 0.95); stretchWant = 0;
         /* 14:23: 애굽 사람들이 뒤쫓아 바다 가운데로 들어온다. 길 어귀에서 시작해 안으로 달린다 */
         if (chMode !== 'pursue') chariots.forEach(function (ch, k) { var ex = ch.lane + ((k % 2) - 0.5) * 1.5, ez = 6 + Math.floor(k / 3) * 7; ch.group.visible = true; ch.group.position.set(ex, height(ex, ez), ez); ch.group.rotation.y = Math.PI; ch.t = 0; });
@@ -267,6 +272,9 @@
           if (d < 0.2) { pilAt = pilTo.slice(); pilTo = null; } else { var st = Math.min(d, 14 * dt); pilAt[0] += (pilTo[0] - pilAt[0]) / d * st; pilAt[1] += (pilTo[1] - pilAt[1]) / d * st; }
           pillar.group.position.set(pilAt[0], height(pilAt[0], pilAt[1]), pilAt[1]);
         }
+        /* 기둥의 밝은 면과 빛은 이스라엘 진 쪽으로. 두 진 사이로 옮겨 갈수록 반대쪽(애굽 쪽)이 어두워진다(14:19-20) */
+        var mdx = pilAt[0] - PIL_MID[0], mdz = pilAt[1] - PIL_MID[1];
+        pillar.setFace(ISR_C[0] - pilAt[0], ISR_C[1] - pilAt[1], 1 - Math.sqrt(mdx * mdx + mdz * mdz) / PIL_LEN);
         pillar.update(now);
         stretch += (stretchWant - stretch) * Math.min(1, dt * 1.5);
         /* 출 14:26-27: 새벽, 병거가 길 가운데로 들어온 뒤 모세가 다시 손을 내밀고 물이 돌아온다 */

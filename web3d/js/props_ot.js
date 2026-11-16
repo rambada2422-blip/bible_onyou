@@ -2,8 +2,9 @@
  * 본문이 모양을 말하지 않는 것(장막, 병거의 생김새)은 단순한 꼴로만 둔다. 글자·무늬·신상은 넣지 않는다(스타일가이드 2절).
  *   BO3D.props.tent(seed)            장막
  *   BO3D.props.chariot(seed)         말 두 마리가 끄는 병거(사람은 태우지 않는다)
- *   BO3D.props.cloudPillar(h)        구름 기둥(출 13:21, 14:19). 형상 없이 둥근 구름 덩이만. { group, setNight(0..1), update(t) }
+ *   BO3D.props.cloudPillar(h)        구름 기둥(출 13:21, 14:19-20). 형상 없이 둥근 구름 덩이만. { group, setNight(0..1), setFace(dx, dz, 한쪽 정도 0..1), update(t) }
  *   BO3D.props.stoneHeap(seed, n)    돌무더기
+ *   BO3D.props.oak(seed)             상수리나무(둥근 잎덩이의 넓은 나무. 먼 배경용)
  */
 (function () {
   'use strict';
@@ -42,47 +43,122 @@
     g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
     return { group: g, legs: legs };
   }
+  /* 병거: 수레·바퀴·채와 말 두 마리. 움직이지 않는 부분(수레, 바퀴, 말의 몸통·목·머리·갈기·꼬리)은 mesh 하나로 굽고,
+     다리 여덟은 같은 축으로 같은 각도만큼 흔들리는 두 개씩 네 묶음으로 굽는다(병거 한 대 = 그리기 5번. 전에는 30번, 생김새·흔들림은 같다) */
   function chariot(seed) {
-    var r = rng(seed + 3), g = new T.Group(), wood = M('#8A5A32'), rim = M('#5A3A20');
-    var box = new T.Mesh(new T.BoxGeometry(1.3, 0.75, 0.9), wood); box.position.set(0, 0.95, -1.9); g.add(box);
-    var front = new T.Mesh(new T.BoxGeometry(1.3, 0.3, 0.08), M('#B08048')); front.position.set(0, 1.45, -1.48); g.add(front);
-    var axle = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, 1.9, 6), rim); axle.rotation.z = Math.PI / 2; axle.position.set(0, 0.6, -2.0); g.add(axle);
-    var wheels = [];
+    var r = rng(seed + 3), g = new T.Group(), tmp = new T.Group(), wood = M('#8A5A32'), rim = M('#5A3A20'), dark = M('#2E2420');
+    function part(geo, mat, x, y, z, rx, ry, rz) { var m = new T.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx || 0, ry || 0, rz || 0); tmp.add(m); return m; }
+    part(new T.BoxGeometry(1.3, 0.75, 0.9), wood, 0, 0.95, -1.9);
+    part(new T.BoxGeometry(1.3, 0.3, 0.08), M('#B08048'), 0, 1.45, -1.48);
+    part(new T.CylinderGeometry(0.05, 0.05, 1.9, 6), rim, 0, 0.6, -2.0, 0, 0, Math.PI / 2);
     [-0.88, 0.88].forEach(function (x) {
-      var wh = new T.Mesh(new T.TorusGeometry(0.52, 0.06, 5, 14), rim); wh.rotation.y = Math.PI / 2; wh.position.set(x, 0.6, -2.0); g.add(wh); wheels.push(wh);
-      for (var k = 0; k < 3; k++) { var sp = new T.Mesh(new T.BoxGeometry(0.04, 1.0, 0.04), rim); sp.position.copy(wh.position); sp.rotation.x = k * 1.05; g.add(sp); }
+      part(new T.TorusGeometry(0.52, 0.06, 5, 14), rim, x, 0.6, -2.0, 0, Math.PI / 2, 0);
+      for (var k = 0; k < 3; k++) part(new T.BoxGeometry(0.04, 1.0, 0.04), rim, x, 0.6, -2.0, k * 1.05, 0, 0);
     });
-    var pole = new T.Mesh(new T.BoxGeometry(0.08, 0.08, 2.4), wood); pole.position.set(0, 1.0, -0.4); g.add(pole);
+    part(new T.BoxGeometry(0.08, 0.08, 2.4), wood, 0, 1.0, -0.4);
     var cols = ['#7A5A3E', '#5E4632', '#A88A68', '#3E302A'];
-    var h1 = horse(cols[Math.floor(r() * 4)]), h2 = horse(cols[Math.floor(r() * 4)]);
-    h1.group.position.set(-0.42, 0, 0.5); h2.group.position.set(0.42, 0, 0.5); g.add(h1.group); g.add(h2.group);
-    g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
+    var hc = [cols[Math.floor(r() * 4)], cols[Math.floor(r() * 4)]], HX = [-0.42, 0.42], HZ = 0.5;
+    hc.forEach(function (col, k) {   /* 말 몸통·목·머리·갈기·꼬리 (horse()와 같은 꼴) */
+      var m = M(col), x = HX[k];
+      part(new T.BoxGeometry(0.55, 0.6, 1.5), m, x, 1.25, HZ);
+      part(new T.BoxGeometry(0.32, 0.75, 0.38), m, x, 1.62, HZ + 0.78, -0.6);
+      part(new T.BoxGeometry(0.26, 0.28, 0.6), m, x, 1.92, HZ + 1.12, 0.35);
+      part(new T.BoxGeometry(0.08, 0.6, 0.3), dark, x, 1.78, HZ + 0.68, -0.6);
+      part(new T.BoxGeometry(0.1, 0.55, 0.12), dark, x, 1.2, HZ - 0.82, 0.4);
+    });
+    var still = bake(tmp); still.castShadow = true; g.add(still);
+    /* 다리: 전에는 말 k의 다리 i가 (i % 2 === k % 2 ? a : -a)로 흔들렸다. 앞·뒤 다리는 각각 한 축(높이 0.98)을 함께 쓴다 */
+    var LEG = [[-0.18, 0.55], [0.18, 0.55], [-0.18, -0.55], [0.18, -0.55]], piv = [];
+    [[0.55, 1], [0.55, -1], [-0.55, 1], [-0.55, -1]].forEach(function (fs) {
+      var lt = new T.Group();
+      [0, 1].forEach(function (k) {
+        LEG.forEach(function (q, i) {
+          if (q[1] !== fs[0] || ((i % 2 === k % 2) ? 1 : -1) !== fs[1]) return;
+          var lg = new T.Mesh(new T.BoxGeometry(0.13, 0.98, 0.13), M(hc[k])); lg.position.set(HX[k] + q[0], -0.49, 0); lt.add(lg);
+        });
+      });
+      var pv = new T.Group(); pv.position.set(0, 0.98, HZ + fs[0]);
+      var lm = bake(lt); lm.castShadow = true; pv.add(lm); g.add(pv); piv.push({ g: pv, s: fs[1] });
+    });
     var ph = r() * 6;
     return {
-      group: g, wheels: wheels,
+      group: g, wheels: [],
       update: function (dt, speed, t) {
         var a = speed > 0.05 ? Math.sin((t + ph) * 9) * 0.5 : 0;
-        [h1, h2].forEach(function (h, k) { h.legs.forEach(function (lg, i) { lg.rotation.x = (i % 2 === k % 2 ? a : -a); }); });
+        for (var i = 0; i < 4; i++) piv[i].g.rotation.x = piv[i].s * a;
       }
     };
   }
 
   /* 구름 기둥: 둥근 구름 덩이를 겹쳐 쌓는다. 얼굴·사람 같은 모양이 생기지 않게 크고 매끈한 공만 쓴다.
-     밤(setNight 1)에는 한쪽이 은은하게 밝다(출 14:20, 이스라엘 쪽을 비춤) */
+     밤(setNight)에는 빛난다. 두 진 사이에 섰을 때(setFace의 한쪽 정도 1)는 이스라엘 쪽을 향한 면만 밝고 반대쪽(애굽 쪽)은
+     부드럽게 어두워진다(출 14:20 "저쪽에는 구름과 흑암이 있고 이쪽에는 밤이 광명하므로"). 그 전(한쪽 정도 0)에는 고르게 빛난다(13:21).
+     빛(스포트라이트)은 setFace가 가리키는 쪽(이스라엘 진)을 비춘다. 낮에는 전과 똑같다.
+     공 26개를 오르내림 박자 셋으로 묶어 묶음마다 한 덩어리로 굽는다(그리기 26번 → 3번) */
   function cloudPillar(h) {
-    var g = new T.Group(), r = rng(1419), H = h || 40, puffs = [];
+    var g = new T.Group(), r = rng(1419), H = h || 40, NG = 3, grp = [], it = [], uNight = { value: 0 }, uDir = { value: new T.Vector2(0, -1) }, uSide = { value: 0 };
     var mat = new T.MeshStandardMaterial({ color: '#F4F1EA', roughness: 1, flatShading: false, emissive: new T.Color('#FFD9A0'), emissiveIntensity: 0 });
+    mat.onBeforeCompile = function (sh) {
+      sh.uniforms.uNight = uNight; sh.uniforms.uDir = uDir; sh.uniforms.uSide = uSide;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform vec2 uDir;\nuniform float uSide;\nvarying float vSide;')
+        .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\nvSide = mix( 1.0, smoothstep( -0.5, 0.5, dot( normalize( objectNormal ), vec3( uDir.x, 0.0, uDir.y ) ) ), uSide );');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vSide;\nuniform float uNight;')
+        .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor = vec4( diffuse * mix( 1.0, mix( 0.3, 1.0, vSide ), uNight ), opacity );')
+        .replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vSide;');
+    };
+    mat.customProgramCacheKey = function () { return 'cloudPillarSide'; };
+    for (var k = 0; k < NG; k++) it.push([]);
     for (var i = 0; i < 26; i++) {
       var y = (i / 25) * H, rad = 3.2 + 1.6 * Math.sin(i * 0.9) * 0.4 + r() * 1.2 + (i > 20 ? (i - 20) * 0.9 : 0);
-      var s = new T.Mesh(new T.SphereGeometry(rad, 14, 10), mat);
-      s.position.set((r() - 0.5) * 2.2, y + 2, (r() - 0.5) * 2.2); g.add(s); puffs.push({ m: s, y: s.position.y, ph: r() * 6 });
+      var px = (r() - 0.5) * 2.2, pz = (r() - 0.5) * 2.2; r();
+      it[i % NG].push({ geo: new T.SphereGeometry(rad, 14, 10), mtx: new T.Matrix4().makeTranslation(px, y + 2, pz), mat: mat });
     }
-    var glow = new T.PointLight('#FFC27A', 0, 120, 1.6); glow.position.set(0, H * 0.4, -6); g.add(glow);
+    it.forEach(function (items, k) {
+      var geo = joinGeo(items);
+      items.forEach(function (q) { q.geo.dispose(); });
+      var gg = new T.Group(); gg.add(new T.Mesh(geo, mat)); g.add(gg); grp.push({ g: gg, ph: k * 2.1 + 0.4 });
+    });
+    /* 사방으로 퍼지는 빛 대신 이스라엘 진 쪽으로 넓게 벌린 빛(14:20) */
+    var glow = new T.SpotLight('#FFC27A', 0, 130, Math.PI * 0.42, 0.6, 1.6); g.add(glow); g.add(glow.target);
+    function setFace(dx, dz, side) {
+      var l = Math.sqrt(dx * dx + dz * dz) || 1; dx /= l; dz /= l;
+      uDir.value.set(dx, dz); uSide.value = Math.max(0, Math.min(1, side || 0));
+      glow.position.set(dx * 4, H * 0.4, dz * 4); glow.target.position.set(dx * 60, 0, dz * 60);
+    }
+    setFace(0, -1, 0);
     return {
-      group: g,
-      setNight: function (n) { mat.emissiveIntensity = 0.55 * n; mat.color.set(n > 0.5 ? '#E8E2D8' : '#F4F1EA'); glow.intensity = 1.6 * n; },
-      update: function (t) { puffs.forEach(function (p) { p.m.position.y = p.y + Math.sin(t * 0.3 + p.ph) * 0.4; }); }
+      group: g, setFace: setFace,
+      setNight: function (n) { mat.emissiveIntensity = 0.9 * n; mat.color.set(n > 0.5 ? '#E8E2D8' : '#F4F1EA'); glow.intensity = 1.6 * n; uNight.value = Math.max(0, Math.min(1, n)); },
+      update: function (t) { grp.forEach(function (q) { q.g.position.y = Math.sin(t * 0.3 + q.ph) * 0.4; }); }
     };
+  }
+
+  /* 상수리나무(창 12:6 모레 상수리나무처럼 먼 배경의 큰 나무): 굵은 줄기, 몇 갈래 가지, 둥글고 빽빽한 잎덩이.
+     아카시아(납작한 우산꼴 잎)와 다르게 잎덩이를 둥글게 겹쳐 쌓는다. 생김새는 본문에 없어 흔한 넓은잎 나무 꼴로만. mesh 하나로 굽는다 */
+  function oak(seed) {
+    var r = rng((seed | 0) + 41), tmp = new T.Group(), g = new T.Group(), bark = M('#6A4E36'), barkD = M('#57402C');
+    var lc = ['#5E7A3E', '#4F6B35', '#6E8A48'], h = 3.2 + r() * 0.6;
+    var trunk = new T.Mesh(new T.CylinderGeometry(0.26, 0.42, h, 7), bark); trunk.position.y = h / 2; tmp.add(trunk);
+    var flare = new T.Mesh(new T.CylinderGeometry(0.42, 0.6, 0.35, 7), barkD); flare.position.y = 0.17; tmp.add(flare);
+    var nb = 4 + Math.floor(r() * 2), ends = [];
+    for (var i = 0; i < nb; i++) {
+      var a = (i / nb) * 6.2832 + r() * 0.6, len = 1.5 + r() * 0.8, tilt = 0.75 + r() * 0.3;
+      var br = new T.Mesh(new T.CylinderGeometry(0.09, 0.17, len, 5), bark);
+      var dir = new T.Vector3(Math.cos(a) * Math.sin(tilt), Math.cos(tilt), Math.sin(a) * Math.sin(tilt));
+      br.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), dir);
+      var base = new T.Vector3(0, h * (0.78 + r() * 0.12), 0); br.position.copy(base).addScaledVector(dir, len / 2); tmp.add(br);
+      ends.push(base.clone().addScaledVector(dir, len));
+    }
+    function blob(x, y, z, rad) {
+      var geo = new T.IcosahedronGeometry(rad, 1), b = new T.Mesh(geo, M(lc[Math.floor(r() * 3)]));
+      b.position.set(x, y, z); b.scale.set(1, 0.78 + r() * 0.12, 1); b.rotation.y = r() * 6.28; tmp.add(b);
+    }
+    ends.forEach(function (e) { blob(e.x, e.y + 0.35, e.z, 1.25 + r() * 0.35); });
+    blob(0, h + 1.5, 0, 1.7 + r() * 0.3);
+    for (i = 0; i < 4; i++) { var aa = r() * 6.28, dd = 0.9 + r() * 0.6; blob(Math.cos(aa) * dd, h + 0.9 + r() * 0.9, Math.sin(aa) * dd, 1.1 + r() * 0.3); }
+    var one = bake(tmp); one.castShadow = true; g.add(one);
+    g.userData.stillProp = true;   /* 움직이지 않는 소품(mergeTagged) */
+    return g;
   }
 
   function stoneHeap(seed, n) {
@@ -193,5 +269,5 @@
     if (objs.length < 2) return null;
     return mergeInScene(scene, objs, { cell: (opt && opt.cell) || 48, keepShadow: true });
   }
-  BO3D.props = { tent: tent, chariot: chariot, horse: horse, cloudPillar: cloudPillar, stoneHeap: stoneHeap, soldier: soldier, shield: shield, rng: rng, mergeStatic: mergeStatic, mergeInScene: mergeInScene, mergeTagged: mergeTagged, bake: bake };
+  BO3D.props = { tent: tent, oak: oak, chariot: chariot, horse: horse, cloudPillar: cloudPillar, stoneHeap: stoneHeap, soldier: soldier, shield: shield, rng: rng, mergeStatic: mergeStatic, mergeInScene: mergeInScene, mergeTagged: mergeTagged, bake: bake };
 })();
