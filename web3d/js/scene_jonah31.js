@@ -86,7 +86,7 @@
       var isCow = i < 5, fx = PAST[0] - 20 + (i % 6) * 7.5 + (hash(i, 2) - 0.5) * 3, fz = PAST[1] - 8 + Math.floor(i / 6) * 7 + (hash(i, 4) - 0.5) * 3, ry = hash(i, 6) * 6.28, o;
       if (isCow) o = cow(1.2, i % 4); else o = MO.sheep ? MO.sheep(3150 + i).group : cow(0.6, 2);
       o.position.set(fx, height(fx, fz), fz); o.rotation.y = ry; flockL.push(o);
-      var bw = isCow ? 0.9 : 0.62, bl = isCow ? 1.2 : 0.78, by = isCow ? 1.22 : 0.86;
+      var bw = isCow ? 0.84 : 0.7, bl = isCow ? 1.3 : 0.86, by = isCow ? 1.48 : 0.64;   /* 등에 덮은 굵은 베(3:8) */
       var bk = new T.Mesh(new T.BoxGeometry(bw, 0.07, bl), sackM); bk.position.set(fx, height(fx, fz) + by, fz); bk.rotation.y = ry; blankL.push(bk);
     }
     scene.add(C3.merge(flockL)); var blankets = PR.mergeStatic(blankL); scene.add(blankets); blankets.visible = false;
