@@ -159,7 +159,10 @@ fs.mkdirSync(out, { recursive: true });
   await p.click('.dex3'); await p.waitForTimeout(500); await shot('dex');
   await p.click('text=닫기'); await p.waitForTimeout(300);
   await p.click('.den3'); await p.waitForTimeout(500); await shot('den');
-  await p.click('.sw >> nth=2'); await p.click('.tog'); await p.waitForTimeout(300); await shot('den-deco');
+  /* 깃발 색은 시대 부속을 고칠 때마다 하나씩 열린다(흥미 개선). 열린 색을 고르고, 잠긴 색이 남아 있는지 본다 */
+  const swLocked = await p.locator('.sw.locked').count();
+  if (!swLocked) probs.push('아지트 깃발 색 잠금이 보이지 않음');
+  await p.click('.sw:not(.locked):not(.none) >> nth=0'); await p.click('.tog'); await p.waitForTimeout(300); await shot('den-deco');
   await p.click('text=밖으로 나가기'); await p.waitForTimeout(1200); await shot('deco-outside');
   await p.click('.den3'); await p.waitForTimeout(400);
   await p.click('text=다음 시대로 출발'); await p.waitForTimeout(5200); await shot('depart');
