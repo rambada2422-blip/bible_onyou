@@ -61,12 +61,20 @@
   function lookNote(ref, text) {
     return el('div', { class: 'note look fadein' }, el('b', { text: '성경에서 확인해 볼까요?' }), el('span', { text: text || '성경책을 펴서 읽은 뒤 다시 골라 보세요.' }), chips(ref));
   }
+  /* 엇나간 바늘(규칙서 13.8, 2절의 "잘못된 선택"을 가볍게): 고른 보기가 성경의 다른 곳에 실제로 있는 내용이면 그곳으로 잠깐 엇나갔다가 돌아온다 */
+  function detourNote(basis, ref) {
+    return el('div', { class: 'note detour fadein' },
+      el('b', { text: '타임머신 바늘이 엇나갔어요!' }),
+      el('span', { text: '바늘이 ' + bookName(basis) + ' 쪽으로 흔들렸어요. 그곳은 이 장면과 다른 이야기예요. 그 절도 읽어 보고, 이 장면의 본문으로 돌아와 다시 골라 보세요.' }),
+      el('div', { class: 'ot-refs' }, refChip(basis), ref ? (Array.isArray(ref) ? ref.map(function (r) { return refChip(r); }) : refChip(ref)) : null));
+  }
+  function realBasis(o) { return o && o.basis && o.basis !== '본문에 없음' ? o.basis : null; }
   function choiceBlock(q, ref, onOk) {
     var pics = q.options.some(function (o) { return o.icon; }), noteBox = el('div', {});
     var btns = q.options.map(function (o) {
       var b = el('button', { class: 'opt', on: { click: function () {
         if (o.ok) { btns.forEach(function (x) { x.disabled = true; if (x !== b) x.classList.add('rest'); }); b.classList.add('ok'); noteBox.replaceChildren(goodNote(ref)); onOk(); }
-        else { b.classList.add('rest'); b.disabled = true; noteBox.replaceChildren(lookNote(q.lookRef !== undefined ? q.lookRef : ref, q.lookText)); }
+        else { b.classList.add('rest'); b.disabled = true; noteBox.replaceChildren(realBasis(o) ? detourNote(o.basis, ref) : lookNote(q.lookRef !== undefined ? q.lookRef : ref, q.lookText)); }
         noteBox.scrollIntoView({ block: 'nearest' });
       } } }, o.icon && IC[o.icon] ? icon(o.icon) : null, el('span', { text: o.label }));
       return b;
@@ -92,6 +100,56 @@
     } } }, '확인');
     return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'refin' }, el('span', { text: q.book }), ch, el('span', { text: '장' }), vs, el('span', { text: '절' }), check), noteBox];
   }
+  function readCard(refs, prompt) { return el('div', { class: 'findcard' }, icon('book'), el('div', {}, refs.map(function (r) { return el('div', { class: 'big', text: bookName(r) }); }), el('p', { text: tx(prompt) }))); }
+  /* 여러 개 고르기(8~10세, 규칙서 13.8): 한 절을 찾아 읽고, 맞는 것을 모두 고른다 */
+  function multiBlock(q, onOk) {
+    var after = el('div', { style: 'display:flex;flex-direction:column;gap:12px' }), cq = q.confirm;
+    var rb = el('button', { class: 'btn plain', on: { click: function () {
+      rb.disabled = true; rb.textContent = '읽었어요';
+      var noteBox = el('div', {});
+      var btns = cq.options.map(function (o) {
+        var b = el('button', { class: 'opt', 'aria-pressed': 'false', on: { click: function () { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); } } },
+          el('span', { class: 'mark', html: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 L6.5 12 L13 4.5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' }), el('span', { text: o.label }));
+        return b;
+      });
+      var check = el('button', { class: 'btn plain', on: { click: function () {
+        var picked = cq.options.filter(function (o, k) { return btns[k].getAttribute('aria-pressed') === 'true'; });
+        var good = cq.options.every(function (o, k) { return (btns[k].getAttribute('aria-pressed') === 'true') === !!o.ok; });
+        if (good) { btns.forEach(function (b, k) { b.disabled = true; b.classList.add(cq.options[k].ok ? 'ok' : 'rest'); }); check.disabled = true; noteBox.replaceChildren(goodNote(q.ref, '맞는 것을 모두 찾았어요.')); onOk(); }
+        else {
+          var wrong = picked.filter(function (o) { return !o.ok && realBasis(o); })[0];
+          noteBox.replaceChildren(wrong ? detourNote(wrong.basis, q.ref) : lookNote(q.ref, picked.some(function (o) { return !o.ok; }) ? '그 절에 없는 것이 섞여 있어요. 다시 읽고 골라 보세요.' : '그 절에 나오는 것이 더 있어요. 다시 읽고 모두 골라 보세요.'));
+        }
+        noteBox.scrollIntoView({ block: 'nearest' });
+      } } }, '다 골랐어요');
+      add(after, [el('p', { class: 'q-prompt', text: cq.prompt }), el('div', { class: 'opts' }, btns), check, noteBox]);
+      after.scrollIntoView({ block: 'nearest' });
+    } } }, '찾아서 읽었어요');
+    return [readCard([q.ref], q.prompt), rb, after];
+  }
+  /* 잇기(14~19세, 규칙서 13.8): 떨어진 여러 곳을 찾아 읽고, 구절마다 맞는 내용을 잇는다 */
+  function matchBlock(q, onOk) {
+    var noteBox = el('div', {}), sel = null, done = 0;
+    var order = q.pairs.map(function (p, k) { return k; }); order.push(order.shift()); if (order.length > 2) order.reverse();   /* 내용 쪽은 차례를 섞어 보여 준다 */
+    var left = q.pairs.map(function (p) {
+      var b = el('button', { class: 'opt mref', 'aria-pressed': 'false', on: { click: function () { if (b.disabled) return; left.forEach(function (x) { x.setAttribute('aria-pressed', 'false'); }); b.setAttribute('aria-pressed', 'true'); sel = p; } } }, icon('bookline'), el('span', { text: p.ref }));
+      return b;
+    });
+    var right = order.map(function (k) {
+      var p = q.pairs[k];
+      var b = el('button', { class: 'opt mtext', on: { click: function () {
+        if (b.disabled) return;
+        if (!sel) { noteBox.replaceChildren(el('div', { class: 'note look fadein' }, el('b', { text: '먼저 구절을 골라요.' }), el('span', { text: '왼쪽의 구절 하나를 누른 뒤, 그 구절에 맞는 내용을 눌러 보세요.' }))); return; }
+        if (sel === p) {
+          var lb = left[q.pairs.indexOf(p)]; lb.disabled = true; lb.classList.add('ok'); lb.setAttribute('aria-pressed', 'false'); b.disabled = true; b.classList.add('ok'); sel = null; done++;
+          if (done === q.pairs.length) { noteBox.replaceChildren(goodNote(q.refs, q.after || '구절마다 맞게 이었어요.')); onOk(); } else noteBox.replaceChildren();
+        } else noteBox.replaceChildren(lookNote(sel.ref, '그 구절에는 그 내용이 없어요. ' + bookName(sel.ref) + '을 다시 읽어 볼까요?'));
+        noteBox.scrollIntoView({ block: 'nearest' });
+      } } }, el('span', { text: p.text }));
+      return b;
+    });
+    return [readCard(q.refs, q.prompt), el('div', { class: 'match3' }, el('div', { class: 'opts' }, left), el('div', { class: 'opts' }, right)), noteBox];
+  }
   function orderBlock(q, onOk) {
     var n = q.items.length, perm = [], i, picked = [], noteBox = el('div', {});
     for (i = 1; i < n; i += 2) perm.push(i);
@@ -112,13 +170,15 @@
       noteBox.scrollIntoView({ block: 'nearest' });
     }
     var rb = el('button', { class: 'btn plain', on: { click: function () { reset(); noteBox.replaceChildren(); } } }, '다시 놓기');
-    return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' }, btns), rb, noteBox];
+    return [q.ref ? readCard([q.ref], q.prompt) : el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' }, btns), rb, noteBox];   /* 읽을 곳을 먼저 보여 준다(13.5) */
   }
   function blockFor(q, onOk, idp) {
     if (q.type === 'choice') return choiceBlock(q, q.ref, onOk);
     if (q.type === 'find') return findBlock(q, onOk);
     if (q.type === 'findref') return findrefBlock(q, onOk, idp);
     if (q.type === 'order') return orderBlock(q, onOk);
+    if (q.type === 'multi') return multiBlock(q, onOk);
+    if (q.type === 'match') return matchBlock(q, onOk);
     return [];
   }
   /* 잘못 골랐을 때 보여 주는 장절: 8~10세는 장까지, 11~13세는 장절, 14~19세는 장절 없이 주제만 (규칙서 5절) */

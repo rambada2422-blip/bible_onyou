@@ -50,6 +50,8 @@ fs.mkdirSync(out, { recursive: true });
     if (q.type === 'choice') await pickIn(scope, q.options.find((o) => o.ok).label);
     else if (q.type === 'find') { await p.click(scope + ' .btn:has-text("찾아서 읽었어요")'); await p.waitForTimeout(200); await pickIn(scope, q.confirm.options.find((o) => o.ok).label); }
     else if (q.type === 'order') { for (const it of q.items) await pickIn(scope, it); }
+    else if (q.type === 'multi') { await p.click(scope + ' .btn:has-text("찾아서 읽었어요")'); await p.waitForTimeout(200); for (const o of q.confirm.options.filter((x) => x.ok)) await pickIn(scope, o.label); await p.click(scope + ' .btn:has-text("다 골랐어요")'); }
+    else if (q.type === 'match') { for (const pr of q.pairs) { await p.evaluate(([sc, r, t]) => { [...document.querySelectorAll(sc + ' .match3 .mref')].find((x) => x.textContent.trim().endsWith(r)).click(); [...document.querySelectorAll(sc + ' .match3 .mtext')].find((x) => x.textContent.trim() === t.trim()).click(); }, [scope, pr.ref, pr.text]); await p.waitForTimeout(80); } }
     else if (q.type === 'findref') { const cv = q.accept[0].split(':'); const ins = await p.$$(scope + ' .refin input'); await ins[0].fill(cv[0]); await ins[1].fill(cv[1]); await p.click(scope + ' .refin .btn'); }
     await p.waitForTimeout(300);
     const good = await p.evaluate((sc) => !!document.querySelector(sc + ' .note.good'), scope);

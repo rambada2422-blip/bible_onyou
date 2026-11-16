@@ -107,3 +107,13 @@
 /* 3D 장면 위에 뜨는 조각(동행 문답, 오늘의 물음): 풍경 없이 아래 시트만 */
 .ot3.seg { background: rgba(14, 23, 48, .35); justify-content: flex-end; }
 .ot3.seg .ot-sheet.sheet { top: auto; max-height: 82%; position: relative; }
+/* 엇나간 바늘(오답 우회), 잇기 물음 (규칙서 13.8) */
+.note.detour { background: #EFE8FB; box-shadow: inset 0 0 0 2px #B9A6E8; animation: detourshake .45s ease both; }
+.note.detour b { color: #5B3FA8; }
+@keyframes detourshake { 0% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-6px) rotate(-1deg); } 50% { transform: translateX(5px) rotate(1deg); } 75% { transform: translateX(-3px); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .note.detour { animation: none; } }
+.match3 { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 8px; align-items: start; }
+.match3 .opt { min-height: 48px; font-size: 14.5px; }
+.match3 .mref svg { width: 18px; height: 18px; flex: none; }
+.match3 .opt.ok { box-shadow: inset 0 0 0 2px #2F7C64; background: #E3F2EA; }
+

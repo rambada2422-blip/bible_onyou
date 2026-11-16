@@ -9,7 +9,9 @@ const R = require('./bible_ref/ref.js');
 const DIR = path.join(__dirname, '..', 'content', 'ot');
 const WHO = ['choeon', 'hyu', 'onwoo'];
 /* 규칙서 13.5: 세 단계 모두 읽을 곳을 주고 찾아 읽게 하는 find를 쓸 수 있다(14~19세는 refs로 떨어진 두 곳 이상) */
-const TYPES = { t1: ['choice', 'find'], t2: ['order', 'choice', 'find'], t3: ['findref', 'choice', 'find'] };
+const TYPES = { t1: ['choice', 'find', 'multi'], t2: ['order', 'choice', 'find'], t3: ['findref', 'choice', 'find', 'match'] };
+/* 규칙서 13.8(--v3): 관문의 둘째 물음은 단계마다 정해진 놀이 방식 */
+const SECOND = { t1: 'multi', t2: 'order', t3: 'match' };
 const HELP_KINDS = ['do', 'watch', 'stay', 'ask'];
 const BAN = ['틀렸', '실패', '감점', '목숨'];
 const hasRef = fs.existsSync(path.join(__dirname, '..', 'ref', 'bible', 'krv', 'krv.1.1.txt'));
@@ -52,14 +54,15 @@ function check(file) {
     const w = `beats[${i}]`;
     refOk(b.ref, w + '.ref'); if (b.open) refOk(b.open, w + '.open');
     ['t1', 't2', 't3'].forEach((t) => { if (!b.text || !str(b.text[t])) E(`${w}.text.${t} 없음`); else texts.push([`${w}.text.${t}`, b.text[t], b.ref]); });
-    if (b.text && str(b.text.t1) && (b.text.t1.match(/[.!?](\s|$)/g) || []).length > 3) W(`${w}.text.t1: 8~10세 문장이 3개를 넘음`);
+    if (b.text && str(b.text.t1) && (b.text.t1.match(/[.!?](\s|$)/g) || []).length > (V3 ? 2 : 3)) (V3 ? E : W)(`${w}.text.t1: 8~10세 문장이 ${V3 ? 2 : 3}개를 넘음(규칙서 5절, 13.8)`);
     if (!b.say || !WHO.includes(b.say.who) || !str(b.say.text)) E(`${w}.say: {who: choeon|hyu|onwoo, text}`); else texts.push([`${w}.say`, b.say.text, null]);
   });
   // 물음
   const question = (q, w, tier) => {
     if (!q || !TYPES[tier].includes(q.type)) { E(`${w}: ${tier}에 쓸 수 있는 유형은 ${TYPES[tier].join(', ')} (지금: ${q && q.type})`); return; }
-    if (V2) {   /* 규칙서 13.5 물음의 세 단계(--v2): 모두 find. t1 한 절 / t2 범위 / t3 떨어진 두 곳 이상 */
-      if (q.type !== 'find') E(`${w}: 13.5에 따라 find로 쓴다(지금: ${q.type})`);
+    if (V2) {   /* 규칙서 13.5 물음의 세 단계(--v2): t1 한 절 / t2 범위 / t3 떨어진 두 곳 이상. 놀이 방식은 find, 그리고 13.8의 multi·order·match */
+      const okType = { t1: ['find', 'multi'], t2: ['find', 'order'], t3: ['find', 'match'] }[tier];
+      if (!okType.includes(q.type)) E(`${w}: 13.5·13.8에 따라 ${okType.join(' 또는 ')}로 쓴다(지금: ${q.type})`);
       else if (tier === 't1' && (q.refs || !/^\S+ \d+:\d+$/.test(String(q.ref || '')))) E(`${w}: 8~10세는 ref에 한 절(예: "출 12:7")`);
       else if (tier === 't2' && (q.refs || !/^\S+ \d+:\d+-(\d+:)?\d+$/.test(String(q.ref || '')))) E(`${w}: 11~13세는 ref에 범위(예: "출 12:21-23")`);
       else if (tier === 't3' && !(Array.isArray(q.refs) && q.refs.length >= 2)) E(`${w}: 14~19세는 refs에 떨어진 두 곳 이상`);
@@ -82,6 +85,27 @@ function check(file) {
       if (!q.confirm || !str(q.confirm.prompt)) E(`${w}.confirm.prompt 없음`); else { texts.push([`${w}.confirm.prompt`, q.confirm.prompt, q.ref || (q.refs && q.refs[0]) || null]); opts(q.confirm.options, w + '.confirm.options'); }
     }
     if (q.type === 'order') { refOk(q.ref, w + '.ref'); if (!Array.isArray(q.items) || q.items.length < 3 || q.items.length > 6) E(`${w}.items는 3~6개(본문 순서대로)`); else q.items.forEach((x, k) => texts.push([`${w}.items[${k}]`, x, q.ref])); }
+    if (q.type === 'multi') {   /* 여러 개 고르기: 한 절을 찾아 읽고 맞는 것을 모두 */
+      refOk(q.ref, w + '.ref');
+      const o = q.confirm && q.confirm.options;
+      if (!q.confirm || !str(q.confirm.prompt)) E(`${w}.confirm.prompt 없음`); else texts.push([`${w}.confirm.prompt`, q.confirm.prompt, q.ref]);
+      if (!Array.isArray(o) || o.length < 4 || o.length > 5) E(`${w}.confirm.options는 4~5개`);
+      else {
+        const n = o.filter((x) => x.ok === true).length;
+        if (n < 2 || n >= o.length) E(`${w}.confirm.options: 맞는 보기는 2개 이상, 모두는 아니게`);
+        o.forEach((x, k) => { if (!str(x.label)) E(`${w}.confirm.options[${k}].label 없음`); else texts.push([`${w}.confirm.options[${k}]`, x.label, q.ref]); if (!x.ok && !str(x.basis)) E(`${w}.confirm.options[${k}]: 맞지 않는 보기에는 basis`); if (!x.ok && str(x.basis) && x.basis !== '본문에 없음') refOk(x.basis, `${w}.confirm.options[${k}].basis`); });
+      }
+    }
+    if (q.type === 'match') {   /* 잇기: 떨어진 여러 곳을 찾아 읽고, 구절마다 맞는 내용을 잇는다 */
+      if (!Array.isArray(q.refs) || q.refs.length < 2 || q.refs.length > 4) E(`${w}.refs는 2~4곳`); else q.refs.forEach((r, k) => refOk(r, `${w}.refs[${k}]`));
+      if (!Array.isArray(q.pairs) || !Array.isArray(q.refs) || q.pairs.length !== q.refs.length) E(`${w}.pairs는 refs와 같은 수({ref, text})`);
+      else {
+        const seen = new Set();
+        q.pairs.forEach((x, k) => { if (!q.refs.includes(x.ref) || seen.has(x.ref)) E(`${w}.pairs[${k}].ref는 refs의 한 곳(겹치지 않게)`); seen.add(x.ref); if (!str(x.text)) E(`${w}.pairs[${k}].text 없음`); else texts.push([`${w}.pairs[${k}].text`, x.text, x.ref]); });
+        if (new Set(q.pairs.map((x) => x.text)).size !== q.pairs.length) E(`${w}.pairs의 text가 겹침`);
+      }
+      if (q.after) texts.push([`${w}.after`, q.after, null]);
+    }
     if (q.type === 'findref') {
       const bk = R.BOOKS.find((b) => b[1] === q.book);
       if (!bk) E(`${w}.book은 책 이름 전체(예: "창세기")`);
@@ -94,6 +118,7 @@ function check(file) {
   ['t1', 't2', 't3'].forEach((t) => {
     const g = d.gates && d.gates[t];
     if (!Array.isArray(g) || g.length !== 2) E(`gates.${t}는 물음 2개`); else g.forEach((q, i) => question(q, `gates.${t}[${i}]`, t));
+    if (V3 && Array.isArray(g) && g[1] && g[1].type !== SECOND[t]) E(`gates.${t}[1]: 13.8에 따라 ${SECOND[t]}로 쓴다(지금: ${g[1].type})`);
   });
   if (!Array.isArray(d.cards) || d.cards.length < 1 || d.cards.length > 2) E('cards는 1~2개'); else d.cards.forEach((c, i) => { refOk(c.ref, `cards[${i}].ref`); if (!str(c.title)) E(`cards[${i}].title 없음`); });
   const c = d.close || {};
@@ -143,6 +168,7 @@ function check(file) {
     }
     /* 현장 돕기(규칙서 13.6, 작성규칙 7.2): 본문에 그 사람들이 했다고 적힌 평범한 일만. 거룩한 행위는 watch로 곁에서 본다 */
     if (V2 && !m.help) E('mission.help 없음(규칙서 13.6. 돕는 일이 없으면 watch·stay·ask만으로)');
+    if (V3 && m.help && !(m.help.steps || []).some((x) => x.kind === 'do')) E('mission.help.steps에 손으로 하는 돕기(do)가 하나는 있어야 함(규칙서 13.7)');
     if (m.help !== undefined) {
       const h = m.help || {};
       if (!str(h.who)) E('mission.help.who 없음(돕는 상대, 예: "이스라엘 자손의 한 집")');
@@ -197,8 +223,9 @@ function check(file) {
   });
 }
 
-const NEED_MISSION = process.argv.includes('--mission') || process.argv.includes('--v2');
-const V2 = process.argv.includes('--v2');
+const NEED_MISSION = process.argv.includes('--mission') || process.argv.includes('--v2') || process.argv.includes('--v3');
+const V3 = process.argv.includes('--v3');
+const V2 = process.argv.includes('--v2') || V3;
 const want = process.argv.slice(2).filter((x) => !x.startsWith('--'));
 const files = fs.readdirSync(DIR).filter((f) => /^OT-\d\d\.json$/.test(f) && (!want.length || want.includes(f.replace('.json', '')))).sort();
 if (!hasRef) console.log('주의: ref/bible 이 없어 장절이 실제로 있는지는 검사하지 못함 (tools/bible_ref/fetch.sh)');

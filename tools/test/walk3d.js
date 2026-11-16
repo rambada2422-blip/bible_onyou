@@ -143,6 +143,8 @@ fs.mkdirSync(out, { recursive: true });
     if (q.type === 'choice') await pick(q);
     else if (q.type === 'find') { await p.click('text=찾아서 읽었어요'); await p.waitForTimeout(200); await pick(q.confirm); }
     else if (q.type === 'order') { for (const it of q.items) await p.click('.overlay3 .opt:has-text("' + it + '")'); }
+    else if (q.type === 'multi') { await p.click('text=찾아서 읽었어요'); await p.waitForTimeout(200); for (const o of q.confirm.options.filter((x) => x.ok)) await p.click('.overlay3 .opt:has-text("' + o.label + '")'); await p.click('.overlay3 .btn:has-text("다 골랐어요")'); }
+    else if (q.type === 'match') { for (const pr of q.pairs) { await p.evaluate(([r, t]) => { [...document.querySelectorAll('.overlay3 .match3 .mref')].find((x) => x.textContent.trim().endsWith(r)).click(); [...document.querySelectorAll('.overlay3 .match3 .mtext')].find((x) => x.textContent.trim() === t.trim()).click(); }, [pr.ref, pr.text]); await p.waitForTimeout(80); } }
     else if (q.type === 'findref') { const cv = q.accept[0].split(':'); const ins = await p.$$('.refin input'); await ins[0].fill(cv[0]); await ins[1].fill(cv[1]); await p.click('.refin .btn'); }
     await p.waitForTimeout(300);
     await p.click('.overlay3 .sheet-foot .btn.onpaper'); await p.waitForTimeout(400);
