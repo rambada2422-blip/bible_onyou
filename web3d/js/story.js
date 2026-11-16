@@ -199,6 +199,7 @@
     enterStory();
     var d = sc(id), e = eraOf(d.era);
     if (!eraOpen(e.era)) { openMap(e.era); lockNote(e); return; }
+    if (U.setScene) U.setScene(d);   /* 엇나간 바늘이 같은 장면 안인지 알게 */
     var g3 = BO3D.scenes3d && BO3D.scenes3d[id];
     if (g3) {
       cur.screen = 'pick'; cur.id = id;
@@ -266,6 +267,8 @@
       body = [el('div', { class: 'q-kicker', text: kick }), beatNodes(d.beats[s.i])];
     } else if (s.k === 'help') {
       body = helpNodes(m.help, m.help.steps[s.i], kick, ok); gated = true;
+      var hn = cur.screen === 'seg' && BO3D.scene3d && BO3D.scene3d[cur.id] && BO3D.scene3d[cur.id].helpNote ? BO3D.scene3d[cur.id].helpNote(m.help.steps[s.i].after) : null;
+      if (hn) body.splice(2, 0, el('div', { class: 'note story3' }, el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: hn }))));   /* 3D에서 때가 앞선 돕기(되돌아보는 대목 뒤)를 밝힌다 */
     } else if (s.k === 'gate') {
       var q = (d.gates[S.tier] || d.gates.t2)[s.i];
       body = [el('div', { class: 'q-kicker', text: kick }), U.blockFor(q, ok, 'og' + s.i)]; gated = true;

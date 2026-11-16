@@ -62,10 +62,26 @@
     return el('div', { class: 'note look fadein' }, el('b', { text: '성경에서 확인해 볼까요?' }), el('span', { text: text || '성경책을 펴서 읽은 뒤 다시 골라 보세요.' }), chips(ref));
   }
   /* 엇나간 바늘(규칙서 13.8, 2절의 "잘못된 선택"을 가볍게): 고른 보기가 성경의 다른 곳에 실제로 있는 내용이면 그곳으로 잠깐 엇나갔다가 돌아온다 */
+  /* 지금 장면의 본문 범위(장면을 열 때 setScene). 엇나간 곳이 같은 장면 안이면 안내 글을 달리한다(시대 3·4 독립 대조, 2026-11-16) */
+  var sceneRefs = [];
+  function setScene(d) { sceneRefs = d ? [d.ref].concat((d.beats || []).map(function (b) { return b.ref; })).filter(Boolean) : []; }
+  function span(ref) {   /* '출 16:1-36', '창 12:4-13:2', '출 16' → {b, s, e} (장*1000+절) */
+    var m = /^(\S+) (\d+)(?::(\d+))?(?:-(?:(\d+):)?(\d+))?$/.exec(String(ref || '').trim());
+    if (!m) return null;
+    var c1 = +m[2], v1 = m[3] ? +m[3] : 0, c2, v2;
+    if (!m[3]) { c2 = m[5] ? +m[5] : c1; v2 = 999; } else if (m[4]) { c2 = +m[4]; v2 = +m[5]; } else { c2 = c1; v2 = m[5] ? +m[5] : v1; }
+    return { b: m[1], s: c1 * 1000 + v1, e: c2 * 1000 + v2 };
+  }
+  function inScene(ref) {
+    var x = span(ref); if (!x) return false;
+    return sceneRefs.some(function (r) { var y = span(r); return y && y.b === x.b && x.s >= y.s && x.s <= y.e; });
+  }
   function detourNote(basis, ref) {
+    var here = inScene(basis);
     return el('div', { class: 'note detour fadein' },
       el('b', { text: '타임머신 바늘이 엇나갔어요!' }),
-      el('span', { text: '바늘이 ' + bookName(basis) + ' 쪽으로 흔들렸어요. 그곳은 이 장면과 다른 이야기예요. 그 절도 읽어 보고, 이 장면의 본문으로 돌아와 다시 골라 보세요.' }),
+      el('span', { text: here ? '바늘이 ' + bookName(basis) + ' 쪽으로 흔들렸어요. 그 절은 이 장면의 다른 대목이에요. 물음이 말한 절에는 없어요. 두 절을 읽어 보고, 물음이 말한 절로 돌아와 다시 골라 보세요.'
+        : '바늘이 ' + bookName(basis) + ' 쪽으로 흔들렸어요. 그곳은 이 장면과 다른 이야기예요. 그 절도 읽어 보고, 이 장면의 본문으로 돌아와 다시 골라 보세요.' }),
       el('div', { class: 'ot-refs' }, refChip(basis), ref ? (Array.isArray(ref) ? ref.map(function (r) { return refChip(r); }) : refChip(ref)) : null));
   }
   function realBasis(o) { return o && o.basis && o.basis !== '본문에 없음' ? o.basis : null; }
@@ -191,5 +207,6 @@
   function btn(label, fn, cls) { return el('button', { class: 'btn ' + (cls || 'onpaper'), on: { click: fn } }, label); }
 
   BO3D.ui = { S: S, el: el, add: add, tx: tx, icon: icon, refChip: refChip, avatar: avatar, say: say, bookName: bookName, bookOf: bookOf, chapterOf: chapterOf, books: BOOKS,
-    goodNote: goodNote, lookNote: lookNote, choiceBlock: choiceBlock, findBlock: findBlock, findrefBlock: findrefBlock, orderBlock: orderBlock, blockFor: blockFor, quizTier: quizTier, btn: btn };
+    goodNote: goodNote, lookNote: lookNote, choiceBlock: choiceBlock, findBlock: findBlock, findrefBlock: findrefBlock, orderBlock: orderBlock, blockFor: blockFor, quizTier: quizTier, btn: btn,
+    setScene: setScene, inScene: inScene };
 })();

@@ -113,7 +113,7 @@
   }
   function useScene(id) {
     var rt = buildScene(id);
-    SCN = rt; cur = 'scene'; scene = rt.scene; env = { sun: rt.sun }; P = rt.P; SC = rt.data;
+    SCN = rt; cur = 'scene'; scene = rt.scene; env = { sun: rt.sun }; P = rt.P; SC = rt.data; if (U.setScene) U.setScene(SC);
     machine = rt.machine; PARTS = rt.PARTS; partObjs = rt.partObjs; DEX = rt.DEX; machineY = rt.machineY; departGlow = rt.departGlow;
     dex = rt.dexShots = rt.dexShots || {};
     return rt;
