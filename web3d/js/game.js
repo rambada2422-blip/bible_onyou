@@ -509,7 +509,7 @@
    * 도착한 곳이 언제, 어디인지 모르는 채로 사진으로 단서를 모으고, 증거를 골라 추리한 뒤 성경에서 확인한다. */
   function hudMode() {
     var j = cur === 'jordan';
-    place_.textContent = j ? JD.unknownPlace : SC.place;
+    place_.textContent = j ? JD.unknownPlace : ((SCN && SCN.placeLabel) || SC.place);   /* 3D 장면 설정의 placeLabel이 있으면 그것(3D에서 만든 곳만 말할 때. 3d-a 부탁), 없으면 장면 자료의 place */
     if (!j) setHudRef(null);
     hudRef.hidden = j; partCount.hidden = j; clueCount.hidden = !j;
     dedBtn.hidden = true;
