@@ -1,22 +1,25 @@
 /* 3D 장면 설정: OT-25 백성이 왕을 구하고 사울이 왕이 됨 (삼상 8:4-22, 10:17-25).
  * 방향: 미스바 언덕 위. 북쪽(-Z)에 작은 성읍, 그 남쪽의 넓은 빈터에 백성이 지파대로 모여 북쪽(사무엘)을 보고 선다. 빈터 서쪽에 짐(행구) 더미.
  *   아이들은 빈터 남쪽 가장자리와 둘레 길에서만 다닌다(모인 사람들 사이로 가지 않는다).
- *   라마(사무엘의 집, 7:17, 8:4)는 같은 화면 세계의 먼 곳(서북쪽 RAMA)에 두고 타임머신 창 너머로만 본다(아이들은 화면에 없음).
+ *   라마(사무엘의 집, 7:17, 8:4)는 같은 화면 세계의 먼 곳(서남쪽 RAMA)에 두고 타임머신 창 너머로만 본다(아이들은 화면에 없음).
  * 아이들이 다니는 때: 사무엘이 백성을 미스바로 불러 모을 때(10:17). 라마의 일(8:4-22)은 그보다 앞의 일로, 지켜보기 처음 네 대목에서 창 너머로 본다.
  * 본문에 맞춘 점 (content/ot/OT-25.json design3d)
- *  - 8:4-5: 장로들이 모여 라마의 사무엘 집 앞으로 와서 선다. 8:6, 8:21: 사무엘은 조금 떨어져 서 있기만 한다(기도하는 말과 몸짓은 만들지 않는다).
+ *  - 8:4-5: 장로들이 모여 라마의 사무엘 집 앞으로 와서 선다. 8:6: 사무엘은 집 곁으로 조금 떨어져 서 있기만 하고, 8:21: 집 쪽으로 돌아서 서 있기만 한다
+ *    (기도하는 말과 몸짓은 만들지 않는다. 몸을 숙이지도 않는다).
  *    하나님의 말씀은 글로만. 8:11-18의 왕의 일은 미리 알려 준 말이라 그리지 않는다. 8:22: 장로들이 각기 성읍으로 돌아간다.
  *  - 10:17-19: 백성이 지파대로 열두 무리로 모여 있고, 사무엘이 그 앞에 서 있다. 여호와 앞에는 아무것도 그리지 않는다(단·궤·장막 없음).
  *  - 10:20-23: 지파와 가족과 사울이 어떻게 뽑혔는지는 그리지 않는다. 사울은 짐 더미 뒤에 몸을 낮추고 있다가, 두 사람이 달려가 데려오면 백성 가운데 선다.
- *    다른 사람보다 어깨 위만큼 크다(무리 모형을 키 크게). 숨은 까닭을 보여 주는 표정과 몸짓은 없다.
+ *    앞줄 사람들 곁에 서서 다른 사람보다 어깨 위만큼 크다(무리 모형을 키 크게). 숨은 까닭을 보여 주는 표정과 몸짓은 없다.
+ *  - 사람들은 무리 사이의 빈 길(통로)로만 오가고, 올 때는 앞줄부터, 갈 때는 뒷줄부터 움직여 서로 겹치거나 서 있는 사람을 뚫고 지나가지 않는다.
  *  - 10:24-25: 만세를 외치는 소리는 만들지 않는다. 사무엘은 나라의 제도를 적은 책(작은 두루마리, 글자 없음)을 들고 있다. 책을 두는 자리는 그리지 않는다.
  *    백성은 각기 집으로 돌아간다(남쪽 길로 가는 사람들은 아이들 곁을 지난다: 돕기 '길 비켜 주기').
  * 감수가 필요한 설정: 미스바의 생김새(언덕 위 작은 성읍과 남쪽 빈터)와 라마의 생김새(사무엘의 집과 앞마당), 두 곳을 같은 화면 세계에 둔 것,
- *   사무엘의 생김새(tools/blender/people/samuel.json: 늙음, 흰 수염, 어두운 겉옷, 지팡이 없음), 사무엘이 기도할 때 집 곁에 떨어져 서 있는 것,
+ *   사무엘의 생김새(tools/blender/people/samuel.json: 늙음, 흰 수염, 어두운 겉옷, 지팡이 없음), 8:6에 집 곁에 떨어져 서 있고 8:21에 집 쪽으로 돌아서 있는 것,
  *   장로들의 수(10)와 오는 길, 미스바에 모인 백성을 열두 무리 마흔여덟 사람(모두 남자)으로 줄여 둔 것과 선 자리, 모여 오는 길과 돌아가는 길,
- *   짐 더미의 자리와 생김새, 사울의 생김새(무리 모형을 1.14배)와 짐 뒤에 몸을 낮춘 모습, 사울을 데려온 두 사람, 사울이 선 자리(무리 앞 가운데, 백성 쪽을 봄),
+ *   짐 더미의 자리와 생김새, 사울의 생김새(무리 모형을 1.14배)와 짐 뒤에 몸을 낮춘 모습, 사울을 데려온 두 사람, 사울이 선 자리(앞줄 곁, 백성 쪽을 봄),
  *   사무엘이 든 책의 꼴, 사울도 다른 사람들과 함께 돌아가는 것(10:26 기브아는 범위 밖), 날씨와 때(맑은 낮),
- *   재료(양털 한 줌 8:17 — 서쪽 길가, 가죽 끈 조각 10:22 — 동쪽 길가, 질그릇 조각 10:17 — 모이는 자리 남쪽 길가. 누구의 것인지 정하지 않음).
+ *   재료(양털 한 줌 8:17 — 서남쪽 길가, 가죽 끈 조각 10:22 — 동쪽 길가, 질그릇 조각 10:17 — 모이는 자리 남쪽 길가. 누구의 것인지 정하지 않음),
+ *   라마의 사람들에게 그림자가 없는 것(해의 그림자는 아이들 둘레만 그린다).
  */
 (function () {
   'use strict';
@@ -25,7 +28,7 @@
   if (!(BO3D.c3d && BO3D.c3d.on('OT-25'))) return;   /* design3d.build가 false면 이야기 카드로만 간다 */
   BO3D.scene3d['OT-25'] = function (api) {
     var T = THREE, M2 = BO3D.models2 || {}, MO = BO3D.models || {}, PR = BO3D.props, FX = api.FX, C3 = BO3D.c3d, R = PR.rng(2511), sm = C3.sm, noise = C3.noise, hash = C3.hash, i, k;
-    var RAMA = [-230, 170], SAM_M = [0, -27], SAUL_AT = [0, -21.2], BAG = [-24, -15], SAUL_HIDE = [-25.8, -15.6];
+    var RAMA = [-230, 170], SAM_M = [0, -27], SAUL_AT = [-2.6, -19.4], BAG = [-24, -15], SAUL_HIDE = [-25.8, -15.6], SROAD = -4;
     function rp(dx, dz) { return [RAMA[0] + dx, RAMA[1] + dz]; }
     var SAM_R = rp(0, -1.6), PRAY_R = rp(-9, -3.4);
     function height(x, z) {
@@ -33,6 +36,7 @@
       return 0.18 * noise(x * 0.08 + 5, z * 0.08 + 2) - 5 * sm(70, 150, r) * (1 - keepR) + 16 * sm(150, 280, r) * noise(x * 0.015, z * 0.015) * (1 - keepR);
     }
     function walkable(x, z) { return x >= -34 && x <= 34 && z >= 0 && z <= 30; }
+    function angTo(a, b, k) { return b + Math.atan2(Math.sin(a - b), Math.cos(a - b)) * k; }
 
     var scene = new T.Scene();
     scene.background = new T.Color('#EAE2CC'); scene.fog = new T.Fog('#EAE2CC', 80, 300);
@@ -46,7 +50,7 @@
       var x = pos.getX(i), z = pos.getZ(i), y = height(x, z); pos.setY(i, y);
       c.copy(s1).lerp(s2, noise(x * 0.05, z * 0.05));
       if (Math.abs(x) < 30 && z > -36 && z < 0) c.lerp(field, 0.6);                                                       /* 모이는 빈터 */
-      if (walkable(x, z) || (Math.abs(x) < 3.2 && z > 0 && z < 100) || (Math.abs(z - 19) < 3 && x < -28 && x > -100) || (Math.abs(z - 23) < 3 && x > 28 && x < 100)) c.lerp(lane, 0.7);   /* 남·서·동쪽 길 */
+      if (walkable(x, z) || (Math.abs(x - SROAD) < 3.2 && z > 0 && z < 100) || (Math.abs(z - 19) < 3 && x < -28 && x > -100) || (Math.abs(z - 23) < 3 && x > 28 && x < 100)) c.lerp(lane, 0.7);   /* 남·서·동쪽 길 */
       var dr = Math.hypot(x - RAMA[0], z - RAMA[1]); if (dr < 22) c.lerp(lane, 0.5 * (1 - dr / 22));                         /* 라마의 앞마당 */
       col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
     }
@@ -115,11 +119,14 @@
       for (i = 0; i < 4; i++) {
         var o = man(k * 41 + i * 7 + 2600, { kind: 'man', carry: 'none' }), spot = [gx + (i % 2 ? 0.65 : -0.65) + (hash(k, i) - 0.5) * 0.25, gz + (i < 2 ? -0.65 : 0.65)];
         o.spot = spot; o.grp = k;
-        var src;
-        if (gx < -6) src = [[-82 - i * 1.4 - k, 19 + (hash(i, k) - 0.5) * 2], [-30, 19], [-22, 3]];
-        else if (gx > 6) src = [[82 + i * 1.4 + k, 23 + (hash(i, k) - 0.5) * 2], [30, 23], [22, 3]];
-        else src = [[(hash(k, i + 9) - 0.5) * 3, 84 + i * 1.6 + k], [(hash(k, i + 9) - 0.5) * 3, 3]];
-        o.IN = mkPath(src.concat([spot])); o.OUT = rev(o.IN); o.wait = (k % 6) * 2.2 + i * 0.7 + Math.floor(k / 6) * 1.1;
+        /* 무리 사이의 빈 길(통로)로만 다닌다: 통로를 따라 줄 사이까지 와서 옆으로 들어간다. 사람마다 길을 조금씩 비켜 겹치지 않게 */
+        var j = (hash(k, i + 4) - 0.5) * 1.2, A = (gx < -9 ? -18.2 : gx < 0 ? -9 : gx < 9 ? 9 : 18.2) + j, rowZ = gz + 2.85 + j * 0.3, src;
+        if (gx < -6) src = [[-82 - i * 1.4 - k, 19 + j], [-30 + j, 19 + j * 0.5], [A, 1 + j]];
+        else if (gx > 6) src = [[82 + i * 1.4 + k, 23 + j], [30 + j, 23 + j * 0.5], [A, 1 + j]];
+        else src = [[SROAD + j, 84 + i * 1.6 + k], [SROAD + j, 1 + j * 0.4], [A, 1 + j * 0.4]];
+        o.IN = mkPath(src.concat([[A, rowZ], [spot[0], rowZ], spot])); o.OUT = rev(o.IN);
+        o.wait = Math.floor(k / 4) * 7 + (k % 4) * 1.6 + (i < 2 ? 0 : 1.1) + (i % 2) * 0.55;          /* 올 때는 앞줄부터 */
+        o.leave = (2 - Math.floor(k / 4)) * 6 + (k % 4) * 1.3 + (i < 2 ? 1.1 : 0) + (i % 2) * 0.5;   /* 갈 때는 뒷줄부터 */
         o.group.visible = false; crowd.push(o);
       }
     }
@@ -128,11 +135,12 @@
     var elders = [];
     for (i = 0; i < 10; i++) {
       var e = man(i * 53 + 2700, { kind: 'man', carry: 'none' }), es = rp(-6 + (i % 5) * 3 + (hash(i, 3) - 0.5) * 0.6, 5.2 + Math.floor(i / 5) * 2.3);
-      e.spot = es; e.IN = mkPath([rp(18 + i * 0.8, 16 + (i % 3)), rp(8, 8.5), es]); e.OUT = rev(e.IN); e.wait = i * 0.4; e.group.visible = false; elders.push(e);
+      e.spot = es; e.IN = mkPath([rp(18 + i * 0.8, 16 + (i % 3)), rp(8 + (hash(i, 7) - 0.5) * 4, 8.5 + (hash(i, 8) - 0.5) * 3), es]); e.OUT = rev(e.IN); e.wait = i * 0.55; e.group.visible = false; elders.push(e);
     }
-    var SAUL_GO = mkPath([SAUL_HIDE, [-18, -21], SAUL_AT]), SAUL_OUT = mkPath([SAUL_AT, [22, 3], [30, 23], [86, 23]]);
-    var RUN_TO = RUN.map(function (o, n) { return mkPath([o.spot, [-20, -17 - n * 1.2], [SAUL_HIDE[0] + 1.4, SAUL_HIDE[1] - 0.6 + n * 1.2]]); });
-    var RUN_BACK = RUN.map(function (o, n) { return mkPath([[SAUL_HIDE[0] + 1.4, SAUL_HIDE[1] - 0.6 + n * 1.2], [-18 + n * 1.3, -20.5], [SAUL_AT[0] - 1.4 + n * 2.8, SAUL_AT[1] + 1.2], o.spot]); });
+    /* 10:22-23: 두 사람은 짐 더미 동쪽(상자 밖)에 서고, 사울은 짐 북쪽으로 나와 앞줄 곁에 선다. 두 사람은 제자리로 돌아간다 */
+    var SAUL_GO = mkPath([SAUL_HIDE, [-25.6, -17.9], [-21, -21.6], SAUL_AT]), SAUL_OUT = mkPath([SAUL_AT, [0, -19.4], [0, 1], [SROAD, 1], [SROAD, 90]]);
+    var RUN_TO = RUN.map(function (o, n) { return mkPath([o.spot, [o.spot[0], o.spot[1] - 1.6], [-22.2, -16.1 + n * 1.1]]); });
+    var RUN_BACK = RUN.map(function (o, n) { return mkPath([[-22.2, -16.1 + n * 1.1], [o.spot[0], o.spot[1] - 1.6], o.spot]); });
     var SAM_PRAY = mkPath([SAM_R, rp(-5, -1.2), PRAY_R]), SAM_BACK = rev(SAM_PRAY);
 
     var phase = 'gather', pt = 0;
@@ -152,6 +160,7 @@
         if (p !== 'gather') placeAll();
         if (p === 'm_saul') { saul.group.visible = true; setAt(saul, SAUL_HIDE[0], SAUL_HIDE[1], Math.PI / 2); saul.group.position.y -= 0.62; still(saul); }   /* 10:22 짐 사이에 숨어 있다 */
         if (p === 'm_send') { saul.group.visible = true; setAt(saul, SAUL_AT[0], SAUL_AT[1], 0); still(saul); book.visible = true; }
+        if (p === 'm_saul') RUN.forEach(function (o) { setAt(o, o.spot[0], o.spot[1], Math.PI); });
       }
     }
     if (window.BO3D_TEST) C3.t25 = { skip: function (sec) { pt += sec; } };   /* 시험에서 때를 건너뛰어 볼 때만 쓴다 */
@@ -166,9 +175,9 @@
         if (Math.abs(x) > 34) return { who: 'hyu', text: '이 길 끝까지만 가자.' };
         return { who: 'hyu', text: '남쪽 가장자리와 길가에서만 다니자.' };
       },
-      P: { start: [0, 22], machine: [-9, 25], machineRot: 0.4,
+      P: { start: [8, 22], machine: [15, 26], machineRot: 0.4,
         /* 재료가 놓인 곳(quests[i].found): 서쪽 길가 / 동쪽 길가 / 모이는 자리 남쪽 길가. 사무엘(0, -27)과 무리(z -19 ~ -6)에서 떨어진 곳 */
-        parts: [[-31, 20], [31, 25], [8, 3.5]], lookSpot: [8, 3.5],
+        parts: [[-27, 27], [31, 8], [14, 4]], lookSpot: [14, 4],   /* 사람들이 오가는 길(남쪽 길 x -4, 서·동쪽 길과 꺾이는 곳)에서 떨어진 곳 */
         look: { focus: [0, -24], mid: [2, -12], dy: 2.5, backE: 10, upE: 5 } },
       eventCam: function (i) {
         if (i === 0) return { pos: [RAMA[0] - 12, height(RAMA[0], RAMA[1]) + 10, RAMA[1] + 30], look: [RAMA[0] + 2, 1.6, RAMA[1] + 2] };   /* 창 너머: 라마(장로들이 동쪽에서 온다) */
@@ -190,16 +199,16 @@
       },
       helpNote: function (after) {
         if (after === 4) return '우리는 모인 백성의 남쪽 가장자리에서 함께 기다려요. 무리 사이로는 들어가지 않아요.';
-        if (after === 6) return '우리는 남쪽 길가에서 돌아가는 사람들에게 길을 비켜 줘요.';
+        if (after === 6) return '우리는 남쪽 가장자리에서 지켜보고, 돌아가는 사람들에게는 길을 비켜 줘요.';
         return null;
       },
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
       intro: { text: '타임머신이 미스바 언덕의 남쪽 길가에 내려앉았어요. 사람들이 지파대로 모여 오고 있어요.', say: { who: 'hyu', text: '모이는 자리 가운데로는 가지 말자. 남쪽 가장자리와 길가에서만 다니자.' } },
-      lookText: '사무엘상 8장과 10장을 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
+      lookText: '사무엘상 7장부터 10장까지를 성경에서 찾아 읽은 뒤 다시 골라 보세요.',
       partBeats: [], eventStart: 0,
       sceneDoneText: '백성이 각기 집으로 돌아가는 것까지 지켜봐야 떠날 수 있어요.',
       dex: [
-        { id: 'samuel', name: '사무엘', desc: '백성을 미스바로 불러 여호와 앞에 모은 늙은 선지자', ref: '삼상 8:4, 10:17', hint: '모인 사람들 앞(북쪽)에 선 흰 수염의 사람을 보세요.', range: 70, crop: 0.36, visible: function () { return sam.group.visible && sam.group.position.distanceTo(v3(0, 0, 0)) < 120; }, pos: function () { var p = sam.group.position; return v3(p.x, p.y + 1.1, p.z); } },
+        { id: 'samuel', name: '사무엘', desc: '늙은 선지자. 백성을 미스바로 불러 여호와 앞에 모았다', ref: '삼상 3:20, 8:5, 10:17', hint: '모인 사람들 앞(북쪽)에 선 흰 수염의 사람을 보세요.', range: 70, crop: 0.36, visible: function () { return sam.group.visible && sam.group.position.distanceTo(v3(0, 0, 0)) < 120; }, pos: function () { var p = sam.group.position; return v3(p.x, p.y + 1.1, p.z); } },
         { id: 'saul', name: '기스의 아들 사울', desc: '백성 가운데 서니 다른 사람보다 어깨 위만큼 더 큰 사람', ref: '삼상 10:23', hint: '무리 앞 가운데의 키 큰 사람을 보세요.', range: 70, crop: 0.36, visible: function () { return saul.group.visible && phase !== 'm_saul'; }, pos: function () { var p = saul.group.position; return v3(p.x, p.y + 1.2, p.z); } },
         { id: 'baggage', name: '짐(행구)', desc: '사울이 그 사이에 숨어 있던 짐', ref: '삼상 10:22', hint: '빈터 서쪽의 짐 더미를 보세요.', range: 70, pos: function () { return v3(BAG[0], 0.8, BAG[1]); } }
       ],
@@ -213,14 +222,10 @@
         pt += dt;
         if (phase === 'gather') crowd.forEach(function (o) { var s = (pt - o.wait) * 2.0; if (s > 0) walk(o, o.IN, s, Math.PI, dt); });   /* 10:17 미스바로 모여 온다 */
         if (phase === 'r_come') elders.forEach(function (o) { var s = (pt - 0.5 - o.wait) * 2.4; if (s > 0) walk(o, o.IN, s, Math.PI, dt); });   /* 8:4 */
-        if (phase === 'r_pray') { if (walk(sam, SAM_PRAY, Math.max(0, pt - 1) * 1.1, -Math.PI / 2, dt)) sam.group.rotation.x = 0; else if (pt > 2) sam.group.rotation.x = 0.1; }   /* 8:6 조금 떨어져 선다 */
+        if (phase === 'r_pray') { if (pt < 1) still(sam); else walk(sam, SAM_PRAY, (pt - 1) * 1.1, -Math.PI / 2, dt); }   /* 8:6 조금 떨어져 선다 */
         if (phase === 'r_refuse') {
-          var t1 = 6, t2 = t1 + SAM_PRAY.tot / 1.1, t3 = t2 + 5, t4 = t3 + SAM_BACK.tot / 1.1;
-          if (pt < t1) still(sam);
-          else if (pt < t2) walk(sam, SAM_PRAY, (pt - t1) * 1.1, -Math.PI / 2, dt);
-          else if (pt < t3) { sam.group.rotation.x = 0.1; still(sam); }                                        /* 8:21 여호와께 고한다 */
-          else { sam.group.rotation.x = 0; walk(sam, SAM_BACK, (pt - t3) * 1.1, 0, dt); }
-          if (pt > t4 + 1.5) elders.forEach(function (o) { var s = (pt - t4 - 1.5 - o.wait * 0.5) * 1.8; if (s > 0) { if (!walk(o, o.OUT, s, undefined, dt)) o.group.visible = false; } });   /* 8:22 각기 성읍으로 */
+          sam.group.rotation.y = angTo(pt > 3 && pt < 6.5 ? Math.PI : 0, sam.group.rotation.y, Math.min(1, dt * 3)); still(sam);   /* 8:21 집 쪽으로 돌아서 서 있다가(고한다) 8:22 다시 장로들을 본다 */
+          if (pt > 7.5) elders.forEach(function (o) { var s = (pt - 7.5 - o.wait * 0.4) * 2.2; if (s > 0) { if (!walk(o, o.OUT, s, undefined, dt)) o.group.visible = false; } });   /* 8:22 각기 성읍으로 */
         }
         if (phase === 'm_saul') {
           /* 10:22-23: 두 사람이 달려가 짐 사이에서 사울을 데려오고, 사울이 백성 가운데 선다 */
@@ -229,7 +234,8 @@
             if (pt < ra) return;
             if (pt < rb) walk(o, RUN_TO[n], (pt - ra) * 3.2, Math.PI / 2 * -1, dt);
             else if (pt < rc) still(o);
-            else walk(o, RUN_BACK[n], (pt - rc) * 2.0, Math.PI, dt);
+            else if (pt < rc + 0.8) still(o);
+            else walk(o, RUN_BACK[n], (pt - rc - 0.8) * 2.0, Math.PI, dt);
           });
           if (pt < rb + 0.3) { saul.group.position.y = height(SAUL_HIDE[0], SAUL_HIDE[1]) - 0.62; still(saul); }
           else if (pt < rc) { saul.group.position.y = height(SAUL_HIDE[0], SAUL_HIDE[1]) - 0.62 * (1 - sm(rb + 0.3, rc, pt)); still(saul); }   /* 일어선다 */
@@ -237,8 +243,8 @@
         }
         if (phase === 'm_send') {
           /* 10:25 사무엘이 모든 백성을 각기 집으로 보낸다 */
-          crowd.forEach(function (o) { var s = (pt - 5 - o.wait * 0.45) * 1.7; if (s > 0) { if (!walk(o, o.OUT, s, undefined, dt) && s > o.OUT.tot) o.group.visible = false; } });
-          var su = (pt - 9) * 1.7; if (su > 0) { if (!walk(saul, SAUL_OUT, su, undefined, dt) && su > SAUL_OUT.tot) saul.group.visible = false; }
+          crowd.forEach(function (o) { var s = (pt - 4 - o.leave) * 1.7; if (s > 0) { if (!walk(o, o.OUT, s, undefined, dt) && s > o.OUT.tot) o.group.visible = false; } });
+          var su = (pt - 22) * 1.7; if (su > 0) { if (!walk(saul, SAUL_OUT, su, undefined, dt) && su > SAUL_OUT.tot) saul.group.visible = false; }
         }
         if (book.visible) { var gp = sam.group.position, ry = sam.group.rotation.y; book.position.set(gp.x + Math.sin(ry) * 0.34 + Math.cos(ry) * 0.18, gp.y + 1.02, gp.z + Math.cos(ry) * 0.34 - Math.sin(ry) * 0.18); book.rotation.y = ry; }
         if (sam.update && sam.group.visible && phase !== 'r_pray' && phase !== 'r_refuse') sam.update(dt, false);
