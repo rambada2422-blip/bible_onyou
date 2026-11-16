@@ -95,7 +95,11 @@
     /* 다윗(Blender, 소년. 삼상 17:33, 17:42): 진에 이르러(17:20, 17:22) 시내로 가서(17:40) 나아간다 */
     var DAV0 = [12.5, 44],   /* 짐 두는 곳에서 진영으로(17:22) */ dav = { group: api.fallback('#7A8A4A', 1.55, 0.22), update: function () {} }, davAt = DAV0.slice(), davTo = null, davRun = false;
     put(dav.group, DAV0[0], DAV0[1]); dav.group.visible = false;
-    api.person('david', function (nm) { nm.group.scale.setScalar(0.9); nm.group.position.copy(dav.group.position); nm.group.visible = dav.group.visible; scene.remove(dav.group); scene.add(nm.group); dav = nm; });
+    var davBones = null, pickT = -1, STOOP = 1, eSt = new T.Euler(), qSt = new T.Quaternion();
+    api.person('david', function (nm) {
+      var bb = {}; nm.group.traverse(function (o) { if (o.isBone) bb[o.name.replace(/[^a-zA-Z]/g, '').toLowerCase()] = o; });
+      if (bb.spine && bb.chest) davBones = bb;
+      nm.group.scale.setScalar(0.9); nm.group.position.copy(dav.group.position); nm.group.visible = dav.group.visible; scene.remove(dav.group); scene.add(nm.group); dav = nm; });
 
     var phase = 'arrayed', flee = 0, fallPending = false;
     function setPhase(p) {
@@ -108,7 +112,8 @@
       if (p === 'fear') { isr.forEach(function (o) { o.at = [o.home[0], o.home[1] + 4]; }); davTo = [6, 24]; golTo = [-5, -4]; } /* 17:24 */
       if (p === 'saul') { isr.forEach(function (o) { o.at = [o.home[0], o.home[1] + 4]; }); davTo = [-4, 22]; }               /* 17:31-37 */
       if (p === 'brook') { davTo = [-3, BROOK_Z + 1.6]; }                                                                     /* 17:40 */
-      if (p === 'near') { davTo = [-3, BROOK_Z + 2.4]; golTo = [-4, -3.2]; }                                                    /* 17:41-47: 골리앗이 다윗 쪽으로 다가온다 */
+      pickT = p === 'brook' ? 0 : -1;
+      if (p === 'near') { davTo = [-3, BROOK_Z + 1.2]; golTo = [-4, -3.2]; }                                                    /* 17:41-47: 골리앗이 다윗 쪽으로 다가온다 */
       if (p === 'fall') { davTo = [-3.6, BROOK_Z + 0.4]; davRun = true; golTo = [-4, -2.2]; fallPending = true; flee = 0.001; }  /* 17:48-52: 서로 다가간 뒤 골리앗이 엎드러진다 */
     }
     function step(o, at, to, spd, dt) {
@@ -118,6 +123,32 @@
       p.set(at[0], height(at[0], at[1]), at[1]); o.group.rotation.y = Math.atan2(dx, dz);
       return false;
     }
+    /* 17:40 "시내에서 매끄러운 돌 다섯을 골라서": 시내에 이른 다윗이 몸을 굽혀 돌을 고르고 일어서기를 다섯 번 한다(허리·가슴 뼈만 굽힘).
+       돌을 줍는 손과 주머니는 작아서 그리지 않는다 */
+    function stoop(t) {
+      if (!davBones) return;
+      var CY = 1.7, k = Math.floor(t / CY), u = (t % CY) / CY, a = 0;
+      if (k >= 5) return;
+      if (u < 0.3) a = u / 0.3; else if (u < 0.6) a = 1; else if (u < 0.9) a = 1 - (u - 0.6) / 0.3;
+      a = a * a * (3 - 2 * a);
+      if (a < 0.001) return;
+      eSt.set(STOOP * 0.6 * a, 0, 0); qSt.setFromEuler(eSt); davBones.spine.quaternion.multiply(qSt);
+      eSt.set(STOOP * 0.45 * a, 0, 0); qSt.setFromEuler(eSt); davBones.chest.quaternion.multiply(qSt);
+    }
+    /* 17:51-52 뒤쫓는 이스라엘 사람들은 쓰러진 골리앗과 그 곁의 다윗을 밟지 않고 비켜 지나간다 */
+    function around(x, z) {
+      var cx = golAt[0], cz = golAt[1] + 1.8, dz = z - cz, w = Math.exp(-(dz * dz) / 32), dx = x - cx, need = 4.2;
+      if (Math.abs(dx) >= need || w < 0.01) return x;
+      return x + (dx >= 0 ? 1 : -1) * (need - Math.abs(dx)) * w;
+    }
+    function isrNear() {   /* 시험용: 이스라엘 사람과 쓰러진 골리앗(발→머리 선분)·다윗 사이의 가장 가까운 거리 */
+      var g = 9e9, d = 9e9;
+      isr.forEach(function (o) {
+        var p = o.group.position, tz = Math.max(golAt[1], Math.min(golAt[1] + 2.9, p.z)), gx = p.x - golAt[0], gz = p.z - tz, dx = p.x - davAt[0], dz = p.z - davAt[1];
+        g = Math.min(g, Math.sqrt(gx * gx + gz * gz)); d = Math.min(d, Math.sqrt(dx * dx + dz * dz));
+      });
+      return [Math.round(g * 100) / 100, Math.round(d * 100) / 100];
+    }
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
     if (FX) FX.sortLayers(scene);
 
@@ -125,9 +156,9 @@
       id: 'OT-26', scene: scene, sun: sun, sunOff: [-30, 50, 34],
       height: height, walkable: walkable,
       edge: function (x, z) {
-        if (z < 9) return { who: 'onwoo', text: '골짜기로는 내려가지 말자. 우리는 여기서 지켜보는 사람이야.' };
+        if (z < 14) return { who: 'onwoo', text: '골짜기로는 내려가지 말자. 우리는 여기서 지켜보는 사람이야.' };
         if (x < 16) return { who: 'hyu', text: '이스라엘 진영 안으로는 들어가지 말자.' };
-        return null;
+        return { who: 'hyu', text: '여기서 더 가면 너무 멀어져. 타임머신 가까이에서 둘러보자.' };   /* 걸을 수 있는 곳의 바깥쪽 끝(장면에서 먼 쪽): 말없이 멈추지 않게 */
       },
       P: { start: [44, 32], machine: [50, 38], machineRot: -0.5,
         /* 재료가 놓인 곳(quests[i].found): 이스라엘이 선 산 쪽 / 짐 지키는 사람이 있는 쪽 / 시내 쪽 */
@@ -137,6 +168,7 @@
         if (i === 2 || i === 3) return { focus: davAt, mid: davAt, dy: 1.0, backE: 6, upE: 3 };
         if (i === 4) return { focus: davAt, mid: [-4, 22], dy: 1.0, backE: 6, upE: 3 };
         if (i === 5) return { focus: davAt, mid: davAt, dy: 0.8, backE: 6, upE: 2.6 };
+        if (i === 7 && flee > 0) { var f = Math.min(1, flee * 1.6), fc = [golAt[0] + (-14 - golAt[0]) * f, golAt[1] + (-26 - golAt[1]) * f]; return { focus: fc, mid: fc, dy: 1.6, backE: 7, upE: 3.4 }; }   /* 17:51-52: 뒤쫓을 때는 달아나는 쪽과 뒤쫓는 진영을 본다 */
         return { focus: golAt, mid: i === 7 ? davAt : golAt, dy: 1.6, backE: 7, upE: 3.4 };
       },
       detector: '탐지기', askLabel: '탐지기 물음 풀기',
@@ -160,7 +192,7 @@
       beatPose: function (i) { setPhase(i <= 1 ? 'goliath' : ['', '', 'david', 'fear', 'saul', 'brook', 'near', 'fall'][i]); },
       update: function (dt, now) {
         if (golTo && gol.group.visible) { step(gol, golAt, golTo, 0.9, dt); bearer.group.position.set(golAt[0] + 1.1, height(golAt[0] + 1.1, golAt[1] + 2.0), golAt[1] + 2.0); bearer.group.rotation.y = gol.group.rotation.y = Math.PI * 0.02; }
-        if (davTo && dav.group.visible) { var ar = step(dav, davAt, davTo, davRun ? 4.5 : 1.6, dt); if (dav.update) dav.update(dt, !ar); if (ar && fallPending) { fallPending = false; golFallWant = 1; golTo = null; setTimeout(function () { if (FX) FX.audio.thud(0.7); if (api.shake) api.shake(0.25, 0.8); }, 700); }   /* 골리앗이 땅에 엎드러질 때 쿵(17:49, 간접 연출) */ } else if (dav.update) dav.update(dt, false);
+        if (davTo && dav.group.visible) { var ar = step(dav, davAt, davTo, davRun ? 4.5 : 1.6, dt); if (dav.update) dav.update(dt, !ar); if (ar && pickT >= 0) { pickT += dt; stoop(pickT); } if (ar && fallPending) { fallPending = false; golFallWant = 1; golTo = null; setTimeout(function () { if (FX) FX.audio.thud(0.7); if (api.shake) api.shake(0.25, 0.8); }, 700); }   /* 골리앗이 땅에 엎드러질 때 쿵(17:49, 간접 연출) */ } else if (dav.update) dav.update(dt, false);
         if (gol.update) gol.update(dt, !!golTo);
         /* 17:49: 땅에 엎드러짐(멀리서). 앞으로 천천히 눕는다 */
         golFall += (golFallWant - golFall) * Math.min(1, dt * (golFallWant ? 0.9 : 3));
@@ -170,7 +202,7 @@
         if (flee > 0 && golFall > 0.9) {
           flee = Math.min(1, flee + dt * 0.08);
           phi.forEach(function (o, k) { o.at = [o.home[0], o.home[1] - flee * 60]; o.group.position.set(o.at[0], height(o.at[0], o.at[1]), o.at[1]); o.group.rotation.y = Math.PI; o.update(dt, 1, now); o.group.visible = flee < 0.9; });
-          isr.forEach(function (o) { o.at = [o.home[0], o.home[1] - flee * 34]; o.group.position.set(o.at[0], height(o.at[0], o.at[1]), o.at[1]); o.group.rotation.y = Math.PI; if (o.update) o.update(dt, 1.2); });
+          isr.forEach(function (o) { var az = o.home[1] - flee * 34; o.at = [around(o.home[0], az), az]; o.group.position.set(o.at[0], height(o.at[0], o.at[1]), o.at[1]); o.group.rotation.y = Math.PI; if (o.update) o.update(dt, 1.2); });
         } else {
           isr.forEach(function (o) { var p = o.group.position; p.x += (o.at[0] - p.x) * Math.min(1, dt * 2); p.z += (o.at[1] - p.z) * Math.min(1, dt * 2); p.y = height(p.x, p.z); o.group.rotation.y = Math.PI; if (o.update) o.update(dt, 0); });
           phi.forEach(function (o) { o.update(dt, 0, now); });
@@ -179,7 +211,7 @@
       },
       audio: function (A) { A.setFlock(999); A.setFire(999); },
       menuCam: function (camera, now) { var a = now * 0.05; camera.position.set(34 + Math.sin(a) * 8, 12, 36); camera.lookAt(-6, 2, -6); },
-      debug: { phase: function () { return { phase: phase, gol: golAt, dav: davAt, fall: golFall }; }, arrived: function () { return phase !== 'arrayed'; } }
+      debug: { phase: function () { return { phase: phase, gol: golAt, dav: davAt, fall: golFall, pick: pickT, bones: !!davBones, flee: flee, near: isrNear() }; }, arrived: function () { return phase !== 'arrayed'; } }
     };
   };
 })();

@@ -86,8 +86,8 @@
     var rb1 = new T.Mesh(new T.CylinderGeometry(0.2, 0.3, 0.9, 8), bm); rb1.position.set(0, 1.85, -0.1); beast.add(rb1); var rb2 = new T.Mesh(new T.SphereGeometry(0.16, 8, 6), bm); rb2.position.set(0, 2.42, -0.1); beast.add(rb2);   /* 짐승을 탄 느헤미야(그림자) */ var bn = new T.Mesh(new T.BoxGeometry(0.3, 0.7, 0.35), bm); bn.position.set(0, 1.5, 0.8); bn.rotation.x = -0.5; beast.add(bn);
     [[-0.18, 0.55], [0.18, 0.55], [-0.18, -0.55], [0.18, -0.55]].forEach(function (q) { var lg = new T.Mesh(new T.BoxGeometry(0.12, 0.85, 0.12), bm); lg.position.set(q[0], 0.42, q[1]); beast.add(lg); });
     scene.add(beast);
-    var few = []; for (i = 0; i < 3; i++) { var fo = PR.soldier(i + 1100, '#4E4A44', null); fo.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); scene.add(fo.group); few.push(fo); }
-    var foes = []; for (i = 0; i < 3; i++) { var fe = PR.soldier(i + 1200, ['#7A3E3E', '#3E5A6E', '#6E6A3A'][i], null); fe.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; }); put(fe.group, -58 + i * 2.2, 7 + i * 0.6); fe.group.rotation.y = Math.PI / 2; fe.group.visible = false; foes.push(fe); }
+    var few = []; for (i = 0; i < 3; i++) { var fo = PR.soldier(i + 1100, '#4E4A44', null, { spear: false }); scene.add(fo.group); few.push(fo); }
+    var foes = []; for (i = 0; i < 3; i++) { var fe = PR.soldier(i + 1200, ['#7A3E3E', '#3E5A6E', '#6E6A3A'][i], null, { spear: false }); put(fe.group, -58 + i * 2.2, 7 + i * 0.6); fe.group.rotation.y = Math.PI / 2; fe.group.visible = false; foes.push(fe); }
     var people = [];
     for (i = 0; i < 60; i++) {
       var o = null; try { if (M2.israelite) o = M2.israelite(i * 17 + 9, { carry: 'none' }); } catch (e) { o = null; }   /* 알아들을 만한 모든 사람(8:2): 아기를 안거나 짐을 인 사람은 두지 않는다 */ if (!o) o = PR.soldier(i, '#7A6A54', null);

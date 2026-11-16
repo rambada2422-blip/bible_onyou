@@ -116,7 +116,7 @@
         var e = JL.edge(x, z);
         if (e === 'river') return { who: 'onwoo', text: '강으로는 내려가지 말자. 우리는 둑 위에서 지켜보는 사람이야.' };
         if (e === 'crowd') return { who: 'hyu', text: '백성의 진 안으로는 들어가지 말자. 여기서 지켜보자.' };
-        return null;
+        return { who: 'hyu', text: '여기서 더 가면 너무 멀어져. 타임머신 가까이에서 둘러보자.' };   /* 걸을 수 있는 곳의 바깥쪽 끝(장면에서 먼 쪽): 말없이 멈추지 않게 */
       },
       P: { start: JP.start, machine: JP.machine, machineRot: 0.6,
         /* 재료가 놓인 곳: 진 가장자리 / 물이 닿지 않는 강 언덕 위쪽(상류) / 강 아래쪽 언덕(하류) — quests[i].found */

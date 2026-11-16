@@ -177,6 +177,7 @@ window.BO3D = window.BO3D || {};
       people: { range: 85, crop: 0.5, pos: function () { return v(-44.5, JP.bedY + 1, -7); } },
       jericho: { range: 480, crop: 0.34, pos: function () { return v(JP.jericho[0], height(JP.jericho[0], JP.jericho[1]) + 5, JP.jericho[1]); } }
     };
+    if (BO3D.props && BO3D.props.mergeTagged) BO3D.props.mergeTagged(scene);   /* 종려나무·갈대·곡식·바위를 한 덩어리로(그리기 호출 줄이기) */
     return {
       scene: scene, sun: sun, P: JP, height: height, walkable: walkable, edge: edge, targets: targets,
       priests: priests, leader: leader, ark: ark, poleY: function () { return poleY; }, arkPole: { x: arkPoleX, y: arkPoleY, r: poleR },

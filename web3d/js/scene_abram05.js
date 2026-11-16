@@ -64,7 +64,7 @@
     if (MO.rock) for (i = 0; i < 50; i++) { var ro = MO.rock(1900 + i); ro.scale.multiplyScalar(0.5 + R() * 1.3); var rx = -140 + R() * 280, rz = -140 + R() * 280; if (roadDist(rx, rz) < 4 || Math.hypot(rx - TENT[0], rz - TENT[1]) < 16 || (rx > 10 && rx < 52 && rz > -6 && rz < 38)) continue; put(ro, rx, rz, -0.1); }
     if (MO.shrub) for (i = 0; i < 50; i++) { var sh = MO.shrub(200 + i), hx = -140 + R() * 280, hz = -140 + R() * 280; if (roadDist(hx, hz) < 4 || Math.hypot(hx - TENT[0], hz - TENT[1]) < 14) continue; put(sh, hx, hz, -0.05); }
     /* 모레 상수리나무(창 12:6): 세겜 땅이므로 먼 배경의 큰 나무 하나 */
-    var oak = MO.acacia ? MO.acacia(7) : new T.Group(); oak.scale.setScalar(3.4); put(oak, OAK[0], OAK[1]);
+    var oak = PR.oak ? PR.oak(7) : new T.Group(); oak.scale.setScalar(3.0); put(oak, OAK[0], OAK[1]);   /* 상수리나무 꼴(둥근 잎덩이). 전에는 아카시아 꼴이었다 */
     var altarFar = PR.stoneHeap(612, 12); altarFar.scale.setScalar(2.2); put(altarFar, OAK[0] + 8, OAK[1] - 6); altarFar.visible = false;
     /* 장막(창 12:8)과 제단(12:8) */
     var camp = new T.Group(); scene.add(camp);

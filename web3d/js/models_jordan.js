@@ -143,6 +143,22 @@
     return m;
   };
 
+  /* 같은 재질의 mesh 여럿을 지금 자세 그대로 mesh 하나로 잇는다(root 좌표). 서 있는 사람을 한 번에 그릴 때 쓴다 */
+  function mergeParts(parts, root, material) {
+    var wb = new Builder(), inv = new T.Matrix4(), mm = new T.Matrix4(), nm = new T.Matrix3(), v = new T.Vector3();
+    root.updateMatrixWorld(true); inv.copy(root.matrixWorld).invert();
+    parts.forEach(function (m) {
+      var P = m.geometry.attributes.position, N = m.geometry.attributes.normal, C = m.geometry.attributes.color, j;
+      mm.multiplyMatrices(inv, m.matrixWorld); nm.getNormalMatrix(mm);
+      for (j = 0; j < P.count; j++) {
+        v.fromBufferAttribute(P, j).applyMatrix4(mm); wb.pos.push(v.x, v.y, v.z);
+        v.fromBufferAttribute(N, j).applyMatrix3(nm).normalize(); wb.nor.push(v.x, v.y, v.z);
+        wb.col.push(C.getX(j), C.getY(j), C.getZ(j));
+      }
+    });
+    return wb.mesh(material);
+  }
+
   /* ------------------------------------------------------------------ geometry 만들기 */
   // u(둘레 0..1), v(아래 0 → 위 1) 격자. x = cos(2πu), z = sin(2πu) 방향으로 감으면 바깥이 앞면이 된다.
   function grid(nu, nv, closed, fn) {
@@ -356,6 +372,11 @@
   var BEARDS = ['#2B211C', '#3A2A20', '#4A372A', '#5E5650', '#33261E'];
 
   /* opt.kind('man'|'woman'|'boy'|'girl')와 opt.carry('none' 등)를 주면 씨앗값과 상관없이 그 사람으로 만든다(장면에 정해진 사람이 있을 때) */
+  /* 보는 눈(카메라)의 자리. 틀(game.js)이 화면마다 알려 준다. 멀리서 걷는 사람을 가볍게 그리는 데 쓴다 */
+  var EYE_AT = [0, 0, 0], FAR = 34, FAR_OUT = FAR * FAR, FAR_IN = (FAR - 3) * (FAR - 3);
+  function setEye(x, y, z) { EYE_AT[0] = x; EYE_AT[1] = y; EYE_AT[2] = z; }
+  function setFar(m) { FAR = m; FAR_OUT = m * m; FAR_IN = (m - 3) * (m - 3); }
+
   function makeIsraelite(seed, opt) {
     seed = seed | 0; opt = opt || {};
     var R = rng(seed * 7 + 4001), sm = mat('smooth');
@@ -454,7 +475,8 @@
       b.add(sbox(0.085 * k, 0.2 * k, 0.085 * k, 0.8, 6, 3), wrap, TR(-0.015 * k, shY - 0.25 * k, 0.185 * q + 0.02, 0.1, 0, 1.0));
       b.add(ball(5, 3), SK, TR(0.155 * k, shY - 0.155 * k, 0.2 * q + 0.02, 0, 0, 0, 0.062 * k, 0.066 * k, 0.064 * k));
     }
-    rig.add(b.mesh(sm));
+    var bodyM = b.mesh(sm);
+    rig.add(bodyM);
 
     /* --- 팔 --- */
     var SLEEVE = hasCloak ? CLOAK : TUNIC, S_IN = shade(SLEEVE, 0.6);
@@ -493,13 +515,44 @@
     /* --- 움직임 --- */
     var st = { t: R() * 10, ph: R() * TAU, w: 0 };
     var stride = 0.78 * H, stepHalf = 0.17 * k, liftH = 0.05 * k;
+    /* 가만히 서 있는 동안에는 몸·두 팔·두 발(mesh 다섯)을 미리 이어 둔 mesh 하나로 바꿔 그린다(그리기 다섯 번 → 한 번).
+       걷기 시작하면 다시 다섯으로 나눠 팔다리를 흔든다. 서 있을 때의 아주 작은 숨쉬기 흔들림(머리끝 8mm)만 없어진다. */
+    var parts = [bodyM, armL, armR, footL, footR], whole = null, still = false, idleT = 0;
+    function restPose() {
+      footL.position.set(footX, 0, 0); footR.position.set(-footX, 0, 0); footL.rotation.x = footR.rotation.x = 0;
+      rig.position.y = 0; rig.rotation.set(0, 0, 0); armL.rotation.x = armR.rotation.x = 0;
+    }
+    function setStill(on) {
+      if (on === still) return;
+      still = on;
+      if (on) {
+        if (!whole) {
+          restPose();
+          whole = mergeParts(parts, group, sm); whole.visible = false; group.add(whole);
+        }
+        whole.castShadow = bodyM.castShadow; whole.receiveShadow = bodyM.receiveShadow; whole.frustumCulled = bodyM.frustumCulled; whole.layers.mask = bodyM.layers.mask;
+      }
+      if (whole) whole.visible = on;
+      parts.forEach(function (m) { m.visible = !on; });
+    }
     function update(dt, speed) {
       dt = Math.min(Math.max(dt || 0, 0), 0.1);
       speed = Math.abs(speed || 0);
       st.t += dt;
+      if (speed <= 0.03 && st.w < 0.004) {
+        idleT += dt;
+        if (idleT > 0.3 && !still && !noStill) setStill(true);
+        if (still) { if (whole.position.y || whole.rotation.y) { whole.position.y = 0; whole.rotation.set(0, 0, 0); } return; }
+      } else idleT = 0;
       st.w += ((speed > 0.03 ? 1 : 0) - st.w) * Math.min(1, dt * 8);
       st.ph += dt * speed / stride * TAU;
       var w = st.w, s = Math.sin(st.ph), c = Math.cos(st.ph), br = Math.sin(st.t * 1.6);
+      /* 멀리서 걷는 사람(보는 눈에서 FAR m 밖)은 팔다리를 따로 흔들지 않고, 한 덩어리로 몸의 오르내림과 좌우 흔들림만 준다 */
+      if (!noStill && idleT === 0) {
+        var e = group.matrixWorld.elements, ddx = e[12] - EYE_AT[0], ddz = e[14] - EYE_AT[2], far = ddx * ddx + ddz * ddz > (still ? FAR_IN : FAR_OUT);
+        if (far !== still) setStill(far);
+        if (still) { whole.position.y = 0.016 * k * Math.abs(c) * w; whole.rotation.set(0.035 * w, 0.07 * s * w, 0.018 * c * w); return; }
+      }
       var amp = clamp(speed / 1.1, 0.5, 1.25);
       footL.position.set(footX, Math.max(0, c) * liftH * w, stepHalf * amp * s * w);
       footR.position.set(-footX, Math.max(0, -c) * liftH * w, -stepHalf * amp * s * w);
@@ -511,8 +564,9 @@
       armL.rotation.x = swing[0] * A * s + 0.012 * br * swing[0];
       armR.rotation.x = -swing[1] * A * s + 0.012 * br * swing[1];
     }
+    var noStill = !!opt.noStill;
     update(0, 0);
-    return { group: group, update: update };
+    return { group: group, update: update, still: setStill };
   }
 
   /* ================================================================== 제사장(단순판) */
@@ -1119,6 +1173,7 @@
     for (i = 0; i < 3; i++) frond(i * 2.1 + R(), -0.75 - R() * 0.3, LEN * 0.62, 0.55, [DRY[0], DRY[1]], 0.3 * sc);       // 마른 잎 몇 장이 줄기 쪽으로 처져 있다
     group.add(wood.mesh(mat('flat')));
     group.add(leaf.mesh(mat('leaf')));
+    group.userData.stillProp = true;   /* 움직이지 않는 소품(props_ot.js mergeTagged) */
     return group;
   }
 
@@ -1147,6 +1202,7 @@
       }
     }
     group.add(b.mesh(mat('leaf')));
+    group.userData.stillProp = true;   /* 움직이지 않는 소품(props_ot.js mergeTagged) */
     return group;
   }
 
@@ -1202,12 +1258,13 @@
       lb.add(triGeo([ex - oz * lw, 0, ez - ox * lw, ex + oz * lw, 0, ez + ox * lw, ex + ox * ln, eh2, ez + oz * ln]), i % 3 ? STALK : GOLD[i % 4], null, [0, 0.5, 0.8]);
     }
     group.add(lb.mesh(mat('leaf')));
+    group.userData.stillProp = true;   /* 움직이지 않는 소품(props_ot.js mergeTagged) */
     return group;
   }
 
   /* ================================================================== 내보내기 */
   BO3D.models2 = {
-    israelite: makeIsraelite,
+    israelite: makeIsraelite, setEye: setEye, setFar: setFar,
     priestSimple: makePriest,
     leaderSimple: makeLeader,
     arkCovered: makeArk,

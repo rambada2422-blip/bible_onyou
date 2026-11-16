@@ -76,7 +76,7 @@
     var still = PR.mergeStatic(mtents.concat(itents, [camels])); mtents.concat(itents).forEach(function (t) { scene.remove(t); }); scene.remove(camels); scene.add(still);
     /* 골짜기에 누운 사람들(7:12): 멀리서 보이는 꼴. 달아날 때(7:21) 일어나 북쪽으로 */
     var midian = [];
-    for (i = 0; i < 40; i++) { var mm = PR.soldier(i + 700, ['#7A4A3A', '#6E5A3A', '#8A5A3E'][i % 3], null); mm.group.children[0].children.forEach(function (m) { if (m.geometry && m.geometry.type === 'CylinderGeometry' && m.position.x > 0.2) m.visible = false; });   /* 창은 본문에 없어 숨긴다 */
+    for (i = 0; i < 40; i++) { var mm = PR.soldier(i + 700, ['#7A4A3A', '#6E5A3A', '#8A5A3E'][i % 3], null, { spear: false });   /* 창은 본문에 없어 숨긴다 */
       mm.home = [MCAMP[0] + (R() - 0.5) * 100, MCAMP[1] + (R() - 0.5) * 36]; put(mm.group, mm.home[0], mm.home[1], 0.1); mm.group.rotation.x = -1.45; mm.group.rotation.y = R() * 6; midian.push(mm); }
     /* 이스라엘 백성(7:1-8): 많이 모였다가 돌아가고, 물가로 내려가고, 서른(삼백 명의 표시)이 남는다 */
     var men = [], N = 90;
@@ -136,7 +136,7 @@
       edge: function (x, z) {
         if (x < 18) return { who: 'onwoo', text: '진과 샘 쪽으로는 가지 말자. 우리는 지켜보는 사람이야.' };
         if (z < -6) return { who: 'hyu', text: '골짜기 아래로는 내려가지 말자.' };
-        return null;
+        return { who: 'hyu', text: '여기서 더 가면 너무 멀어져. 타임머신 가까이에서 둘러보자.' };   /* 걸을 수 있는 곳의 바깥쪽 끝(장면에서 먼 쪽): 말없이 멈추지 않게 */
       },
       P: { start: [44, 30], machine: [50, 36], machineRot: -0.8,
         /* 재료가 놓인 곳(quests[i].found): 하롯 샘 쪽(물가에서 떨어진 땅) / 골짜기가 내려다보이는 쪽 / 장막이 모인 이스라엘 진 쪽(진 바깥 빈 땅) */
@@ -157,7 +157,8 @@
       sceneDoneText: '기드온 장면을 끝까지 지켜봐야 떠날 수 있어요.',
       dex: [
         { id: 'spring', name: '하롯 샘', desc: '기드온과 백성이 진을 친 곳 곁의 샘', ref: '삿 7:1', hint: '진 아래쪽을 보세요.', range: 60, pos: function () { return v3(SPRING[0], height(SPRING[0], SPRING[1]) + 0.6, SPRING[1]); } },
-        { id: 'midian', name: '미디안의 진', desc: '모레 산 앞 골짜기에 메뚜기 떼처럼 많이 누운 사람들과 셀 수 없는 낙타', ref: '삿 7:12', hint: '북쪽 골짜기를 담아 보세요.', range: 200, crop: 0.7, pos: function () { return v3(MCAMP[0], height(MCAMP[0], MCAMP[1]) + 1, MCAMP[1]); } },
+        { id: 'midian', name: '미디안의 진', desc: '모레 산 앞 골짜기에 메뚜기 떼처럼 많이 누운 사람들과 셀 수 없는 낙타', ref: '삿 7:12', hint: '북쪽 골짜기를 담아 보세요.', range: 200, crop: 0.7,
+          visible: function () { return flee < 0.5; },   /* 누운 사람들이 달아난 뒤(7:21-22)에는 이 설명과 맞지 않아 찍히지 않는다 */ pos: function () { return v3(MCAMP[0], height(MCAMP[0], MCAMP[1]) + 1, MCAMP[1]); } },
         { id: 'gideon', name: '기드온', desc: '요아스의 아들. 삼백 명을 세 무리로 나눈 사람', ref: '삿 7:16', hint: '진 앞쪽에서 찾아보세요.', range: 50, crop: 0.36, pos: function () { var p = gid.group.position; return v3(p.x, p.y + 1.1, p.z); } }
       ],
       reset: function () { setPhase('camp'); },

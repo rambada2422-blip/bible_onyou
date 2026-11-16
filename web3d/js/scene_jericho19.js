@@ -91,9 +91,11 @@
     dg.setAttribute('position', new T.Float32BufferAttribute(dp, 3)); var dust = new T.Points(dg, dustM); scene.add(dust);
 
     /* 진의 장막 (수 6:11, 6:14) */
+    var RET_X = -12;
     for (i = 0; i < 60; i++) {
       var tx = -80 + R() * 130, tz = 22 + R() * 56;
       if (tx > 10 && tz < 50) continue;
+      if (Math.abs(tx - RET_X) < 4.5) { R(); continue; }   /* 행렬이 진으로 돌아오는 길(6:11, 6:14)에는 장막을 두지 않는다(다른 장막의 자리는 그대로) */
       var tn = PR.tent(i + 40); put(tn, tx, tz); tn.rotation.y = R() * 6.28;
     }
 
@@ -135,13 +137,24 @@
       return [CITY[0] + Math.cos(th) * PATH_A, CITY[1] + Math.sin(th) * PATH_B, th, L];
     }
     var START = pathPos(0);
+    /* 한 바퀴를 돈 뒤 진으로 돌아오는 길(수 6:11 "진영으로 들어와서 진영에서 자니라", 6:14 "진영으로 돌아오니라").
+       성 둘레 길의 시작점에서 서쪽으로 비켜, 진(장막들) 안으로 들어간다. 앞선 사람이 가장 깊이 들어가고, 맨 뒤(후군)까지 모두 장막 사이에 들어선 뒤 멈춘다 */
+    var RET = [[START[0], START[1]], [RET_X, START[1] + 8], [RET_X, 82]], RET_L = [], RET_LEN = 0, homing = false, homeBase = 0;
+    for (n = 1; n < RET.length; n++) { var rdx = RET[n][0] - RET[n - 1][0], rdz = RET[n][1] - RET[n - 1][1]; RET_L.push(Math.sqrt(rdx * rdx + rdz * rdz)); RET_LEN += RET_L[n - 1]; }
+    function retPos(d) {
+      for (var q = 0; q < RET_L.length; q++) {
+        if (d <= RET_L[q] || q === RET_L.length - 1) { var a = RET[q], b = RET[q + 1], u = Math.min(1, Math.max(0, d / RET_L[q])); return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, Math.atan2(b[0] - a[0], b[1] - a[1])]; }
+        d -= RET_L[q];
+      }
+    }
     function placeMarch(dt) {
       order.forEach(function (o) {
         var s = lapS + o.s, pp = pathPos(s), hd = Math.atan2(-Math.sin(pp[2]) * PATH_A, Math.cos(pp[2]) * PATH_B), on = s >= 0;
         var vis = on || marching;
         /* 출발 전에는 진 쪽(남쪽 성 둘레 길 시작점 뒤)에 줄지어 선다 */
         var x = pp[0], z = pp[1];
-        if (s < 0) { x = START[0] - 12 - (o.k % 3) * 1.4; z = START[1] + 8 - s * 0.6; hd = Math.PI; }   /* 출발 전에는 서쪽(아이들 반대쪽)에 줄지어 선다 */
+        if (homing && s - homeBase >= 0) { var rp = retPos(Math.min(RET_LEN, s - homeBase)); x = rp[0]; z = rp[1]; hd = rp[2]; }   /* 진으로 돌아오는 중 */
+        else if (s < 0) { x = START[0] - 12 - (o.k % 3) * 1.4; z = START[1] + 8 - s * 0.6; hd = Math.PI; }   /* 출발 전에는 서쪽(아이들 반대쪽)에 줄지어 선다 */
         if (o.kind === 'ark') {
           ark.position.set(x, height(x, z) + 1.0, z); ark.rotation.y = hd;
           o.bearers.forEach(function (pr) {
@@ -170,12 +183,15 @@
     function setPhase(p) {
       phase = p;
       if (p !== 'fall' && p !== 'after') { fallT = -1; segs.forEach(function (sg) { sg.pivot.rotation.x = 0; sg.pivot.position.y = sg.y0; }); dustM.opacity = 0; }   /* '이전'으로 돌아올 때 */
+      if (homing && p !== 'after') { homing = false; lapS = 0; }   /* 진에 돌아와 있던 행렬은 다음 날 진 앞 줄에서 다시 나선다 */
       if (p === 'closed') { marching = false; lapS = 0; lapsLeft = 0; fallT = -1; dawnWant = 0; dawn = 0; applyDawn(); segs.forEach(function (sg) { sg.fall = 0; sg.pivot.rotation.x = 0; sg.pivot.position.y = sg.y0; sg.pivot.visible = true; }); dustM.opacity = 0; }
+      if (p === 'march1' || p === 'march6') { homing = false; lapS = 0; }   /* 그날의 한 바퀴는 진 앞 줄에서 처음부터('이전'으로 돌아와도) */
       if (p === 'march1') { marching = true; lapsLeft = 1; speed = 2.4; dawnWant = 0; }          /* 수 6:11: 한 번 */
-      if (p === 'march6') { marching = true; lapsLeft = 1; speed = 4.2; dawnWant = 0; }          /* 수 6:14: 엿새 동안(한 바퀴로 보여 줌) */
+      if (p === 'march6') { marching = true; lapsLeft = 1; speed = 4.2; dawnWant = 0; }          /* 수 6:14: 엿새 동안(한 바퀴로 보여 줌). 돈 뒤 진으로 돌아온다 */
       if (p === 'march7') { marching = true; lapsLeft = 7; speed = 16; dawnWant = 1; }           /* 수 6:15: 새벽, 일곱 번(빠르게) */
       if (p === 'fall') { var L7 = pathPos(0)[3]; marching = false; lapS = Math.max(lapS, Math.ceil((lapS - order[order.length - 1].s) / L7) * L7); dawnWant = 1; if (fallT < 0) fallT = -2.5; }   /* 수 6:20: 일곱 바퀴를 마친 뒤 나팔과 외침, 그 뒤 무너진다(-2.5초는 그 사이) */
-      if (p === 'after') { marching = false; dawnWant = 0.4; if (fallT < 0) fallT = 99; }
+      if (p === 'after') { var LA = pathPos(0)[3]; lapS = Math.max(lapS, Math.ceil((lapS - order[order.length - 1].s) / LA) * LA);   /* 대목을 건너뛰어 와도 행렬이 성 둘레에 다 서 있게(무너진 뒤) */
+        marching = false; dawnWant = 0.4; if (fallT < 0) fallT = 99; }
     }
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
     placeMarch(0);
@@ -185,16 +201,16 @@
       id: 'OT-19', scene: scene, sun: sun, sunOff: [-30, 50, 30],
       height: height, walkable: walkable,
       edge: function (x, z) {
-        if (z < 0 || x < 14) return { who: 'onwoo', text: '성 쪽으로는 더 가지 말자. 우리는 멀리서 지켜보는 사람이야.' };
+        if (z < 0 || x < 20) return { who: 'onwoo', text: '성 쪽으로는 더 가지 말자. 우리는 멀리서 지켜보는 사람이야.' };
         if (z > 46) return { who: 'hyu', text: '진 안쪽으로는 들어가지 말자.' };
-        return null;
+        return { who: 'hyu', text: '여기서 더 가면 너무 멀어져. 타임머신 가까이에서 둘러보자.' };   /* 걸을 수 있는 곳의 바깥쪽 끝(장면에서 먼 쪽): 말없이 멈추지 않게 */
       },
       P: { start: [44, 34], machine: [52, 40], machineRot: -0.6,
         /* 재료가 놓인 곳(quests[i].found): 굳게 닫힌 성 쪽(멀찍이) / 이스라엘 진 쪽 / 성벽이 보이는 쪽(진으로 돌아가는 쪽) */
         parts: [[30, 4], [50, 42], [22, 14]], lookSpot: [22, 14],
         look: { focus: CITY, mid: [10, -30], dy: 6, backE: 8, upE: 4 } },
       eventLook: function (i) {
-        if (i === 2) { var pp = pathPos(lapS - 10); return { focus: [pp[0], pp[1]], mid: [pp[0], pp[1]], dy: 1.4, backE: 8, upE: 4 }; }
+        if (i === 2) { var gp = order[6].p.group.position; return { focus: [gp.x, gp.z], mid: [gp.x, gp.z], dy: 1.4, backE: 8, upE: 4 }; }   /* 행렬의 앞쪽(성 둘레, 진으로 돌아올 때도)을 따라간다 */
         if (i === 3) return { focus: CITY, mid: [12, -30], dy: 5, backE: 9, upE: 4.5 };
         if (i === 4) return { focus: CITY, mid: CITY, dy: 5, backE: 10, upE: 5 };
         return { focus: CITY, mid: [8, -20], dy: 4, backE: 9, upE: 4.5 };
@@ -207,7 +223,8 @@
       dex: [
         { id: 'jericho', name: '여리고 성', desc: '이스라엘 자손 때문에 굳게 닫혀 드나드는 사람이 없던 성', ref: '수 6:1', hint: '북쪽 멀리 보이는 성을 담아 보세요.', range: 260, crop: 0.7, pos: function () { return v3(CITY[0], height(CITY[0], CITY[1]) + 6, CITY[1]); } },
         { id: 'horns', name: '양각 나팔을 든 제사장들', desc: '양각 나팔 일곱을 들고 여호와의 궤 앞에서 간 제사장 일곱', ref: '수 6:8', hint: '성을 도는 행렬을 보세요.', range: 120, crop: 0.4,
-          pos: function () { var o = order[16], pp = pathPos(lapS + o.s); return v3(pp[0], height(pp[0], pp[1]) + 1.4, pp[1]); } },
+          visible: function () { return order[16].p.group.visible; },   /* 행렬이 보일 때만(출발 전에는 진 앞 줄이 숨어 있다) */
+          pos: function () { var o = order[16], g = o.p.group; if (g.visible) return v3(g.position.x, g.position.y + 1.4, g.position.z); var pp = pathPos(lapS + o.s); return v3(pp[0], height(pp[0], pp[1]) + 1.4, pp[1]); } },
         { id: 'ark', name: '여호와의 언약궤', desc: '제사장들이 메고 성을 돈 여호와의 궤', ref: '수 6:6', hint: '나팔 부는 제사장들 뒤를 보세요.', range: 120, crop: 0.4, pos: function () { return v3(ark.position.x, ark.position.y + 0.4, ark.position.z); } },
         { id: 'joshua', name: '여호수아', desc: '제사장들에게 언약궤를 메게 한 사람', ref: '수 6:6', hint: '진 앞에 서 있어요.', range: 40, crop: 0.36, pos: function () { var p = josh.group.position; return v3(p.x, p.y + 1.1, p.z); } }
       ],
@@ -222,7 +239,10 @@
         if (marching) {
           var L = pathPos(0)[3], before = Math.floor(lapS / L);
           lapS += speed * dt;
-          if (Math.floor(lapS / L) > before) { lapsLeft--; if (lapsLeft <= 0) { marching = false; lapS = Math.ceil(lapS / L) * L; } }
+          if (homing) { if (lapS - homeBase >= RET_LEN) { lapS = homeBase + RET_LEN; marching = false; } }
+          else if (Math.floor(lapS / L) > before) { lapsLeft--; if (lapsLeft <= 0) { lapS = Math.ceil(lapS / L) * L;
+            if (phase === 'march1' || phase === 'march6') { homing = true; homeBase = lapS; }   /* 날마다 한 번 돈 뒤 진으로 돌아온다(6:11, 6:14) */
+            else marching = false; } }
         }
         placeMarch(dt);
         if ((phase === 'fall' || phase === 'after') && fallT > -3) {
@@ -239,7 +259,7 @@
       },
       audio: function (A) { A.setFlock(999); A.setFire(999); },
       menuCam: function (camera, now) { var a = now * 0.05; camera.position.set(40 + Math.sin(a) * 9, 9, 40); camera.lookAt(CITY[0], 6, CITY[1]); },
-      debug: { phase: function () { return { phase: phase, lap: lapS, marching: marching, fall: fallT }; }, arrived: function () { return phase !== 'closed'; } }
+      debug: { phase: function () { return { phase: phase, lap: lapS, marching: marching, fall: fallT, homing: homing, home: homing ? Math.max(0, lapS - homeBase) / RET_LEN : 0 }; }, arrived: function () { return phase !== 'closed'; } }
     };
   };
 })();
