@@ -9,6 +9,15 @@
   var C3 = BO.content3d || null, JD = C3 ? C3.jordan : null, ALT = C.scenes['ALT-02'];
   /* 지금 있는 곳: 'scene'(장면 틀로 만든 3D 장면, SCN) 또는 'jordan'(요단 강 시대 추리). 높이와 걸을 수 있는 곳은 장소마다 다르다. */
   var cur = 'scene', JL = null, SCN = null, P = null, SC = null;
+  /* 장면 배경음악(bgm.js·bgmplan.js, 2026-11-16). play는 표에 지금 장면의 그 칸이 있으면 틀고 true, 없으면 false(예전 소리 그대로) */
+  function BGM(fn, arg) {
+    var b = BO3D.bgm, p = BO3D.bgmPlan; if (!b) return false;
+    try {
+      if (fn !== 'play') { b[fn](arg); return true; }
+      if (!p || !SCN || !p[SCN.id] || !p[SCN.id][arg]) return false;
+      b.play(SCN.id, arg); return true;
+    } catch (e) { return false; }
+  }
   function H(x, z) { return cur === 'jordan' && JL ? JL.height(x, z) : SCN.height(x, z); }
   function WALK(x, z) { return cur === 'jordan' && JL ? JL.walkable(x, z) : SCN.walkable(x, z); }
   /* 화면 부품은 web3d/js/ui.js에 모았다(이야기 카드 장면과 함께 쓴다). 나이 단계와 고른 아이는 BO3D.S */
@@ -167,7 +176,7 @@
   var overlay = el('div', { class: 'overlay3', hidden: '' });
   var touch = el('div', { class: 'touch3' });
   var snd = el('button', { class: 'snd3', hidden: '', 'aria-label': '소리 끄기', 'aria-pressed': 'false', on: { click: function () {
-    var m = !FX.audio.isMuted(); FX.audio.mute(m); snd.setAttribute('aria-pressed', String(m)); snd.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기');
+    var m = !FX.audio.isMuted(); FX.audio.mute(m); BGM('mute', m); snd.setAttribute('aria-pressed', String(m)); snd.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기');
   } } }, icon('speaker'));
   var dexLabel = el('span', { text: '도감 0 / 5' });
   var dexBtn = el('button', { class: 'dex3', hidden: '', on: { click: function () { if (cur === 'jordan') openClues(); else openDex(); } } }, icon('journal'), dexLabel);
@@ -495,6 +504,7 @@
     state = 'route'; hud.hidden = true; hidePanel(); camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; dedBtn.hidden = true; track.hidden = true;
     root.className = 'g3 app ' + S.tier;
     if (FX) { FX.audio.start(); FX.audio.pad(false); }
+    BGM('stop');
     var opts = C.route.options.map(function (o) {
       var ready = o.to === 'EX-01' || o.to === 'ALT-02';
       var b = btn(ready ? o.label : C3.route.locked, function () {
@@ -714,6 +724,7 @@
     paused = false; if (BO3D.story) BO3D.story.close();
     state = 'menu'; cur = 'scene'; dedBtn.hidden = true; hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; track.hidden = true;
     if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); }
+    BGM('stop');
     var tier = S.tier, ch = S.ch, picked = false;
     var ids = ['choeon', 'hyu', 'onwoo'];
     var tb = C.tiers.map(function (t) {
@@ -744,8 +755,9 @@
   function begin() {
     root.className = 'g3 app ' + S.tier;
     overlay.hidden = true;
-    if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; }
+    if (FX) { FX.audio.start(); FX.audio.pad(false); snd.hidden = false; var m0 = FX.audio.isMuted(); snd.setAttribute('aria-pressed', String(m0)); snd.setAttribute('aria-label', m0 ? '소리 켜기' : '소리 끄기'); }
     useScene(SCN.id); hudMode(); makeVision();
+    BGM('play', 'explore');
     spawnKids();
     quest = 0; questOpen = false; evIdx = SCN.eventStart || 0; afterVision = false;
     if (SCN.reset) SCN.reset();
@@ -802,6 +814,7 @@
     state = 'lookup'; lookT = 0; hud.hidden = true; hint.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; track.hidden = true; base.hidden = true;
     stick.x = stick.y = 0; stick.id = null;
     lookupPose();
+    BGM('play', 'event');   /* 사건 음악은 올려다보는 순간부터. OT-09는 'silence'라 여기서 음악이 멎는다 */
     toast(PARTS[PARTS.length - 1].line, S.ch);
   }
   function updateLookup(dt) {
@@ -872,7 +885,7 @@
   /* ── 사건 목격 ── */
   function startEvent() {
     state = 'event'; hud.hidden = true; hint.hidden = true; root.classList.add('ev');
-    if (FX) FX.audio.pad(true);
+    if (!BGM('play', 'event') && FX) FX.audio.pad(true);
     lookupPose();
     evIdx = SCN.eventStart || 0; showBeat();
   }
@@ -929,6 +942,7 @@
   function finish() {
     state = 'end';
     if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 1); }
+    BGM('play', 'after');
     var c = SC.close[S.tier], kids_ = [
       el('div', { class: 'q-kicker', text: '탐험을 마치며' }),
       el('p', { class: 'q-prompt', text: '탐험 일지에 말씀 카드가 들어왔어요.' }),
@@ -1127,7 +1141,7 @@
   /* ── 구약 전체 흐름(story.js)과 잇는 곳 ── */
   var paused = false;
   function hideAll3d() { hud.hidden = true; hidePanel(); base.hidden = true; snd.hidden = true; camBtn.hidden = true; dexBtn.hidden = true; denBtn.hidden = true; dedBtn.hidden = true; track.hidden = true; hint.hidden = true; overlay.hidden = true; root.classList.remove('ev'); }
-  function toMap() { if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } BO3D.story.open(); }
+  function toMap() { if (FX) { FX.audio.pad(false); FX.audio.quietMusic(false); FX.audio.silence(false, 0.5); FX.audio.fire(-1); } BGM('stop'); BO3D.story.open(); }
   BO3D.scenes3d = {}; Object.keys(BO3D.scene3d || {}).forEach(function (k) { BO3D.scenes3d[k] = true; });
   BO3D.game = {
     toStory: function () { state = 'story'; paused = true; hideAll3d(); },

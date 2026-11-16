@@ -26,7 +26,7 @@ const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fonts = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Jua&display=swap';
 /* 구약 장면 자료를 먼저 묶는다(web3d/js/otdata.js) */
 require('./build_ot.js')();
-const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/otdata.js', 'web3d/js/ui.js', 'web3d/js/eraart.js', 'web3d/js/models.js', 'web3d/js/models_jordan.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/flock.js', 'web3d/js/jordan.js', 'web3d/js/fx.js', 'web3d/js/story.js', 'web3d/js/props_ot.js', 'web3d/js/scene_horeb.js', 'web3d/js/scene_jordan18.js', 'web3d/js/scene_redsea11.js', 'web3d/js/scene_jericho19.js', 'web3d/js/scene_elah26.js', 'web3d/js/scene_carmel30.js', 'web3d/js/scene_ark03.js', 'web3d/js/scene_manna13.js', 'web3d/js/scene_abram05.js', 'web3d/js/scene_gideon21.js', 'web3d/js/scene_lions36.js', 'web3d/js/scene_wall39.js', 'web3d/js/game.js'];
+const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/otdata.js', 'web3d/js/ui.js', 'web3d/js/eraart.js', 'web3d/js/models.js', 'web3d/js/models_jordan.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/flock.js', 'web3d/js/jordan.js', 'web3d/js/fx.js', 'web3d/js/bgmplan.js', 'web3d/js/bgm.js', 'web3d/js/story.js', 'web3d/js/props_ot.js', 'web3d/js/scene_horeb.js', 'web3d/js/scene_jordan18.js', 'web3d/js/scene_redsea11.js', 'web3d/js/scene_jericho19.js', 'web3d/js/scene_elah26.js', 'web3d/js/scene_carmel30.js', 'web3d/js/scene_ark03.js', 'web3d/js/scene_manna13.js', 'web3d/js/scene_abram05.js', 'web3d/js/scene_gideon21.js', 'web3d/js/scene_lions36.js', 'web3d/js/scene_wall39.js', 'web3d/js/game.js'];
 const page = [
   '<title>성경 탐험대 3D</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',
@@ -40,6 +40,9 @@ const page = [
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/preview3d.html'), page);
 /* 압도 장면 영상은 미리보기 옆 assets 폴더에 둔다 (한 파일에 넣기에는 크다) */
+/* 배경음악(2026-11-16): web3d/audio/*.mp3 -> dist/audio (미리보기 화면이 audio/곡.mp3로 부른다) */
+const aud = path.join(root, 'web3d/audio');
+if (fs.existsSync(aud)) { fs.mkdirSync(path.join(root, 'dist/audio'), { recursive: true }); fs.readdirSync(aud).filter((f) => f.endsWith('.mp3')).forEach((f) => fs.copyFileSync(path.join(aud, f), path.join(root, 'dist/audio', f))); console.log('복사: dist/audio/*.mp3'); }
 for (const f of ['vision_bush.mp4']) {
   const src = path.join(root, 'web3d/assets', f);
   if (fs.existsSync(src)) { fs.mkdirSync(path.join(root, 'dist/assets'), { recursive: true }); fs.copyFileSync(src, path.join(root, 'dist/assets', f)); console.log('복사:', 'dist/assets/' + f); }
