@@ -1,5 +1,5 @@
 {
- "version": "32f936f1",
+ "version": "0a3481ff",
  "note": "감수 자료의 항목 목록. node tools/make_review_pack.js 가 만든다. core=목회자가 표시하는 항목, src=그 글이 있는 곳",
  "counts": [
   {
@@ -1847,7 +1847,7 @@
    "era": 3,
    "core": true,
    "first30": 0,
-   "chars": 377,
+   "chars": 496,
    "src": "content/ot/OT-09.json"
   },
   {
@@ -2763,7 +2763,7 @@
    "era": 4,
    "core": true,
    "first30": 0,
-   "chars": 396,
+   "chars": 513,
    "src": "content/ot/OT-14.json"
   },
   {
@@ -6384,7 +6384,7 @@
    "era": 9,
    "core": true,
    "first30": 0,
-   "chars": 389,
+   "chars": 506,
    "src": "content/ot/OT-36.json"
   },
   {

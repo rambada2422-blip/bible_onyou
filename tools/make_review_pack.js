@@ -324,8 +324,11 @@ function sceneItems(d) {
         G(who(t.ask.who) + '의 물음', t.ask.text)].concat(tierLines(t.answer, '답')).concat([N('아이가 펼 곳', t.open)]) })));
   }
   /* 손으로 하는 돕기 */
+  /* 검증자가 대표에게 넘긴 돕기 물음(미해결_분류.json의 under)을 그 돕기 항목 아래에도 참고로 붙인다 */
+  const repAsk = (tag) => unresolved.filter((u) => u.scene === sid).map((u, k) => [u, k]).filter(([u]) => CLASS[u.key] && CLASS[u.key].under === tag)
+    .map(([u, k]) => N('대표에게 넘긴 물음(참고, ' + idOf('미해결' + (k + 1)) + ')', CLASS[u.key].ask + ' 검증자는 이것을 운영 문제로 보아 대표 결재지에 올렸습니다. 신학 판단이 필요하다고 보시면 적는 칸에 적어 주세요.', { sub: true }));
   steps.filter((s) => s.kind === 'do').forEach((s, i) => add(Object.assign({}, base, { id: idOf('돕기' + (i + 1)), kind: 'do', label: '손으로 하는 돕기', title: s.title, refs: s.basis, core: true,
-    lines: [N('돕는 상대', m.help.who)].concat(tierLines(s.text)).concat(s.tasks.map((x, j) => G('누르는 일 ' + (j + 1), x, { sub: true }))).concat([G('마친 뒤 ' + who(s.done.who) + '의 말', s.done.text, { sub: true })]) })));
+    lines: [N('돕는 상대', m.help.who)].concat(tierLines(s.text)).concat(s.tasks.map((x, j) => G('누르는 일 ' + (j + 1), x, { sub: true }))).concat([G('마친 뒤 ' + who(s.done.who) + '의 말', s.done.text, { sub: true })]).concat(repAsk('돕기' + (i + 1))) })));
   /* 뜻 묻기 */
   steps.filter((s) => s.kind === 'ask').forEach((s) => {
     add(Object.assign({}, base, { id: idOf('뜻'), kind: 'ask', label: '뜻 묻기', title: s.title, refs: s.basis, core: true,

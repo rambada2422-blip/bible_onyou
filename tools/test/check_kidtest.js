@@ -86,6 +86,8 @@ ok(C.sampleWarnings(demo).length === 0, '꾸민 자료(6명, 단계마다 2명, 
 const w = C.sampleWarnings(demo.filter((x) => x.child <= 3));
 ok(w.some((x) => /6명 이상/.test(x)) && w.some((x) => /14~19세/.test(x)), '3명만 넣으면 인원·나이 단계 경고가 나온다');
 ok(C.sampleWarnings(demo.map((x) => Object.assign({}, x, { seg: 3 - x.seg }))).some((x) => /홀수/.test(x)), '번갈아 보는 순서가 뒤집히면 경고가 나온다');
+{ const w1 = C.sampleWarnings(demo.map((x) => Object.assign({}, x, { seg: 1 })));
+  ok(w1.some((x) => /첫 구간이 두 번 이상/.test(x)) && !w1.some((x) => /홀수/.test(x)), '한 아이의 두 구간이 모두 첫 구간으로 적히면 구간 번호를 확인하라는 경고만 나온다(순서 경고는 엉뚱하게 나오지 않음)'); }
 ok(!/이름|연락처|사진/.test(JSON.stringify(demo)) && !/id="name"|type="email"|type="tel"/.test(html), '도구에 이름·연락처·사진을 받는 칸이 없다');
 console.log(fail ? '\n실패 ' + fail + '건' : '\n모두 통과');
 process.exit(fail ? 1 : 0);
