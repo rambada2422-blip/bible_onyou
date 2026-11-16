@@ -74,7 +74,13 @@ const VW = Number(process.env.BO_W || '390'), VH = Number(process.env.BO_H || '8
   for (let k = from - 1; k < to; k++) {
     const id = order[k], t0 = Date.now(), firstOfEra = k === from - 1 || meta[order[k - 1]].era !== meta[id].era;
     let s = await st();
-    if (s.screen === 'era') { if (firstOfEra) { await shot(id + '-era'); await check(id + ' 시대 안내'); } await p.click('.ot3 .sheet-foot .btn:has-text("첫 장면으로")'); await p.waitForTimeout(80); s = await st(); }
+    if (s.screen === 'era') {
+      if (firstOfEra) {
+        await shot(id + '-era'); await check(id + ' 시대 안내');
+        /* "장면 사이에 성경이 기록한 곳"을 펼친 모습도 본다(전수 점검 숫자가 바뀌지 않게 BO_AUDIT 때는 빼고) */
+        if (!AUDIT && await p.$('.ot3 .betweenfold summary')) { await p.click('.ot3 .betweenfold summary'); await p.waitForTimeout(60); if (!(await p.evaluate(() => document.querySelector('.ot3 .betweenfold').open))) probs.push(id + ' 시대 안내: 장면 사이 기록이 펼쳐지지 않음'); await check(id + ' 시대 안내(펼침)'); await shot(id + '-era-open'); }
+      }
+      await p.click('.ot3 .sheet-foot .btn:has-text("첫 장면으로")'); await p.waitForTimeout(80); s = await st(); }
     if (s.screen === 'pick') { await shot(id + '-pick'); await p.click('.ot3 .sheet-foot .btn:has-text("이야기 카드로")'); await p.waitForTimeout(80); }
     await p.waitForFunction(() => BO3D.story.debug.state().screen === 'play', null, { timeout: 8000 });
     s = await st();

@@ -224,7 +224,7 @@
   var REFRE = new RegExp('(^|[^가-힣])((?:' + BOOKS.map(function (b) { return b[0]; }).sort(function (a, b) { return b.length - a.length; }).join('|') + ') \\d+:\\d+(?:-(?:\\d+:)?\\d+)?)', 'g');   /* 쌍점이 있는 장절만 바꾼다("수 12개" 같은 보통 낱말을 건드리지 않게) */
   function speakText(node) {
     var c = node.cloneNode(true);
-    Array.prototype.forEach.call(c.querySelectorAll('.speak3, textarea, input, svg, [hidden], .nospeak'), function (x) { x.remove(); });
+    Array.prototype.forEach.call(c.querySelectorAll('.speak3, textarea, input, svg, [hidden], .nospeak, details:not([open]) > :not(summary)'), function (x) { x.remove(); });   /* 접힌 것은 펼친 때만 읽는다 */
     Array.prototype.forEach.call(c.querySelectorAll('p, div, b, small, h1, h2, h3, button, li, summary, .ref, .ot-place, .count'), function (x) { x.appendChild(document.createTextNode('. ')); });
     return (c.textContent || '').replace(REFRE, function (m, pre, r) { return pre + bookName(r); }).replace(/OT-0?(\d+)/g, '$1번 장면').replace(/(\d+) \/ (\d+)/g, '$2 가운데 $1').replace(/🔒|🔊|·/g, ' ').replace(/(\s*\.\s*){2,}/g, '. ').replace(/([.!?…])\s*\./g, '$1').replace(/\s+/g, ' ').trim();
   }

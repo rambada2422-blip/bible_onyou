@@ -11,6 +11,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 const enter3d = require('./lib/enter.js');
+const doHelp = require('./lib/help.js');
 const ti = Number(process.argv[2] || '0'), out = process.argv[3] || '/tmp/walkPlay3d', id = process.argv[4] || 'OT-18';
 const WIDTHS = [[320, 568], [360, 640], [390, 844], [430, 932]];
 fs.mkdirSync(out, { recursive: true });
@@ -84,7 +85,23 @@ const errs = [], probs = [], notes = [];
   // ④ 처음 화면(보통·아주 크게)
   await widths('처음 화면');
   await setFs(2); await widths('처음 화면 아주 크게'); await setFs(0);
-  const segs = async () => { for (let i = 0; i < 12; i++) { const on = await p.evaluate(() => !!(BO3D.story && BO3D.story.debug.state().screen === 'seg')); if (!on) return; await p.click('.ot3 .sheet-foot .btn >> nth=-1'); await p.waitForTimeout(250); } };
+  /* 3D 안의 이야기 조각(동행 문답·현장 돕기·오늘의 물음)을 넘긴다. 현장 돕기는 마치기 전에는 아래 단추가 잠겨 있고, 마친 뒤 풀려야 한다 */
+  let helpN = 0;
+  const segs = async () => {
+    for (let i = 0; i < 12; i++) {
+      const on = await p.evaluate(() => !!(BO3D.story && BO3D.story.debug.state().screen === 'seg')); if (!on) return;
+      const hk = await p.evaluate(() => { const h = BO3D.story.debug.help(); return h ? h.kind : null; });
+      if (hk) {
+        helpN++;
+        /* 지켜보기(watch)는 할 일이 없어 곧 풀린다(story.js helpNodes). 하기·기다리기·뜻 묻기는 마치기 전에 잠겨 있어야 한다 */
+        if (hk !== 'watch') need(await p.evaluate(() => { const b = [...document.querySelectorAll('.ot3 .sheet-foot .btn')].pop(); return !!b && b.disabled; }), '3D 현장 돕기 ' + helpN + '(' + hk + '): 마치기 전에 아래 단추가 눌림');
+        const h = await doHelp(p);
+        need(h && h.enabled && h.good && h.said, '3D 현장 돕기 ' + helpN + ': 마치지 못함 ' + JSON.stringify(h));
+      }
+      await p.click('.ot3 .sheet-foot .btn >> nth=-1'); await p.waitForTimeout(250);
+    }
+    probs.push('이야기 조각이 닫히지 않음');
+  };
 
   await enter3d(p, ti, id);
   await p.waitForSelector('text=출발하자', { timeout: 60000 }); await p.waitForTimeout(1500);
@@ -206,7 +223,7 @@ const errs = [], probs = [], notes = [];
   const readIt = async () => { await p.click('.overlay3 .btn:has-text("찾아서 읽었어요")'); await p.waitForTimeout(200); };
   const gates = D.gates[tier];
   for (let g = 0; g < gates.length; g++) {
-    if (g > 0) await p.waitForSelector('.overlay3:not([hidden]) .q-kicker', { timeout: 20000 });
+    if (g > 0) await p.waitForFunction((k) => { const o = document.querySelector('.overlay3:not([hidden]) .q-kicker'); return !!o && o.textContent.includes(k); }, '관문 ' + (g + 1) + ' / ', { timeout: 20000 });
     const gq = gates[g];
     if (gq.type === 'choice') await pickIn(gq.options.find((o) => o.ok).label);
     else if (gq.type === 'find') { await readIt(); await pickIn(gq.confirm.options.find((o) => o.ok).label); }
@@ -221,6 +238,8 @@ const errs = [], probs = [], notes = [];
   await segs();
   await p.waitForSelector('text=계속 탐험하기', { timeout: 20000 });
   await widths('3D 마침');
+  const fin = await p.evaluate(() => { const o = document.querySelector('.overlay3'); return { head: (o.querySelector('.q-kicker') || {}).textContent, cards: o.querySelectorAll('.vcards.fin .vcard').length, m: o.querySelectorAll('.vcards-m').length, perCard: o.querySelectorAll('.vcard .m').length, line: (o.querySelector('.vcards-m') || {}).textContent || '' }; });
+  need(fin.head === '탐험을 마치며' && fin.cards === D.cards.length && fin.m === 1 && fin.perCard === 0 && fin.line.includes(D.title), '3D 마침: 말씀 카드·안내 줄이 맞지 않음 ' + JSON.stringify(fin));
 
   // ② 탐험 일지 "사진 도감"에 이 장면 사진이 보이는지(3D에서 나와 시대 지도로)
   await p.evaluate(() => BO3D.story.openMap()); await p.waitForTimeout(400);   /* 3D에서 시대 지도로 나오는 길(걸린 시간이 여기서 멈춘다) */

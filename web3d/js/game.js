@@ -953,7 +953,7 @@
       el('div', { class: 'vcards fin' }, SC.cards.map(function (cd) {   /* 이야기 카드 마침과 같이: 카드는 작게, "성경책에서 직접"은 한 번만(작은 화면 스크롤 줄이기) */
         return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }));
       })),
-      el('p', { class: 'vcards-m', text: '말씀은 성경책에서 직접 찾아 읽어 보세요.' })];
+      el('p', { class: 'vcards-m', text: SC.title + ' · 말씀은 성경책에서 직접 찾아 읽어 보세요.' })];
     if (c.kind === 'prayer') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '한 문장 기도' }), el('p', { text: c.text })));
     if (c.kind === 'practice') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '이번 주 실천 한 가지' }), el('p', { text: c.text })));
     if (c.kind === 'note') {
