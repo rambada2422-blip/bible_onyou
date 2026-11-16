@@ -1,0 +1,3 @@
+{ "name": "Boaz", "note": "보아스(룻 2:1-16, 4:13). 본문은 '유력한 사람'(2:1)이라고만 하고 생김새와 옷을 말하지 않는다. 지팡이 없음. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#8A5A3C", "ROBE_SH": "#64402A", "ROBE_HI": "#A06E4C", "TUNIC": "#EADFC6", "BEARD": "#3A2C22", "BEARD_SH": "#2C2018", "BROW": "#3A2C22", "HAIR": "#3A2C22", "CLOTH": "#E8DCC0", "CLOTH_SH": "#CFC2A2" } }

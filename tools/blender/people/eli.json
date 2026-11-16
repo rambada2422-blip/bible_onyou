@@ -1,0 +1,3 @@
+{ "name": "Eli", "note": "제사장 엘리(삼상 1:9-18, 3:1-18). 눈이 점점 어두워졌다(3:2)는 것 말고 이 본문은 생김새와 옷을 말하지 않는다. 지팡이 없음. 제사장 옷은 그리지 않는다. 흰 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#C9BFA4", "ROBE_SH": "#A69C82", "ROBE_HI": "#DAD1B8", "TUNIC": "#F0E9D8", "BEARD": "#D8D4CA", "BEARD_SH": "#BDB8AC", "BROW": "#D8D4CA", "HAIR": "#D8D4CA", "CLOTH": "#EEE6D2", "CLOTH_SH": "#D4CAB2" } }
