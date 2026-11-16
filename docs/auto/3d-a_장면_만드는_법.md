@@ -29,7 +29,9 @@
 - 낮밤을 바꿀 때 값 사이를 차례로 지나가므로, 대목 순서대로 이웃한 값이 되게 늘어놓는다(OT-15: 0 낮, 1 아침, 2 밤).
 - 인물: `api.person('moses', cb)`(Blender GLB. 있는 것: moses, aaron, joshua, caleb, abraham, noah, david, goliath, elijah, gideon, daniel, darius, nehemiah, ezra, priest). 읽히기 전에는 `api.fallback(색, 키, 반지름)`. 무리는 `BO3D.models2.israelite(seed, {kind:'man', carry:'none'})`(update(dt, 속도)).
   GLB 하나가 미리보기에 약 0.42MB를 더한다(지금 8.8MB, 한도 16MB). 새 인물은 꼭 필요할 때만 `tools/blender/make_person.sh <이름>`(3~5분), `node tools/test/view_person.js <이름> <png>`로 네 방향을 본다.
-- 움직이지 않는 것은 `BO3D.props.mergeStatic([...])`으로 합쳐 그리기 호출을 줄인다. 소리는 `api.FX.audio`가 주는 것만(rumble, thud, wind, pad, chime 등). 흔들림은 `api.shake(세기, 초)`.
+- 움직이지 않는 것은 `BO3D.props.mergeStatic([...])`으로 합쳐 그리기 호출을 줄인다. 단, 합치면 꼭짓점 색이 사라진다: 꼭짓점 색을 쓰는 모델(`BO3D.models.rock/shrub`, `models2.palm/jericho`)은 검게 나오므로 합치지 않는다(단색 재질의 상자·장막만). 소리는 `api.FX.audio`가 주는 것만(rumble, thud, wind, pad, chime 등). 흔들림은 `api.shake(세기, 초)`.
+- 재료의 근거(basis)는 그 재료가 놓인 곳을 말하는 절로 잡는다(사건의 물건이 나오는 절을 근거로 삼지 않는다: OT-15 검증 지적). 본문 범위 밖이라도 가까운 장이 말하는 것(예: 회막은 진의 가운데 민 2:2, 회막 위의 구름 민 9:15-16)은 찾아보고 맞춘다.
+- 화면의 글에 본문에 없는 방향 말("북쪽" 등)을 쓰지 않는다. 본문의 말("산지", "맞은편")을 쓴다.
 - 하나님의 형상·음성, 천사, 죽음·폭력의 모습은 만들지 않는다. 파일 머리말에 "본문에 맞춘 점"과 "감수가 필요한 설정"을 적는다.
 
 ## 3. 묶기와 시험
