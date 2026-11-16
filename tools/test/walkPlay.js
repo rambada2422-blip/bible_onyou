@@ -229,6 +229,12 @@ const BAN = ['틀렸', '실패', '감점', '목숨', '점수는', '순위표', '
   await tap('놀이 기록'); need((await st()).screen === 'log', '놀이 기록: 열리지 않음'); await check('놀이 기록'); await shot('log');
   await tap('시대 지도');
   need(await p.evaluate(() => !document.querySelector('.otc[data-id="OT-05"]').classList.contains('locked')), '시대 지도: 모든 시대 열기 뒤에도 시대 2가 잠겨 있음');
+  if (canSpeak && ti === 0) {   /* 시대가 모두 열렸을 때 지도 읽기: 마치지 않은 장면이 있는 앞의 두 시대만 장면 이름까지, 나머지는 시대 이름만 */
+    const r = await p.evaluate(async () => { const ss = speechSynthesis, keep = ss.speak; let t = ''; ss.speak = (u) => { t = u.text; }; const b = document.querySelector('.ot3 .otmap > .speak3'); b.click(); b.click(); ss.speak = keep;
+      const T = (id) => BO3D.ot.scenes[id].title; return { t, e1: T('OT-02'), e2: T('OT-05'), e3: T('OT-09'), e10: T('OT-40') }; });
+    need(r.t.includes(r.e1) && r.t.includes(r.e2) && !r.t.includes(r.e3) && !r.t.includes(r.e10) && /시대 10/.test(r.t) && r.t.length < 900, '시대 지도: 모든 시대가 열렸을 때 읽어 줄 글이 이상함 → ' + r.t.slice(0, 200) + ' … (' + r.t.length + '자)');
+    fs.writeFileSync(path.join(out, 'speak-map-all.txt'), r.t + '\n');
+  }
   need(await p.evaluate(() => !BO3D.story.debug.dex()['OT-03']), '지우기: 사진 도감이 지워지지 않음');
   await p.evaluate(() => BO3D.story.saveShot('OT-03', { id: 'ark', name: '방주', desc: '길이 삼백, 너비 오십, 높이 삼십 규빗에 삼 층으로 지은 방주', ref: '창 6:15-16' }, ''));
   // 다시 열어도(새로 고침) 기록이 남아 있다

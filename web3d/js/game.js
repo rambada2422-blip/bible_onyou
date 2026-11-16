@@ -184,10 +184,14 @@
     if (who) { add(toastEl, [avatar(who), el('span', {}, el('b', { text: C.chars[who].name + ' ', style: 'color:' + C.chars[who].color }), html)]); }
     else add(toastEl, el('span', { text: html }));
     toastEl.hidden = false; placeToast(); toastEl.classList.remove('show'); void toastEl.offsetWidth; toastEl.classList.add('show');
-    clearTimeout(toast.t); toast.t = setTimeout(function () { toastEl.hidden = true; }, S.tier === 't1' ? 7000 : 4200);   /* 8~10세는 읽을 시간을 더 준다 */
+    hint.style.visibility = 'hidden';   /* 말풍선이 떠 있는 동안 조작 안내는 잠시 감춘다(키 작은 화면에서 겹침). 말풍선이 꺼지면 남은 시간 동안 다시 보인다 */
+    clearTimeout(toast.t); toast.t = setTimeout(function () { toastEl.hidden = true; hint.style.visibility = ''; }, S.tier === 't1' ? 7000 : 4200);   /* 8~10세는 읽을 시간을 더 준다 */
   }
   /* 말풍선은 위쪽 안내(글자 크기·거리 단추에 따라 높이가 바뀜) 바로 아래에 둔다. 말풍선이 떠 있는 동안 매 화면 맞춘다 */
   function placeToast() { if (toastEl.hidden) return; var t = hud.hidden ? 138 : hud.offsetTop + hud.offsetHeight + 6; if (toastEl._top !== t) { toastEl._top = t; toastEl.style.top = t + 'px'; } }
+  /* 위쪽 안내의 높이가 바뀔 때만 다시 맞춘다(매 화면 재지 않게). 이 기능이 없는 옛 브라우저만 매 화면 맞춘다 */
+  var hudRO = window.ResizeObserver ? new ResizeObserver(function () { placeToast(); }) : null;
+  if (hudRO) hudRO.observe(hud);
   function showPanel(kids_, foot, tall) {
     panelBody.replaceChildren(); panelFoot.replaceChildren(); panel.classList.toggle('tall', !!tall); ui.classList.toggle('tallp', !!tall);   /* tallp: 키 작은 화면에서 반쯤 가린 위쪽 안내를 감춤(game.css) */
     U.stopSpeak();
@@ -1120,7 +1124,7 @@
       if (state === 'lookup') updateLookup(dt);
       if (state === 'vision' && vision) updateVision();
       if (horeb) updateTracker();
-      placeToast();
+      if (!hudRO) placeToast();
       updateCamera(dt);
       var pp2 = player.group.position, sun = horeb ? env.sun : JL.sun;
       var so = horeb ? (SCN.sunOff || [-38, 46, 30]) : [30, 50, 34];

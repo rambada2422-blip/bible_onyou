@@ -184,9 +184,9 @@
     var sb = U.speakBtn(function () {
       var open = OT.eras.filter(function (e) { return eraOpen(e.era); }), shut = OT.eras.length - open.length;
       return el('div', {}, el('p', { text: '시대 지도' }), el('p', { text: '마친 장면 ' + doneCount() + ' / ' + OT.order.length + '. 모은 재료 ' + matCount() + ' / ' + MAT_TOTAL }),
-        open.map(function (e) {   /* 열린 시대가 둘까지면 장면 이름도, 더 많으면(모든 시대 열기) 시대 이름과 마친 수만 읽어 짧게 */
-          var nd = e.scenes.filter(function (id) { return PG.done[id]; }).length;
-          return el('p', { text: '시대 ' + e.era + ', ' + e.name + '. ' + (open.length <= 2 ? e.scenes.map(function (id) { return sc(id).title + (PG.done[id] ? ', 마침' : ''); }).join('. ') : e.scenes.length + '장면 가운데 ' + nd + '장면 마침') });
+        open.map(function (e) {   /* 아직 마치지 않은 장면이 있는 열린 시대 가운데 앞의 둘만 장면 이름까지, 나머지는 시대 이름과 마친 수만(짧게) */
+          var nd = e.scenes.filter(function (id) { return PG.done[id]; }).length, front = open.filter(function (x) { return x.scenes.some(function (id) { return !PG.done[id]; }); }).slice(0, 2);
+          return el('p', { text: '시대 ' + e.era + ', ' + e.name + '. ' + (front.indexOf(e) >= 0 ? e.scenes.map(function (id) { return sc(id).title + (PG.done[id] ? ', 마침' : ''); }).join('. ') : e.scenes.length + '장면 가운데 ' + nd + '장면 마침') });
         }),
         shut ? el('p', { text: '아직 열리지 않은 시대가 ' + shut + '개 있어요. 앞 시대의 장면 하나를 마치면 다음 시대로 가는 길이 열려요.' }) : null);
     });
