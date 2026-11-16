@@ -1,0 +1,4 @@
+{ "name": "DavidKing", "note": "다윗 왕(삼하 7:1-2, 7:17). 왕이 되어 백향목 궁에 평안히 거할 때다(7:1-2, 5:4 서른 살에 왕이 됨). 이 본문은 생김새와 옷을 말하지 않는다. 어른이라 수염을 둔다. 왕관과 지팡이는 그리지 않는다. 골리앗 장면의 소년 다윗(david.json)과 다른 모형. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#7A3A3C", "ROBE_SH": "#5A2A2C", "ROBE_HI": "#8E4C4C", "TUNIC": "#EADFC6", "BEARD": "#4A3424", "BEARD_SH": "#38271B", "BROW": "#4A3424", "HAIR": "#4A3424",
+              "CLOTH": "#E6D8B4", "CLOTH_SH": "#CDBE98", "BELT": "#B9893E", "BELT_SH": "#8E6A2E" } }
