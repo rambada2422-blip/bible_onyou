@@ -140,7 +140,7 @@
       height: height, walkable: walkable,
       edge: function (x, z) {
         if (x < 22) return { who: 'onwoo', text: '단 쪽으로는 가지 말자. 우리는 산비탈에서 지켜보는 사람이야.' };
-        return null;
+        return { who: 'hyu', text: '여기서 더 가면 너무 멀어져. 타임머신 가까이에서 둘러보자.' };   /* 걸을 수 있는 곳의 바깥쪽 끝(장면에서 먼 쪽): 말없이 멈추지 않게 */
       },
       P: { start: [46, 30], machine: [52, 36], machineRot: -0.8,
         /* 재료가 놓인 곳(quests[i].found): 백성이 모여 선 쪽(뒤쪽 땅) / 단과 도랑이 보이는 쪽 / 젖은 단이 멀리 보이는 산비탈 */

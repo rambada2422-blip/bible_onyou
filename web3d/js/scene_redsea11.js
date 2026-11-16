@@ -230,7 +230,7 @@
         if (z < 3.2) return { who: 'onwoo', text: '바다 쪽으로는 들어가지 말자. 우리는 바닷가에서 지켜보는 사람이야.' };
         if (x < 20) return { who: 'hyu', text: '진 안쪽으로는 들어가지 말자. 여기 가장자리에서 지켜보자.' };
         if (z > 50) return { who: 'onwoo', text: '애굽 진 쪽으로는 가지 말자.' };
-        return null;
+        return { who: 'hyu', text: '여기서 더 가면 너무 멀어져. 타임머신 가까이에서 둘러보자.' };   /* 걸을 수 있는 곳의 바깥쪽 끝(장면에서 먼 쪽): 말없이 멈추지 않게 */
       },
       P: { start: [48, 16], machine: [54, 22], machineRot: -0.4,
         /* 재료가 놓인 곳(quests[i].found): 바닷가 장막들 쪽 / 진 뒤쪽 / 물이 갈라진 바다 쪽 */

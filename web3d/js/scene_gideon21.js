@@ -136,7 +136,7 @@
       edge: function (x, z) {
         if (x < 18) return { who: 'onwoo', text: '진과 샘 쪽으로는 가지 말자. 우리는 지켜보는 사람이야.' };
         if (z < -6) return { who: 'hyu', text: '골짜기 아래로는 내려가지 말자.' };
-        return null;
+        return { who: 'hyu', text: '여기서 더 가면 너무 멀어져. 타임머신 가까이에서 둘러보자.' };   /* 걸을 수 있는 곳의 바깥쪽 끝(장면에서 먼 쪽): 말없이 멈추지 않게 */
       },
       P: { start: [44, 30], machine: [50, 36], machineRot: -0.8,
         /* 재료가 놓인 곳(quests[i].found): 하롯 샘 쪽(물가에서 떨어진 땅) / 골짜기가 내려다보이는 쪽 / 장막이 모인 이스라엘 진 쪽(진 바깥 빈 땅) */

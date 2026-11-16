@@ -156,9 +156,9 @@
       id: 'OT-26', scene: scene, sun: sun, sunOff: [-30, 50, 34],
       height: height, walkable: walkable,
       edge: function (x, z) {
-        if (z < 9) return { who: 'onwoo', text: '골짜기로는 내려가지 말자. 우리는 여기서 지켜보는 사람이야.' };
+        if (z < 14) return { who: 'onwoo', text: '골짜기로는 내려가지 말자. 우리는 여기서 지켜보는 사람이야.' };
         if (x < 16) return { who: 'hyu', text: '이스라엘 진영 안으로는 들어가지 말자.' };
-        return null;
+        return { who: 'hyu', text: '여기서 더 가면 너무 멀어져. 타임머신 가까이에서 둘러보자.' };   /* 걸을 수 있는 곳의 바깥쪽 끝(장면에서 먼 쪽): 말없이 멈추지 않게 */
       },
       P: { start: [44, 32], machine: [50, 38], machineRot: -0.5,
         /* 재료가 놓인 곳(quests[i].found): 이스라엘이 선 산 쪽 / 짐 지키는 사람이 있는 쪽 / 시내 쪽 */

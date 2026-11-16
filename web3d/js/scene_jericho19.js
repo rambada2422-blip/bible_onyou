@@ -200,9 +200,9 @@
       id: 'OT-19', scene: scene, sun: sun, sunOff: [-30, 50, 30],
       height: height, walkable: walkable,
       edge: function (x, z) {
-        if (z < 0 || x < 14) return { who: 'onwoo', text: '성 쪽으로는 더 가지 말자. 우리는 멀리서 지켜보는 사람이야.' };
+        if (z < 0 || x < 20) return { who: 'onwoo', text: '성 쪽으로는 더 가지 말자. 우리는 멀리서 지켜보는 사람이야.' };
         if (z > 46) return { who: 'hyu', text: '진 안쪽으로는 들어가지 말자.' };
-        return null;
+        return { who: 'hyu', text: '여기서 더 가면 너무 멀어져. 타임머신 가까이에서 둘러보자.' };   /* 걸을 수 있는 곳의 바깥쪽 끝(장면에서 먼 쪽): 말없이 멈추지 않게 */
       },
       P: { start: [44, 34], machine: [52, 40], machineRot: -0.6,
         /* 재료가 놓인 곳(quests[i].found): 굳게 닫힌 성 쪽(멀찍이) / 이스라엘 진 쪽 / 성벽이 보이는 쪽(진으로 돌아가는 쪽) */
