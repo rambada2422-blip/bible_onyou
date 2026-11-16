@@ -136,7 +136,7 @@
     });
     scene.add(PR.mergeStatic(statics));
     /* 가마의 연기: 둥근 덩이뿐 */
-    var NPUFF = 8, smoke = PA.puffs ? PA.puffs(KILNS.length * NPUFF, { color: '#D2CCC2' }) : null, smokeAmt = 1, smokeWant = 1;
+    var NPUFF = 16, smoke = PA.puffs ? PA.puffs(KILNS.length * NPUFF, { color: '#D2CCC2', seg: 9 }) : null, smokeAmt = 1, smokeWant = 1;
     if (smoke) scene.add(smoke.mesh);
 
     /* 사람들(11:3-5): 가마 곁에서 굽는 사람, 벽돌을 나르는 사람, 성과 탑에서 쌓는 사람. 이름과 수는 본문에 없다. 남자와 여자만(백성 모델) */
@@ -250,7 +250,7 @@
         if (smoke) {
           for (var k = 0; k < smoke.n; k++) {
             var q = KILNS[Math.floor(k / NPUFF)], u = ((now * 0.11 + (k % NPUFF) / NPUFF + Math.floor(k / NPUFF) * 0.37) % 1 + 1) % 1;
-            smoke.put(k, q[0] - u * u * 5 + Math.sin(k * 2.3 + u * 5) * 0.4, height(q[0], q[1]) + 2.2 + u * 11, q[1] + Math.cos(k * 1.7 + u * 4) * 0.4, (0.3 + u * 1.0) * smokeAmt * (1 - sm(0.8, 1, u)));
+            smoke.put(k, q[0] - u * u * 6 + Math.sin(k * 2.3 + u * 5) * 0.5, height(q[0], q[1]) + 2.0 + u * 9, q[1] + Math.cos(k * 1.7 + u * 4) * 0.5, (0.65 + u * 1.9) * smokeAmt * (1 - sm(0.75, 1, u)));   /* 덩이들이 서로 겹쳐 한 줄기 연기로 보이게 */
           }
           smoke.commit();
         }
