@@ -7,12 +7,12 @@
  *    본문은 궁 어디에서 말했는지 말하지 않는다. 아이들이 멀리서 볼 수 있게 궁 앞에 둔다.
  *  - 7:4-16: 그 밤. 타임머신 창 너머로 밤의 예루살렘을 멀리서 본다(아이들은 화면에 없음). 나단이 그 밤에 어디에 있었는지는 본문에 없어 그리지 않는다.
  *    하나님의 말씀은 글로만. 밤하늘에 특별한 빛을 두지 않는다(별과 푸른 밤빛, 집들 창의 작은 불빛만).
- *  - 7:17: 나단이 궁 앞 길에서 뜰 입구로 들어와 층계를 올라 왕 앞에 선다(대목이 열리고 약 6초). 말씀을 전한 때는 본문에 없어 낮으로 둔다.
+ *  - 7:17: 나단이 궁 앞 길에서 뜰 입구로 들어와 층계를 올라 왕 앞에 선다(대목이 열리고 약 8초). 말씀을 전한 때는 본문에 없어 낮으로 둔다.
  *  - 하나님의 궤와 장막(7:2, 6:17)은 왕의 말 속에만 나오므로 그리지 않는다. 지어질 집(7:13)과 다윗의 몸에서 날 자식(7:12)도 그리지 않는다.
  * 감수가 필요한 설정: 궁의 생김새·크기·자리(돌 터, 백향목 벽과 기둥, 앞 기둥 줄, 문과 작은 창. 5:11 백향목·목수·석수), 높은 터와 층계, 뜰과 낮은 담,
  *   다윗과 나단이 궁 앞에서 이야기하는 자리(본문에 없음), 다윗의 생김새(tools/blender/people/davidking.json: 어른, 수염, 붉은 겉옷, 왕관 없음)와 나단의 생김새(무리 모형),
  *   7:17 나단이 오는 길(궁 앞 길에서 뜰 입구로)과 때(낮으로 둠), 그 밤의 빛(푸른 밤빛, 별, 집과 궁 창의 불빛), 성 안 집과 길과 오가는 사람, 날씨(맑음),
- *   재료(백향목 조각 7:2 — 궁에서 떨어진 서쪽 길가, 양털 몇 가닥 7:8 — 성 동남쪽 길가, 누구의 것인지 정하지 않음, 작은 돌 7:1 — 궁 앞 길 가장자리).
+ *   재료(백향목 조각 7:2 — 궁에서 떨어진 서쪽 길가, 양털 몇 가닥 7:8 — 성 동남쪽 길가, 누구의 것인지 정하지 않음, 돌 부스러기 5:11 석수 — 궁 앞 길 가장자리, 누가 남긴 것인지 정하지 않음).
  */
 (function () {
   'use strict';
@@ -23,16 +23,21 @@
     var T = THREE, M2 = BO3D.models2 || {}, MO = BO3D.models || {}, PR = BO3D.props, FX = api.FX, C3 = BO3D.c3d, R = PR.rng(2711), sm = C3.sm, noise = C3.noise, hash = C3.hash, i;
     var TERR = 2.2, WALL_Z = -22, PAL = [0, -41], PAL_W = 22, PAL_D = 14, FRONT_Z = PAL[1] + PAL_D / 2, PORCH_Z = -31.8;
     var DAV = [-1.3, -31.3], NAT = [1.3, -31.0];
-    function height(x, z) {
-      var terr = sm(-25.4, -26.9, z) * (1 - sm(28, 31, Math.abs(x)));     /* 궁이 선 조금 높은 터 */
-      return TERR * terr + 0.16 * noise(x * 0.08 + 3, z * 0.08 + 1) * (1 - terr) + sm(110, 220, Math.hypot(x, z)) * 14 * noise(x * 0.02, z * 0.02);
+    /* 그려지는 땅. 높은 터의 오르막은 돌 터 상자 밑에 숨긴다(땅 격자가 3.47 간격이라 층계 앞에서 비탈이 드러나지 않게) */
+    function groundH(x, z) {
+      var terr = sm(-28.2, -31.4, z) * (1 - sm(31.5, 35, Math.abs(x)));
+      return (TERR - 0.15) * terr + 0.16 * noise(x * 0.08 + 3, z * 0.08 + 1) * (1 - terr) + sm(110, 220, Math.hypot(x, z)) * 14 * noise(x * 0.02, z * 0.02);
     }
-    function gy(x, z) {   /* 발 높이: 층계 칸과 앞자리 바닥을 따른다 */
+    function onTerr(x, z) { return Math.abs(x) <= 29 && z <= -27.2 && z >= -61; }   /* 궁이 선 조금 높은 돌 터 */
+    function height(x, z) { return onTerr(x, z) ? TERR : groundH(x, z); }
+    function gy(x, z) {   /* 발 높이: 층계 칸, 앞자리 앞 낮은 칸, 앞자리 바닥을 따른다 */
       var y = height(x, z);
-      if (Math.abs(x) < 3.1 && z <= -24.97 && z > -27.18) y = Math.max(y, TERR * (Math.floor((-24.97 - z) / 0.55) + 1) / 4);
-      if (Math.abs(x) < PAL_W / 2 && z <= -29.45 && z > FRONT_Z - 0.5) y += 0.6;
+      if (Math.abs(x) < 3.1 && z <= -24.975 && z > -27.2) y = Math.max(y, TERR * (Math.min(3, Math.floor((-24.975 - z) / 0.55)) + 1) / 4);
+      if (Math.abs(x) < 3.1 && z <= -29.0 && z > -29.5) y = TERR + 0.3;
+      if (Math.abs(x) < PAL_W / 2 && z <= -29.5 && z > FRONT_Z - 0.5) y = TERR + 0.6;
       return y;
     }
+    function angTo(a, b, k) { return b + Math.atan2(Math.sin(a - b), Math.cos(a - b)) * k; }
     function walkable(x, z) { return x >= -34 && x <= 34 && z >= -18 && z <= 28; }
 
     var scene = new T.Scene();
@@ -50,7 +55,7 @@
     var g = new T.PlaneGeometry(520, 520, 150, 150); g.rotateX(-Math.PI / 2);
     var pos = g.attributes.position, col = new Float32Array(pos.count * 3), c = new T.Color(), s1 = new T.Color('#C7B089'), s2 = new T.Color('#B3A07C'), lane = new T.Color('#D3C39E'), court = new T.Color('#D8CCAE'), terrC = new T.Color('#C9BA98');
     for (i = 0; i < pos.count; i++) {
-      var x = pos.getX(i), z = pos.getZ(i), y = height(x, z); pos.setY(i, y);
+      var x = pos.getX(i), z = pos.getZ(i), y = groundH(x, z); pos.setY(i, y);
       c.copy(s1).lerp(s2, noise(x * 0.06, z * 0.06));
       if (walkable(x, z) || (Math.abs(x) < 5 && z > 28 && z < 80) || (z > -16 && z < -8 && Math.abs(x) < 80) || (z > 14 && z < 20 && Math.abs(x) < 80)) c.lerp(lane, 0.7);   /* 궁 앞 길과 둘레 길 */
       if (z < WALL_Z && z > -26 && Math.abs(x) < 28) c.lerp(court, 0.85);
@@ -67,7 +72,7 @@
     function box(w, h, d, m, x, z, y0) { var b = new T.Mesh(new T.BoxGeometry(w, h, d), m); b.position.set(x, (y0 === undefined ? height(x, z) : y0) + h / 2, z); return b; }
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
     /* 창: 낮에는 어두운 구멍, 그 밤에는 작은 불빛(본문에 없음, 밤을 알리는 데까지만) */
-    var lampM = new T.MeshStandardMaterial({ color: '#3A2E24', emissive: '#FFB45E', emissiveIntensity: 0, flatShading: true, roughness: 1 });
+    var lampM = new T.MeshStandardMaterial({ color: '#3A2E24', emissive: '#FFB45E', emissiveIntensity: 0, flatShading: true, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });   /* 벽보다 앞에 그린다(먼 곳 깊이 줄무늬 막기) */
 
     /* 성 안의 집들(본문에 생김새 없음): 단순한 네모. 길과 아이들이 걷는 곳은 비워 둔다 */
     var houseM = [std('#E2CBA0'), std('#D6BC90'), std('#E8D5AE')], roofM = std('#BFA57C'), hs = [], wins = [];
@@ -78,7 +83,7 @@
         var cx = hx + w / 2, cz = hz + d / 2, by = height(cx, cz);
         hs.push(box(w, h, d, m, cx, cz)); hs.push(box(w + 0.3, 0.3, d + 0.3, roofM, cx, cz, by + h));
         if (hash(hx + 1, hz + 2) < 0.85) {   /* 길 쪽(가운데 쪽) 벽에 작은 창 하나 */
-          var wn = Math.abs(cx) > Math.abs(cz) * 0.9 ? box(0.14, 1.1, 1.0, lampM, cx - Math.sign(cx) * (w / 2 + 0.02), cz, by + h * 0.42) : box(1.0, 1.1, 0.14, lampM, cx, cz - Math.sign(cz) * (d / 2 + 0.02), by + h * 0.42);
+          var wn = Math.abs(cx) > Math.abs(cz) * 0.9 ? box(0.6, 1.1, 1.0, lampM, cx - Math.sign(cx) * (w / 2 + 0.1), cz, by + h * 0.42) : box(1.0, 1.1, 0.6, lampM, cx, cz - Math.sign(cz) * (d / 2 + 0.1), by + h * 0.42);   /* 벽에서 0.4 나오게(깊이 줄무늬 막기) */
           wins.push(wn);
         }
       }
@@ -98,11 +103,12 @@
     pal.push(box(PAL_W + 0.4, 0.4, 4.8, cedarD, 0, PORCH_Z, TERR + 0.6 + 4.4));                         /* 앞자리 지붕 */
     [-10.4, -6.8, -3.3, 3.3, 6.8, 10.4].forEach(function (px) { var cl = new T.Mesh(new T.CylinderGeometry(0.32, 0.36, 4.4, 10), cedarM); cl.position.set(px, TERR + 0.6 + 2.2, PORCH_Z + 1.95); pal.push(cl); });
     for (i = 0; i < 4; i++) pal.push(box(6.4 - i * 0.2, TERR * (i + 1) / 4, 0.55, stoneM2, 0, -25.25 - i * 0.55, 0));   /* 높은 터로 오르는 층계 */
-    pal.push(box(24.2, TERR + 0.3, 0.8, stoneM2, -15.7, -26.3, 0)); pal.push(box(24.2, TERR + 0.3, 0.8, stoneM2, 15.7, -26.3, 0));   /* 높은 터의 앞 벽 */
+    pal.push(box(58, TERR, 33.8, stoneM, 0, -44.1, 0));                                                    /* 궁이 선 조금 높은 돌 터(z -27.2 ~ -61) */
+    pal.push(box(6.4, 0.3, 0.5, stoneM2, 0, -29.25, TERR));                                                 /* 앞자리 앞의 낮은 칸 */
     pal.push(box(25.4, 1.3, 0.5, stoneM2, -15.3, WALL_Z, 0)); pal.push(box(25.4, 1.3, 0.5, stoneM2, 15.3, WALL_Z, 0));                 /* 뜰 앞 낮은 담(가운데는 드나드는 곳) */
     pal.push(box(0.5, 1.3, 4.6, stoneM2, -28, -24.3, 0)); pal.push(box(0.5, 1.3, 4.6, stoneM2, 28, -24.3, 0));
     scene.add(C3.merge(pal));
-    [-8.6, -5, 5, 8.6].forEach(function (wx) { wins.push(box(1.0, 0.8, 0.14, lampM, wx, FRONT_Z + 0.04, TERR + 5.8)); });   /* 궁 앞벽 위쪽(앞자리 지붕 위)의 작은 창 */
+    [-8.6, -5, 5, 8.6].forEach(function (wx) { wins.push(box(1.0, 0.8, 0.6, lampM, wx, FRONT_Z + 0.1, TERR + 5.8)); });   /* 궁 앞벽 위쪽(앞자리 지붕 위)의 작은 창 */
     var winM = C3.merge(wins); winM.traverse(function (m) { m.castShadow = false; m.receiveShadow = false; }); scene.add(winM);   /* 창에 그림자 줄무늬가 지지 않게 */
 
     /* 둘레의 땅(멀리): 바위와 떨기만 */
@@ -152,7 +158,8 @@
       walkers.forEach(function (o) { o.group.visible = !night; });
       dav.group.visible = !night; setAt(dav, DAV[0], DAV[1], p === 'tell' ? 0.35 : D_RY); still(dav);
       nat.group.visible = !night && p !== 'tell'; setAt(nat, NAT[0], NAT[1], N_RY); still(nat);
-      if (p === 'tell') setAt(nat, N_COME.p[0][0], N_COME.p[0][1], -Math.PI / 2);
+      nat.sy = undefined;
+      if (p === 'tell') setAt(nat, N_COME.p[0][0], N_COME.p[0][1], pathAt(N_COME, 0.01)[2]);
     }
     if (window.BO3D_TEST) C3.t27 = { skip: function (sec) { pt += sec; } };   /* 시험에서 때를 건너뛰어 볼 때만 쓴다 */
     if (FX) FX.sortLayers(scene);
@@ -208,9 +215,14 @@
         pt += dt; light(dt);
         walkers.forEach(function (o) { if (o.group.visible) { var s = (now * 1.3 + o.ph) % o.P.tot; walk(o, o.P, s < 0.01 ? 0.01 : s, undefined, dt); } });
         if (phase === 'tell') {
-          var arrived = !walk(nat, N_COME, Math.max(0, pt - 0.3) * 1.8, N_RY, dt) && pt > 1;
+          /* 7:17 나단이 걸어온다: 발 높이는 층계 칸을 따라 짧게 부드럽게 오르고, 다 와서는 천천히 왕 쪽으로 돈다 */
+          var ns = Math.max(0, pt - 0.3) * 1.8, nw = pathAt(N_COME, ns), nmv = ns > 0 && ns < N_COME.tot, ty = gy(nw[0], nw[1]);
+          nat.sy = nat.sy === undefined ? ty : nat.sy + (ty - nat.sy) * Math.min(1, dt * 12);
+          nat.group.visible = true; nat.group.position.set(nw[0], nat.sy, nw[1]); nat.group.rotation.y = angTo(nmv ? nw[2] : N_RY, nat.group.rotation.y, Math.min(1, dt * 5));
+          if (nat.update) nat.update(dt, nmv ? 1 : 0);
+          var arrived = !nmv && pt > 1;
           var np = nat.group.position, dp = dav.group.position, want = arrived ? D_RY : Math.atan2(np.x - dp.x, np.z - dp.z);   /* 오는 나단 쪽으로 돌아선다 */
-          dav.group.rotation.y += (want - dav.group.rotation.y) * Math.min(1, dt * 2);
+          dav.group.rotation.y = angTo(want, dav.group.rotation.y, Math.min(1, dt * 2));
         }
         if (dav.group.visible && dav.update) dav.update(dt, false);
         if (nat.group.visible && phase !== 'tell') still(nat);
