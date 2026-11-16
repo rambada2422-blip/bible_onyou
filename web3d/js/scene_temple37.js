@@ -337,7 +337,7 @@
     setPhase('work');
 
     return {
-      id: 'OT-37', scene: scene, sun: sun, sunOff: [-30, 50, 30],
+      id: 'OT-37', placeLabel: '유다 예루살렘', scene: scene, sun: sun, sunOff: [-30, 50, 30],
       height: height, walkable: walkable,
       edge: function (x, z) {
         if (z < -5 && x < -28) return { who: 'hyu', text: '짐승들 쪽으로는 가지 말자. 길가에서만 다니자.' };

@@ -141,7 +141,7 @@
     if (FX) FX.sortLayers(scene);
 
     return {
-      id: 'OT-23', scene: scene, sun: sun, sunOff: [-30, 50, 30],
+      id: 'OT-23', placeLabel: '유다 베들레헴', scene: scene, sun: sun, sunOff: [-30, 50, 30],
       height: height, walkable: walkable,
       edge: function (x, z) {
         if (z < 9) return { who: 'onwoo', text: '길과 밭 쪽으로는 내려가지 말자. 우리는 지켜보는 사람이야.' };

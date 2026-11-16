@@ -192,7 +192,7 @@
     var PH = ['come', 'near', 'pit', 'sold', 'reuben', 'egypt', 'egypt', 'egypt'];
 
     return {
-      id: 'OT-08', scene: scene, sun: sun, sunOff: [-32, 50, 28],
+      id: 'OT-08', placeLabel: '도단', scene: scene, sun: sun, sunOff: [-32, 50, 28],
       height: height, walkable: walkable,
       edge: function (x, z) {
         if (x < 24) return { who: 'onwoo', text: '사람들과 구덩이 쪽으로는 가지 말자. 우리는 떨어져서 지켜보는 사람이야.' };

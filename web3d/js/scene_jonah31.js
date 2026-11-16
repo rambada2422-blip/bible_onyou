@@ -203,7 +203,7 @@
     setPhase('wait');
 
     return {
-      id: 'OT-31', scene: scene, sun: sun, sunOff: SUNOFF,
+      id: 'OT-31', placeLabel: '니느웨', scene: scene, sun: sun, sunOff: SUNOFF,
       height: height, walkable: walkable,
       edge: function (x, z) {
         if (x < -36) return { who: 'hyu', text: '성 가까이로는 가지 말자. 이 들에서만 다니자.' };

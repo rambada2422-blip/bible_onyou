@@ -147,7 +147,7 @@
     var PH = ['send', 'return', 'report', 'caleb', 'night', 'stone', 'tab', 'wild'];
 
     return {
-      id: 'OT-15', scene: scene, sun: sun, sunOff: [-32, 50, 28],
+      id: 'OT-15', placeLabel: '바란 광야 가데스', scene: scene, sun: sun, sunOff: [-32, 50, 28],
       height: height, walkable: walkable,
       edge: function (x, z) {
         if (x < 26) return { who: 'onwoo', text: '회중 안쪽으로는 들어가지 말자. 우리는 가장자리에서 지켜보는 사람이야.' };

@@ -134,7 +134,7 @@
     if (FX) { FX.sortLayers(scene); glow.children.forEach(function (m) { m.layers.set(FX.GLOW); }); g1.layers.set(FX.GLOW); }
 
     return {
-      id: 'OT-24', scene: scene, sun: sun, sunOff: [-30, 50, 30],
+      id: 'OT-24', placeLabel: '실로 여호와의 집', scene: scene, sun: sun, sunOff: [-30, 50, 30],
       height: height, walkable: walkable,
       edge: function (x, z) {
         if (z < 0) return { who: 'onwoo', text: '여호와의 집 쪽으로는 더 가지 말자. 우리는 지켜보는 사람이야.' };
