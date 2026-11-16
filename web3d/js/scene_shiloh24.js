@@ -70,6 +70,7 @@
     var glowM = new T.MeshBasicMaterial({ color: '#FFC98A', transparent: true, opacity: 0, fog: false }), glow = new T.Group();
     var g1 = new T.Mesh(new T.PlaneGeometry(0.07, 4.9), glowM); g1.position.set(0, 2.5, 0); glow.add(g1); var g2 = new T.Mesh(new T.PlaneGeometry(3.2, 0.06), glowM); g2.position.set(0, 0.06, 0); glow.add(g2);
     glow.position.set(0, G0, -27.94); scene.add(glow);
+    leaves[1].add(g1); g1.position.set(-1.64, 2.5, 0.11);   /* 틈빛은 오른쪽 문짝의 가장자리에 붙인다: 문이 열려도 문간 한가운데 떠 보이지 않고, 꺼진 것처럼 사라지지도 않는다(3:3) */
     var doorOpen = 1, doorWant = 1;
     function doorSet(v, now) { doorWant = v; if (now) doorOpen = v; }
     /* 식구들이 머문 자리(1:9 먹고 마신 곳, 1:21 온 집): 장막 하나와 짐 */
@@ -130,7 +131,7 @@
       else if (boy.step === 3 && !A.moving(boy)) { boy.step = 0; boy.g.visible = false; runs++; pt = 0; doorSet(0); }
     }
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
-    if (FX) { FX.sortLayers(scene); glow.children.forEach(function (m) { m.layers.set(FX.GLOW); }); }
+    if (FX) { FX.sortLayers(scene); glow.children.forEach(function (m) { m.layers.set(FX.GLOW); }); g1.layers.set(FX.GLOW); }
 
     return {
       id: 'OT-24', scene: scene, sun: sun, sunOff: [-30, 50, 30],
@@ -188,7 +189,6 @@
         }
         if (Math.abs(doorOpen - doorWant) > 0.002) doorOpen += (doorWant - doorOpen) * Math.min(1, dt * 1.8);
         leaves.forEach(function (l) { l.rotation.y = l.userData.s * doorOpen * 1.5; });
-        g1.visible = doorOpen < 0.08;   /* 문짝 사이의 틈빛은 문이 닫혀 있을 때만(열리면 문간에 떠 보이지 않게). 문지방 밑 빛은 그대로 */
         all.forEach(function (a) { if (a.g.visible) A.step(a, dt); });
         if (eli.seated && eli.g.visible) sitBones(eli);
       },
