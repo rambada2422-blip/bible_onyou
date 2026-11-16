@@ -418,13 +418,16 @@
     }
     show('play', e.key, topBar(d.title), body, [prev, nb], { art: artOpts(d, s) });
   }
-  /* 창조 장면은 대목마다 지어진 것만 그린다(eraart.js) */
+  /* 배경: 장면과 대목을 알려 주면 그 대목의 그림을 그린다(sceneart.js, 없으면 시대 풍경). at은 도착 -1, 대목 번호, 대목이 다 끝난 뒤 'end'.
+     창조 장면은 대목마다 지어진 것만 그린다(eraart.js의 stage) */
   function artOpts(d, s) {
-    if (d.id !== 'OT-01') return null;
-    if (s.k === 'arrive') return { stage: 0 };
-    if (s.k === 'beat') return { stage: s.i };
-    if (s.k === 'help') { var ha = d.mission.help.steps[s.i].after; if (typeof ha === 'number') return { stage: ha }; }   /* 돕기 단계는 그 앞 대목까지 지어진 것만 */
-    return { stage: 9 };
+    var at = 'end', ha, cp = d.mission && d.mission.companion;
+    if (s.k === 'arrive' || (s.k === 'talk' && cp && cp.when !== 'after')) at = -1;
+    else if (s.k === 'beat') at = s.i;
+    else if (s.k === 'help') { ha = d.mission.help.steps[s.i].after; if (typeof ha === 'number') at = ha; }   /* 돕기 단계는 그 앞 대목까지 지어진 것만 */
+    var o = { scene: d.id, at: at };
+    if (d.id === 'OT-01') o.stage = s.k === 'arrive' ? 0 : (typeof at === 'number' && at >= 0 ? at : 9);
+    return o;
   }
   /* 현장 돕기 한 단계(규칙서 13.6). do: 본문에 그 사람들이 했다고 적힌 평범한 일을 누르며 돕는다 / watch: 거룩한 행위는 곁에서 본다
      stay: 함께 기다린다 / ask: 그 뜻을 묻고, 본문에 기록된 말로 답을 듣고, 성경을 펴서 확인한다 */
