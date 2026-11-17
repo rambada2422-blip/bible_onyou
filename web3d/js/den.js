@@ -60,7 +60,7 @@ window.BO3D = window.BO3D || {};
   function news() {
     if (OIL && !W.bp.oil) return { k: 'bp-oil', text: '박사의 설계도 첫 장이 도착했어요!', room: 'cockpit' };
     if (twigGot() && !planted()) return { k: 'green', text: '덜컹이의 뒤칸 문이 열렸어요!', room: 'green' };
-    if (BELT && bpShown(BELT) && !W.bp.belt && !woolGot()) return { k: 'bp-belt', text: '설계도 둘째 장이 도착했어요!', room: 'cockpit' };
+    if (BELT && bpShown(BELT) && !W.bp.belt) return { k: 'bp-belt', text: '설계도 둘째 장이 도착했어요!', room: 'cockpit' };   /* 양털을 먼저 얻었어도 설계도의 성경 물음이 먼저(답을 미리 말하지 않게, 13.9) */
     if (woolGot() && !W.craft.belt) return { k: 'bench', text: '작업대에 불이 켜졌어요. 양털로 줄을 만들어요!', room: 'bench' };
     if (W.craft.belt && !W.craft.rope) return { k: 'rope', text: '남은 끈으로 매듭 줄을 만들 수 있어요.', room: 'bench' };
     if (planted() && (W.seen.plant || 0) < plantAge() && plantStage().at > (W.seen.stageAt || 0)) return { k: 'grow', text: '온실의 나무가 자랐어요!', room: 'green' };
@@ -204,7 +204,7 @@ window.BO3D = window.BO3D || {};
     var journal = [
       open.all.length ? jbtn('물음 수첩', open.open.length ? '열린 물음 ' + open.open.length + '개' : '모두 닫혔어요', 'notes') : null,
       sh.length ? jbtn(TH.shepherds.title, sh.length + '줄', 'shepherds') : null,
-      lm.length ? jbtn(TH.lamb.title, lm.length + '줄', 'lamb') : null,
+      lm.length ? jbtn(TH.lamb.title, '성경에 적힌 곳', 'lamb') : null,
       cards.length ? jbtn('재료 카드', cards.length + '장', 'cards') : null,
       W.craft.rope ? jbtn(MS.title, '매듭 줄', 'measure') : null];
     var any = journal.some(function (x) { return x; });
@@ -292,6 +292,7 @@ window.BO3D = window.BO3D || {};
   /* ── 작업대 ── */
   function benchPanel() {
     var C = W.craft, kids = [el('h2', { class: 'dk-h' }, '작업대', rv(BN.rv, BN.why))], out = el('div', { class: 'dk-out' });
+    if (!W.bp.belt) { kids.push(note(BN.open), el('p', { class: 'ot-soft', text: '무엇을 만들지는 박사의 설계도 둘째 장에 있어요. 조종 칸에서 먼저 펴 보세요.' }), btn('조종 칸으로', function () { open('cockpit'); }, 'plain')); return kids; }
     if (!C.thread) {
       var twist = 0, len = 0, sp = el('div', { class: 'spin', html: '<i class="spd"></i><i class="thr" style="width:0"></i>' });
       var say = el('p', { class: 'gh-say', text: '' });
@@ -339,7 +340,7 @@ window.BO3D = window.BO3D || {};
     return kids;
   }
   function arkPic() {
-    return el('div', { class: 'arkpic', html: '<svg viewBox="0 0 320 70" aria-hidden="true"><rect class="ark" x="6" y="18" width="300" height="30" rx="5"/><path class="arkl" d="M6 28 H306 M6 38 H306"/><rect class="dkm" x="6" y="54" width="3" height="5"/><text x="14" y="62">덜컹이</text><text x="150" y="13">방주: 길이 삼백 규빗</text></svg>' });
+    return el('div', { class: 'arkpic', html: '<svg viewBox="0 0 320 70" aria-hidden="true"><rect class="ark" x="6" y="18" width="300" height="30" rx="5"/><path class="arkl" d="M6 28 H306 M6 38 H306"/><rect class="dkm" x="6" y="54" width="10" height="5" rx="2"/><text x="20" y="60">덜컹이</text><text x="150" y="13">방주: 길이 삼백 규빗</text></svg>' });
   }
 
   /* ── 날아간 양털(이야기 카드용): 처음 양털을 얻을 때 한 번만 ── */

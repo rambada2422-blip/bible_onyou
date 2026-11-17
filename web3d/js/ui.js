@@ -113,7 +113,7 @@
     var btns = opts.map(function (o) {
       var b = el('button', { class: 'opt', on: { click: function () {
         if (o.ok) { btns.forEach(function (x) { x.disabled = true; if (x !== b) x.classList.add('rest'); }); b.classList.add('ok'); noteBox.replaceChildren(goodNote(ref)); onOk(); }
-        else { b.classList.add('rest'); b.disabled = true; noteBox.replaceChildren(realBasis(o) ? detourNote(o.basis, ref) : lookNote(q.lookRef !== undefined ? q.lookRef : ref, q.lookText)); }
+        else { b.classList.add('rest'); b.disabled = true; noteBox.replaceChildren(realBasis(o) && o.basis !== ref ? detourNote(o.basis, ref) : lookNote(q.lookRef !== undefined ? q.lookRef : ref, o.hint || q.lookText)); }   /* 같은 절 안의 다른 내용이면 엇나간 바늘 대신 그 절을 다시 읽게 */
         noteBox.scrollIntoView({ block: 'nearest' });
       } } }, o.icon && IC[o.icon] ? icon(o.icon) : null, el('span', { text: o.label }));
       return b;
