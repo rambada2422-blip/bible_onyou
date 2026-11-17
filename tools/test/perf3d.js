@@ -1,7 +1,7 @@
 // 3D 장면이 호렙 산보다 무거워지지 않았는지 비교한다(지시서 4.1의 5). 사용: node tools/test/perf3d.js [장면들...]
 // 장면마다 도착 화면과 지켜보기 첫 대목에서 한 화면의 그리기 호출 수(calls, 후처리 포함), 삼각형 수(tris), 기하·텍스처 수, 초당 장면 수(fps)를 잰다.
 // 이 컴퓨터는 GPU 없이 그리므로 fps의 절대값은 휴대폰과 다르다. 같은 조건에서 호렙 산과 견주는 데만 쓴다.
-const { chromium } = require('playwright');
+const { chromium, previewURL } = require('./lib/runtime.js');
 const enter3d = require('./lib/enter.js');
 const ids = process.argv.slice(2).length ? process.argv.slice(2) : ['OT-09', 'OT-18', 'OT-11', 'OT-26', 'OT-19', 'OT-30', 'OT-03', 'OT-13', 'OT-05', 'OT-21', 'OT-36', 'OT-39'];
 (async () => {
@@ -11,7 +11,7 @@ const ids = process.argv.slice(2).length ? process.argv.slice(2) : ['OT-09', 'OT
     const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 })).newPage();
     const errs = []; p.on('pageerror', (e) => errs.push(e.message));
     await p.addInitScript(() => { window.BO3D_TEST = true; });
-    await p.goto('file:///home/user/bible_onyou/dist/preview3d.html#fps'); await p.waitForTimeout(2500);
+    await p.goto(previewURL + '#fps'); await p.waitForTimeout(2500);
     const fps = () => p.evaluate(() => new Promise((res) => { let n = 0; const t0 = performance.now(); function f() { n++; if (performance.now() - t0 < 3000) requestAnimationFrame(f); else res(Math.round(n / ((performance.now() - t0) / 1000) * 10) / 10); } requestAnimationFrame(f); }));
     try {
       await enter3d(p, 1, id);

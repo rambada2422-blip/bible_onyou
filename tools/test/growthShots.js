@@ -4,13 +4,13 @@
 //    3단계(손목 탐지기)는 장비가 작아, 새 장비 카드와 3D에서 보여 주는 "들여다보기" 모습으로 잰다(쉬는 모습 값도 함께 적는다).
 // V2 게임 거리: 3D 요단(OT-18) 탐색 시작 화면(390×844)을 멈춘 채 단계만 바꿔 다시 그리고, 바뀐 화소 수. 150화소 이상.
 // 결과: 표(콘솔·result.txt)와 나란히 놓은 비교 그림 페이지(compare.html: 새 장비 카드의 전후 그림, 3D 화면 전후).
-const { chromium } = require('playwright');
+const { chromium, previewURL } = require('./lib/runtime.js');
 const path = require('path');
 const fs = require('fs');
 const enter3d = require('./lib/enter.js');
 const out = process.argv[2] || '/tmp/growthShots';
 fs.mkdirSync(out, { recursive: true });
-const URL = 'file:///home/user/bible_onyou/dist/preview3d.html';
+const URL = previewURL;
 const STEPS = [[0, 1, 'hat', null], [1, 2, 'flag', null], [2, 3, 'wrist', 'look']];
 const NAME = { 1: '탐험 모자', 2: '탐험대 깃발', 3: '손목 탐지기' };
 (async () => {

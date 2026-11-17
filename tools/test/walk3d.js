@@ -1,6 +1,6 @@
 // 3D 호렙 산 자동 점검. 사용: node walk3d.js <단계 0~2> <저장 폴더> [화면 배율]
 // 흐름: 탐지기 물음 → 부품 1(양 떼) → 물음 → 부품 2(호렙으로 가는 길목) → 물음 → 부품 3(언덕 아래) → 올려다보기 → 지켜보기 → 관문 → 타임머신
-const { chromium } = require('playwright');
+const { chromium, previewURL } = require('./lib/runtime.js');
 const path = require('path');
 const fs = require('fs');
 const enter3d = require('./lib/enter.js');
@@ -19,7 +19,7 @@ fs.mkdirSync(out, { recursive: true });
   const shot = async (label) => { n++; await p.screenshot({ path: path.join(out, String(n).padStart(2, '0') + '-' + label + '.png') }); };
   const GR = require('./lib/growth.js'), seedN = Number(process.env.GROWTH_SEED || '0');   /* 성장 시스템: GROWTH_SEED=n */
   if (seedN) await GR.seed(p, seedN, { exclude: ['OT-09'] });
-  await p.goto('file:///home/user/bible_onyou/dist/preview3d.html' + (process.env.BO3D_HASH || ''));   // 예: BO3D_HASH=#moses2
+  await p.goto(previewURL + (process.env.BO3D_HASH || ''));   // 예: BO3D_HASH=#moses2
   await p.waitForTimeout(2500);
   await p.evaluate(() => document.fonts.ready);
   await shot('menu');

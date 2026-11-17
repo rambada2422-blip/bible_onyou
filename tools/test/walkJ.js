@@ -1,10 +1,10 @@
 // 시대 추리(요단 강) 자동 점검. 사용: node walkJ.js <tierIndex> <outDir> [dsf] [url]
-const { chromium } = require('playwright');
+const { chromium, previewURL } = require('./lib/runtime.js');
 const path = require('path');
 const fs = require('fs');
 const enter3d = require('./lib/enter.js');
 const ti = process.argv[2] || '1', out = process.argv[3], dsf = Number(process.argv[4] || '1');
-const url = process.argv[5] || 'file:///home/user/bible_onyou/dist/preview3d.html';
+const url = process.argv[5] || previewURL;
 fs.mkdirSync(out, { recursive: true });
 (async () => {
   const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });

@@ -2,7 +2,7 @@
 // 사용: node tools/test/walkOT.js <단계 0~2> <저장 폴더> [첫 장면 번호 1~40] [마지막 장면 번호]
 // 장면마다: 도착 → (동행) → 지켜보기 → (동행) → 관문(첫 관문은 다른 보기를 먼저 눌러 안내 문구 확인) → 재료 → 오늘의 물음 → 마무리 → 다음 장면/다음 시대.
 // 화면마다 글이 옆으로 넘치지 않는지 보고, 시대의 첫 장면과 몇몇 화면을 찍는다. 끝에 오류 목록을 낸다.
-const { chromium } = require('playwright');
+const { chromium, previewURL } = require('./lib/runtime.js');
 const doHelp = require('./lib/help.js');
 const path = require('path');
 const fs = require('fs');
@@ -74,7 +74,7 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
     return r;
   };
 
-  await p.goto('file:///home/user/bible_onyou/dist/preview3d.html');
+  await p.goto(previewURL);
   await p.waitForTimeout(2500);
   await p.evaluate(() => document.fonts.ready);
   await p.click('.tier >> nth=' + ti);

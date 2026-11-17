@@ -2,7 +2,7 @@
 // 흐름: 시대 지도 → 걸어서 탐험 → 도착(통신) → (동행 문답) → 물음 → 재료 1 → 물음 → 재료 2 → 물음 → 재료 3 → 올려다보기 → (영상) → 지켜보기
 //       → (동행 문답) → 관문 → (오늘의 물음) → 마무리 → 타임머신으로 → 아지트 → 출발 → 끝 화면 → 시대 지도에 마침 표시.
 // 화면을 찍고, 오류와 막힌 곳을 낸다. OT-09(호렙 산)는 타임머신 이름 고르기(시대 추리)를 거치므로 walk3d.js로 점검한다.
-const { chromium } = require('playwright');
+const { chromium, previewURL } = require('./lib/runtime.js');
 const path = require('path');
 const fs = require('fs');
 const enter3d = require('./lib/enter.js');
@@ -22,7 +22,7 @@ fs.mkdirSync(out, { recursive: true });
   const shot = async (l) => { n++; await p.screenshot({ path: path.join(out, String(n).padStart(2, '0') + '-' + l + '.png') }); };
   const st = () => p.evaluate(() => BO3D.debug.state());
   if (seedN || fxOff) await GR.seed(p, seedN, { exclude: [id], gear: fxOff ? { fx: false } : undefined });
-  await p.goto('file:///home/user/bible_onyou/dist/preview3d.html'); await p.waitForTimeout(2500);
+  await p.goto(previewURL); await p.waitForTimeout(2500);
   await p.evaluate(() => document.fonts.ready);
   await GR.install(p);
   await enter3d(p, ti, id);
