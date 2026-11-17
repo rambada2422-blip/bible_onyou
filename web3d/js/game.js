@@ -96,7 +96,7 @@
     });
   }
   var shakeT = 0, shakeDur = 1, shakeAmp = 0, calm = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  var api = { T: T, M: M, FX: FX, mk: mk, fallback: fallback, person: person, shake: function (amp, sec) { if (calm) return; shakeAmp = amp; shakeDur = shakeT = sec || 1; }, loadGlb: function (k, cb) { loadGlb(k, cb); }, now: function () { return now; }, camera: function () { return camera; } };
+  var api = { T: T, M: M, FX: FX, mk: mk, fallback: fallback, person: person, shake: function (amp, sec) { if (calm) return; shakeAmp = amp; shakeDur = shakeT = sec || 1; }, say: function (who, text) { toast(text, who && C.chars[who] ? who : null); }, loadGlb: function (k, cb) { loadGlb(k, cb); }, now: function () { return now; }, camera: function () { return camera; } };
 
   /* 장면 만들기: 장면 설정(BO3D.scene3d[id])이 지형·인물·소품을 만들고, 틀이 타임머신·재료·도감을 더한다. 한 번 만든 장면은 다시 쓴다. */
   var built = {}, machine = null, PARTS = [], partObjs = [], DEX = [], machineY = 0, departGlow = null;
@@ -197,7 +197,7 @@
   var trackArrow = el('i', {}, icon('arrow')), trackText = el('span', { text: '' });
   /* 손목 탐지기(3단계) 도감 탐지: 아직 사진에 담지 않은 도감 대상이 사진 거리 안에 있으면 알린다. 부품 안내(아래 track)는 모두에게 그대로 */
   var dexDetArrow = el('i', {}, icon('arrow')), dexDetText = el('span', { text: '' }), dexDet = el('div', { class: 'dexdet3', hidden: '' }, dexDetArrow, dexDetText), dexDetT = 0;
-  var track = el('button', { class: 'track3', hidden: '', on: { click: function () { if (!questOpen && (state === 'explore')) openQuiz(); } } }, trackArrow, trackText);
+  var track = el('button', { class: 'track3', hidden: '', on: { click: function () { if (!side && !questOpen && (state === 'explore')) openQuiz(); } } }, trackArrow, trackText);
   var hudRef = refChip('', true), clueCount = el('span', { class: 'count teal', hidden: '', text: '단서 0 / 5' });
   var hud = el('div', { class: 'hud3 pad', hidden: '' },
     el('div', { class: 'row' }, place_, hudRef),
@@ -375,14 +375,51 @@
       showPanel([el('div', { class: 'q-kicker', text: (pm ? '재료 ' : '부품 ') + partsFound + ' / ' + PARTS.length + ' · ' + PARTS[i].name }),
         el('div', { class: 'say' }, avatar(S.ch), el('div', { class: 'bubble' }, el('b', { text: C.chars[S.ch].name, style: 'color:' + C.chars[S.ch].color }), PARTS[i].line)),
         pm ? matNote(pm) : null,
+        pm && BO3D.den ? BO3D.den.installStrip(SCN.id, pm) : null,
         bi !== null && bi !== undefined && SC.beats[bi] ? [el('div', { class: 'q-kicker', text: '지켜보기' }), storyNote(SCN.beatNote ? SCN.beatNote(bi) : null), beatNodes(SC.beats[bi])] : null],
         btn('계속 탐험하기', function () {
           hidePanel();
           if (SCN.partContinue) SCN.partContinue(i);
           var go2 = function () { quest = i + 1; openQuiz(); };
-          if (bi !== null && bi !== undefined && hasHelp(bi)) seg('help:' + bi, go2); else go2();   /* 이 대목 뒤의 현장 돕기(규칙서 13.6) */
+          var go1 = function () { if (bi !== null && bi !== undefined && hasHelp(bi)) seg('help:' + bi, go2); else go2(); };   /* 이 대목 뒤의 현장 돕기(규칙서 13.6) */
+          /* 시범: 처음 얻은 양털은 바람에 날아간다(탐험대 이야기). 다 되찾은 뒤에 다음 물음으로 */
+          if (pm && SCN.wind && BO3D.den && BO3D.den.windWanted(pm.name)) startSide(SCN.wind, go1); else go1();
         }));
     } else { if (SCN.partFound) SCN.partFound(i); startLookup(); }
+  }
+  /* ── 곁일(시범 2026-11-17): 바람에 날아간 양털을 걸어서 되찾는다. 탐험대 이야기이고 성경 사건과 상관없다.
+   * 장면 설정의 wind = { spots: [[x,z]…], text, say:{who,text}, done:{who,text} }. 자리는 사건 자리의 반대쪽에 둔다 ── */
+  var side = null;
+  function startSide(cfg, done) {
+    state = 'explore'; questOpen = false; base.hidden = false;
+    side = { n: 0, done: done, cfg: cfg, spots: cfg.spots.map(function (at) {
+      var holder = new T.Group(), m = matMesh({ name: '양털' }); m.scale.setScalar(1.5); holder.add(m);
+      holder.position.set(at[0], H(at[0], at[1]) + 0.9, at[1]); SCN.scene.add(holder);
+      return { at: at, group: holder, taken: false };
+    }) };
+    setObjective(cfg.text + ' 0 / ' + side.spots.length);
+    if (FX) FX.audio.gust(1.8);
+    if (cfg.say) toast(cfg.say.text, cfg.say.who);
+  }
+  function endSide(silent) {
+    if (!side) return;
+    side.spots.forEach(function (sp) { SCN.scene.remove(sp.group); });
+    var d = side.done, cfg = side.cfg; side = null;
+    if (silent) return;
+    if (BO3D.den) BO3D.den.windDone();
+    if (FX) FX.audio.fanfare();
+    if (cfg.done) toast(cfg.done.text, cfg.done.who);
+    d();
+  }
+  function updateSide() {
+    if (!side || state !== 'explore') return;
+    var p = player.group.position;
+    side.spots.forEach(function (sp, k) {
+      if (sp.taken) return;
+      sp.group.rotation.y = now * 1.4; sp.group.position.y = H(sp.at[0], sp.at[1]) + 0.9 + Math.sin(now * 2.4 + k) * 0.12;
+      if (dist2(p.x, p.z, sp.at[0], sp.at[1]) < 1.8) { sp.taken = true; sp.group.visible = false; side.n++; if (FX) FX.audio.pop(); setObjective(side.cfg.text + ' ' + side.n + ' / ' + side.spots.length); }
+    });
+    if (side.n === side.spots.length) endSide();
   }
   /* 대목 앞에 붙이는 탐험대 이야기 한 줄(예: 그 앞의 일을 타임머신 창으로 봄). 재료를 주울 때 보여 주는 대목에도 쓴다 */
   function storyNote(t) { return t ? el('div', { class: 'note story3' }, el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: t }))) : null; }
@@ -422,6 +459,13 @@
   function updateTracker() {
     var p = player.group.position, show = (state === 'explore' || state === 'free');
     denBtn.hidden = !(show && dist2(p.x, p.z, P.machine[0], P.machine[1]) < 6.5);
+    if (side) {
+      var sb = null, sd = 1e9;
+      side.spots.forEach(function (sp) { if (sp.taken) return; var dd = dist2(p.x, p.z, sp.at[0], sp.at[1]); if (dd < sd) { sd = dd; sb = sp; } });
+      track.classList.remove('ask'); track.hidden = !(show && sb);
+      if (sb) { trackArrow.style.transform = 'rotate(' + (-(Math.atan2(sb.at[0] - p.x, sb.at[1] - p.z) - camYaw)) + 'rad)'; trackText.textContent = '양털 ' + Math.round(sd) + 'm'; }
+      return;
+    }
     var best = (quest < PARTS.length && !partObjs[quest].taken) ? PARTS[quest] : null;
     if (best && !questOpen) {
       track.hidden = !show; trackArrow.style.transform = 'none'; track.classList.add('ask');
@@ -496,6 +540,7 @@
         el('div', { class: 'deco' }, el('span', { text: sceneDone || gearStage >= 1 ? '탐험 모자 (세 아이가 함께 써요)' : '탐험 모자 (첫 장면을 마치면 열려요)' }), hatBtn),
         gi ? el('div', { class: 'deco' }, el('span', { text: '탐험 장비 ' + gearStage + '단계 · ' + gi.name + ' · ' + gi.fn }), btn('기록장', function () { overlay.hidden = true; state = prev; toMap(); if (BO3D.story.openRecord) BO3D.story.openRecord('gear'); }, 'quiet')) : null,
         fxBtn ? el('div', { class: 'deco' }, el('span', { text: '손목 탐지기 빛 (끄면 빛만 없어지고 기능은 그대로)' }), fxBtn) : null,
+        BO3D.den && BO3D.story ? el('div', { class: 'deco' }, el('span', { text: '덜컹이 안(설계도 · 온실 · 작업대 · 일지)' }), btn('들어가기', function () { overlay.hidden = true; state = prev; toMap(); BO3D.den.open(); }, 'quiet')) : null,
         el('div', { class: 'den-foot' }, btn('밖으로 나가기', function () { overlay.hidden = true; state = prev; }, 'quiet'), go));
       overlay.hidden = false;
     }
@@ -679,6 +724,7 @@
         el('div', { class: 'slot on' }, icon('camera'), el('b', { text: '탐험 도감' }), el('span', { text: dexCount() + ' / ' + dexTotal() })),
         el('div', { class: 'slot on' }, icon('gear'), el('b', { text: PARTS.length && PARTS[0].mat ? '모은 재료' : '찾은 부품' }), el('span', { text: partsFound + ' / ' + PARTS.length }))),
       newGear.length && BO3D.story.gearCard ? BO3D.story.gearCard(newGear) : null,
+      (function () { var nw = BO3D.den ? BO3D.den.news() : null; return nw ? el('div', { class: 'deco' }, el('span', { text: '덜컹이 소식: ' + nw.text }), btn('아지트로', function () { toMap(); BO3D.den.open(nw.room); }, 'quiet')) : null; })(),
       el('p', { class: 'den-msg', text: BO3D.story ? '시대 지도에서 다음 장면으로 갈 수 있어요.' : '다음 장면(하나님의 이름과 세 가지 표징, 출 3:13-4:17)은 목사님 감수를 마친 뒤 열립니다.' }),
       el('div', { class: 'den-foot' }, BO3D.story && SCN.id === 'OT-09' ? btn('다른 이름으로 가 보기', function () { if (C3 && BO3D.jordan) route(); else menu(); }, 'quiet') : btn('처음부터 다시', menu, 'quiet'),
         BO3D.story ? btn('시대 지도로', toMap, 'wide') : btn('다른 이름으로 가 보기', function () { if (C3 && BO3D.jordan) route(); else menu(); }, 'wide')));
@@ -964,7 +1010,7 @@
     spawnKids();
     quest = 0; questOpen = false; evIdx = SCN.eventStart || 0; afterVision = false;
     if (SCN.reset) SCN.reset();
-    sceneDone = false; partsFound = 0;
+    sceneDone = false; partsFound = 0; endSide(true);
     partObjs.forEach(function (po) { po.taken = false; po.group.visible = true; });
     partCount.textContent = partWord() + ' 0 / ' + PARTS.length;
     for (var kk in kids) kids[kk].group.visible = true;
@@ -1297,6 +1343,7 @@
             po.mesh.rotation.y = now * 1.6; po.mesh.position.y = 0.95 + Math.sin(now * 2.2 + pi) * 0.1;
             if (state === 'explore' && pi === quest && questOpen && dist2(player.group.position.x, player.group.position.z, PARTS[pi].at[0], PARTS[pi].at[1]) < 1.7) takePart(pi);
           });
+          updateSide();
         }
       } else { pspeed = 0; followers.forEach(function (f) { f.spd = 0; }); }
       if (player.update) player.update(dt, pspeed);
@@ -1356,6 +1403,7 @@
     vision: function () { return vision ? { ok: visionReady(), t: vision.v.currentTime, seen: wasSeen() } : null; },
     lookup: function () { overlay.hidden = true; hidePanel(); quest = PARTS.length - 1; partObjs.forEach(function (po) { po.taken = true; po.group.visible = false; }); partsFound = PARTS.length; startLookup(); },
     flock: function () { return SCN.debug && SCN.debug.flock ? SCN.debug.flock() : null; },
+    side: function () { return side ? { n: side.n, spots: side.spots.map(function (sp) { return { at: sp.at, taken: sp.taken }; }) } : null; },
     phase: function () { return SCN.debug && SCN.debug.phase ? SCN.debug.phase() : null; },
     state: function () { return { state: state, quest: quest, x: player && player.group.position.x, z: player && player.group.position.z, mosesArrived: !!(SCN.debug && SCN.debug.arrived && SCN.debug.arrived()) }; },
     stick: function (x, y) { stick.x = x; stick.y = y; },

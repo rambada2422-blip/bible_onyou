@@ -65,6 +65,8 @@
       moses.group.rotation.y = lerpAngle(moses.group.rotation.y, Math.atan2(dx, dz), Math.min(1, dt * 5));
       if (moses.update) moses.update(dt, true);
     }
+    /* 시범(탐험대 이야기): 양 떼 곁에서 가만히 서 있으면 양 한 마리가 다가온다. 처음 한 번 최온이 말한다 */
+    var stillT = 0, lastX = null, lastZ = null, metSheep = false;
     function v3(x, y, z) { return new T.Vector3(x, y, z); }
     function dist2(ax, az, bx, bz) { var dx = ax - bx, dz = az - bz; return Math.sqrt(dx * dx + dz * dz); }
 
@@ -76,6 +78,9 @@
       P: { start: P.start, machine: P.machine, machineRot: -0.5, parts: P.parts, lookSpot: P.lookSpot,
         look: { focus: P.bush, mid: P.mosesEnd, dy: -0.6 } },
       partRocks: true,
+      /* 날아간 양털(시범): 바람은 떨기나무의 반대쪽(출발한 쪽)으로만 분다. 떨기나무 쪽은 거룩한 땅이라 가지 않는다(출 3:5) */
+      wind: { spots: [[-17, 31.5], [-8.5, 33], [-13.5, 37.5]], text: '바람에 날아간 양털 찾기',
+        say: { who: 'choeon', text: '어, 내 양털! 바람에 날아갔어!' }, done: { who: 'hyu', text: '다 찾았다! 다음부터는 꼬아서 묶어 다니자.' } },
       aura: 'off',   /* 성장 시스템: 떨기나무 앞(3:5) — 손목 장비의 빛을 장면 내내 끈다 */
       detector: HQ ? HQ.detector : '탐지기', askLabel: HQ ? HQ.askLabel : '탐지기 물음 풀기',
       intro: HQ ? HQ.intro : null, quests: HQ ? HQ.quests : null,
@@ -96,7 +101,7 @@
           pos: function () { return v3(P.bush[0], H(P.bush[0], P.bush[1]) + 1.3, P.bush[1]); } }
       ],
       reset: function () {
-        walking = false; arrived = false; leg = 0; hold = 0; setBushLit(false);
+        walking = false; arrived = false; leg = 0; hold = 0; setBushLit(false); stillT = 0; lastX = null; metSheep = false;
         place(moses.group, P.mosesStart[0], P.mosesStart[1]); moses.group.rotation.y = Math.PI * 0.8;
         if (moses.setPose) moses.setPose('approach');
         if (flock) flock.reset();
@@ -121,7 +126,13 @@
       },
       update: function (dt, now, ctx) {
         if (bush.update) bush.update(now);
-        if (flock) { flock.setAvoid(ctx.player); flock.update(dt, now, moses.group.position, walking, leg); }
+        if (flock) {
+          var pl = ctx.player, exploring = pl && (ctx.state === 'explore' || ctx.state === 'free');
+          if (exploring) { var moved = lastX === null || Math.abs(pl.x - lastX) + Math.abs(pl.z - lastZ) > 0.004; stillT = moved ? 0 : stillT + dt; lastX = pl.x; lastZ = pl.z; } else stillT = 0;
+          flock.setCalm(exploring && stillT > 2.2 && !walking ? pl : null);
+          if (!metSheep && flock.friendDist() < 1.9) { metSheep = true; if (api.say) api.say('choeon', '가만히 있으니까 양이 다가왔어!'); }
+          flock.setAvoid(ctx.player); flock.update(dt, now, moses.group.position, walking, leg);
+        }
         moveMoses(dt);
       },
       render: function (camera, renderer) { if (bushFx && bushLit) bushFx.update(api.now(), camera, renderer.domElement.height); },
@@ -136,7 +147,7 @@
       },
       debug: {
         moses: function () { return { key: moses.key || 'code', pose: mosesPose }; },
-        flock: function () { return flock ? { n: flock.count, c: flock.center() } : null; },
+        flock: function () { return flock ? { n: flock.count, c: flock.center(), friend: flock.friendDist(), met: metSheep } : null; },
         arrived: function () { return arrived; },
         P: P
       }

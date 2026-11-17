@@ -7,6 +7,7 @@
  *   follow : 모세가 걷기 시작하면 뒤를 따라 무리 지어 걷는다
  *   graze  : 모세가 언덕에 오르면 언덕 서쪽 기슭에 머물며 풀을 뜯는다 (양 떼는 언덕에 오르지 않는다)
  * 아이가 가까이 오면 양이 조금 비켜선다.
+ * 시범(2026-11-17, 탐험대 이야기): 아이가 무리 곁에서 가만히 서 있으면 가까운 양 한 마리가 천천히 다가와 고개를 든다. 아이가 움직이면 돌아간다.
  */
 window.BO3D = window.BO3D || {};
 (function () {
@@ -98,13 +99,13 @@ window.BO3D = window.BO3D || {};
     }
 
     var m4 = new T.Matrix4(), q4 = new T.Quaternion(), e = new T.Euler(), sc = new T.Vector3(), ps = new T.Vector3(), nm = new T.Matrix4(), nq = new T.Quaternion(), ne = new T.Euler(), npos = new T.Vector3(), one = new T.Vector3(1, 1, 1);
-    var avoid = null;
+    var avoid = null, calm = null, friend = -1;
     function write(t) {
       center.set(0, 0, 0);
       sh.forEach(function (q, i) {
         var y = H(q.x, q.z);
         var cyc = (t * 0.07 + q.off) % 1;
-        var gz = q.walk > 0.3 ? 0 : smooth(0.0, 0.1, cyc) * (1 - smooth(0.66, 0.76, cyc));
+        var gz = q.walk > 0.3 || i === friend ? 0 : smooth(0.0, 0.1, cyc) * (1 - smooth(0.66, 0.76, cyc));
         var bob = Math.abs(Math.sin(q.wt * 7)) * 0.035 * q.walk;
         e.set(gz * 0.05 + Math.sin(q.wt * 7) * 0.03 * q.walk, q.yaw, 0);
         q4.setFromEuler(e); sc.setScalar(q.s); ps.set(q.x, y + bob, q.z);
@@ -143,6 +144,10 @@ window.BO3D = window.BO3D || {};
           /* 풀을 뜯으며 제자리 둘레를 천천히 맴돈다 */
           tx = q.hx + Math.sin(t * 0.05 + q.ph) * 0.9; tz = q.hz + Math.cos(t * 0.04 + q.ph * 1.3) * 0.9;
           maxSp = mode === 'graze' && Math.hypot(q.x - q.hx, q.z - q.hz) > 3 ? 2.2 : 0.35;
+          if (i === friend && calm) {   /* 가만히 선 아이 쪽으로 한 걸음 앞까지 */
+            var cdx = q.x - calm.x, cdz = q.z - calm.z, cd = Math.sqrt(cdx * cdx + cdz * cdz) || 1;
+            tx = calm.x + cdx / cd * 1.35; tz = calm.z + cdz / cd * 1.35; maxSp = 0.9;
+          }
         }
         var ax = (tx - q.x) * 1.4, az = (tz - q.z) * 1.4;
         /* 서로 너무 붙지 않게 */
@@ -151,7 +156,7 @@ window.BO3D = window.BO3D || {};
           var o = sh[j], dx = q.x - o.x, dz = q.z - o.z, d2 = dx * dx + dz * dz;
           if (d2 < 0.81 && d2 > 1e-6) { var d = Math.sqrt(d2), k = (0.9 - d) / d * 6; ax += dx * k; az += dz * k; }
         }
-        if (avoid) {
+        if (avoid && !(i === friend && calm)) {
           var adx = q.x - avoid.x, adz = q.z - avoid.z, ad2 = adx * adx + adz * adz;
           if (ad2 < 4 && ad2 > 1e-6) { var ad = Math.sqrt(ad2), ak = (2 - ad) / ad * 7; ax += adx * ak; az += adz * ak; }
         }
@@ -171,7 +176,14 @@ window.BO3D = window.BO3D || {};
     reset();
     return {
       update: update, reset: reset, settle: settle, center: function () { return center; },
-      setAvoid: function (v) { avoid = v; }, count: N, meshes: [bodyIM, headIM]
+      setAvoid: function (v) { avoid = v; }, count: N, meshes: [bodyIM, headIM],
+      /* 가만히 선 아이의 자리(없으면 null). 가장 가까운 양 한 마리가 다가온다 */
+      setCalm: function (v) {
+        if (!v || mode === 'follow') { calm = null; friend = -1; return; }
+        calm = v;
+        if (friend < 0) { var bd = 1e9; sh.forEach(function (q, i) { var d = Math.hypot(q.x - v.x, q.z - v.z); if (d < bd) { bd = d; friend = i; } }); if (bd > 9) { friend = -1; calm = null; } }
+      },
+      friendDist: function () { return friend >= 0 && calm ? Math.hypot(sh[friend].x - calm.x, sh[friend].z - calm.z) : 999; }
     };
   }
 

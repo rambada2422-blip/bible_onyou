@@ -101,10 +101,34 @@ fs.mkdirSync(out, { recursive: true });
   await solve(Q[0].q[tier], 'quiz1');
   await shot('tracker1');
   await aim(P.mountain[0], P.mountain[1]); await snap('photo-horeb');
+  /* 시범(2026-11-17): 양 떼 곁에서 가만히 서 있으면 양 한 마리가 다가온다 */
+  await walkTo(P.flock[0] + 4.2, P.flock[1] + 3.2, null);
+  let met = false;
+  for (let k = 0; k < 90 && !met; k++) { await p.waitForTimeout(1000); met = await p.evaluate(() => { const f = BO3D.debug.flock(); return !!(f && f.met); }); }
+  console.log('sheep-approach', met, JSON.stringify(await p.evaluate(() => { const f = BO3D.debug.flock(); return f && { friend: Math.round(f.friend * 10) / 10 }; })));
+  if (!met) problems.push('가만히 서 있어도 양이 다가오지 않음');
+  await shot('sheep-approach');
   await walkTo(P.parts[0][0], P.parts[0][1], 'to-flock');
   await shot('part1');
   console.log('after part1', JSON.stringify(await st()));
+  if (!(await p.evaluate(() => !!document.querySelector('.inst3')))) problems.push('재료를 주운 패널에 "덜컹이에 끼웠어요"가 없음');
   await p.click('text=계속 탐험하기'); await p.waitForTimeout(500);
+  /* 시범: 처음 얻은 양털은 바람에 날아간다. 세 곳을 걸어가 되찾아야 다음 물음이 열린다 */
+  let sd = await p.evaluate(() => BO3D.debug.side());
+  if (!sd) problems.push('양털을 주운 뒤 날아간 양털 찾기가 시작되지 않음');
+  else {
+    await shot('wind-start');
+    const bush = P.bush;
+    for (const sp of sd.spots) {
+      if (Math.hypot(sp.at[0] - bush[0], sp.at[1] - bush[1]) < 25) problems.push('날아간 양털 자리가 떨기나무에 가까움: ' + sp.at.join(','));
+      await walkTo(sp.at[0], sp.at[1], null);
+    }
+    await p.waitForTimeout(600);
+    sd = await p.evaluate(() => BO3D.debug.side());
+    if (sd) problems.push('날아간 양털을 다 찾지 못함: ' + JSON.stringify(sd));
+    if (!(await p.evaluate(() => BO3D.den.debug.raw().wind === 1))) problems.push('날아간 양털을 찾은 것이 저장되지 않음');
+    await shot('wind-done');
+  }
   await segs('help-after-part');
   await solve(Q[1].q[tier], 'quiz2');
   await p.waitForTimeout(2500);
