@@ -162,7 +162,7 @@
     setPhase('gather');
 
     return {
-      id: 'OT-29', scene: scene, sun: sun, sunOff: [-30, 50, 30],
+      id: 'OT-29', placeLabel: '세겜', scene: scene, sun: sun, sunOff: [-30, 50, 30],
       height: height, walkable: walkable,
       edge: function (x, z) {
         if (z < 4) return { who: 'onwoo', text: '모인 사람들 쪽으로는 가지 말자. 우리는 가장자리에서 지켜보는 사람이야.' };
