@@ -87,7 +87,7 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
   const meta = await p.evaluate(() => Object.fromEntries(BO3D.ot.order.map((id) => [id, { era: BO3D.ot.scenes[id].era, title: BO3D.ot.scenes[id].title }])));
   const log = [];
   // 첫 장면은 지도에서 고른다
-  if (from > 1) await p.evaluate(() => BO3D.story.debug.unlockAll());   /* 중간부터 볼 때는 시대 잠금을 푼다 */
+  if (from > 1) { await p.click('text=모든 시대 열기'); await p.waitForTimeout(200); }   /* 중간부터 볼 때는 지도 아래 단추로 시대 잠금을 푼다(지도가 다시 그려진다) */
   await p.click('.otc[data-id="' + order[from - 1] + '"]'); await p.waitForTimeout(100);
   for (let k = from - 1; k < to; k++) {
     const id = order[k], t0 = Date.now(), firstOfEra = k === from - 1 || meta[order[k - 1]].era !== meta[id].era;
