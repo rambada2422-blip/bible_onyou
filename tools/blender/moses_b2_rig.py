@@ -410,7 +410,40 @@ def hide(t):
     return out
 
 
-CLIPS = [('Idle', 3.0, idle), ('Walk', 1.2, walk)] + ([('HideFace', 0.8, hide)] if SPEC.get('hideface', not SPEC) else [])
+# ---------------------------------------------------------------------------- 호렙 그래픽 시험(2026-11-17): 모세에게만 넣는 평범한 동작 2개
+# Watch  : 양 떼를 살핀다(출 3:1 "양 떼를 치더니"). 선 채로 고개를 천천히 왼쪽·오른쪽으로 돌린다. 6초, 되풀이.
+# LookUp : 고개를 들어 언덕 위를 올려다본다(출 3:2 "모세가 보니", 3:3 "이 큰 광경을 보리라"). 1초, 끝 자세에서 멈춤.
+# 본문에 없는 몸짓은 넣지 않는다(손짓·무릎 꿇기·말하는 시늉 없음). 지팡이는 Idle과 같이 짚고 서 있다.
+def watch(t):
+    q = idle(t)                                   # 숨쉬기는 Idle 그대로(3초 주기 두 번)
+    s = math.sin(2 * math.pi * t / 6.0)
+    y = s * (1.5 - 0.5 * s * s)                   # 양 끝에서 잠깐 머문다
+    q['head_yaw'] += 27.0 * y
+    q['chest_yaw'] = 6.0 * y
+    q['hip_yaw'] = 2.0 * y
+    q['head'] += 5.0 * y * y                      # 양 떼 쪽을 볼 때 고개를 조금 숙인다
+    q['beard'] += -1.2 * y * y; q['veil'] += 1.5 * abs(y)
+    return q
+
+
+def lookup(t):
+    a = idle(0.0)
+    b = dict(a)
+    b['spine'] = 1.0; b['chest'] = 0.5; b['neck'] = -5.0; b['head'] = -19.0
+    b['beard'] = 5.0; b['veil'] = 9.0
+    k = sstep(0.0, 0.9, t)
+    k = k * k * (3 - 2 * k) * 0.5 + k * 0.5
+    out = {}
+    for key in a:
+        if isinstance(a[key], tuple):
+            out[key] = tuple(lerp(a[key][i], b[key][i], k) for i in range(len(a[key])))
+        else:
+            out[key] = lerp(a[key], b[key], k)
+    return out
+
+
+MOSES_ONLY = [('Watch', 6.0, watch), ('LookUp', 1.0, lookup)] if not SPEC else []   # 인물 제작 라인(--spec)의 다른 인물에는 넣지 않는다
+CLIPS = [('Idle', 3.0, idle), ('Walk', 1.2, walk)] + ([('HideFace', 0.8, hide)] if SPEC.get('hideface', not SPEC) else []) + MOSES_ONLY
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 C.run(p, CLIPS, OUT, max_tris=8000)

@@ -62,6 +62,9 @@
   camera.layers.enable(1); camera.layers.enable(2);
   var post = FX ? new FX.Post(renderer) : null;
   var scene = null, env = null; /* 지금 장면의 THREE.Scene과 해 (useScene이 바꾼다) */
+  /* 장면 그래픽 설정(시험: gfx_horeb.js): 장면 설정에 gfx가 있으면 그 장면을 그리는 동안만 renderer 설정을 바꾸고, 다른 장면을 그리기 전에 되돌린다 */
+  var gfxOn = null;
+  function gfxSync(g) { if (g === gfxOn) return; if (gfxOn) gfxOn.leave(renderer, post); gfxOn = g; if (g) g.enter(renderer, post); }
 
   function place(obj, x, z, lift) { obj.position.set(x, H(x, z) + (lift || 0), z); return obj; }
 
@@ -80,6 +83,7 @@
       gltf.animations.forEach(function (c) { act[c.name] = mixer.clipAction(c); });
       if (!act.Idle) { var first = gltf.animations[0]; if (!first) return; act.Idle = mixer.clipAction(first); }
       Object.keys(once).forEach(function (clip) { if (act[clip]) { act[clip].setLoop(T.LoopOnce, 1); act[clip].clampWhenFinished = true; byPose[once[clip]] = clip; } });
+      Object.keys(opts.loop || {}).forEach(function (clip) { if (act[clip]) byPose[opts.loop[clip]] = clip; });   /* 되풀이하는 자세(예: 모세의 Watch). 없는 클립이면 Idle·Walk 그대로 */
       function play(name, fade) {
         var a = act[name]; if (!a || a === curA) return;
         a.reset(); a.play();
@@ -1332,7 +1336,7 @@
     var horeb = cur === 'scene' || !JL; /* 장면 틀로 만든 3D 장면 */
     if (horeb) {
       if (machine.update) machine.update(now);
-      if (SCN.update) SCN.update(dt, now, { player: player ? player.group.position : null, state: state });
+      if (SCN.update) SCN.update(dt, now, { player: player ? player.group.position : null, state: state, kids: player ? kids : null });
     } else JL.update(dt, now);
     if (player) {
       if (state === 'explore' || state === 'free') {
@@ -1365,6 +1369,7 @@
       if (SCN.menuCam) SCN.menuCam(camera, now);
       else { var a = now * 0.05, fo = P.look.focus; camera.position.set(P.start[0] + Math.sin(a) * 9, H(P.start[0], P.start[1]) + 5.5, P.start[1] + 10); camera.lookAt(fo[0], 4, fo[1]); }
     }
+    gfxSync(horeb && SCN.gfx ? SCN.gfx : null);
     if (horeb && SCN.render) SCN.render(camera, renderer);
     if (FX && player) {
       if (horeb && SCN.audio) SCN.audio(FX.audio, player.group.position); else { FX.audio.setFlock(999); FX.audio.setFire(999); }
@@ -1409,7 +1414,9 @@
     stick: function (x, y) { stick.x = x; stick.y = y; },
     yaw: function (v) { camYaw = v; lastDrag = now + 999; },
     goto: function (x, z) { player.group.position.set(x, H(x, z), z); trail.push([x, z]); },
-    render: function () { var r = renderer.info.render, m = renderer.info.memory; return { calls: r.calls, tris: r.triangles, geo: m.geometries, tex: m.textures }; },   /* 장면이 무거워지지 않았는지 비교용 */
+    render: function () { var r = renderer.info.render, m = renderer.info.memory; return { calls: r.calls, tris: r.triangles, geo: m.geometries, tex: m.textures }; },
+    gfxTune: function (t) { if (SCN.gfx && SCN.gfx.tune) SCN.gfx.tune(t); },
+    gfx: function () { return { on: !!gfxOn, toneMapping: renderer.toneMapping, exposure: renderer.toneMappingExposure, outputEncoding: renderer.outputEncoding, postEncoding: post ? post.encoding : null, bloom: post ? post.strength : null, scene: gfxOn && gfxOn.debug ? gfxOn.debug() : null }; },   /* 장면이 무거워지지 않았는지 비교용 */
     aura: function () { var vis = ['choeon', 'hyu', 'onwoo'].some(function (k) { return kids[k] && kids[k].glow && kids[k].glow.visible && kids[k].glow.material.opacity > 0; }); var op = 0; ['choeon', 'hyu', 'onwoo'].forEach(function (k) { var g = kids[k] && kids[k].glow; if (g && g.visible) op = Math.max(op, g.material.opacity); });
       var pp = player ? player.group.position : null;
       return { visible: vis, op: op, on: auraLast.on, dim: !!auraLast.dim, reason: auraLast.reason, near: auraLast.near, ready: auraLast.ready, state: state, gear: gearStage, cur: cur, id: SCN && SCN.id,
@@ -1430,6 +1437,7 @@
     freeze: function (on) { paused = !!on; },
     grab: function () {
       var rs = (cur === 'scene' || !JL) ? SCN.scene : JL.scene;
+      gfxSync(rs === SCN.scene && SCN.gfx ? SCN.gfx : null);
       if (post) post.render(rs, camera); else renderer.render(rs, camera);
       var cv = document.createElement('canvas'); cv.width = canvas.width; cv.height = canvas.height;
       var cx = cv.getContext('2d'); cx.drawImage(canvas, 0, 0);

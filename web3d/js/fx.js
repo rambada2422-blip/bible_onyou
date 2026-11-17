@@ -160,6 +160,8 @@ window.BO3D = window.BO3D || {};
       return new T.WebGLRenderTarget(ww, hh, opt);
     }
     this.strength = 0.6;
+    /* 렌더 타깃의 출력 색 공간. 기본은 지금까지와 같다(Linear). 장면 그래픽 설정(gfx_horeb.js)이 들어올 때 바꾸고 나갈 때 되돌린다 */
+    this.encoding = T.LinearEncoding;
     this.setSize = function () {
       var v = new T.Vector2(); renderer.getDrawingBufferSize(v);
       if (v.x === w && v.y === h && rtScene) return;
@@ -173,6 +175,7 @@ window.BO3D = window.BO3D || {};
     this.render = function (scene, camera) {
       if (!ok) { renderer.setRenderTarget(null); renderer.render(scene, camera); return; }
       self.setSize();
+      if (rtScene.texture.encoding !== self.encoding) { rtScene.texture.encoding = self.encoding; rtGlow.texture.encoding = self.encoding; }
       var bg = scene.background, fog = scene.fog, mask = camera.layers.mask;
       /* 1. 평소 장면 */
       renderer.setRenderTarget(rtScene); renderer.setClearColor(0x000000, 1); renderer.clear();

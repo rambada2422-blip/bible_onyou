@@ -146,6 +146,7 @@ window.BO3D = window.BO3D || {};
     g.computeVertexNormals();
     var mesh = new T.Mesh(g, new T.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1, metalness: 0 }));
     mesh.receiveShadow = true;
+    mesh.userData.gfx = 'ground';   /* 그래픽 시험(gfx_horeb.js)이 모래·바위 무늬를 입힐 곳 */
     return mesh;
   }
   /* 떨기나무 언덕: 0.56m 간격의 촘촘한 그물. 비탈은 층진 바위 색, 꼭대기는 자갈 섞인 흙 */
@@ -177,6 +178,7 @@ window.BO3D = window.BO3D || {};
     g.setAttribute('color', new T.BufferAttribute(col, 3));
     var mesh = new T.Mesh(g, new T.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1, metalness: 0 }));
     mesh.receiveShadow = true; mesh.castShadow = true;
+    mesh.userData.gfx = 'ground';
     return mesh;
   }
 
@@ -191,12 +193,15 @@ window.BO3D = window.BO3D || {};
       col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
     }
     g.setAttribute('color', new T.BufferAttribute(col, 3));
-    return new T.Mesh(g, new T.MeshBasicMaterial({ vertexColors: true, side: T.BackSide, fog: false, depthWrite: false }));
+    var sk = new T.Mesh(g, new T.MeshBasicMaterial({ vertexColors: true, side: T.BackSide, fog: false, depthWrite: false }));
+    sk.userData.gfx = 'sky';
+    return sk;
   }
 
   function clouds() {
     var grp = new T.Group(), r = rng(77);
     var mat = new T.MeshBasicMaterial({ color: '#FFF6E4', transparent: true, opacity: 0.9, fog: false });
+    grp.userData.gfx = 'sky';
     for (var i = 0; i < 9; i++) {
       var cl = new T.Group(), n = 3 + Math.floor(r() * 3);
       for (var k = 0; k < n; k++) {

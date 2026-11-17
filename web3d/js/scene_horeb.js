@@ -32,23 +32,38 @@
     moses.group.rotation.y = Math.PI * 0.8;
     if (moses.setPose) moses.setPose('approach');
     var mosesPose = 'approach';
+    /* 그래픽 시험(docs/20): 모세 GLB에 평범한 동작 둘을 더했다(tools/blender/moses_b2_rig.py).
+       watch = 양 떼를 살피며 고개를 천천히 돌린다(출 3:1), lookup = 고개를 들어 언덕 위를 올려다본다(출 3:2-3). 코드로 만든 대체 모형은 이 자세를 모르므로 그대로 서 있다 */
+    function pose(name) { mosesPose = name; if (moses.setPose) moses.setPose(name); }
     api.person('moses', function (nm) {
       nm.group.position.copy(moses.group.position); nm.group.rotation.y = moses.group.rotation.y;
+      nm.group.userData.gfx = 'moses';
       scene.remove(moses.group); scene.add(nm.group);
       var setP = nm.setPose; nm.setPose = function (name) { mosesPose = name; setP(name); };
       moses = nm;
       if (mosesPose !== 'approach') { nm.setPose(mosesPose); nm.update(1, false); }
-    }, { once: { HideFace: 'hideface' } });
+    }, { once: { HideFace: 'hideface', LookUp: 'lookup' }, loop: { Watch: 'watch' } });
 
     /* 양 떼 (출 3:1). 40마리를 한 번에 그린다 (web3d/js/flock.js) */
     var flock = null;
     try { if (BO3D.flock) flock = BO3D.flock.create(scene, W, { count: 40 }); } catch (e) { console.error('flock', e); }
 
+    /* 그래픽 시험(gfx_horeb.js): 이 장면에만 색 보정·무늬·바람·먼지를 더한다. 없거나 실패하면 예전 화면 그대로 돈다 */
+    var gfx = null;
+    try { if (BO3D.gfx && BO3D.gfx.horeb && !/nogfx/.test(location.hash)) gfx = BO3D.gfx.horeb({ scene: scene, env: env, W: W, FX: FX }); } catch (e) { console.error('gfx', e); gfx = null; }
+
     /* 모세는 양 떼 곁에서 출발해 언덕의 완만한 서쪽 어깨로 올라가 떨기나무 앞에 선다 */
     var walking = false, arrived = false, leg = 0, hold = 0;
     function lerpAngle(a, b, t) { var d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; }
     function moveMoses(dt) {
-      if (!walking) { if (moses.update) moses.update(dt, false); return; }
+      if (!walking) {
+        if (!arrived) {   /* 서 있는 동안: 양 떼를 살핀다. 기슭에서 기다리다 떨기나무에 불이 붙으면 그쪽으로 돌아서서 올려다본다 */
+          var q = moses.group.position, lookNow = bushLit && leg >= P.mosesFoot, want = lookNow ? 'lookup' : 'watch';
+          if (want !== mosesPose) pose(want);
+          if (lookNow) moses.group.rotation.y = lerpAngle(moses.group.rotation.y, Math.atan2(P.bush[0] - q.x, P.bush[1] - q.z), Math.min(1, dt * 2.5));
+        }
+        if (moses.update) moses.update(dt, false); return;
+      }
       var p = moses.group.position, tg = P.mosesPath[leg], dx = tg[0] - p.x, dz = tg[1] - p.z, d = Math.sqrt(dx * dx + dz * dz);
       if (d < 0.25) {
         leg++;
@@ -71,7 +86,7 @@
     function dist2(ax, az, bx, bz) { var dx = ax - bx, dz = az - bz; return Math.sqrt(dx * dx + dz * dz); }
 
     return {
-      id: 'OT-09', scene: scene, sun: env.sun, sunOff: [-38, 46, 30],
+      id: 'OT-09', scene: scene, sun: env.sun, sunOff: [-38, 46, 30], gfx: gfx,
       height: W.height, walkable: W.walkable,
       /* 언덕에는 오르지 않는다 (세 아이는 목격자) */
       edge: function (x, z) { return W.hill(x, z) >= 0.75 ? (HQ ? HQ.edge : { who: 'onwoo', text: '여기까지만 가자. 우리는 지켜보는 사람이야.' }) : null; },
@@ -103,18 +118,18 @@
       reset: function () {
         walking = false; arrived = false; leg = 0; hold = 0; setBushLit(false); stillT = 0; lastX = null; metSheep = false;
         place(moses.group, P.mosesStart[0], P.mosesStart[1]); moses.group.rotation.y = Math.PI * 0.8;
-        if (moses.setPose) moses.setPose('approach');
+        pose('approach');
         if (flock) flock.reset();
       },
       /* 부품 i를 주운 때: 부품 2(출 3:2-3 대목) 뒤부터 떨기나무의 불이 보인다 */
       partFound: function (i) { if (i === 1) setBushLit(true); },
       /* 대목을 읽고 다시 탐험할 때: 3:1 뒤에는 언덕 기슭까지만, 3:2-3(보려고 감) 뒤에 언덕에 오른다 */
       partContinue: function (i) {
-        if (i === 0) { walking = true; leg = 0; hold = P.mosesFoot; }
-        if (i === 1) { hold = 0; if (leg < P.mosesPath.length) walking = true; }
+        if (i === 0) { walking = true; leg = 0; hold = P.mosesFoot; pose('approach'); }
+        if (i === 1) { hold = 0; if (leg < P.mosesPath.length) { walking = true; pose('approach'); } }
       },
       lookupPose: function () {
-        walking = false; arrived = true; setBushLit(true);
+        walking = false; arrived = true; setBushLit(true); pose('approach');
         place(moses.group, P.mosesEnd[0], P.mosesEnd[1]);
         moses.group.rotation.y = Math.atan2(P.bush[0] - P.mosesEnd[0], P.bush[1] - P.mosesEnd[1]);
         if (flock) flock.settle();
@@ -122,7 +137,7 @@
       /* 대목마다 모세의 자세. 영상에서 이미 얼굴을 가렸으면 그대로 둔다 */
       beatPose: function (i, afterVision) {
         var hide = i >= 4; /* 출 3:6부터 얼굴을 가림 */
-        if (moses.setPose) moses.setPose(afterVision || hide ? 'hideface' : 'approach');
+        pose(afterVision || hide ? 'hideface' : 'approach');
       },
       update: function (dt, now, ctx) {
         if (bush.update) bush.update(now);
@@ -134,8 +149,12 @@
           flock.setAvoid(ctx.player); flock.update(dt, now, moses.group.position, walking, leg);
         }
         moveMoses(dt);
+        if (gfx) gfx.update(dt, now, { kids: ctx.kids, moses: moses.group.position, flock: flock });
       },
-      render: function (camera, renderer) { if (bushFx && bushLit) bushFx.update(api.now(), camera, renderer.domElement.height); },
+      render: function (camera, renderer) {
+        if (bushFx && bushLit) bushFx.update(api.now(), camera, renderer.domElement.height);
+        if (gfx) gfx.render(camera, renderer);
+      },
       audio: function (A, pp) {
         if (flock) { var c = flock.center(); A.setFlock(dist2(pp.x, pp.z, c.x, c.z)); } else A.setFlock(999);
         A.setFire(bushLit ? dist2(pp.x, pp.z, P.bush[0], P.bush[1]) : 999);
@@ -147,7 +166,7 @@
       },
       debug: {
         moses: function () { return { key: moses.key || 'code', pose: mosesPose }; },
-        flock: function () { return flock ? { n: flock.count, c: flock.center(), friend: flock.friendDist(), met: metSheep } : null; },
+        flock: function () { return flock ? { n: flock.count, c: flock.center(), friend: flock.friendDist(), met: metSheep, beh: flock.behaviors ? flock.behaviors() : null } : null; },
         arrived: function () { return arrived; },
         P: P
       }
