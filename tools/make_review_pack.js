@@ -455,7 +455,11 @@ const scopeItems = items.filter((it) => it.kind === 'open' && it.core && /감수
 
 /* ───────── 4. 숫자 대조 ───────── */
 const REQ_N = scenes.filter((d) => d.review.required).length;
-const TABLE_REQ = rd('docs/09_구약전체_장면표.md').split('\n').filter((l) => /\| OT-\d\d \|/.test(l) && /\|\s*예[^|]*\|\s*$/.test(l)).length;
+const TABLE_REQ_IDS = rd('docs/09_구약전체_장면표.md').split('\n').filter((l) => /\| OT-\d\d \|/.test(l) && /\|\s*예[^|]*\|\s*$/.test(l)).map((l) => l.match(/OT-\d\d/)[0]);
+const TABLE_REQ = TABLE_REQ_IDS.length;
+/* 장면 자료가 장면표보다 넓게 감수 필수로 올린 장면(자동 작업 verify 갈래, 대표 결재지 마30). 장면표의 "예"가 빠지는 쪽은 틀림으로 본다 */
+const REQ_EXTRA = scenes.filter((d) => d.review.required && !TABLE_REQ_IDS.includes(d.id)).map((d) => d.id);
+const REQ_MISSING = TABLE_REQ_IDS.filter((id) => !(scenes.find((d) => d.id === id) || { review: {} }).review.required);
 const cnt = (k) => items.filter((it) => it.kind === k).length;
 const scenesWith = (k) => new Set(items.filter((it) => it.kind === k).map((it) => it.scene)).size;
 const COUNTS = [
@@ -470,7 +474,8 @@ const COUNTS = [
   ['3D 설정', String(cnt('scene3d')), '12(3D 장면)' + (EXTRA3D.length ? ' + 장면표 밖 ' + EXTRA3D.length : ''), cnt('scene3d') === 12 + EXTRA3D.length && BASE3D.every((id) => scene3d[id]),
     '호렙 산(OT-09) 포함' + (EXTRA3D.length ? '. 장면표 밖에 새로 만든 3D 장면: ' + EXTRA3D.join('·') + '(대표 결재지 마1)' : '')],
   ['검증자가 남긴 것(미해결)', String(cnt('open')), '—', true, '검증 기록 10개에서 뽑은 전체. 분류는 아래'],
-  ['감수 필수 장면', String(REQ_N), '장면표(`docs/09`) "예" ' + TABLE_REQ, REQ_N === TABLE_REQ, '']
+  ['감수 필수 장면', String(REQ_N), '장면표(`docs/09`) "예" ' + TABLE_REQ + (REQ_EXTRA.length ? ' + 장면 자료에서 더함 ' + REQ_EXTRA.length : ''), REQ_MISSING.length === 0 && REQ_N === TABLE_REQ + REQ_EXTRA.length,
+    (REQ_EXTRA.length ? '장면 자료가 장면표보다 넓게 올린 장면: ' + REQ_EXTRA.join('·') + '(대표 결재지 마30)' : '') + (REQ_MISSING.length ? ' 장면표는 "예"인데 장면 자료가 아닌 장면: ' + REQ_MISSING.join('·') : '')]
 ];
 const openBy = {}; items.filter((it) => it.kind === 'open').forEach((it) => { openBy[it.to] = (openBy[it.to] || 0) + 1; });
 const coreItems = items.filter((it) => it.core);
