@@ -1,0 +1,4 @@
+{ "name": "Rehoboam", "note": "솔로몬의 아들 르호보암(왕상 12:1-24). 왕이 될 때 마흔한 살이었다(14:21). 이 본문은 생김새와 옷을 말하지 않는다. 어른이라 짧지 않은 수염을 둔다. 왕관과 지팡이는 그리지 않는다. 다윗 왕(davidking.json)과 구별되게 옷 색을 다르게. 수염과 옷 색은 감수 대상.",
+  "beard": "full", "staff": false,
+  "colors": { "ROBE": "#2E5A62", "ROBE_SH": "#21434A", "ROBE_HI": "#3E6E76", "TUNIC": "#E8DEC6", "BEARD": "#2A211C", "BEARD_SH": "#201914", "BROW": "#2A211C", "HAIR": "#2A211C",
+              "CLOTH": "#D8C590", "CLOTH_SH": "#BFAC78", "BELT": "#B9893E", "BELT_SH": "#8E6A2E" } }
