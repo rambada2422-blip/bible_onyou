@@ -7,6 +7,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 const doHelp = require('./lib/help.js');
+const doWind = require('./lib/wind.js');
 const GR = require('./lib/growth.js');
 const out = process.argv[2] || '/tmp/growth';
 fs.mkdirSync(out, { recursive: true });
@@ -71,6 +72,7 @@ const ok = (cond, where, what) => { if (!cond) probs.push(where + ': ' + what); 
           return { type: q.type, good: !!sh.querySelector('.note.good') };
         });
         ok(r.good, where, '물음(' + r.type + ')을 풀지 못함');
+        await doWind(p);   /* 처음 얻는 양털은 바람에 날아가 다시 찾는다(시범 2026-11-17) */
       }
       if (s.k === 'mat') {
         const r = await p.evaluate(async (scan) => {
@@ -84,6 +86,7 @@ const ok = (cond, where, what) => { if (!cond) probs.push(where + ': ' + what); 
           out.got = !!document.querySelector('.ot3 .matcard');
           return out;
         }, !!o.scan);
+        const wd = await doWind(p); if (wd && !r.skip) r.got = wd.card;
         if (!r.skip) { ok(r.got, where, '숨은 재료를 찾지 못함'); if (res.scan === null) res.scan = r; }
       }
       if (s.k === 'help') { const h = await doHelp(p); ok(h && h.enabled && h.good && h.said, where, '현장 돕기를 마치지 못함'); }
@@ -218,7 +221,7 @@ const ok = (cond, where, what) => { if (!cond) probs.push(where + ': ' + what); 
     const p = await open('t1');
     await toMap(p, 1);
     const h0 = await head(p);
-    const m0 = await p.evaluate(() => ({ on: document.querySelectorAll('.ot3 .rm-machine .mp.on').length, all: document.querySelectorAll('.ot3 .rm-machine .mp').length, fixed: BO3D.story.progressSummary().fixedEras }));
+    const m0 = await p.evaluate(() => ({ on: document.querySelectorAll('.ot3 .denent .dl.on').length, all: document.querySelectorAll('.ot3 .denent .dl').length, fixed: BO3D.story.progressSummary().fixedEras })   /* 시범(2026-11-17): 지도 맨 위 그림이 덜컹이로 바뀌었다. 고친 시대만큼 계기판 불이 켜진다 */);
     ok(m0.all === 10 && m0.on === m0.fixed, 'T1 타임머신 그림(보완 3차 ⑤)', JSON.stringify(m0));
     ok(h0 && h0.includes('0단계') && h0.includes('탐험 모자까지 1장면'), 'T1 지도 머리(시작)', h0);
     const r = await play(p, 'OT-01');

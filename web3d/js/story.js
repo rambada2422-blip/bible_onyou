@@ -111,7 +111,31 @@
   }
 
   /* ── 처음: 비상 착륙 (탐험대 이야기) ── */
+  function DEN() { return BO3D.den || null; }
+  function rvChip(n, why) { return U.rv ? U.rv(n, why) : null; }
+  function sfx(n) { if (U.sfx) U.sfx(n); }
+  /* 도입 장면(시범, 2026-11-17): 덜컹이가 흔들리고 부속이 떨어져 나가고 계기판이 꺼진다. 글은 한 화면에 한두 문장. 건너뛸 수 있다 */
+  function intro4(then) {
+    cur.screen = 'intro';
+    var TI = OT.threads.intro, D = DEN(), i = 0, calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function end() { PG.seenIntro = 1; save(); then(); }
+    function step() {
+      var sn = TI.scenes[i], last = i === TI.scenes.length - 1, lit = [];
+      for (var k = 0; k < 10; k++) lit.push(sn.art === 'fly' || sn.art === 'shake');
+      var stage = el('div', { class: 'in-stage a-' + sn.art + (calm ? ' calm' : ''), html: '<i class="in-stars"></i><i class="in-ground"></i><div class="in-dk">' + D.extArt({ sad: sn.art !== 'fly', lights: lit }) + '</div><i class="in-smoke s1"></i><i class="in-smoke s2"></i>' });
+      var line = sn.who === 'doctor' ? doctor(sn.text) : sn.who === 'narr' ? el('p', { class: 'narr in-cap', text: sn.text }) : U.say(sn.who, sn.text);
+      var b = el('div', { class: 'sheet-body pad' }), f = el('div', { class: 'sheet-foot pad' });
+      add(b, [el('div', { class: 'eyebrow dark' }, '탐험대 이야기', rvChip(TI.rv, TI.why)), el('h2', { class: 'ot-title', text: TI.title }), line, last ? el('p', { class: 'den-msg ot-rule', text: TI.rule }) : null]);
+      add(f, [last ? null : btn('건너뛰기', end, 'plain'), btn(last ? '시대 지도 보기' : '다음', function () { if (last) end(); else { i++; step(); } }, last ? 'wide' : null)]);
+      box.replaceChildren(stage, el('div', { class: 'ot-sheet sheet' }, b, f));
+      box.className = 'ot3 intro intro4'; box.hidden = false;
+      var a = FX() && FX().audio;
+      if (a) { try { a.start(); if (sn.art === 'shake') { a.thud(0.7); a.rumble(2.2, 0.5); setTimeout(function () { a.clunk(); }, 500); setTimeout(function () { a.clunk(); }, 1100); } else if (sn.art === 'dark') { a.creak(); } else if (sn.art === 'land' && TI.scenes[i - 1] && TI.scenes[i - 1].art !== 'land') { a.thud(0.5); } } catch (e) { /* 소리 없이 진행 */ } }
+    }
+    step();
+  }
   function intro(then) {
+    if (OT.threads && OT.threads.intro && DEN()) { intro4(then); return; }
     cur.screen = 'intro';
     var st = OT.story, i = 0;
     function line(l) {
@@ -134,14 +158,16 @@
     enterStory(); bgmStop();
     if (!PG.seenIntro) { intro(function () { openMap(); }); return; }
     cur.screen = 'map'; cur.id = null;
+    if (DEN()) DEN().hide();
+    var wantMarks = DEN() ? DEN().marks() : {};
     var eras = OT.eras.map(function (e) {
       var open = eraOpen(e.era), em = eraMats(e), fixed = em.all && em.got === em.all;
       var cards = e.scenes.map(function (id) {
-        var d = sc(id), done = PG.done[id];
-        return el('button', { class: 'otc' + (done ? ' done' : '') + (open ? '' : ' locked'), 'data-id': id, on: { click: function () { if (open) openScene(id); else lockNote(e); } } },
+        var d = sc(id), done = PG.done[id], want = wantMarks[id];
+        return el('button', { class: 'otc' + (done ? ' done' : '') + (open ? '' : ' locked') + (want ? ' want' : ''), 'data-id': id, on: { click: function () { if (open) openScene(id); else lockNote(e); } } },
           el('span', { class: 'n', text: id.replace('OT-', '') }),
           el('span', { class: 'tt' }, el('b', { text: d.title }), el('small', { text: U.bookName(d.ref) })),
-          el('span', { class: 'bd' }, d.has3d ? el('i', { class: 'b3', text: '3D' }) : null, d.review && d.review.required ? el('i', { class: 'br', text: '감수 필수' }) : null, done ? el('i', { class: 'bk', text: '마침' }) : null));
+          el('span', { class: 'bd' }, want ? el('i', { class: 'bw', title: '설계도의 재료가 있는 장면', text: '🔧 설계도' }) : null, d.has3d ? el('i', { class: 'b3', text: '3D' }) : null, d.review && d.review.required && (!U.rvOn || U.rvOn()) ? el('i', { class: 'br', title: (d.review.topics || []).join(', '), text: '감수 ★★★' }) : null, done ? el('i', { class: 'bk', text: '마침' }) : null));
       });
       var nd = e.scenes.filter(function (id) { return PG.done[id]; }).length;
       return el('section', { class: 'ote' + (open ? '' : ' locked'), id: 'ote-' + e.era },
@@ -159,13 +185,14 @@
       el('div', { class: 'otstat' },
         el('span', { class: 'count teal', text: '마친 장면 ' + doneCount() + ' / ' + OT.order.length }),
         el('span', { class: 'count', text: '모은 재료 ' + matCount() + ' / ' + MAT_TOTAL })),
-      repairMeter(), growthHead(),
+      denEntry(), repairMeter(), growthHead(),
       el('p', { class: 'den-lead', text: '시대마다 타임머신 부속을 고쳐요. 앞 시대의 장면 하나를 마치면 다음 시대로 가는 길이 열려요.' }),
       eras,
       el('div', { class: 'otmap-foot' },
         GR() ? btn('탐험 기록장', function () { openRecord(); }, 'quiet') : null,
         btn('수리 현황', openRepair, 'quiet'), btn('비상 착륙 이야기', function () { intro(function () { openMap(); }); }, 'quiet'),
         btn(PG.unlockAll ? '시대 잠금 다시 켜기' : '모든 시대 열기(부모·교사)', function () { PG.unlockAll = !PG.unlockAll; save(); openMap(); }, 'quiet'),
+        U.rvOn ? btn(U.rvOn() ? '감수 태그 숨기기' : '감수 태그 보이기', function () { U.rvSet(!U.rvOn()); openMap(); }, 'quiet') : null,
         /#log/.test(location.hash) ? btn('놀이 기록 보기', openLog, 'quiet') : null,
         BO3D.bgmCredits ? btn('음악 출처', openCredits, 'quiet') : null,
         btn('처음 화면', function () { closeAll(); var g = G(); if (g) g.menu(); }, 'quiet')),
@@ -178,6 +205,15 @@
     if (scrollTo) { var t = document.getElementById('ote-' + scrollTo); if (t) list.scrollTop = t.offsetTop - 8; }
   }
 
+  /* 아지트로 들어가는 문(시범): 덜컹이 그림과 지금의 소식 한 줄. 소식이 있으면 두드러지게 */
+  function denEntry() {
+    var D = DEN(); if (!D) return null;
+    var nw = D.news(), fe = fixedCount(), lit = [];
+    for (var k = 0; k < 10; k++) lit.push(k < fe);
+    return el('button', { class: 'denent' + (nw ? ' news' : ''), on: { click: function () { sfx('pop'); D.open(nw ? nw.room : null); } } },
+      el('span', { class: 'de-art', html: D.extArt({ lights: lit }) }),
+      el('span', { class: 'de-t' }, el('small', { text: '탐험대 이야기 · 타임머신 덜컹이' }), el('b', { text: nw ? nw.text : '아지트 들어가기' }), el('em', { text: nw ? '눌러서 들어가요' : '설계도 · 온실 · 작업대 · 일지' })));
+  }
   /* 타임머신 수리 막대: 시대마다 부속 하나. 그 시대의 재료를 다 모으면 부속이 고쳐진다(탐험대 이야기) */
   /* 타임머신 그림(보완 3차 ⑤): 시대 n의 부속이 고쳐지면 n번째 부품이 놋쇠색으로 채워진다. 부품 이름은 탐험대 이야기(창작) */
   var MACHINE_PARTS = ['계기판 덮개', '시간 나침반 받침', '안테나', '바늘구멍 렌즈 창', '연료관', '다리 받침', '놋쇠 띠', '꼭대기 등 갓', '문 손잡이', '시간 계기판 불'];
@@ -201,7 +237,7 @@
     var cells = OT.eras.map(function (e) { var em = eraMats(e), r = em.all ? em.got / em.all : 0; return el('span', { class: 'rm-cell' + (r >= 1 ? ' full' : ''), title: '시대 ' + e.era }, el('i', { style: 'height:' + Math.round(r * 100) + '%' })); });
     var fixed = OT.eras.filter(function (e) { var em = eraMats(e); return em.all && em.got === em.all; }).length;
     var on = OT.eras.map(function (e) { var em = eraMats(e); return !!(em.all && em.got === em.all); });
-    return el('div', { class: 'rmeter' }, el('div', { class: 'rm-machine', role: 'img', 'aria-label': '타임머신 부속 ' + fixed + '개 고침', title: on.map(function (x, i) { return (x ? '✓ ' : '· ') + MACHINE_PARTS[i]; }).join('\n'), html: machineArt(on) }), el('div', { class: 'rm-row' }, cells), el('small', { text: '탐험대 이야기 · 타임머신 부속 ' + fixed + ' / ' + OT.eras.length + ' 고침 (재료 ' + matCount() + ' / ' + MAT_TOTAL + ')' }));
+    return el('div', { class: 'rmeter' }, DEN() ? null : el('div', { class: 'rm-machine', role: 'img', 'aria-label': '타임머신 부속 ' + fixed + '개 고침', title: on.map(function (x, i) { return (x ? '✓ ' : '· ') + MACHINE_PARTS[i]; }).join('\n'), html: machineArt(on) }), el('div', { class: 'rm-row' }, cells), el('small', { text: '탐험대 이야기 · 타임머신 부속 ' + fixed + ' / ' + OT.eras.length + ' 고침 (재료 ' + matCount() + ' / ' + MAT_TOTAL + ')' }));
   }
   function lockNote(e) {
     var nb = box.querySelector('.lock-note'); if (nb) nb.remove();
@@ -304,11 +340,11 @@
         el('div', { class: 'ot-meta' }, refChip(d.ref), el('span', { class: 'ot-place', text: d.place })),
         doctor(m.call ? tx(m.call) : '도착했어! 장면을 끝까지 지켜보고, 수리에 쓸 재료를 찾아보자. 사건이 일어나는 자리에는 다가가지 말자.'),
         (m.materials && m.materials.length) ? el('p', { class: 'ot-soft', text: '이 장면에서 구할 재료 ' + m.materials.length + '가지' }) : null,
-        d.review && d.review.required ? el('p', { class: 'pending', text: '목사님 감수가 꼭 필요한 장면이에요(감수 전).' }) : null];
+        d.review && d.review.required ? el('p', { class: 'pending' }, '목사님 감수가 꼭 필요한 장면이에요(감수 전). ', rvChip(3, (d.review.topics || []).join(', '))) : null];
       if (nb) nb.textContent = m.companion && m.companion.when !== 'after' ? '함께 걷기' : '지켜보러 가기';
     } else if (s.k === 'talk') {
       var cp = m.companion, t = cp.talks[s.i];
-      body = [el('div', { class: 'q-kicker', text: kick + ' · ' + cp.who }),
+      body = [el('div', { class: 'q-kicker' }, kick + ' · ' + cp.who + ' ', rvChip(2, '동행 인물이 성경에 기록된 자기 말만 하는지(13.3)')),
         s.i === 0 ? el('p', { class: 'ot-soft', text: cp.who + josa(cp.who, '와', '과') + ' 함께 걸어요. ' + cp.who + josa(cp.who, '는', '은') + ' 성경에 기록된 자기 말만 해요. 실제 말은 성경책에서 읽어요.' }) : null,
         U.say(t.ask.who, t.ask.text),
         el('div', { class: 'otans' }, el('b', { text: cp.who }), el('p', { text: tx(t.answer) }), refChip(t.ref)),
@@ -326,7 +362,7 @@
       var Q = d.quests[s.i], mt = m.materials[s.i], qq = Q.q[S.tier] || Q.q.t2, got = el('div', {});
       body = [el('div', { class: 'eyebrow dark', text: '탐험대 이야기' }), el('div', { class: 'q-kicker', text: kick + ' · ' + mt.name }),
         el('div', { class: 'bibleq3' }, icon('bookline'), el('span', { text: '성경 물음 · ' + (S.tier === 't1' ? U.chapterOf(qq.ref || d.ref) : (S.tier === 't2' ? U.bookName(qq.ref || d.ref) : U.bookOf(d.ref) + '에서 찾아보세요')) })),
-        U.blockFor(U.quizTier(qq), function () { got.replaceChildren(matCard(mt, Q)); take(mt); ok(); got.scrollIntoView({ block: 'nearest' }); }, 'oq' + s.i), got];
+        U.blockFor(U.quizTier(qq), function () { gain(mt, Q, got, ok); }, 'oq' + s.i), got];
       gated = true;
     } else if (s.k === 'mat') {
       var mm = m.materials[s.i];
@@ -338,7 +374,7 @@
         el('div', { class: 'today3' }, el('small', { text: '지금 우리가 궁금한 것' }), el('b', { text: td.q })),
         doctor(tx(td.a), '최현 박사의 대답 · 근거는 성경 장절'),
         el('div', { class: 'ot-refs' }, td.refs.map(function (r) { return refChip(r); })),
-        el('p', { class: 'pending', text: '오늘의 물음은 목사님 감수를 마치기 전이에요.' })];
+        el('p', { class: 'pending' }, '오늘의 물음은 목사님 감수를 마치기 전이에요. ', rvChip(3, '오늘의 물음은 모두 감수 필수(13.4)'))];
     } else if (s.k === 'finish') {
       finish(d); return;
     }
@@ -362,7 +398,7 @@
   /* 현장 돕기 한 단계(규칙서 13.6). do: 본문에 그 사람들이 했다고 적힌 평범한 일을 누르며 돕는다 / watch: 거룩한 행위는 곁에서 본다
      stay: 함께 기다린다 / ask: 그 뜻을 묻고, 본문에 기록된 말로 답을 듣고, 성경을 펴서 확인한다 */
   function helpNodes(h, hs, kick, ok) {
-    var head = [el('div', { class: 'eyebrow dark', text: '탐험대 이야기 · 현장 돕기' }), el('div', { class: 'q-kicker', text: kick + ' · ' + hs.title })];
+    var head = [el('div', { class: 'eyebrow dark' }, '탐험대 이야기 · 현장 돕기 ', rvChip(hs.kind === 'ask' ? (hs.nt ? 3 : 2) : hs.kind === 'do' ? 2 : 1, hs.kind === 'ask' ? '뜻 묻기: 본문에 기록된 말로만 답하는지(13.6)' + (hs.nt ? ', 신약과의 연결' : '') : hs.kind === 'do' ? '손으로 하는 돕기(13.6·13.7)' : '곁에서 보기·머물기')), el('div', { class: 'q-kicker', text: kick + ' · ' + hs.title })];
     var got = el('div', { class: 'help-got' });
     if (hs.kind === 'do') {
       var left = hs.tasks.length;
@@ -406,7 +442,7 @@
         if (k === spot) {
           tiles.forEach(function (x) { x.disabled = true; }); b.classList.add('hit');
           msg.textContent = tries === 1 ? '한 번에 찾았어요!' : tries + '번 만에 찾았어요!';
-          take(mm); got.replaceChildren(matCard(mm, null)); ok(); got.scrollIntoView({ block: 'nearest' }); mark(cur.id + ' seek-found');
+          gain(mm, null, got, ok); mark(cur.id + ' seek-found');
         } else {
           b.disabled = true; b.classList.add('miss');
           var dist = Math.abs((k % 3) - (spot % 3)) + Math.abs(Math.floor(k / 3) - Math.floor(spot / 3));
@@ -433,6 +469,13 @@
     return [el('div', { class: 'eyebrow dark', text: '탐험대 이야기 · 재료 찾기' }), msg, scanBtn, seekBox, got];
   }
   function go() { if (cur.step < cur.steps.length - 1) { cur.step++; render(); } }
+  /* 재료를 얻는 순간(시범): 처음 얻는 양털은 바람에 날아가 다시 찾는다(한 번만). 그다음 재료 카드와 덜컹이에 끼우기 */
+  function gain(mt, Q, got, ok) {
+    var D = DEN();
+    function fin() { take(mt); sfx('pop'); got.replaceChildren(matCard(mt, Q)); ok(); got.scrollIntoView({ block: 'nearest' }); }
+    if (D && D.windWanted(mt.name)) { got.replaceChildren(D.windGame(fin)); got.scrollIntoView({ block: 'nearest' }); mark(cur.id + ' wind'); return; }
+    fin();
+  }
   function take(mt) { if (mt && mt.key) { PG.mats[cur.id + ':' + mt.key] = 1; save(); } }
   function matCard(mt, Q) {
     return el('div', { class: 'matcard fadein' },
@@ -440,6 +483,7 @@
       U.say(S.ch, mt.line),
       el('p', { class: 'ot-soft', text: mt.how }),
       doctor(mt.use, '최현 박사'),
+      DEN() && cur.id ? DEN().installStrip(cur.id, mt) : null,
       Q && Q.q && Q.q[S.tier] && Q.q[S.tier].after ? el('div', { class: 'note good' }, el('b', { text: Q.q[S.tier].after })) : null);
   }
   function finish(d) {
@@ -454,6 +498,8 @@
         return el('div', { class: 'vcard pop' }, el('div', { class: 'r', text: cd.ref }), el('div', { class: 't', text: cd.title }), el('div', { class: 'm', text: d.title + ' · 성경책에서 직접 읽어 보세요' }));
       }))];
     if (newGear.length) { kids_.push(gearCard(newGear, true)); mark(d.id + ' gear-new'); }
+    var nw = DEN() ? DEN().news() : null;
+    if (nw) kids_.splice(1, 0, el('div', { class: 'closebox dennews pop' }, el('h3', { text: '덜컹이 소식' }), el('p', { text: nw.text }), btn('아지트로', function () { DEN().open(nw.room); }, 'plain')));
     var lastOfEra = e.scenes[e.scenes.length - 1] === d.id, closeAt = kids_.length;
     if (c.kind === 'prayer') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '한 문장 기도' }), el('p', { text: c.text })));
     if (c.kind === 'practice') kids_.push(el('div', { class: 'closebox' }, el('h3', { text: '이번 주 실천 한 가지' }), el('p', { text: c.text })));
@@ -634,7 +680,7 @@
   BO3D.story = {
     fixedEras: function () { return fixedCount(); },   /* 아지트 꾸미기 해금에 쓴다 */
     progressSummary: progressSummary, openRecord: function (tab) { openRecord(tab); }, gearCard: function (list, title) { return gearCard(list, false, title); },
-    open: function () { openMap(); }, openMap: openMap, openScene: openScene, play: play, complete3d: complete3d, close: closeAll, segment: segment, take: function (id, key) { PG.mats[id + ':' + key] = 1; save(); },
+    pg: function () { return PG; }, hide: function () { box.hidden = true; }, open: function () { openMap(); }, openMap: openMap, openScene: openScene, play: play, complete3d: complete3d, close: closeAll, segment: segment, take: function (id, key) { PG.mats[id + ':' + key] = 1; save(); },
     reset: function () { PG = {}; save(); load(); },
     debug: {
       state: function () { return { screen: cur.screen, id: cur.id, step: cur.step, k: cur.k, n: cur.steps.length, done: doneCount(), mats: matCount(), total: MAT_TOTAL }; },

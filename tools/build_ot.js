@@ -42,7 +42,13 @@ function build() {
       if (hit) problems.push('시대 ' + e.era + ': ' + ref + '가 ' + used[key(r.book, hit.c, hit.v)] + '의 대목과 겹침');
     }));
   }
-  const data = { story: E.story, eras: eras, order: order, scenes: scenes };
+  /* 줄기 자료(content/ot/threads/*.json): 도입·설계도·온실·작업대·수첩·기록. 장면 자료 곁에 얹는다. '_'로 시작하는 칸은 뺀다 */
+  const threads = {}, TD = path.join(DIR, 'threads');
+  if (fs.existsSync(TD)) fs.readdirSync(TD).filter((f) => f.endsWith('.json')).sort().forEach((f) => {
+    const t = JSON.parse(fs.readFileSync(path.join(TD, f), 'utf8'));
+    Object.keys(t).forEach((k) => { if (k[0] !== '_') threads[k] = t[k]; });
+  });
+  const data = { story: E.story, eras: eras, order: order, scenes: scenes, threads: threads };
   const js = '/* tools/build_ot.js가 content/ot/에서 만든 파일. 직접 고치지 말 것. */\nwindow.BO3D = window.BO3D || {};\nBO3D.ot = ' + JSON.stringify(data) + ';\n';
   fs.writeFileSync(path.join(root, 'web3d', 'js', 'otdata.js'), js);
   const nm = order.filter((id) => scenes[id].mission).length;

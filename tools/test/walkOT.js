@@ -4,6 +4,7 @@
 // 화면마다 글이 옆으로 넘치지 않는지 보고, 시대의 첫 장면과 몇몇 화면을 찍는다. 끝에 오류 목록을 낸다.
 const { chromium, previewURL } = require('./lib/runtime.js');
 const doHelp = require('./lib/help.js');
+const doWind = require('./lib/wind.js');
 const path = require('path');
 const fs = require('fs');
 const ti = Number(process.argv[2] || '1'), out = process.argv[3] || '/tmp/walkOT', from = Number(process.argv[4] || '1'), to = Number(process.argv[5] || '40');
@@ -14,7 +15,7 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
   const b = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce' })).newPage();
   await p.addInitScript(() => { window.BO3D_TEST = true; });
-  const errs = [], probs = []; let n = 0;
+  const errs = [], probs = []; let n = 0, winds = 0;
   p.on('pageerror', (e) => errs.push('pageerror: ' + e.message));
   p.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
   const shot = async (l) => { n++; await p.screenshot({ path: path.join(out, String(n).padStart(3, '0') + '-' + l + '.png') }); };
@@ -101,9 +102,10 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
       s = await st(); kinds.push(s.k);
       const where = id + ' ' + s.k + ' ' + (s.step + 1) + '/' + s.n;
       if (firstOfEra && ['arrive', 'talk', 'gate', 'quest', 'mat', 'today'].includes(s.k) && !kinds.slice(0, -1).includes(s.k)) await shot(id + '-' + s.k);
-      if (s.k === 'gate' || s.k === 'quest') await solve(where, gi++ === 0);
+      if (s.k === 'gate' || s.k === 'quest') { await solve(where, gi++ === 0); const w0 = await doWind(p); if (w0) { winds++; if (!w0.card) probs.push(where + ': 날아간 양털 뒤에 재료 카드가 없음'); } }
       if (s.k === 'mat') {   /* 숨은 재료 찾기: 다른 곳을 한 번 눌러 탐지기 말을 본 뒤 맞는 곳 */
         const r = await p.evaluate(async () => { const k = BO3D.story.debug.seek(); if (k === null) return { skip: 1 }; const t = [...document.querySelectorAll('.ot3 .seek-t')]; const other = t.find((x, i) => i !== k); other.click(); await new Promise((r) => setTimeout(r, 30)); const msg = document.querySelector('.ot3 .seek-msg').textContent; t[k].click(); await new Promise((r) => setTimeout(r, 30)); return { msg, got: !!document.querySelector('.ot3 .matcard') }; });
+        const w1 = await doWind(p); if (w1) { winds++; r.got = w1.card; }   /* 처음 얻는 양털은 바람에 날아가 다시 찾는다(시범) */
         if (!r.skip && !r.got) probs.push(where + ': 숨은 재료를 찾지 못함');
       }
       if (s.k === 'help') {   /* 현장 돕기(규칙서 13.6) */
@@ -128,6 +130,7 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
   fs.writeFileSync(path.join(out, 'log.txt'), log.join('\n') + '\n');
   console.log(log.join('\n'));
   console.log('단계', ti, '· 장면', from + '~' + to, '· 마친 장면', fin.done, '· 재료', fin.mats + '/' + fin.total, '· 화면', n);
+  if (from === 1 && to >= 9 && winds !== 1) probs.push('날아간 양털은 처음 양털을 얻을 때 한 번만 나와야 함: ' + winds + '번');
   console.log('문제', probs.length, probs.slice(0, 40).join('\n'));
   console.log('오류', errs.length, errs.slice(0, 10).join('\n'));
   await b.close();

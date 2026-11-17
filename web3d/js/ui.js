@@ -11,7 +11,9 @@
     ['삼상', '사무엘상'], ['삼하', '사무엘하'], ['왕상', '열왕기상'], ['왕하', '열왕기하'], ['대상', '역대상'], ['대하', '역대하'], ['스', '에스라'], ['느', '느헤미야'],
     ['에', '에스더'], ['욥', '욥기'], ['시', '시편'], ['잠', '잠언'], ['전', '전도서'], ['아', '아가'], ['사', '이사야'], ['렘', '예레미야'], ['애', '예레미야애가'],
     ['겔', '에스겔'], ['단', '다니엘'], ['호', '호세아'], ['욜', '요엘'], ['암', '아모스'], ['옵', '오바댜'], ['욘', '요나'], ['미', '미가'], ['나', '나훔'], ['합', '하박국'],
-    ['습', '스바냐'], ['학', '학개'], ['슥', '스가랴'], ['말', '말라기']];
+    ['습', '스바냐'], ['학', '학개'], ['슥', '스가랴'], ['말', '말라기'],
+    /* 신약(줄기 자료의 '신약에서 이어 읽기'에 쓰는 책만) */
+    ['요', '요한복음'], ['고전', '고린도전서']];
   var BOOK = {}; BOOKS.forEach(function (b) { BOOK[b[0]] = b[1]; });
 
   function el(tag, props) {
@@ -214,7 +216,10 @@
     var rb = el('button', { class: 'btn plain', on: { click: function () { reset(); noteBox.replaceChildren(); } } }, '다시 놓기');
     return [q.ref ? readCard([q.ref], q.prompt) : el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' }, btns), rb, noteBox];   /* 읽을 곳을 먼저 보여 준다(13.5) */
   }
-  function blockFor(q, onOk, idp) {
+  /* 맞혔을 때의 작은 소리(놀이 고리, 2026-11-17). 소리 끄기 상태를 따른다 */
+  function sfx(name) { try { var a = BO3D.fx && BO3D.fx.audio; if (a && a[name]) { a.start(); a[name](); } } catch (e) { /* 소리 없이 진행 */ } }
+  function blockFor(q, onOk0, idp) {
+    var onOk = function () { sfx('ding'); onOk0(); };
     if (q.type === 'choice') return choiceBlock(q, q.ref, onOk);
     if (q.type === 'find') return findBlock(q, onOk);
     if (q.type === 'findref') return findrefBlock(q, onOk, idp);
@@ -231,8 +236,19 @@
     return c;
   }
   function btn(label, fn, cls) { return el('button', { class: 'btn ' + (cls || 'onpaper'), on: { click: fn } }, label); }
+  /* 감수 태그(규칙서 13.11): ★ 가벼움 · ★★ 중요 · ★★★ 필수. 누르면 까닭이 보인다. 지도 아래에서 끌 수 있다 */
+  var RVK = 'bo3d.rv.show';
+  function rvOn() { try { return localStorage.getItem(RVK) !== '0'; } catch (e) { return true; } }
+  function rvSet(on) { try { localStorage.setItem(RVK, on ? '1' : '0'); } catch (e) { /* 이번 방문 동안만 */ } }
+  function rv(level, why) {
+    level = Math.max(0, Math.min(3, level | 0));
+    if (!level || !rvOn()) return null;
+    var names = ['', '가벼움', '중요', '필수'], note = el('small', { class: 'rv-why', hidden: '', text: '감수 ' + names[level] + (why ? ' · ' + why : '') });
+    var b = el('button', { class: 'rv3 rv' + level, type: 'button', 'aria-label': '감수 태그 ' + names[level], on: { click: function (e) { e.stopPropagation(); note.hidden = !note.hidden; } } }, '감수 ' + '★★★'.slice(0, level));
+    return el('span', { class: 'rvw' }, b, note);
+  }
 
-  BO3D.ui = { S: S, el: el, add: add, tx: tx, icon: icon, refChip: refChip, avatar: avatar, say: say, bookName: bookName, bookOf: bookOf, chapterOf: chapterOf, books: BOOKS,
+  BO3D.ui = { rv: rv, rvOn: rvOn, rvSet: rvSet, sfx: sfx, S: S, el: el, add: add, tx: tx, icon: icon, refChip: refChip, avatar: avatar, say: say, bookName: bookName, bookOf: bookOf, chapterOf: chapterOf, books: BOOKS,
     goodNote: goodNote, lookNote: lookNote, choiceBlock: choiceBlock, findBlock: findBlock, findrefBlock: findrefBlock, orderBlock: orderBlock, blockFor: blockFor, quizTier: quizTier, btn: btn,
     setScene: setScene, inScene: inScene, openFor: openFor, shuffled: shuffled, optKey: optKey };
 })();

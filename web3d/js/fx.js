@@ -340,9 +340,22 @@ window.BO3D = window.BO3D || {};
       if (on && !pulseT) { var nb2 = 0, beat = function () { if (++nb2 > 14) { clearInterval(pulseT); pulseT = null; return; } var t = ctx.currentTime; tone(55, t, 0.18, 0.12, 'sine'); tone(52, t + 0.22, 0.16, 0.08, 'sine'); }; beat(); pulseT = setInterval(beat, 1300); }   /* 열네 번 뒤에는 저절로 멎는다 */
       else if (!on && pulseT) { clearInterval(pulseT); pulseT = null; }
     }
+    /* 놀이 고리의 작은 소리(2026-11-17 시범): 맞혔을 때, 찾았을 때, 부속이 맞아 들어갈 때, 바람 */
+    function ding() { if (!ctx) return; var t = ctx.currentTime; tone(783.99, t, 0.22, 0.12, 'triangle'); tone(1174.66, t + 0.11, 0.38, 0.12, 'triangle'); }
+    function pop() { if (!ctx) return; var t = ctx.currentTime; tone(523.25, t, 0.12, 0.13, 'sine'); tone(1046.5, t + 0.05, 0.16, 0.1, 'sine'); }
+    function fanfare() { if (!ctx) return; var t = ctx.currentTime; [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach(function (f, i) { tone(f, t + i * 0.1, i === 4 ? 0.9 : 0.3, 0.13, 'triangle'); }); }
+    function clunk() { if (!ctx) return; var t = ctx.currentTime; tone(180, t, 0.09, 0.2, 'square'); tone(120, t + 0.07, 0.14, 0.16, 'square'); }
+    function creak() { if (!ctx) return; var t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(420, t); o.frequency.linearRampToValueAtTime(610, t + 0.35); o.frequency.linearRampToValueAtTime(380, t + 0.7);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.75); o.connect(g); g.connect(sfx); o.start(t); o.stop(t + 0.8); }
+    function gust(sec) {
+      if (!ctx) return; sec = sec || 1.4; var t = ctx.currentTime, s = ctx.createBufferSource(); s.buffer = noiseBuf(Math.ceil(sec) + 1);
+      var f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(1500, t + sec * 0.5); f.frequency.exponentialRampToValueAtTime(400, t + sec); f.Q.value = 0.9;
+      var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + sec * 0.35); g.gain.exponentialRampToValueAtTime(0.0001, t + sec);
+      s.connect(f); f.connect(g); g.connect(sfx); s.start(t); s.stop(t + sec + 0.1);
+    }
     function mute(m) { muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); }
     /* 배경음악(bgm.js)이 음악 묶음에 연결할 수 있게 소리 장치와 음악 묶음을 내어 준다 (2026-11-16) */
-    return { start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, rumble: rumble, thud: thud, pulse: pulse, mute: mute, isMuted: function () { return muted; },
+    return { start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, ding: ding, pop: pop, fanfare: fanfare, clunk: clunk, creak: creak, gust: gust, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, rumble: rumble, thud: thud, pulse: pulse, mute: mute, isMuted: function () { return muted; },
       context: function () { return ctx; }, musicBus: function () { return music; } };
   })();
 
