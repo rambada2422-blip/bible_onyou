@@ -3,3 +3,4 @@ node_modules/
 __pycache__/
 ref/
 .venv-bpy/
+.claude/
