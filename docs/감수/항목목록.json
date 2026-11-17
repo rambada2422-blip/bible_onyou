@@ -1,5 +1,5 @@
 {
- "version": "a4be56af",
+ "version": "73b5c349",
  "note": "감수 자료의 항목 목록. node tools/make_review_pack.js 가 만든다. core=목회자가 표시하는 항목, src=그 글이 있는 곳",
  "counts": [
   {
@@ -324,6 +324,17 @@
    "src": "docs/00_공통규칙서.md"
   },
   {
+   "id": "여쭘·마25",
+   "kind": "common",
+   "label": "대표가 여쭙는 것",
+   "scene": null,
+   "era": null,
+   "core": true,
+   "first30": 0,
+   "chars": 235,
+   "src": "docs/00_공통규칙서.md"
+  },
+  {
    "id": "여쭘·마26",
    "kind": "common",
    "label": "대표가 여쭙는 것",
@@ -332,6 +343,17 @@
    "core": true,
    "first30": 0,
    "chars": 303,
+   "src": "docs/00_공통규칙서.md"
+  },
+  {
+   "id": "여쭘·마36",
+   "kind": "common",
+   "label": "대표가 여쭙는 것",
+   "scene": null,
+   "era": null,
+   "core": true,
+   "first30": 0,
+   "chars": 410,
    "src": "docs/00_공통규칙서.md"
   },
   {
