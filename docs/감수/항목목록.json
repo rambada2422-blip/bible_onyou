@@ -1,5 +1,5 @@
 {
- "version": "73b5c349",
+ "version": "06cf04d7",
  "note": "감수 자료의 항목 목록. node tools/make_review_pack.js 가 만든다. core=목회자가 표시하는 항목, src=그 글이 있는 곳",
  "counts": [
   {
@@ -40,7 +40,7 @@
   },
   {
    "name": "코드에 들어 있는 화면 글",
-   "got": "563줄 + 3D 장면 12개의 도감·안내",
+   "got": "692줄 + 3D 장면 12개의 도감·안내",
    "expect": "—",
    "ok": true
   },
@@ -52,8 +52,8 @@
   },
   {
    "name": "3D 설정",
-   "got": "12",
-   "expect": "12(3D 장면)",
+   "got": "30",
+   "expect": "12(3D 장면) + 장면표 밖 18",
    "ok": true
   },
   {
@@ -64,8 +64,8 @@
   },
   {
    "name": "감수 필수 장면",
-   "got": "24",
-   "expect": "장면표(`docs/09`) \"예\" 24",
+   "got": "26",
+   "expect": "장면표(`docs/09`) \"예\" 24 + 장면 자료에서 더함 2",
    "ok": true
   }
  ],
@@ -232,7 +232,7 @@
    "era": null,
    "core": true,
    "first30": 0,
-   "chars": 1944,
+   "chars": 4366,
    "src": "docs/00_공통규칙서.md"
   },
   {
@@ -243,7 +243,7 @@
    "era": null,
    "core": true,
    "first30": 0,
-   "chars": 1987,
+   "chars": 3057,
    "src": "docs/00_공통규칙서.md"
   },
   {
@@ -254,7 +254,7 @@
    "era": null,
    "core": false,
    "first30": 0,
-   "chars": 2294,
+   "chars": 3586,
    "src": "docs/00_공통규칙서.md"
   },
   {
@@ -265,7 +265,7 @@
    "era": null,
    "core": true,
    "first30": 0,
-   "chars": 5729,
+   "chars": 5718,
    "src": "docs/00_공통규칙서.md"
   },
   {
@@ -375,7 +375,7 @@
    "era": 1,
    "core": true,
    "first30": 0,
-   "chars": 520,
+   "chars": 531,
    "src": "content/ot/eras.json"
   },
   {
@@ -463,7 +463,7 @@
    "era": 1,
    "core": false,
    "first30": 0,
-   "chars": 1985,
+   "chars": 1994,
    "src": "content/ot/OT-01.json"
   },
   {
@@ -671,7 +671,7 @@
    "era": 1,
    "core": true,
    "first30": 0,
-   "chars": 3813,
+   "chars": 3845,
    "src": "content/ot/OT-03.json"
   },
   {
@@ -693,7 +693,7 @@
    "era": 1,
    "core": true,
    "first30": 0,
-   "chars": 1029,
+   "chars": 1024,
    "src": "content/ot/OT-03.json"
   },
   {
@@ -748,7 +748,7 @@
    "era": 1,
    "core": false,
    "first30": 0,
-   "chars": 4233,
+   "chars": 4210,
    "src": "content/ot/OT-03.json"
   },
   {
@@ -863,14 +863,14 @@
    "src": "content/ot/OT-04.json"
   },
   {
-   "id": "OT-04·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-04·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-04",
    "era": 1,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "chars": 271,
+   "chars": 2612,
    "src": "content/ot/OT-04.json"
   },
   {
@@ -881,7 +881,7 @@
    "era": 1,
    "core": false,
    "first30": 0,
-   "chars": 1688,
+   "chars": 5352,
    "src": "content/ot/OT-04.json"
   },
   {
@@ -1083,7 +1083,7 @@
    "era": 2,
    "core": false,
    "first30": 0,
-   "chars": 3944,
+   "chars": 3951,
    "src": "content/ot/OT-05.json"
   },
   {
@@ -1436,7 +1436,7 @@
    "era": 2,
    "core": true,
    "first30": 0,
-   "chars": 459,
+   "chars": 462,
    "src": "content/ot/OT-07.json"
   },
   {
@@ -1473,14 +1473,14 @@
    "src": "content/ot/OT-07.json"
   },
   {
-   "id": "OT-07·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-07·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-07",
    "era": 2,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "chars": 293,
+   "chars": 2514,
    "src": "content/ot/OT-07.json"
   },
   {
@@ -1491,7 +1491,7 @@
    "era": 2,
    "core": false,
    "first30": 0,
-   "chars": 2244,
+   "chars": 6015,
    "src": "content/ot/OT-07.json"
   },
   {
@@ -1505,7 +1505,7 @@
    "to": "목회자",
    "ukey": "cb5502925a",
    "ask": "창 28:12의 하나님의 사자들은 그림 없이 글로만 전해도 될까요?",
-   "chars": 449,
+   "chars": 504,
    "src": "content/ot/OT-07.json"
   },
   {
@@ -1544,7 +1544,7 @@
    "era": 2,
    "core": true,
    "first30": 0,
-   "chars": 4447,
+   "chars": 4492,
    "src": "content/ot/OT-08.json"
   },
   {
@@ -1577,7 +1577,7 @@
    "era": 2,
    "core": true,
    "first30": 0,
-   "chars": 426,
+   "chars": 429,
    "src": "content/ot/OT-08.json"
   },
   {
@@ -1636,14 +1636,14 @@
    "src": "content/ot/OT-08.json"
   },
   {
-   "id": "OT-08·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-08·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-08",
    "era": 2,
    "core": true,
    "first30": 0,
-   "chars": 300,
+   "chars": 3378,
    "src": "content/ot/OT-08.json"
   },
   {
@@ -1654,7 +1654,7 @@
    "era": 2,
    "core": false,
    "first30": 0,
-   "chars": 2150,
+   "chars": 6014,
    "src": "content/ot/OT-08.json"
   },
   {
@@ -1902,7 +1902,7 @@
    "era": 3,
    "core": true,
    "first30": 0,
-   "chars": 496,
+   "chars": 509,
    "src": "content/ot/OT-09.json"
   },
   {
@@ -2021,7 +2021,7 @@
    "era": 3,
    "core": true,
    "first30": 0,
-   "chars": 4504,
+   "chars": 4505,
    "src": "content/ot/OT-10.json"
   },
   {
@@ -2054,7 +2054,7 @@
    "era": 3,
    "core": true,
    "first30": 0,
-   "chars": 374,
+   "chars": 386,
    "src": "content/ot/OT-10.json"
   },
   {
@@ -2076,7 +2076,7 @@
    "era": 3,
    "core": true,
    "first30": 0,
-   "chars": 825,
+   "chars": 837,
    "src": "content/ot/OT-10.json"
   },
   {
@@ -2134,7 +2134,7 @@
    "to": "목회자",
    "ukey": "d195c633a7",
    "ask": "8~10세 글에 처음 난 것이 죽으리라는 말씀과 그 일(출 11:5, 12:29)을 한 문장씩 그대로 둘까요?",
-   "chars": 286,
+   "chars": 287,
    "src": "content/ot/OT-10.json"
   },
   {
@@ -2239,7 +2239,7 @@
    "era": 3,
    "core": true,
    "first30": 0,
-   "chars": 449,
+   "chars": 448,
    "src": "content/ot/OT-11.json"
   },
   {
@@ -2261,7 +2261,7 @@
    "era": 3,
    "core": true,
    "first30": 0,
-   "chars": 1659,
+   "chars": 1692,
    "src": "content/ot/OT-11.json"
   },
   {
@@ -2272,7 +2272,7 @@
    "era": 3,
    "core": false,
    "first30": 0,
-   "chars": 4683,
+   "chars": 4693,
    "src": "content/ot/OT-11.json"
   },
   {
@@ -2406,7 +2406,7 @@
    "era": 3,
    "core": true,
    "first30": 0,
-   "chars": 451,
+   "chars": 453,
    "src": "content/ot/OT-12.json"
   },
   {
@@ -2476,14 +2476,14 @@
    "src": "content/ot/OT-12.json"
   },
   {
-   "id": "OT-12·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-12·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-12",
    "era": 3,
    "core": true,
    "first30": 0,
-   "chars": 407,
+   "chars": 3238,
    "src": "content/ot/OT-12.json"
   },
   {
@@ -2494,7 +2494,7 @@
    "era": 3,
    "core": false,
    "first30": 0,
-   "chars": 2586,
+   "chars": 7042,
    "src": "content/ot/OT-12.json"
   },
   {
@@ -2665,7 +2665,7 @@
    "era": 4,
    "core": false,
    "first30": 0,
-   "chars": 4782,
+   "chars": 4773,
    "src": "content/ot/OT-13.json"
   },
   {
@@ -2884,7 +2884,7 @@
    "era": 4,
    "core": false,
    "first30": 0,
-   "chars": 2424,
+   "chars": 2419,
    "src": "content/ot/OT-14.json"
   },
   {
@@ -3007,7 +3007,7 @@
    "era": 4,
    "core": true,
    "first30": 0,
-   "chars": 5335,
+   "chars": 5331,
    "src": "content/ot/OT-15.json"
   },
   {
@@ -3084,18 +3084,18 @@
    "era": 4,
    "core": true,
    "first30": 0,
-   "chars": 513,
+   "chars": 528,
    "src": "content/ot/OT-15.json"
   },
   {
-   "id": "OT-15·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-15·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-15",
    "era": 4,
    "core": true,
    "first30": 0,
-   "chars": 486,
+   "chars": 2516,
    "src": "content/ot/OT-15.json"
   },
   {
@@ -3106,7 +3106,7 @@
    "era": 4,
    "core": false,
    "first30": 0,
-   "chars": 2549,
+   "chars": 6655,
    "src": "content/ot/OT-15.json"
   },
   {
@@ -3232,14 +3232,14 @@
    "src": "content/ot/OT-16.json"
   },
   {
-   "id": "OT-16·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-16·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-16",
    "era": 4,
    "core": true,
    "first30": 0,
-   "chars": 444,
+   "chars": 2250,
    "src": "content/ot/OT-16.json"
   },
   {
@@ -3250,7 +3250,7 @@
    "era": 4,
    "core": false,
    "first30": 0,
-   "chars": 2317,
+   "chars": 6033,
    "src": "content/ot/OT-16.json"
   },
   {
@@ -3339,7 +3339,7 @@
    "era": 5,
    "core": false,
    "first30": 0,
-   "chars": 3520,
+   "chars": 3558,
    "src": "content/ot/OT-17.json"
   },
   {
@@ -3398,14 +3398,14 @@
    "src": "content/ot/OT-17.json"
   },
   {
-   "id": "OT-17·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-17·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-17",
    "era": 5,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "chars": 442,
+   "chars": 2524,
    "src": "content/ot/OT-17.json"
   },
   {
@@ -3416,7 +3416,7 @@
    "era": 5,
    "core": false,
    "first30": 0,
-   "chars": 2375,
+   "chars": 5167,
    "src": "content/ot/OT-17.json"
   },
   {
@@ -3588,7 +3588,7 @@
    "era": 5,
    "core": true,
    "first30": 0,
-   "chars": 1504,
+   "chars": 1537,
    "src": "content/ot/OT-18.json"
   },
   {
@@ -3599,7 +3599,7 @@
    "era": 5,
    "core": false,
    "first30": 0,
-   "chars": 5314,
+   "chars": 5365,
    "src": "content/ot/OT-18.json"
   },
   {
@@ -3754,7 +3754,7 @@
    "era": 5,
    "core": true,
    "first30": 0,
-   "chars": 1793,
+   "chars": 1826,
    "src": "content/ot/OT-19.json"
   },
   {
@@ -3873,7 +3873,7 @@
    "era": 5,
    "core": true,
    "first30": 0,
-   "chars": 786,
+   "chars": 836,
    "src": "content/ot/OT-20.json"
   },
   {
@@ -3888,14 +3888,14 @@
    "src": "content/ot/OT-20.json"
   },
   {
-   "id": "OT-20·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-20·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-20",
    "era": 5,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "chars": 420,
+   "chars": 1939,
    "src": "content/ot/OT-20.json"
   },
   {
@@ -3906,7 +3906,7 @@
    "era": 5,
    "core": false,
    "first30": 0,
-   "chars": 2531,
+   "chars": 5147,
    "src": "content/ot/OT-20.json"
   },
   {
@@ -3967,7 +3967,7 @@
    "era": 6,
    "core": false,
    "first30": 0,
-   "chars": 3918,
+   "chars": 3926,
    "src": "content/ot/OT-21.json"
   },
   {
@@ -4044,7 +4044,7 @@
    "era": 6,
    "core": true,
    "first30": 0,
-   "chars": 1550,
+   "chars": 1583,
    "src": "content/ot/OT-21.json"
   },
   {
@@ -4055,7 +4055,7 @@
    "era": 6,
    "core": false,
    "first30": 0,
-   "chars": 4892,
+   "chars": 4885,
    "src": "content/ot/OT-21.json"
   },
   {
@@ -4116,7 +4116,7 @@
    "era": 6,
    "core": true,
    "first30": 0,
-   "chars": 1080,
+   "chars": 1089,
    "src": "content/ot/OT-22.json"
   },
   {
@@ -4257,7 +4257,7 @@
    "era": 6,
    "core": true,
    "first30": 0,
-   "chars": 456,
+   "chars": 511,
    "src": "content/ot/OT-23.json"
   },
   {
@@ -4294,14 +4294,14 @@
    "src": "content/ot/OT-23.json"
   },
   {
-   "id": "OT-23·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-23·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-23",
    "era": 6,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "chars": 316,
+   "chars": 2795,
    "src": "content/ot/OT-23.json"
   },
   {
@@ -4312,7 +4312,7 @@
    "era": 6,
    "core": false,
    "first30": 0,
-   "chars": 1975,
+   "chars": 4896,
    "src": "content/ot/OT-23.json"
   },
   {
@@ -4340,7 +4340,7 @@
    "to": "목회자",
    "ukey": "e471a6c8a1",
    "ask": "아이들이 룻이 떤 보리(룻 2:17-18)를 모아 성읍까지 함께 나르는 돕기를 그대로 둘까요?",
-   "chars": 539,
+   "chars": 594,
    "src": "content/ot/OT-23.json"
   },
   {
@@ -4349,9 +4349,9 @@
    "label": "대목 글(장면 전체)",
    "scene": "OT-24",
    "era": 6,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "chars": 4087,
+   "chars": 4104,
    "src": "content/ot/OT-24.json"
   },
   {
@@ -4395,7 +4395,7 @@
    "era": 6,
    "core": true,
    "first30": 0,
-   "chars": 942,
+   "chars": 934,
    "src": "content/ot/OT-24.json"
   },
   {
@@ -4421,14 +4421,14 @@
    "src": "content/ot/OT-24.json"
   },
   {
-   "id": "OT-24·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-24·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-24",
    "era": 6,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "chars": 400,
+   "chars": 2604,
    "src": "content/ot/OT-24.json"
   },
   {
@@ -4439,7 +4439,7 @@
    "era": 6,
    "core": false,
    "first30": 0,
-   "chars": 2391,
+   "chars": 5219,
    "src": "content/ot/OT-24.json"
   },
   {
@@ -4514,7 +4514,7 @@
    "era": 7,
    "core": true,
    "first30": 0,
-   "chars": 3458,
+   "chars": 3473,
    "src": "content/ot/OT-25.json"
   },
   {
@@ -4595,14 +4595,14 @@
    "src": "content/ot/OT-25.json"
   },
   {
-   "id": "OT-25·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-25·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-25",
    "era": 7,
    "core": true,
    "first30": 0,
-   "chars": 359,
+   "chars": 2954,
    "src": "content/ot/OT-25.json"
   },
   {
@@ -4613,7 +4613,7 @@
    "era": 7,
    "core": false,
    "first30": 0,
-   "chars": 2522,
+   "chars": 6914,
    "src": "content/ot/OT-25.json"
   },
   {
@@ -4726,7 +4726,7 @@
    "era": 7,
    "core": true,
    "first30": 0,
-   "chars": 1618,
+   "chars": 1651,
    "src": "content/ot/OT-26.json"
   },
   {
@@ -4737,7 +4737,7 @@
    "era": 7,
    "core": false,
    "first30": 0,
-   "chars": 5008,
+   "chars": 4993,
    "src": "content/ot/OT-26.json"
   },
   {
@@ -4846,14 +4846,14 @@
    "src": "content/ot/OT-27.json"
   },
   {
-   "id": "OT-27·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-27·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-27",
    "era": 7,
    "core": true,
    "first30": 0,
-   "chars": 358,
+   "chars": 2229,
    "src": "content/ot/OT-27.json"
   },
   {
@@ -4864,7 +4864,7 @@
    "era": 7,
    "core": false,
    "first30": 0,
-   "chars": 2036,
+   "chars": 5968,
    "src": "content/ot/OT-27.json"
   },
   {
@@ -4931,7 +4931,7 @@
    "era": 7,
    "core": true,
    "first30": 0,
-   "chars": 4020,
+   "chars": 4022,
    "src": "content/ot/OT-28.json"
   },
   {
@@ -4975,7 +4975,7 @@
    "era": 7,
    "core": true,
    "first30": 0,
-   "chars": 520,
+   "chars": 519,
    "src": "content/ot/OT-28.json"
   },
   {
@@ -5023,14 +5023,14 @@
    "src": "content/ot/OT-28.json"
   },
   {
-   "id": "OT-28·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-28·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-28",
    "era": 7,
    "core": true,
    "first30": 0,
-   "chars": 406,
+   "chars": 2616,
    "src": "content/ot/OT-28.json"
   },
   {
@@ -5041,7 +5041,7 @@
    "era": 7,
    "core": false,
    "first30": 0,
-   "chars": 2555,
+   "chars": 6290,
    "src": "content/ot/OT-28.json"
   },
   {
@@ -5169,7 +5169,7 @@
    "era": 8,
    "core": true,
    "first30": 0,
-   "chars": 302,
+   "chars": 284,
    "src": "content/ot/OT-29.json"
   },
   {
@@ -5202,7 +5202,7 @@
    "era": 8,
    "core": true,
    "first30": 0,
-   "chars": 743,
+   "chars": 729,
    "src": "content/ot/OT-29.json"
   },
   {
@@ -5217,14 +5217,14 @@
    "src": "content/ot/OT-29.json"
   },
   {
-   "id": "OT-29·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-29·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-29",
    "era": 8,
    "core": true,
    "first30": 0,
-   "chars": 421,
+   "chars": 2969,
    "src": "content/ot/OT-29.json"
   },
   {
@@ -5235,7 +5235,7 @@
    "era": 8,
    "core": false,
    "first30": 0,
-   "chars": 2649,
+   "chars": 6917,
    "src": "content/ot/OT-29.json"
   },
   {
@@ -5305,7 +5305,7 @@
    "to": "목회자",
    "ukey": "140aa9ef07",
    "ask": "'이 일이 여호와께로부터 났다'(왕상 12:24)를 뜻 묻기의 답으로 두는 것을 그대로 둘까요?",
-   "chars": 343,
+   "chars": 329,
    "src": "content/ot/OT-29.json"
   },
   {
@@ -5421,7 +5421,7 @@
    "era": 8,
    "core": true,
    "first30": 0,
-   "chars": 1433,
+   "chars": 1466,
    "src": "content/ot/OT-30.json"
   },
   {
@@ -5513,7 +5513,7 @@
    "era": 8,
    "core": true,
    "first30": 0,
-   "chars": 4838,
+   "chars": 4858,
    "src": "content/ot/OT-31.json"
   },
   {
@@ -5546,7 +5546,7 @@
    "era": 8,
    "core": true,
    "first30": 0,
-   "chars": 387,
+   "chars": 391,
    "src": "content/ot/OT-31.json"
   },
   {
@@ -5579,18 +5579,18 @@
    "era": 8,
    "core": true,
    "first30": 0,
-   "chars": 424,
+   "chars": 412,
    "src": "content/ot/OT-31.json"
   },
   {
-   "id": "OT-31·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-31·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-31",
    "era": 8,
    "core": true,
    "first30": 0,
-   "chars": 513,
+   "chars": 3180,
    "src": "content/ot/OT-31.json"
   },
   {
@@ -5601,7 +5601,7 @@
    "era": 8,
    "core": false,
    "first30": 0,
-   "chars": 2502,
+   "chars": 6370,
    "src": "content/ot/OT-31.json"
   },
   {
@@ -5896,7 +5896,7 @@
    "era": 9,
    "core": true,
    "first30": 0,
-   "chars": 3960,
+   "chars": 3964,
    "src": "content/ot/OT-33.json"
   },
   {
@@ -5940,7 +5940,7 @@
    "era": 9,
    "core": true,
    "first30": 0,
-   "chars": 412,
+   "chars": 416,
    "src": "content/ot/OT-33.json"
   },
   {
@@ -6074,9 +6074,9 @@
    "label": "대목 글(장면 전체)",
    "scene": "OT-34",
    "era": 9,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "chars": 3586,
+   "chars": 3597,
    "src": "content/ot/OT-34.json"
   },
   {
@@ -6109,7 +6109,7 @@
    "era": 9,
    "core": true,
    "first30": 0,
-   "chars": 460,
+   "chars": 464,
    "src": "content/ot/OT-34.json"
   },
   {
@@ -6146,14 +6146,14 @@
    "src": "content/ot/OT-34.json"
   },
   {
-   "id": "OT-34·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-34·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-34",
    "era": 9,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "chars": 479,
+   "chars": 3163,
    "src": "content/ot/OT-34.json"
   },
   {
@@ -6164,7 +6164,7 @@
    "era": 9,
    "core": false,
    "first30": 0,
-   "chars": 3071,
+   "chars": 7420,
    "src": "content/ot/OT-34.json"
   },
   {
@@ -6178,7 +6178,7 @@
    "to": "목회자",
    "ukey": "b8e29e5142",
    "ask": "왕하 23:3에서 왕이 선 곳을 개역한글대로 '대 위'로 적고 그려도 될까요?",
-   "chars": 842,
+   "chars": 1111,
    "src": "content/ot/OT-34.json"
   },
   {
@@ -6206,7 +6206,7 @@
    "to": "목회자",
    "ukey": "612c1fb4ed",
    "ask": "아이들이 백성과 함께 여호와의 전에 올라가 언약책 낭독을 듣는 설정(왕하 23:2)을 둘까요?",
-   "chars": 511,
+   "chars": 532,
    "src": "content/ot/OT-34.json"
   },
   {
@@ -6256,7 +6256,7 @@
    "era": 9,
    "core": true,
    "first30": 0,
-   "chars": 419,
+   "chars": 423,
    "src": "content/ot/OT-35.json"
   },
   {
@@ -6300,7 +6300,7 @@
    "era": 9,
    "core": false,
    "first30": 0,
-   "chars": 2799,
+   "chars": 2809,
    "src": "content/ot/OT-35.json"
   },
   {
@@ -6384,7 +6384,7 @@
    "to": "목회자",
    "ukey": "a52b65e1fe",
    "ask": "심판 장면에서 남은 가난한 백성의 밭일을 아이들이 거드는 설정(왕하 25:12)을 둘까요?",
-   "chars": 532,
+   "chars": 536,
    "src": "content/ot/OT-35.json"
   },
   {
@@ -6636,7 +6636,7 @@
    "era": 10,
    "core": true,
    "first30": 0,
-   "chars": 533,
+   "chars": 536,
    "src": "content/ot/OT-37.json"
   },
   {
@@ -6647,7 +6647,7 @@
    "era": 10,
    "core": true,
    "first30": 0,
-   "chars": 1082,
+   "chars": 1087,
    "src": "content/ot/OT-37.json"
   },
   {
@@ -6673,14 +6673,14 @@
    "src": "content/ot/OT-37.json"
   },
   {
-   "id": "OT-37·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-37·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-37",
    "era": 10,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "chars": 473,
+   "chars": 3668,
    "src": "content/ot/OT-37.json"
   },
   {
@@ -6691,7 +6691,7 @@
    "era": 10,
    "core": false,
    "first30": 0,
-   "chars": 3476,
+   "chars": 8145,
    "src": "content/ot/OT-37.json"
   },
   {
@@ -6719,7 +6719,7 @@
    "to": "목회자",
    "ukey": "2774ca1d60",
    "ask": "스 6:14의 스가랴를 개역한글대로 '잇도의 손자'로 적은 것을 그대로 둘까요?",
-   "chars": 282,
+   "chars": 293,
    "src": "content/ot/OT-37.json"
   },
   {
@@ -6761,7 +6761,7 @@
    "to": "목회자",
    "ukey": "0b1b2a1a37",
    "ask": "예물과 전 그릇에는 손대지 않고 '자기 짐'만 거든다는 선(스 1:5-6)으로 충분할까요?",
-   "chars": 621,
+   "chars": 624,
    "src": "content/ot/OT-37.json"
   },
   {
@@ -6842,14 +6842,14 @@
    "src": "content/ot/OT-38.json"
   },
   {
-   "id": "OT-38·화면",
-   "kind": "screen",
-   "label": "화면 원칙",
+   "id": "OT-38·3D",
+   "kind": "scene3d",
+   "label": "3D 설정",
    "scene": "OT-38",
    "era": 10,
-   "core": false,
+   "core": true,
    "first30": 0,
-   "chars": 387,
+   "chars": 3169,
    "src": "content/ot/OT-38.json"
   },
   {
@@ -6860,7 +6860,7 @@
    "era": 10,
    "core": false,
    "first30": 0,
-   "chars": 2616,
+   "chars": 6753,
    "src": "content/ot/OT-38.json"
   },
   {
@@ -6916,7 +6916,7 @@
    "to": "목회자",
    "ukey": "1fa8763af8",
    "ask": "슬픔의 옷인 굵은 베(에 4:1-3)의 실오라기를 수리 재료로 써도 될까요?",
-   "chars": 235,
+   "chars": 234,
    "src": "content/ot/OT-38.json"
   },
   {
@@ -6930,7 +6930,7 @@
    "to": "목회자",
    "ukey": "2bc736bf16",
    "ask": "아이들이 굵은 베를 입은 모르드개 곁에 머무는 설정(에 4:6-9)을 둘까요?",
-   "chars": 377,
+   "chars": 384,
    "src": "content/ot/OT-38.json"
   },
   {
