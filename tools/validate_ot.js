@@ -328,8 +328,76 @@ function lengthBias(d, E) {
   });
 }
 
-const NEED_MISSION = process.argv.includes('--mission') || process.argv.includes('--v2') || process.argv.includes('--v3') || process.argv.includes('--v4') || process.argv.includes('--v5');
-const V5 = process.argv.includes('--v5');
+/* ── --v6: 줄기 자료(content/ot/threads/*.json, 시범 2026-11-17) ──
+ * 장절이 실제로 있는지, 본문과 10글자 넘게 같은 곳이 없는지, 쓰지 않는 표현, 감수 태그(rv 1~3과 까닭), 성경 물음의 꼴,
+ * 가리키는 장면·재료가 있는지, 거룩한 것을 재료로 찾지 않는지(13.10), 장면에 가기 전에 보이는 글이 그 장면 물음의 답을 말하지 않는지(13.9). */
+const NT_REFS = ['요 1:29', '고전 5:7'];   /* 신약은 검증용 본문이 없어 장절이 있는지 확인하지 못한다(알림만) */
+const HOLY = ['제단', '언약궤', '궤', '만나', '떨기나무', '피', '제물', '성막', '성전', '무지개', '구름 기둥'];
+function threadsCheck() {
+  const TD = path.join(DIR, 'threads');
+  if (!fs.existsSync(TD)) { console.log('줄기 자료 없음'); return; }
+  const SC = {};
+  fs.readdirSync(DIR).filter((f) => /^OT-\d\d\.json$/.test(f)).forEach((f) => { const d = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8')); SC[d.id] = d; });
+  const answers = (d) => {
+    const out = [], take = (q) => { if (!q) return; const c = q.confirm || q; (c.options || []).forEach((o) => { if (o.ok) out.push(o.label); }); };
+    ['t1', 't2', 't3'].forEach((t) => { ((d.gates || {})[t] || []).forEach(take); (d.quests || []).forEach((x) => take(x.q && x.q[t])); (((d.mission || {}).help || {}).steps || []).forEach((h) => take(h.read && h.read[t])); });
+    return out;
+  };
+  let nt = 0, nfile = 0;
+  fs.readdirSync(TD).filter((f) => f.endsWith('.json')).sort().forEach((f) => {
+    nfile++;
+    const t = JSON.parse(fs.readFileSync(path.join(TD, f), 'utf8'));
+    const E = (m) => { nerr++; console.log(`[오류] threads/${f}: ${m}`); }, W = (m) => { nwarn++; console.log(`[경고] threads/${f}: ${m}`); };
+    const refOk = (r, w) => { if (NT_REFS.includes(r)) { nt++; return false; } if (!R.parse(r)) { E(`${w}: 읽을 수 없는 장절 "${r}"`); return false; } if (hasRef) { const v = R.verses(r); if (!v || v.bad) { E(`${w}: 본문에 없는 장절 "${r}"`); return false; } } return true; };
+    const isRef = (x) => typeof x === 'string' && /^\S+ \d+(:\d+)?(-(\d+:)?\d+)?$/.test(x);
+    const walk = (o, w) => {
+      if (Array.isArray(o)) { o.forEach((x, i) => walk(x, `${w}[${i}]`)); return; }
+      if (!o || typeof o !== 'object') return;
+      /* 이 객체에 딸린 장절 */
+      const refs = [];
+      ['ref', 'basis'].forEach((k) => { if (isRef(o[k])) refs.push(o[k]); });
+      (o.refs || []).forEach((r) => { if (isRef(r)) refs.push(r); });
+      const good = refs.filter((r) => refOk(r, w));
+      if (o.rv !== undefined && !(o.rv === 1 || o.rv === 2 || o.rv === 3)) E(`${w}.rv는 1·2·3 가운데 하나`);
+      if (o.rv && !(o.why || o.why2)) E(`${w}: 감수 태그에 까닭(why)이 없음`);
+      Object.keys(o).forEach((k) => {
+        const v = o[k];
+        if (k[0] === '_') return;
+        if (typeof v === 'string' && !isRef(v) && !/^(id|key|icon|art|who|type|match|after|closeAfter)$/.test(k)) {
+          BAN.forEach((b) => { if (v.includes(b)) E(`${w}.${k}: 쓰지 않는 표현 "${b}" (규칙서 4.2)`); });
+          if (hasRef) good.forEach((r) => { const vv = R.verses(r), a = norm(v), n = Math.max(...vv.list.map((x) => lcs(a, norm(x.krv)))); if (n > 10) E(`${w}.${k}: 본문과 ${n}글자가 그대로 같음. 풀어 쓴다 (${r})`); });
+        } else if (typeof v === 'object') walk(v, w ? `${w}.${k}` : k);
+      });
+      /* 성경 물음 */
+      if (o.type === 'find' && o.confirm) {
+        const ok = o.confirm.options.filter((x) => x.ok);
+        if (ok.length !== 1) E(`${w}: 맞는 보기는 정확히 1개`);
+        o.confirm.options.forEach((x, i) => { if (!x.ok && !(x.basis === '본문에 없음' || isRef(x.basis))) E(`${w}.options[${i}]: 맞지 않는 보기에 basis(장절 또는 "본문에 없음")가 없음`); });
+        if (!isRef(o.ref)) E(`${w}: 읽을 장절(ref)이 없음`);
+      }
+      ['after', 'closeAfter'].forEach((k) => { if (o[k] && !SC[o[k]]) E(`${w}.${k}: 없는 장면 ${o[k]}`); });
+    };
+    walk(t, '');
+    /* 감수 태그가 있어야 하는 묶음 */
+    ['intro', 'greenhouse', 'bench', 'measure', 'shepherds', 'lamb'].forEach((k) => { if (t[k] && !t[k].rv) E(`${k}: 감수 태그(rv)가 없음`); });
+    ['blueprints', 'cards', 'notes'].forEach((k) => (t[k] || []).forEach((x, i) => { if (!x.rv) E(`${k}[${i}]: 감수 태그(rv)가 없음`); }));
+    if (t.lamb && t.lamb.nt && t.lamb.nt.rv !== 3) E('lamb.nt: 그리스도와의 연결은 감수 태그 3');
+    if (t.lamb && t.lamb.rv !== 3) E('lamb: 어린 양의 기록은 감수 태그 3');
+    /* 설계도: 찾는 재료가 실제로 있고 거룩한 것이 아닌지, 가기 전에 보이는 글이 답을 말하지 않는지 */
+    (t.blueprints || []).forEach((b, i) => {
+      const w = `blueprints[${i}]`, want = b.want || {}, hits = [];
+      Object.keys(SC).forEach((id) => { if (want.scenes && !want.scenes.includes(id)) return; ((SC[id].mission || {}).materials || []).forEach((m) => { if (want.match ? m.name.includes(want.match) : m.name === want.name) hits.push(id); }); });
+      if (!hits.length) E(`${w}: 찾는 재료 "${want.name}"이(가) 어느 장면에도 없음`);
+      HOLY.forEach((h) => { if (String(want.name).includes(h) || String(want.match || '').includes(h)) E(`${w}: 거룩한 것("${h}")을 재료로 찾을 수 없음(13.10)`); });
+      const pre = [b.problem, b.ask, b.found, b.shadow].join(' ');
+      hits.forEach((id) => answers(SC[id]).forEach((a) => { if (norm(a).length >= 2 && norm(pre).includes(norm(a))) W(`${w}: 장면에 가기 전의 글이 ${id} 물음의 답 "${a}"을(를) 말함(13.9)`); }));
+    });
+  });
+  console.log(`줄기 자료 ${nfile}개 검사` + (nt ? ` · 신약 장절 ${nt}곳은 본문이 없어 확인하지 못함` : ''));
+}
+
+const NEED_MISSION = process.argv.includes('--mission') || process.argv.includes('--v2') || process.argv.includes('--v3') || process.argv.includes('--v4') || process.argv.includes('--v5') || process.argv.includes('--v6');
+const V5 = process.argv.includes('--v5') || process.argv.includes('--v6');
 const V4 = process.argv.includes('--v4') || V5;
 const V3 = process.argv.includes('--v3') || V4;
 const V2 = process.argv.includes('--v2') || V3;
@@ -337,5 +405,6 @@ const want = process.argv.slice(2).filter((x) => !x.startsWith('--'));
 const files = fs.readdirSync(DIR).filter((f) => /^OT-\d\d\.json$/.test(f) && (!want.length || want.includes(f.replace('.json', '')))).sort();
 if (!hasRef) console.log('주의: ref/bible 이 없어 장절이 실제로 있는지는 검사하지 못함 (tools/bible_ref/fetch.sh)');
 files.forEach((f) => check(path.join(DIR, f)));
+if (process.argv.includes('--v6')) threadsCheck();
 console.log(`검사 ${files.length}개 장면: 오류 ${nerr}, 경고 ${nwarn}`);
 process.exit(nerr ? 1 : 0);
