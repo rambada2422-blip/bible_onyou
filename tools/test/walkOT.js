@@ -113,6 +113,7 @@ const BAN = ['틀렸', '실패', '감점', '목숨'];
         if (!h || !h.enabled || !h.good || !h.said) probs.push(where + ': 현장 돕기를 마치지 못함 ' + JSON.stringify(h));
         if (firstOfEra || id === 'OT-10') await shot(id + '-help-' + kinds.filter((x) => x === 'help').length + '-' + (h && h.kind));
       }
+      if (s.k === 'beat') await p.evaluate(() => { const S2 = BO3D.stage2d; if (S2 && S2.has(BO3D.story.debug.state().id) && S2.debug.state()) S2.debug.finish(); });   /* 무대에서 손으로 하는 일(시내 산) */
       await check(where);
       if (firstOfEra && (s.k === 'gate' || s.k === 'quest') && kinds.filter((x) => x === s.k).length === 1) await shot(id + '-' + s.k + '-ok');
       if (s.k === 'finish') break;

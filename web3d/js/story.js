@@ -93,7 +93,8 @@
     opts = opts || {};
     box.replaceChildren();
     box.className = 'ot3 ' + kind + (opts.tall ? ' tall' : '');
-    if (eraKey) add(box, el('div', { class: 'ot-stage', html: ART ? ART.art(eraKey, opts.art) : '' }));
+    if (opts.stage2d) { var sg = el('div', { class: 'ot-stage' }); sg.appendChild(opts.stage2d); add(box, sg); box.className += ' st2d' + (opts.ev ? ' ev' : ''); }   /* 겹친 그림 무대(stage2d.js) */
+    else if (eraKey) add(box, el('div', { class: 'ot-stage', html: ART ? ART.art(eraKey, opts.art) : '' }));
     if (top) add(box, el('div', { class: 'ot-top pad' }, top));
     var b = el('div', { class: 'sheet-body pad' }), f = el('div', { class: 'sheet-foot pad' });
     add(b, body); add(f, foot);
@@ -321,6 +322,7 @@
   function play(id) {
     var d = sc(id);
     cur.screen = 'play'; cur.id = id; cur.steps = buildSteps(d); cur.step = 0;
+    if (BO3D.stage2d && BO3D.stage2d.has(id)) BO3D.stage2d.begin(id);
     var f = FX(); if (f && f.audio) { try { f.audio.start(); if (!bgm(id, 'story')) f.audio.pad(true); } catch (e) { /* 무시 */ } }
     render();
   }
@@ -335,12 +337,19 @@
     var nb = next ? btn(nextLabel, go) : null, body = [], gated = false;
     var prev = (s.k === 'beat' || s.k === 'talk') && cur.step > 0 && cur.steps[cur.step - 1].k !== 'arrive' ? btn('이전', function () { cur.step--; render(); }, 'plain') : null;
     function ok() { if (nb) nb.disabled = false; }
+    /* 겹친 그림 무대가 있는 장면(stage2d.js): 대목마다 무대의 모습이 바뀌고, 손으로 하는 일을 마쳐야 다음으로 간다 */
+    var S2 = cur.screen === 'play' && BO3D.stage2d && BO3D.stage2d.has(cur.id) ? BO3D.stage2d : null, sk = S2 ? S2.key(s) : '', sp = { need: S2 ? S2.need(sk) : false, on: null };
+    function stageTip() {
+      var o = S2.tip(sk), T2 = S2.text(); if (!o) return null;
+      return el('div', { class: 'st2-tip' }, el('span', { text: '👆 위 그림에서 해 보세요. ' + o.hint }), rvChip(o.rv, o.why), sk === 'beat3' ? rvChip(T2.horn.rv, T2.horn.why) : null);
+    }
     if (s.k === 'arrive') {
       body = [el('div', { class: 'eyebrow dark', text: d.id + ' · 시대 ' + e.era + ' ' + e.name }), el('h2', { class: 'ot-title', text: d.title }),
         el('div', { class: 'ot-meta' }, refChip(d.ref), el('span', { class: 'ot-place', text: d.place })),
         doctor(m.call ? tx(m.call) : '도착했어! 장면을 끝까지 지켜보고, 수리에 쓸 재료를 찾아보자. 사건이 일어나는 자리에는 다가가지 말자.'),
         (m.materials && m.materials.length) ? el('p', { class: 'ot-soft', text: '이 장면에서 구할 재료 ' + m.materials.length + '가지' }) : null,
-        d.review && d.review.required ? el('p', { class: 'pending' }, '목사님 감수가 꼭 필요한 장면이에요(감수 전). ', rvChip(3, (d.review.topics || []).join(', '))) : null];
+        d.review && d.review.required ? el('p', { class: 'pending' }, '목사님 감수가 꼭 필요한 장면이에요(감수 전). ', rvChip(3, (d.review.topics || []).join(', '))) : null,
+        S2 ? el('p', { class: 'ot-soft' }, '그림으로 보는 장면이에요. ', rvChip(S2.text().rv, S2.text().why)) : null];
       if (nb) nb.textContent = m.companion && m.companion.when !== 'after' ? '함께 걷기' : '지켜보러 가기';
     } else if (s.k === 'talk') {
       var cp = m.companion, t = cp.talks[s.i];
@@ -351,8 +360,9 @@
         el('div', { class: 'openbible' }, icon('book'), el('span', {}, cp.who + '의 말은 성경책에서 직접 읽어요. ', el('b', { text: U.bookName(t.open) })))];
     } else if (s.k === 'beat') {
       body = [el('div', { class: 'q-kicker', text: kick }), beatNodes(d.beats[s.i])];
+      if (sp.need) { var got2 = el('div', { class: 'help-got' }); body.push(stageTip(), got2); gated = true; sp.on = function (say) { if (say) got2.replaceChildren(U.say(say.who, say.text)); ok(); got2.scrollIntoView({ block: 'nearest' }); }; }
     } else if (s.k === 'help') {
-      body = helpNodes(m.help, m.help.steps[s.i], kick, ok); gated = true;
+      body = helpNodes(m.help, m.help.steps[s.i], kick, ok, sp.need ? sp : null, sp.need ? stageTip() : null); gated = true;
       var hn = cur.screen === 'seg' && cur.helpNote ? cur.helpNote(m.help.steps[s.i].after) : null;
       if (hn) body.splice(2, 0, el('div', { class: 'note story3' }, el('span', {}, el('small', { text: '탐험대 이야기' }), el('b', { text: hn }))));   /* 3D에서 때가 앞선 돕기(되돌아보는 대목 뒤)를 밝힌다 */
     } else if (s.k === 'gate') {
@@ -385,6 +395,11 @@
       show('seg', null, null, body, [prev, nb]);
       return;
     }
+    if (S2) {
+      var stg = S2.enter(cur.id, sk, function (say) { if (sp.on) sp.on(say); });
+      show('play', e.key, topBar('시대 ' + e.era + ' · ' + d.title), body, [prev, nb], { stage2d: stg, ev: S2.tall(sk) });
+      return;
+    }
     show('play', e.key, topBar('시대 ' + e.era + ' · ' + d.title), body, [prev, nb], { art: artOpts(d, s) });
   }
   /* 창조 장면은 대목마다 지어진 것만 그린다(eraart.js) */
@@ -397,9 +412,13 @@
   }
   /* 현장 돕기 한 단계(규칙서 13.6). do: 본문에 그 사람들이 했다고 적힌 평범한 일을 누르며 돕는다 / watch: 거룩한 행위는 곁에서 본다
      stay: 함께 기다린다 / ask: 그 뜻을 묻고, 본문에 기록된 말로 답을 듣고, 성경을 펴서 확인한다 */
-  function helpNodes(h, hs, kick, ok) {
+  function helpNodes(h, hs, kick, ok, sp, tip) {
     var head = [el('div', { class: 'eyebrow dark' }, '탐험대 이야기 · 현장 돕기 ', rvChip(hs.kind === 'ask' ? (hs.nt ? 3 : 2) : hs.kind === 'do' ? 2 : 1, hs.kind === 'ask' ? '뜻 묻기: 본문에 기록된 말로만 답하는지(13.6)' + (hs.nt ? ', 신약과의 연결' : '') : hs.kind === 'do' ? '손으로 하는 돕기(13.6·13.7)' : '곁에서 보기·머물기')), el('div', { class: 'q-kicker', text: kick + ' · ' + hs.title })];
     var got = el('div', { class: 'help-got' });
+    if (sp && (hs.kind === 'do' || hs.kind === 'stay')) {   /* 무대에서 손으로 한다(stage2d.js). 마치면 무대가 알려 준다 */
+      sp.on = function (say) { var dn = say || hs.done || hs.say; got.replaceChildren(dn ? U.say(dn.who, dn.text) : story('함께 했어요.')); ok(); got.scrollIntoView({ block: 'nearest' }); };
+      return head.concat([el('p', { class: 'narr', text: tx(hs.text) }), el('div', { class: 'narr-meta' }, refChip(hs.basis)), tip, got]);
+    }
     if (hs.kind === 'do') {
       var left = hs.tasks.length;
       var tasks = hs.tasks.map(function (t) {

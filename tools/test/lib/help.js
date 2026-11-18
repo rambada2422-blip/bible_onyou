@@ -4,6 +4,8 @@ module.exports = async function doHelp(p) {
   return p.evaluate(async () => {
     const h = BO3D.story.debug.help(); if (!h) return null;
     const sh = document.querySelector('.ot3 .sheet-body'), wait = () => new Promise((r) => setTimeout(r, 40));
+    /* 겹친 그림 무대(stage2d.js)가 맡은 돕기는 무대에서 마친다 */
+    if (BO3D.stage2d && BO3D.stage2d.debug.state() && BO3D.stage2d.has(BO3D.story.debug.state().id) && BO3D.stage2d.debug.finish()) await wait();
     if (h.kind === 'do') for (const b of [...sh.querySelectorAll('.help-task')]) { b.click(); await wait(); }
     if (h.kind === 'stay') { const b = [...sh.querySelectorAll('.btn')].find((x) => x.textContent === h.wait); if (b) b.click(); await wait(); }
     if (h.kind === 'ask') {

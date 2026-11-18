@@ -22,16 +22,24 @@ for (const f of fs.existsSync(path.join(root, 'web3d/assets')) ? fs.readdirSync(
 fs.writeFileSync(path.join(root, 'web3d/js/glbdata.js'),
   '/* tools/build3d.js가 만든 파일. 직접 고치지 말 것. */\nwindow.BO3D = window.BO3D || {};\nBO3D.glbData = ' + JSON.stringify(glb) + ';\n');
 
+/* 겹친 그림 무대의 그림(web3d/assets/img/*.webp)을 글자 형태로 묶는다. 원본 PNG는 tools/art-src/, 변환은 tools/art-src/img2webp.py */
+const img = {}, imgDir = path.join(root, 'web3d/assets/img');
+for (const f of fs.existsSync(imgDir) ? fs.readdirSync(imgDir).filter((x) => x.endsWith('.webp')).sort() : []) {
+  img[f.replace('.webp', '')] = 'data:image/webp;base64,' + fs.readFileSync(path.join(imgDir, f)).toString('base64');
+}
+fs.writeFileSync(path.join(root, 'web3d/js/imgdata.js'),
+  '/* tools/build3d.js가 만든 파일. 직접 고치지 말 것. */\nwindow.BO3D = window.BO3D || {};\nBO3D.img2d = ' + JSON.stringify(img) + ';\n');
+
 const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fonts = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Jua&display=swap';
 /* 구약 장면 자료를 먼저 묶는다(web3d/js/otdata.js) */
 require('./build_ot.js')();
-const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/otdata.js', 'web3d/js/ui.js', 'web3d/js/eraart.js', 'web3d/js/models.js', 'web3d/js/models_jordan.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/flock.js', 'web3d/js/jordan.js', 'web3d/js/fx.js', 'web3d/js/bgmplan.js', 'web3d/js/bgm.js', 'web3d/js/story.js', 'web3d/js/growth.js', 'web3d/js/den.js', 'web3d/js/props_ot.js', 'web3d/js/scene_horeb.js', 'web3d/js/scene_jordan18.js', 'web3d/js/scene_redsea11.js', 'web3d/js/scene_jericho19.js', 'web3d/js/scene_elah26.js', 'web3d/js/scene_carmel30.js', 'web3d/js/scene_ark03.js', 'web3d/js/scene_manna13.js', 'web3d/js/scene_abram05.js', 'web3d/js/scene_gideon21.js', 'web3d/js/scene_lions36.js', 'web3d/js/scene_wall39.js', 'web3d/js/game.js'];
+const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/otdata.js', 'web3d/js/ui.js', 'web3d/js/eraart.js', 'web3d/js/models.js', 'web3d/js/models_jordan.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/flock.js', 'web3d/js/jordan.js', 'web3d/js/fx.js', 'web3d/js/bgmplan.js', 'web3d/js/bgm.js', 'web3d/js/story.js', 'web3d/js/growth.js', 'web3d/js/den.js', 'web3d/js/imgdata.js', 'web3d/js/stage2d.js', 'web3d/js/props_ot.js', 'web3d/js/scene_horeb.js', 'web3d/js/scene_jordan18.js', 'web3d/js/scene_redsea11.js', 'web3d/js/scene_jericho19.js', 'web3d/js/scene_elah26.js', 'web3d/js/scene_carmel30.js', 'web3d/js/scene_ark03.js', 'web3d/js/scene_manna13.js', 'web3d/js/scene_abram05.js', 'web3d/js/scene_gideon21.js', 'web3d/js/scene_lions36.js', 'web3d/js/scene_wall39.js', 'web3d/js/game.js'];
 const page = [
   '<title>성경 탐험대 3D</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',
   `<link rel="stylesheet" href="${fonts}">`,
-  '<style>\n' + read('web/css/app.css') + '\n' + read('web3d/css/game.css') + '\n' + read('web3d/css/story.css') + '\n' + read('web3d/css/den.css') + '\n</style>',
+  '<style>\n' + read('web/css/app.css') + '\n' + read('web3d/css/game.css') + '\n' + read('web3d/css/story.css') + '\n' + read('web3d/css/den.css') + '\n' + read('web3d/css/stage2d.css') + '\n</style>',
   '<div id="game" class="g3 app"><canvas id="c"></canvas><div id="ui"></div></div>',
   '<script>\n' + esc(read('web3d/vendor/three.min.js')) + '\n</script>',
   '<script>\n' + esc(read('web3d/vendor/GLTFLoader.js')) + '\n</script>',

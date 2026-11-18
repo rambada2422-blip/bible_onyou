@@ -353,9 +353,20 @@ window.BO3D = window.BO3D || {};
       var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + sec * 0.35); g.gain.exponentialRampToValueAtTime(0.0001, t + sec);
       s.connect(f); f.connect(g); g.connect(sfx); s.start(t); s.stop(t + sec + 0.1);
     }
+    /* 나팔 소리(출 19:16, 시내 산 무대). 길게 이어지는 낮은 뿔나팔 소리 하나. 부는 이는 그리지 않고, 하나님의 음성은 소리로 만들지 않는다(감수 ★★★) */
+    function horn(sec, v) {
+      if (!ctx) return; sec = sec || 2.4; v = v || 0.1;
+      var t = ctx.currentTime, f = ctx.createBiquadFilter(), g = ctx.createGain(); f.type = 'lowpass'; f.frequency.value = 900; f.Q.value = 0.9;
+      [[174.61, 'sawtooth', 1], [349.23, 'triangle', 0.45]].forEach(function (p) {
+        var o = ctx.createOscillator(), og = ctx.createGain(); o.type = p[1]; o.frequency.setValueAtTime(p[0] * 0.97, t); o.frequency.linearRampToValueAtTime(p[0], t + 0.3);
+        og.gain.value = p[2]; o.connect(og); og.connect(f); o.start(t); o.stop(t + sec + 0.1);
+      });
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.35); g.gain.setValueAtTime(v, t + sec * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t + sec);
+      f.connect(g); g.connect(sfx);
+    }
     function mute(m) { muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); }
     /* 배경음악(bgm.js)이 음악 묶음에 연결할 수 있게 소리 장치와 음악 묶음을 내어 준다 (2026-11-16) */
-    return { start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, ding: ding, pop: pop, fanfare: fanfare, clunk: clunk, creak: creak, gust: gust, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, rumble: rumble, thud: thud, pulse: pulse, mute: mute, isMuted: function () { return muted; },
+    return { start: start, setFire: setFire, fire: fire, setFlock: setFlock, bleat: bleat, chime: chime, ding: ding, pop: pop, fanfare: fanfare, clunk: clunk, creak: creak, gust: gust, shutter: shutter, rise: rise, pad: pad, silence: silence, quietMusic: quietMusic, wind: wind, rumble: rumble, thud: thud, horn: horn, pulse: pulse, mute: mute, isMuted: function () { return muted; },
       context: function () { return ctx; }, musicBus: function () { return music; } };
   })();
 
