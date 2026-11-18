@@ -14,7 +14,7 @@ fs.mkdirSync(out, { recursive: true });
   p.on('pageerror', (e) => errs.push('pageerror: ' + e.message));
   p.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
   const shot = async (label) => { n++; await p.screenshot({ path: path.join(out, String(n).padStart(2, '0') + '-' + label + '.png') }); };
-  await p.goto('file:///home/user/bible_onyou/dist/preview3d.html');
+  await p.goto(require('url').pathToFileURL(path.resolve(__dirname, '../../dist/preview3d.html')).href);
   await p.waitForTimeout(2500);
   await p.evaluate(() => document.fonts.ready);
   await shot('menu');
