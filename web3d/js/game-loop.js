@@ -16,7 +16,7 @@ BO3D.gameModules.loop = function (G) {
     if (horeb) {
       if (G.bush.update) G.bush.update(G.now);
       if (G.machine.update) G.machine.update(G.now);
-      G.sheep.forEach(function (s) { if (s.update) s.update(dt); });
+      if (G.updateSheep) G.updateSheep(dt);
       G.scraps.forEach(function (s) { if (s.group.visible && s.update) s.update(G.now); });
     } else G.JL.update(dt, G.now);
     if (G.player) {

@@ -68,6 +68,57 @@ BO3D.gameModules.scene = function (G) {
     if (G.FX) G.FX.sortLayers(sc);
   }
 
+  function updateSheep(dt) {
+    var n = G.sheep ? G.sheep.length : 0, t = G.now || 0, fx = G.P.flock[0], fz = G.P.flock[1], bx = G.P.bush[0], bz = G.P.bush[1], i, j, s, o;
+    var hcx = [], hcz = [];
+    for (i = 0; i < 3; i++) {
+      var ha = t * 0.09 + i * 2.094 + Math.sin(t * 0.05 + i) * 0.45, hr = 2.4 + Math.sin(t * 0.11 + i * 1.7) * 1.5;
+      hcx[i] = fx + Math.cos(ha) * hr;
+      hcz[i] = fz + Math.sin(ha) * hr;
+    }
+    for (i = 0; i < n; i++) {
+      s = G.sheep[i];
+      var walk = Math.sin(t * 0.32 + s.ph + s.herd * 1.3) > -0.25 ? 1 : 0.12;
+      var tx = hcx[s.herd] + Math.cos(s.oa + t * 0.04) * s.or;
+      var tz = hcz[s.herd] + Math.sin(s.oa + t * 0.04) * s.or;
+      var ax = (tx - s.x) * 0.55 * walk, az = (tz - s.z) * 0.55 * walk, cx = 0, cz = 0, vx = 0, vz = 0, cnt = 0;
+      for (j = 0; j < n; j++) {
+        if (i === j) continue;
+        o = G.sheep[j];
+        var dx = s.x - o.x, dz = s.z - o.z, d2 = dx * dx + dz * dz;
+        if (d2 < 1.32 && d2 > 1e-5) {
+          var d = Math.sqrt(d2), push = (1.15 - d) / d * 2.4;
+          ax += dx * push; az += dz * push;
+        } else if (d2 < 14.0) {
+          cx += o.x; cz += o.z; vx += o.vx; vz += o.vz; cnt++;
+        }
+      }
+      if (cnt > 0) {
+        ax += ((cx / cnt - s.x) * 0.18 + (vx / cnt) * 0.35) * walk;
+        az += ((cz / cnt - s.z) * 0.18 + (vz / cnt) * 0.35) * walk;
+      }
+      if (G.moses && G.moses.group) {
+        var mdx = s.x - G.moses.group.position.x, mdz = s.z - G.moses.group.position.z, md = Math.sqrt(mdx * mdx + mdz * mdz);
+        if (md < 1.4 && md > 1e-4) { ax += (mdx / md) * (1.4 - md) * 3.0; az += (mdz / md) * (1.4 - md) * 3.0; }
+      }
+      var dfx = s.x - fx, dfz = s.z - fz, df = Math.sqrt(dfx * dfx + dfz * dfz);
+      if (df > 7.4) { ax -= (dfx / df) * (df - 7.4) * 2.5; az -= (dfz / df) * (df - 7.4) * 2.5; }
+      s.vx = (s.vx + ax * dt) * Math.max(0, 1 - dt * 2.8);
+      s.vz = (s.vz + az * dt) * Math.max(0, 1 - dt * 2.8);
+      var spd = Math.sqrt(s.vx * s.vx + s.vz * s.vz), maxSpd = 0.68;
+      if (spd > maxSpd) { s.vx = (s.vx / spd) * maxSpd; s.vz = (s.vz / spd) * maxSpd; spd = maxSpd; }
+      if (spd < 0.03) { s.vx = 0; s.vz = 0; spd = 0; }
+      s.x += s.vx * dt; s.z += s.vz * dt;
+      dfx = s.x - fx; dfz = s.z - fz; df = Math.sqrt(dfx * dfx + dfz * dfz);
+      if (df > 8.5) { s.x = fx + (dfx / df) * 8.5; s.z = fz + (dfz / df) * 8.5; }
+      var dbx = s.x - bx, dbz = s.z - bz, db = Math.sqrt(dbx * dbx + dbz * dbz);
+      if (db < 15.5 && db > 1e-4) { s.x = bx + (dbx / db) * 15.5; s.z = bz + (dbz / db) * 15.5; }
+      place(s.group, s.x, s.z);
+      if (spd > 0.04) s.group.rotation.y = lerpAngle(s.group.rotation.y, Math.atan2(s.vx, s.vz), Math.min(1, dt * 4.2));
+      if (s.update) s.update(dt, spd / maxSpd);
+    }
+  }
+
   G.H = H;
   G.WALK = WALK;
   G.el = el;
@@ -81,6 +132,7 @@ BO3D.gameModules.scene = function (G) {
   G.lerpAngle = lerpAngle;
   G.place = place;
   G.spawnKids = spawnKids;
+  G.updateSheep = updateSheep;
   return function initScene() {
     G.T = THREE, G.C = BO.content, IC = BO.icons, W = BO3D.world, G.M = BO3D.models || {}, AV = BO3D.avatars || {}, G.FX = BO3D.fx || null;
     G.P = W.P, G.SC = G.C.scenes['EX-01'];
@@ -151,9 +203,15 @@ BO3D.gameModules.scene = function (G) {
     })();
 
     G.sheep = [], sr = W.rng(5);
-    for (si = 0; si < 7; si++) {
+    for (si = 0; si < 32; si++) {
       sh = mk('sheep', si, function () { var g = new G.T.Mesh(new G.T.SphereGeometry(0.42, 8, 6), new G.T.MeshStandardMaterial({ color: '#F4EFE4', flatShading: true })); g.position.y = 0.45; var gg = new G.T.Group(); gg.add(g); return { group: gg, update: function () {} }; });
-      sx = G.P.flock[0] + (sr() * 2 - 1) * 4.2, sz = G.P.flock[1] + (sr() * 2 - 1) * 3.4;
+      var sa = si * 2.39996 + (sr() - 0.5) * 0.35, srad = 1.1 + Math.sqrt((si + 0.5) / 32) * 7.1;
+      sx = G.P.flock[0] + Math.cos(sa) * srad;
+      sz = G.P.flock[1] + Math.sin(sa) * srad;
+      if (dist2(sx, sz, G.P.mosesStart[0], G.P.mosesStart[1]) < 1.3) { sx -= 1.2; sz += 0.9; }
+      sh.x = sx; sh.z = sz; sh.vx = 0; sh.vz = 0;
+      sh.herd = si % 3;
+      sh.oa = sr() * 6.283; sh.or = 0.6 + sr() * 2.4; sh.ph = sr() * 6.283;
       G.scene.add(place(sh.group, sx, sz)); sh.group.rotation.y = sr() * 6.28;
       G.sheep.push(sh);
     }

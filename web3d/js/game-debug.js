@@ -13,6 +13,7 @@ BO3D.gameModules.debug = function (G) {
       jordan: function () { return G.JL ? { P: G.JL.P, targets: Object.keys(G.JL.targets).map(function (k) { var v = G.JL.targets[k].pos(); return [k, v.x, v.y, v.z]; }) } : null; },
       parts: function () { return { found: G.partsFound, at: G.PARTS.map(function (p) { return p.at; }), done: G.sceneDone }; },
       dex: function () { return Object.keys(G.dex); },
+      sheep: function () { return G.sheep ? G.sheep.length : 0; },
       state: function () { return { state: G.state, step: G.step, x: G.player && G.player.group.position.x, z: G.player && G.player.group.position.z, mosesArrived: G.mosesArrived }; },
       stick: function (x, y) { G.stick.x = x; G.stick.y = y; },
       yaw: function (v) { G.camYaw = v; G.lastDrag = G.now + 999; },
