@@ -3,7 +3,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 const ti = process.argv[2] || '1', out = process.argv[3], dsf = Number(process.argv[4] || '1');
-const url = process.argv[5] || 'file:///home/user/bible_onyou/dist/preview3d.html';
+const url = process.argv[5] || require('url').pathToFileURL(require('path').resolve(__dirname, '../../dist/preview3d.html')).href;
 fs.mkdirSync(out, { recursive: true });
 (async () => {
   const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });

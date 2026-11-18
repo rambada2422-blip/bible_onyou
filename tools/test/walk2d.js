@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const args = process.argv.slice(2);
 const ti = args[0], routeLabel = args[1], out = args[2];
-const url = args[3] || 'file:///home/user/bible_onyou/web/index.html';
+const url = args[3] || require('url').pathToFileURL(require('path').resolve(__dirname, '../../web/index.html')).href;
 const dsf = Number(args[4] || '1');
 fs.mkdirSync(out, { recursive: true });
 
