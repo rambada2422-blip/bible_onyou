@@ -11,8 +11,9 @@
   'use strict';
   window.BO3D = window.BO3D || {};
   var U = BO3D.ui, el = U.el;
-  var W = 1536, HZ = 563, C0 = 768, PM = 0.75;   /* 광야 그림의 폭, 지평선, 기준 중심, 산의 겹침 속도 */
-  var MT = { x: 85, y: -68, k: 0.86 };           /* 산 그림을 놓는 자리(왼쪽 위)와 크기. 산의 아래 끝은 광야 그림 뒤로 들어간다 */
+  var W = 1536, HZ = 604, C0 = 768, PM = 0.75;   /* 광야 그림의 폭, 지평선(받은 광야 그림에 맞춤), 기준 중심, 산의 겹침 속도 */
+  var GC = ['#C2906A', '#B3795D'];              /* 광야 그림의 땅 색: 지평선 바로 아래, 맨 아래(그림 바깥을 메울 때 쓴다) */
+  var MT = { x: 85, y: -30, k: 0.86 };           /* 산 그림을 놓는 자리(왼쪽 위)와 크기. 산의 아래 끝은 광야 그림 뒤로 들어간다 */
   var PEAK = { x: MT.x + 1176 * MT.k, y: MT.y + 96 * MT.k };
   function T() { return (BO3D.ot && BO3D.ot.threads && BO3D.ot.threads.stage12) || null; }
   function calm() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
@@ -40,11 +41,11 @@
   function phPlain() {
     var c = cv(1536, 1024), g = c.getContext('2d'), r = rng(12), i;
     var top = []; for (i = 0; i <= 1536; i += 64) top.push([i, HZ + Math.sin(i / 190) * 9 + Math.sin(i / 67) * 4]);
-    poly(g, top.concat([[1536, 1024], [0, 1024]]), '#E4BE7E');
-    poly(g, [[0, 640], [400, 622], [900, 650], [1536, 630], [1536, 1024], [0, 1024]], '#DDB272');
-    poly(g, [[0, 800], [500, 770], [1100, 815], [1536, 790], [1536, 1024], [0, 1024]], '#D2A463');
+    poly(g, top.concat([[1536, 1024], [0, 1024]]), '#C2906A');
+    poly(g, [[0, 680], [400, 662], [900, 690], [1536, 670], [1536, 1024], [0, 1024]], '#BD8A63');
+    poly(g, [[0, 820], [500, 800], [1100, 835], [1536, 815], [1536, 1024], [0, 1024]], '#B3795D');
     for (i = 0; i < 13; i++) {   /* 장막: 낮고 넓은 어두운 천 */
-      var d = r(), x = 40 + r() * 470, y = 585 + d * 150, w = 60 + d * 70, h = 26 + d * 30;
+      var d = r(), x = 40 + r() * 600, y = 628 + d * 160, w = 60 + d * 70, h = 26 + d * 30;
       poly(g, [[x - w / 2, y], [x - w * 0.3, y - h], [x + w * 0.3, y - h], [x + w / 2, y]], d > 0.5 ? '#5B4636' : '#6E5846');
       poly(g, [[x + w * 0.05, y], [x + w * 0.3, y - h], [x + w / 2, y]], '#4A382B');
     }
@@ -83,7 +84,7 @@
     camp: { cx: 470, top: -110, vh: 1040 }, mid: { cx: 700, top: -110, vh: 1040 }, foot: { cx: 1010, top: -110, vh: 1040 },
     event: { cx: 1020, top: -470, vh: 1400 }, storm: { cx: 1030, top: -300, vh: 1230 }, afar: { cx: 768, top: -600, vh: 1640 }
   };
-  var PPL = { camp: { x: 600, y: 742 }, foot: { x: 1010, y: 716 }, far: { x: 640, y: 770 } };
+  var PPL = { camp: { x: 860, y: 790 }, foot: { x: 1120, y: 750 }, far: { x: 800, y: 830 } };   /* 백성이 서는 자리(발끝): 진 곁, 산기슭, 멀리 */
   var KEYS = {
     arrive: { cam: 'camp', people: 'camp', hint: 'look', free: 1 },
     beat0: { cam: 'camp', people: 'camp', hint: 'look', free: 1 },
@@ -274,7 +275,7 @@
     else if (st.pplTo) { st.people.x += (st.pplTo.x - st.people.x) * Math.min(1, dt * 2.2); st.people.y += (st.pplTo.y - st.people.y) * Math.min(1, dt * 2.2); }
     if (st.mosesWalk >= 0) {   /* 모세만 짙은 어둠 쪽으로(출 20:21). 어둠의 안쪽은 보이지 않는다 */
       st.mosesWalk = Math.min(1, st.mosesWalk + dt / (q ? 0.3 : 6)); var m = ease(st.mosesWalk);
-      st.moses.x = lerp(PPL.far.x + 190, PEAK.x - 150, m); st.moses.y = lerp(PPL.far.y - 20, 640, m); st.moses.k = lerp(1, 0.5, m); st.moses.a = m < 0.72 ? 1 : 1 - (m - 0.72) / 0.28;
+      st.moses.x = lerp(PPL.far.x + 190, PEAK.x - 150, m); st.moses.y = lerp(PPL.far.y - 20, HZ + 40, m); st.moses.k = lerp(1, 0.5, m); st.moses.a = m < 0.72 ? 1 : 1 - (m - 0.72) / 0.28;
     } else if (st.mode !== 'walk') {
       if (st.mosesTo) { st.moses.x += (st.mosesTo.x - st.moses.x) * Math.min(1, dt * 2.2); st.moses.y += (st.mosesTo.y - st.moses.y) * Math.min(1, dt * 2.2); st.moses.a += (1 - st.moses.a) * Math.min(1, dt * 3); st.moses.k = 1; if (st.moses.x === 0) { st.moses.x = st.mosesTo.x; st.moses.y = st.mosesTo.y; } }
       else st.moses.a += (0 - st.moses.a) * Math.min(1, dt * 3);
@@ -310,7 +311,7 @@
     if (st.sky > 1.2 && sto < 0.5) { g.fillStyle = '#FBF7EE'; g.globalAlpha = clamp(st.sky - 1.2, 0, 0.8); STARS.forEach(function (p) { g.fillRect(p[0] * cssW, p[1] * hy, p[2], p[2]); }); g.globalAlpha = 1; }
     if (sto < 0.6) { var sunY = lerp(HZ - 520, HZ + 40, clamp(st.sky, 0, 1.25) / 1.25), sx = X(430, 0.3), sy = Y(sunY); g.globalAlpha = (1 - sto / 0.6) * (st.sky > 1.3 ? 0 : 1); blob(sx, sy, 62 * s, 62 * s, 'rgba(255,236,170,.45)'); blob(sx, sy, 40 * s, 40 * s, '#FFF1C4'); g.globalAlpha = 1; }
     /* 2. 땅의 바탕 */
-    g.fillStyle = '#D2A463'; g.fillRect(0, Y(HZ + 30), cssW, cssH);
+    g.fillStyle = GC[0]; g.fillRect(0, Y(HZ + 30), cssW, cssH);
     /* 3. 산(셋째 날에는 흔들린다, 출 19:18) */
     var qx = st.quake ? Math.sin(st.t * 61) * 2.2 + Math.sin(st.t * 37) * 1.4 : 0, qy = st.quake ? Math.sin(st.t * 53) * 1.2 : 0;
     var M = pic('ot12_mountain').d, mx = X(MT.x, PM) + qx, my = Y(MT.y) + qy;
@@ -340,13 +341,13 @@
     /* 8. 광야와 진 */
     var P = pic('ot12_plain_camp').d;
     g.drawImage(P, X(0, 1), Y(0), W * s, 1024 * s);
-    g.fillStyle = '#D2A463'; if (Y(1024) < cssH) g.fillRect(0, Y(1022), cssW, cssH - Y(1022));
+    g.fillStyle = GC[1]; if (Y(1024) < cssH) g.fillRect(0, Y(1022), cssW, cssH - Y(1022));
     /* 9. 경계(출 19:12): 물건으로 그리지 않고 화면 점선으로만 보인다 */
     if (st.bound > 0.02) {
       g.globalAlpha = st.bound; g.strokeStyle = '#7AD0C8'; g.lineWidth = Math.max(2, 5 * s); g.setLineDash([16 * s, 12 * s]); g.beginPath();
-      for (i = 0; i <= 20; i++) { var bw = 690 + (i / 20) * 860, byy = 642 + Math.pow(1 - i / 20, 2) * 30; if (i) g.lineTo(X(bw, 1), Y(byy)); else g.moveTo(X(bw, 1), Y(byy)); }
+      for (i = 0; i <= 20; i++) { var bw = 760 + (i / 20) * 790, byy = 668 + Math.pow(1 - i / 20, 2) * 34; if (i) g.lineTo(X(bw, 1), Y(byy)); else g.moveTo(X(bw, 1), Y(byy)); }
       g.stroke(); g.setLineDash([]);
-      var lx = X(900, 1), ly = Y(656), lab = T() ? T().bound.label : '경계';
+      var lx = X(960, 1), ly = Y(684), lab = T() ? T().bound.label : '경계';
       if (lx > -40 && lx < cssW + 40) { g.font = '700 ' + Math.max(11, 30 * s) + 'px Jua, sans-serif'; var tw = g.measureText(lab).width; g.fillStyle = 'rgba(14,23,48,.72)'; rr(lx - tw / 2 - 9, ly - 12, tw + 18, 24, 12); g.fillStyle = '#7AD0C8'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(lab, lx, ly + 1); }
       g.globalAlpha = 1;
     }
