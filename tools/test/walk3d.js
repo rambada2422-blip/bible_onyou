@@ -55,6 +55,7 @@ fs.mkdirSync(out, { recursive: true });
   await p.click('text=계속 탐험하기'); await p.waitForTimeout(1500);
   await shot('follow');
   await aim(P.flock[0], P.flock[1]); await snap('photo-sheep');
+  if ((await p.evaluate(() => BO3D.debug.sheep())) < 30) throw new Error('sheep < 30');
   await walkTo(P.scraps[1][0], P.scraps[1][1], 'to-rise');
   await shot('scrap2');
   await p.click('text=계속 탐험하기'); await p.waitForTimeout(600);

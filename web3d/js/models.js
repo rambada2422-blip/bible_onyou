@@ -810,21 +810,25 @@
     });
     neck.add(h.mesh(sm, neckO));
 
-    var st = { t: R() * 40, off: R(), flick: 0 };
-    function update(dt) {
+    var st = { t: R() * 40, off: R(), flick: 0, mv: 0 };
+    function update(dt, spd) {
       dt = Math.min(Math.max(dt || 0, 0), 0.1);
       st.t += dt;
-      var t = st.t, cyc = (t * 0.07 + st.off) % 1;
-      var g = smooth(0.0, 0.1, cyc) * (1 - smooth(0.66, 0.76, cyc));          // 1: 풀을 뜯는 중
-      neck.rotation.x = lerp(0.05, 0.98, g) + g * 0.06 * Math.sin(t * 6.5) + (1 - g) * 0.03 * Math.sin(t * 1.1);
+      st.mv = lerp(st.mv, clamp(spd || 0, 0, 1), Math.min(1, dt * 6));
+      var t = st.t, mv = st.mv, cyc = (t * 0.07 + st.off) % 1;
+      var g = smooth(0.0, 0.1, cyc) * (1 - smooth(0.66, 0.76, cyc)) * (1 - mv * 0.85); // 1: 풀을 뜯는 중
+      var step = Math.sin(t * 7.5 + st.off * TAU);
+      neck.rotation.x = lerp(0.05, 0.98, g) + g * 0.06 * Math.sin(t * 6.5) + (1 - g) * (0.03 * Math.sin(t * 1.1) + mv * 0.06 * step);
       neck.rotation.y = 0.12 * Math.sin(t * 0.43 + st.off * 9) * (1 - 0.6 * g);
+      body.position.y = Math.abs(step) * 0.025 * mv;
       body.rotation.x = g * 0.05;
+      body.rotation.z = step * 0.032 * mv;
       body.scale.set(1 + 0.012 * Math.sin(t * 1.7), 1, 1);
       var fl = Math.max(0, Math.sin(t * 0.9 + st.off * 20) - 0.93) * 14;
       ears[0].rotation.z = 0.5 + fl * 0.5;
       ears[1].rotation.z = -0.5 - fl * 0.5;
     }
-    update(0);
+    update(0, 0);
     return { group: group, update: update };
   }
 
