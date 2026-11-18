@@ -161,7 +161,7 @@ BO3D.gameModules.scene = function (G) {
       var g = fallback('#6F8448', 1.6, 1.0); var l = new G.T.PointLight('#FF9A3C', 1.4, 18); l.position.y = 1.4; g.add(l);
       return { group: g, update: function () {} };
     });
-    G.scene.add(place(G.bush.group, G.P.bush[0], G.P.bush[1]));
+    G.scene.add(place(G.bush.group, G.P.bush[0], G.P.bush[1], -0.18));
     G.bushFx = G.FX ? G.FX.upgradeBush(G.bush.group) : null;
 
     G.moses = mk('moses', null, function () { return { group: fallback('#8A5A3C', 1.75, 0.27), setPose: function () {}, update: function () {} }; });
@@ -229,9 +229,17 @@ BO3D.gameModules.scene = function (G) {
       return s;
     });
 
-    /* 지켜보는 자리의 경계선 */
-    G.ring = new G.T.Mesh(new G.T.RingGeometry(G.P.witnessRadius - 0.07, G.P.witnessRadius + 0.07, 96), new G.T.MeshBasicMaterial({ color: '#FFF6E0', transparent: true, opacity: 0.0, depthWrite: false }));
-    G.ring.rotation.x = -Math.PI / 2; place(G.ring, G.P.bush[0], G.P.bush[1], 0.12); G.scene.add(G.ring);
+    /* 지켜보는 자리의 경계선 (언덕 기슭 땅 높이에 맞춘다) */
+    var rg = new G.T.RingGeometry(G.P.witnessRadius - 0.07, G.P.witnessRadius + 0.07, 96);
+    rg.rotateX(-Math.PI / 2);
+    var rp = rg.attributes.position, ri;
+    for (ri = 0; ri < rp.count; ri++) {
+      var rx = G.P.bush[0] + rp.getX(ri), rz = G.P.bush[1] + rp.getZ(ri);
+      rp.setXYZ(ri, rx, H(rx, rz) + 0.12, rz);
+    }
+    rg.computeBoundingSphere();
+    G.ring = new G.T.Mesh(rg, new G.T.MeshBasicMaterial({ color: '#FFF6E0', transparent: true, opacity: 0.0, depthWrite: false }));
+    G.scene.add(G.ring);
 
     G.kids = {}, G.player = null, G.followers = [];
   };

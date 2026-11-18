@@ -14,8 +14,8 @@ window.BO3D = window.BO3D || {};
     mosesStart: [-4.5, 16.5],
     mosesEnd: [2.2, -5.6],
     bush: [7, -9],
-    scraps: [[-5.5, 22.5], [0.5, 7.5], [-2.2, -1.2]],
-    witnessRadius: 9.2,
+    scraps: [[1, 28], [12, 14], [-9.5, -3.5]],
+    witnessRadius: 15.5,
     mountain: [14, -96]
   };
 
@@ -51,14 +51,17 @@ window.BO3D = window.BO3D || {};
   function height(x, z) {
     var h = 0.7 * Math.sin(x * 0.06 + 1.3) * Math.cos(z * 0.045) + 0.42 * Math.sin(x * 0.17 + z * 0.12) + 0.18 * Math.sin(z * 0.33 - x * 0.1);
     h += 0.5 * noise(x * 0.08 + 20, z * 0.08 + 11);
-    /* 떨기나무 주변은 평평하게 */
+    /* 떨기나무 주변은 평평하게 한 뒤, 꼭대기(7, -9) 높이 5.2, 반경 15에서 둘레 땅과 고르게 이어지는 언덕을 세운다 */
     var bx = x - P.bush[0], bz = z - P.bush[1];
-    var flat = 1 - smooth(6, 20, Math.sqrt(bx * bx + bz * bz));
-    h = h * (1 - 0.8 * flat);
+    var bd = Math.sqrt(bx * bx + bz * bz);
+    var flat = 1 - smooth(12, 22, bd);
+    h = h * (1 - 0.85 * flat);
+    var hd = Math.max(0, Math.sqrt(bd * bd + 0.25) - 0.5);
+    var hill = hd < 14.5 ? 5.2 * (1 - hd / 14.5) : 0;
     /* 사방을 두르는 낮은 언덕 */
     var r = Math.sqrt(x * x + (z - 8) * (z - 8));
     h += smooth(78, 128, r) * 15 * (0.55 + 0.6 * noise(x * 0.03 + 2, z * 0.03 + 9));
-    return h + mountain(x, z);
+    return h + hill + mountain(x, z);
   }
   function walkable(x, z) {
     var r = Math.sqrt(x * x + (z - 8) * (z - 8));
@@ -168,7 +171,8 @@ window.BO3D = window.BO3D || {};
     var r = rng(2024), i, x, z, o;
     function clear(x, z) {
       var d = function (p, rad) { var dx = x - p[0], dz = z - p[1]; return dx * dx + dz * dz < rad * rad; };
-      if (d(P.bush, 6) || d(P.start, 5) || d(P.machine, 5) || d(P.flock, 5) || d(P.mosesEnd, 2.5)) return false;
+      if (d(P.bush, 16) || d(P.start, 5) || d(P.machine, 5) || d(P.flock, 5) || d(P.mosesEnd, 2.5)) return false;
+      if (P.scraps.some(function (p) { return d(p, 2.5); })) return false;
       /* 출발점에서 떨기나무까지 이어지는 길은 비워 둔다 */
       var t = (z - P.bush[1]) / (P.start[1] - P.bush[1]);
       if (t > 0 && t < 1) { var px = P.bush[0] + (P.start[0] - P.bush[0]) * t - 3 * Math.sin(t * Math.PI); if (Math.abs(x - px) < 3.2) return false; }

@@ -120,9 +120,9 @@ BO3D.gameModules.exploration = function (G) {
      * 세 아이만의 이야기이며 성경 내용이 아니다. 화면에 "탐험대 이야기"라고 적어 본문과 구분한다.
      * 원칙: 과거에 아무것도 남기지 않고, 가져오는 것은 사진과 기록뿐이다. */
     G.PARTS = [
-      { id: 'gear', name: '톱니바퀴', at: [-17, 31], line: '톱니바퀴를 찾았어!' },
-      { id: 'needle', name: '나침반 바늘', at: [15.5, 22], line: '나침반 바늘이 여기 있었네!' },
-      { id: 'lens', name: '등불 유리', at: [-11, 3], line: '등불 유리를 찾았어!' }
+      { id: 'gear', name: '톱니바퀴', at: [1, 28], line: '톱니바퀴를 찾았어!' },
+      { id: 'needle', name: '나침반 바늘', at: [12, 14], line: '나침반 바늘이 여기 있었네!' },
+      { id: 'lens', name: '등불 유리', at: [-9.5, -3.5], line: '등불 유리를 찾았어!' }
     ];
     G.partsFound = 0, G.sceneDone = false, G.flagColor = null, G.hatOn = false, G.flag = null, G.departT = 0, G.machineY = G.machine.group.position.y;
     G.brass = new G.T.MeshStandardMaterial({ color: '#D9A441', metalness: 0.55, roughness: 0.35, flatShading: true });

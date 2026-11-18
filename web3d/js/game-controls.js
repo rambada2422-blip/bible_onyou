@@ -27,7 +27,16 @@ BO3D.gameModules.controls = function (G) {
     var fx = Math.sin(G.camYaw), fz = Math.cos(G.camYaw), rx = -fz, rz = fx;
     var mx = fx * iy + rx * ix, mz = fz * iy + rz * ix, sp = 4.6 * m;
     var p = G.player.group.position, nx = p.x + mx / m * sp * dt, nz = p.z + mz / m * sp * dt;
-    /* 지켜보는 자리의 경계 */
+    /* 모세와 지켜보는 자리의 경계 */
+    if (G.cur === 'horeb' && G.moses && G.moses.group) {
+      var mxm = G.moses.group.position.x, mzm = G.moses.group.position.z;
+      var dm = G.dist2(nx, nz, mxm, mzm);
+      if (dm < 3) {
+        var km = 3 / Math.max(dm, 0.001);
+        nx = mxm + (nx - mxm) * km; nz = mzm + (nz - mzm) * km;
+        if (G.now - G.lastToast > 7) { G.lastToast = G.now; G.toast('여기까지만 가자. 우리는 지켜보는 사람이야.', G.S.ch === 'onwoo' ? 'hyu' : 'onwoo'); }
+      }
+    }
     var d = G.dist2(nx, nz, G.P.bush[0], G.P.bush[1]);
     if (G.cur === 'horeb' && d < G.P.witnessRadius) {
       var k = G.P.witnessRadius / Math.max(d, 0.001);
@@ -80,10 +89,11 @@ BO3D.gameModules.controls = function (G) {
       want.set(G.P.machine[0] - 4, G.H(G.P.machine[0], G.P.machine[1]) + 3.2, G.P.machine[1] + 10.5);
       G.camLookT.set(mp.x, mp.y + 1.4, mp.z); k = 1 - Math.exp(-dt * 3);
     } else if (G.state === 'event' || G.state === 'gates' || G.state === 'end') {
-      /* 아이들 어깨 너머로 떨기나무와 모세를 본다 */
+      /* 아이들 어깨 뒤 낮은 곳에서 언덕 위 떨기나무와 모세를 올려다본다 */
       var ax = p.x - G.P.bush[0], az = p.z - G.P.bush[1], al = Math.sqrt(ax * ax + az * az) || 1;
-      want.set(p.x + ax / al * 3.6 + az / al * 1.5, p.y + 2.5, p.z + az / al * 3.6 - ax / al * 1.5);
-      k = 1 - Math.exp(-dt * 2.2);
+      var ux = ax / al, uz = az / al;
+      want.set(p.x + ux * 7.2 - uz * 0.25, p.y + 1.35, p.z + uz * 7.2 + ux * 0.25);
+      k = 1 - Math.exp(-dt * 2.6);
     } else {
       var fx = Math.sin(G.camYaw), fz = Math.cos(G.camYaw);
       want.set(p.x - fx * G.camDist, p.y + G.camPitchH + 1.3, p.z - fz * G.camDist);
@@ -91,11 +101,18 @@ BO3D.gameModules.controls = function (G) {
     }
     var ground = G.H(want.x, want.z) + 1.0;
     if (want.y < ground) want.y = ground;
-    G.camPos.lerp(want, k); G.camLook.lerp(G.camLookT, k);
+    var lookTarget = G.camLookT;
+    if (G.cur === 'horeb' && (G.state === 'event' || G.state === 'gates' || G.state === 'end')) {
+      lookTarget = G.camLookT.clone();
+      lookTarget.x = G.P.bush[0] * 0.78 + G.P.mosesEnd[0] * 0.22;
+      lookTarget.z = G.P.bush[1] * 0.78 + G.P.mosesEnd[1] * 0.22;
+      lookTarget.y = p.y + 3.15;
+    }
+    G.camPos.lerp(want, k); G.camLook.lerp(lookTarget, k);
     G.camera.position.copy(G.camPos); G.camera.lookAt(G.camLook);
-    /* 자막 창이 열리면 장면을 화면 위쪽으로 올리고, 사건을 볼 때는 당겨 본다 */
-    var wantShift = (G.state === 'event') ? 0.2 : (G.state === 'caption' ? 0.14 : 0);
-    var wantFov = (G.state === 'event') ? 46 : G.baseFov;
+    /* 자막 창이 열리면 장면을 화면 위쪽으로 올린다 */
+    var wantShift = (G.state === 'event') ? 0.22 : (G.state === 'caption' ? 0.14 : 0);
+    var wantFov = (G.state === 'event') ? G.baseFov : G.baseFov;
     if (Math.abs(wantShift - G.viewShift) > 0.001 || Math.abs(wantFov - G.camera.fov) > 0.05) {
       G.viewShift += (wantShift - G.viewShift) * Math.min(1, dt * 3);
       G.camera.fov += (wantFov - G.camera.fov) * Math.min(1, dt * 3);
