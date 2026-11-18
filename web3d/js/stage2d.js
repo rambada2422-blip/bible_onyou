@@ -290,7 +290,7 @@
         st.nextBolt = st.t + (K.quiet ? 6 + r() * 4 : 2.6 + r() * 1.6); st.thunderAt = st.t + 0.35;
       }
       if (st.thunderAt > 0 && st.t >= st.thunderAt) { st.thunderAt = -1; st.thunderOn = st.t; if (loud) snd('rumble', 1.7, 0.36); }
-      if (st.t >= st.hornAt) { st.hornAt = st.t + (K.quiet ? 99 : 5.2); st.hornOn = st.t; if (loud) snd('horn', 2.4, 0.1 + 0.05 * Math.min(1, st.t / 30)); }
+      if (st.t >= st.hornAt) { st.hornAt = st.t + (K.quiet ? 99 : 6.4); st.hornOn = st.t; if (loud) snd('horn', 3.6, 0.1 + 0.05 * Math.min(1, st.t / 30)); }   /* 점점 커진다(출 19:19) */
       if (st.bolt) { st.bolt.t += dt; if (st.bolt.t > 1.7) st.bolt = null; }
       if (!q && st.smoke.length < 26 && Math.random() < dt * 9) st.smoke.push({ x: PEAK.x - 300 + Math.random() * 600, y: PEAK.y + 10 + Math.random() * 260, r: 26 + Math.random() * 20, t: 0, life: 3.2 + Math.random() * 1.8, dx: (Math.random() - 0.5) * 16 });
       st.quake = loud && !q ? 1 : 0;
@@ -370,7 +370,7 @@
       if (!st.note.cloud) spot('cloud', X(PEAK.x - 330, PM), Y(PEAK.y - 200));
       if (!st.note.bolt && st.bolt && st.bolt.t < 1.7) spot('bolt', X(st.bolt.pts[3][0], PM), Y(st.bolt.pts[3][1]));
       if (!st.note.thunder && st.thunderOn && st.t - st.thunderOn < 2.2) spot('thunder', X(PEAK.x + 250, PM), Y(PEAK.y - 300));
-      if (!st.note.horn && st.t - st.hornOn < 2.6) spot('horn', X(PEAK.x + 60, PM), Y(PEAK.y + 300));
+      if (!st.note.horn && st.t - st.hornOn < 3.6) spot('horn', X(PEAK.x + 60, PM), Y(PEAK.y + 300));
     }
   }
   function mixc(rgb, hexc, t) { if (t <= 0) return rgb; var m = rgb.match(/\d+/g), y = hex(hexc); return 'rgb(' + Math.round(lerp(+m[0], y[0], t)) + ',' + Math.round(lerp(+m[1], y[1], t)) + ',' + Math.round(lerp(+m[2], y[2], t)) + ')'; }

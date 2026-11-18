@@ -353,16 +353,26 @@ window.BO3D = window.BO3D || {};
       var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + sec * 0.35); g.gain.exponentialRampToValueAtTime(0.0001, t + sec);
       s.connect(f); f.connect(g); g.connect(sfx); s.start(t); s.stop(t + sec + 0.1);
     }
-    /* 나팔 소리(출 19:16, 시내 산 무대). 길게 이어지는 낮은 뿔나팔 소리 하나. 부는 이는 그리지 않고, 하나님의 음성은 소리로 만들지 않는다(감수 ★★★) */
+    /* 나팔 소리(출 19:16, 시내 산 무대). 낮고 부드러우며 웅장한 뿔나팔 소리 하나(대표 선택 2026-11-18: "견줄 소리 1이 좋다, 웅장하게").
+       살짝 어긋난 두 소리 + 한 옥타브 아래의 울림 + 옅은 다섯째 음이 천천히 커지고, 큰 공간의 잔향이 남는다.
+       부는 이는 그리지 않고, 하나님의 음성은 소리로 만들지 않는다(감수 ★★★) */
+    var hornRoom = null;
     function horn(sec, v) {
-      if (!ctx) return; sec = sec || 2.4; v = v || 0.1;
-      var t = ctx.currentTime, f = ctx.createBiquadFilter(), g = ctx.createGain(); f.type = 'lowpass'; f.frequency.value = 900; f.Q.value = 0.9;
-      [[174.61, 'sawtooth', 1], [349.23, 'triangle', 0.45]].forEach(function (p) {
-        var o = ctx.createOscillator(), og = ctx.createGain(); o.type = p[1]; o.frequency.setValueAtTime(p[0] * 0.97, t); o.frequency.linearRampToValueAtTime(p[0], t + 0.3);
+      if (!ctx) return; sec = sec || 3.6; v = v || 0.1;
+      if (!hornRoom) {
+        var n = Math.floor(ctx.sampleRate * 2.6), rb = ctx.createBuffer(2, n, ctx.sampleRate);
+        for (var c = 0; c < 2; c++) { var d = rb.getChannelData(c); for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.6); }
+        hornRoom = ctx.createConvolver(); hornRoom.buffer = rb; hornRoom.connect(sfx);
+      }
+      var t = ctx.currentTime, f = ctx.createBiquadFilter(), g = ctx.createGain(), wet = ctx.createGain(), base = 130.81;
+      f.type = 'lowpass'; f.Q.value = 0.8; f.frequency.setValueAtTime(340, t); f.frequency.linearRampToValueAtTime(620, t + 1.0);
+      [[base, 'sawtooth', 0.8, -7], [base, 'sawtooth', 0.8, 7], [base / 2, 'sine', 1.0, 0], [base * 1.5, 'triangle', 0.2, 0], [base * 2, 'triangle', 0.28, 3]].forEach(function (p) {
+        var o = ctx.createOscillator(), og = ctx.createGain(); o.type = p[1]; o.detune.value = p[3];
+        o.frequency.setValueAtTime(p[0] * 0.965, t); o.frequency.linearRampToValueAtTime(p[0], t + 0.55);
         og.gain.value = p[2]; o.connect(og); og.connect(f); o.start(t); o.stop(t + sec + 0.1);
       });
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.35); g.gain.setValueAtTime(v, t + sec * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t + sec);
-      f.connect(g); g.connect(sfx);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.8); g.gain.setValueAtTime(v, t + sec * 0.72); g.gain.exponentialRampToValueAtTime(0.0001, t + sec);
+      wet.gain.value = 0.55; f.connect(g); g.connect(sfx); g.connect(wet); wet.connect(hornRoom);
     }
     function mute(m) { muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); }
     /* 배경음악(bgm.js)이 음악 묶음에 연결할 수 있게 소리 장치와 음악 묶음을 내어 준다 (2026-11-16) */
