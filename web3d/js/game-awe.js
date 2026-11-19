@@ -1,11 +1,15 @@
-/* 불붙은 떨기나무 압도 장면 — 그림판(그림 + 위쪽 하늘 띠), 가까이 보기와 전체 보기, 글자 자리, 모래색 덮개.
- * docs/09_떨기나무_압도장면.md 3.2절, 3.3절, 10절의 식과 숫자를 그대로 따른다. */
+/* 불붙은 떨기나무 압도 장면 — 그림판(그림 + 위쪽 하늘 띠), 가까이 보기와 전체 보기, 글자 자리, 모래색 덮개, 순서 0~6 진행.
+ * docs/09_떨기나무_압도장면.md 1절, 3.1~3.3절, 4절, 7절, 10절의 식과 숫자를 그대로 따른다. */
 BO3D.gameModules = BO3D.gameModules || {};
 BO3D.gameModules.awe = function (G) {
   'use strict';
   var IW = 1024, IH = 1536, NEAR_W = 703, BUSH_CY = 681, CAP_H = 150, SAFE_Y = 1300;
-  var rootEl, skyEl, boardEl, img2, img3, capEl, veilEl;
-  var active = false, reqView = 'near', curView = 'near', curPic = 2, ready2 = false, ready3 = false;
+  var STEP_DURS = [3.5, 1.5, 5.0, 6.0, 8.0, 9.0, 1.5];
+  var STEP_PAUSE_T = [3.5, 1.1, 0.0, 6.0, 4.0, 5.0, 0.35];
+  var rootEl, stageEl, skyEl, boardEl, img2, img3, capEl, textWrap, metaEl, lineEl, veilEl;
+  var active = false, seqActive = false, seqStep = null, seqTime = 0, swapPhase = '', doneCb = null, rafId = 0, lastTick = 0;
+  var reqView = 'near', curView = 'near', curPic = 2, curP = 0, curVeil = 0, shownText = '', shownRef = '';
+  var ready2 = false, ready3 = false;
 
   function imgSrc(num) {
     var key = 'bush_' + num;
@@ -90,8 +94,78 @@ BO3D.gameModules.awe = function (G) {
     };
   }
 
+  /* p: 0(가까이 보기) ~ 1(전체 보기) 보간 배치 */
+  function applyBoardProgress(p) {
+    if (!rootEl || !G.root) return null;
+    curP = Math.max(0, Math.min(1, p));
+    var W = G.root.clientWidth || 390, H = G.root.clientHeight || 844;
+    var L0 = computeLayout('near', W, H);
+    var L1 = computeLayout('wide', W, H);
+    if (L0.view === 'wide' || curP >= 1) {
+      curView = 'wide';
+      reqView = (L0.view === 'wide' && curP === 0) ? 'near' : 'wide';
+      var dw1 = Math.floor(L1.drawW * 64) / 64, dh1 = Math.floor(L1.drawH * 64) / 64;
+      boardEl.style.left = L1.left + 'px';
+      boardEl.style.top = L1.top + 'px';
+      boardEl.style.width = dw1 + 'px';
+      boardEl.style.height = dh1 + 'px';
+      if (L1.skyH > 0) {
+        skyEl.hidden = false;
+        skyEl.style.left = L1.left + 'px';
+        skyEl.style.top = '0px';
+        skyEl.style.width = dw1 + 'px';
+        skyEl.style.height = (Math.ceil(L1.skyH) + 2) + 'px';
+      } else {
+        skyEl.hidden = true;
+      }
+      return L1;
+    }
+    if (curP <= 0) {
+      curView = 'near';
+      var dw0 = Math.ceil(L0.drawW * 64) / 64, dh0 = Math.ceil(L0.drawH * 64) / 64;
+      boardEl.style.left = L0.left + 'px';
+      boardEl.style.top = L0.top + 'px';
+      boardEl.style.width = dw0 + 'px';
+      boardEl.style.height = dh0 + 'px';
+      if (L0.skyH > 0) {
+        skyEl.hidden = false;
+        skyEl.style.left = L0.left + 'px';
+        skyEl.style.top = '0px';
+        skyEl.style.width = dw0 + 'px';
+        skyEl.style.height = (Math.ceil(L0.skyH) + 2) + 'px';
+      } else {
+        skyEl.hidden = true;
+      }
+      return L0;
+    }
+    curView = curP < 0.5 ? 'near' : 'wide';
+    var left = L0.left + (L1.left - L0.left) * curP;
+    var top = L0.top + (L1.top - L0.top) * curP;
+    var dw = L0.drawW + (L1.drawW - L0.drawW) * curP;
+    var dh = L0.drawH + (L1.drawH - L0.drawH) * curP;
+    var skyH = Math.max(0, top);
+    boardEl.style.left = left + 'px';
+    boardEl.style.top = top + 'px';
+    boardEl.style.width = dw + 'px';
+    boardEl.style.height = dh + 'px';
+    if (skyH > 0) {
+      skyEl.hidden = false;
+      skyEl.style.left = left + 'px';
+      skyEl.style.top = '0px';
+      skyEl.style.width = dw + 'px';
+      skyEl.style.height = (Math.ceil(skyH) + 2) + 'px';
+    } else {
+      skyEl.hidden = true;
+    }
+    return null;
+  }
+
   function layoutAwe() {
     if (!rootEl || !G.root) return null;
+    if (seqActive && seqStep !== null) {
+      applySeqState(seqStep, seqTime);
+      return null;
+    }
     var W = G.root.clientWidth || 390, H = G.root.clientHeight || 844;
     var L = computeLayout(reqView, W, H);
     curView = L.view;
@@ -111,6 +185,7 @@ BO3D.gameModules.awe = function (G) {
       skyEl.hidden = true;
     }
     capEl.hidden = (curView !== 'wide');
+    capEl.style.opacity = '1';
     return L;
   }
 
@@ -122,18 +197,260 @@ BO3D.gameModules.awe = function (G) {
     img3.style.visibility = (curPic === 3) ? 'visible' : 'hidden';
   }
 
+  function setVeil(op) {
+    curVeil = Math.max(0, Math.min(1, op || 0));
+    if (veilEl) veilEl.style.opacity = String(curVeil);
+  }
+
+  function setCaptionText(entry, alpha) {
+    var a = Math.max(0, Math.min(1, alpha || 0));
+    if (!entry || a <= 0.001) {
+      shownText = '';
+      shownRef = '';
+      if (textWrap) textWrap.style.opacity = '0';
+      if (metaEl) metaEl.replaceChildren();
+      if (lineEl) lineEl.textContent = '';
+      return;
+    }
+    var txt = G.tx(entry);
+    shownRef = entry.ref || '';
+    shownText = txt || '';
+    metaEl.replaceChildren(shownRef ? G.refChip(shownRef) : null);
+    lineEl.textContent = shownText;
+    textWrap.style.opacity = String(a);
+  }
+
+  function easeInOut(u) {
+    u = Math.max(0, Math.min(1, u));
+    return u * u * (3 - 2 * u);
+  }
+
+  /* 순서 0~6의 시각 t(초) 상태를 화면에 반영한다 */
+  function applySeqState(step, t) {
+    var aweData = G.C3 && G.C3.horeb && G.C3.horeb.awe;
+    var callEntry = aweData && aweData.call;
+    var hideEntry = aweData && aweData.hide;
+    if (step === 0) {
+      /* 0. 직전: 인형풍 세계에서 카메라가 언덕 위를 올려다본다 */
+      stageEl.hidden = true;
+      capEl.hidden = true;
+      setCaptionText(null, 0);
+      setVeil(0);
+      return;
+    }
+    if (step === 1) {
+      /* 1. 넘어감(1.5초): 0.7초 동안 모래색으로 덮이고, 곧바로 0.8초 동안 가까이 보기 그림이 나타난다 */
+      setPic(2);
+      reqView = 'near';
+      applyBoardProgress(0);
+      capEl.hidden = true;
+      setCaptionText(null, 0);
+      if (t < 0.7) {
+        stageEl.hidden = true;
+        setVeil(easeInOut(t / 0.7));
+      } else {
+        stageEl.hidden = false;
+        setVeil(1 - easeInOut((t - 0.7) / 0.8));
+      }
+      return;
+    }
+    if (step === 2) {
+      /* 2. 떨기나무(5초): 가까이 보기. 5초 동안 한 가지 빠르기로 전체 움직임의 5%를 물러난다 */
+      stageEl.hidden = false;
+      setVeil(0);
+      setPic(2);
+      var p2 = 0.05 * Math.max(0, Math.min(1, t / 5.0));
+      applyBoardProgress(p2);
+      capEl.hidden = (curView !== 'wide');
+      setCaptionText(null, 0);
+      return;
+    }
+    if (step === 3) {
+      /* 3. 모세(6초): 멈추지 않고 이어받아 6초 동안 나머지 95%를 물러나며 끝에서만 천천히 멈춘다 */
+      stageEl.hidden = false;
+      setVeil(0);
+      setPic(2);
+      var u3 = Math.max(0, Math.min(1, t / 6.0));
+      var p3 = 0.05 + 0.95 * (1 - Math.pow(1 - u3, 2.4));
+      applyBoardProgress(p3);
+      capEl.hidden = false;
+      capEl.style.opacity = String(1 - Math.pow(1 - u3, 2));
+      setCaptionText(null, 0);
+      return;
+    }
+    if (step === 4) {
+      /* 4. 부르심(8초): 화면이 멈춘다. 글자가 0~1초에 떠오르고 7초까지 보이다가 7~8초에 사라진다 */
+      stageEl.hidden = false;
+      setVeil(0);
+      setPic(2);
+      reqView = 'wide';
+      applyBoardProgress(1);
+      capEl.hidden = false;
+      capEl.style.opacity = '1';
+      var a4 = 0;
+      if (t < 1.0) a4 = Math.max(0, t / 1.0);
+      else if (t <= 7.0) a4 = 1;
+      else if (t < 8.0) a4 = Math.max(0, 1 - (t - 7.0) / 1.0);
+      else a4 = 0;
+      setCaptionText(callEntry, a4);
+      return;
+    }
+    if (step === 5) {
+      /* 5. 얼굴을 가림(9초): 4번 글자가 다 사라진 바로 뒤 그림이 한 번에 바뀐다. 글자는 1~2초에 떠올라 끝까지 보인다 */
+      stageEl.hidden = false;
+      setVeil(0);
+      setPic(3);
+      reqView = 'wide';
+      applyBoardProgress(1);
+      capEl.hidden = false;
+      capEl.style.opacity = '1';
+      var a5 = 0;
+      if (t <= 1.0) a5 = 0;
+      else if (t < 2.0) a5 = (t - 1.0) / 1.0;
+      else a5 = 1;
+      setCaptionText(hideEntry, a5);
+      return;
+    }
+    if (step === 6) {
+      /* 6. 돌아옴(1.5초): 0.7초 동안 글자와 그림이 함께 모래색에 덮이고, 0.8초 동안 인형풍 세계가 나타난다 */
+      if (t < 0.7) {
+        stageEl.hidden = false;
+        setPic(3);
+        reqView = 'wide';
+        applyBoardProgress(1);
+        capEl.hidden = false;
+        capEl.style.opacity = '1';
+        setCaptionText(hideEntry, 1);
+        setVeil(easeInOut(t / 0.7));
+      } else {
+        stageEl.hidden = true;
+        capEl.hidden = true;
+        setCaptionText(null, 0);
+        setVeil(1 - easeInOut((t - 0.7) / 0.8));
+      }
+    }
+  }
+
+  function stopAwe() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    active = false;
+    seqActive = false;
+    seqStep = null;
+    seqTime = 0;
+    swapPhase = '';
+    doneCb = null;
+    setCaptionText(null, 0);
+    setVeil(0);
+    if (rootEl) rootEl.hidden = true;
+    if (G.root) G.root.classList.remove('awe-on');
+  }
+
+  function finishAwe() {
+    var cb = doneCb;
+    stopAwe();
+    if (cb) cb();
+  }
+
+  function tickAwe(now) {
+    if (!seqActive) return;
+    var dt = Math.min(0.1, Math.max(0, (now - lastTick) / 1000));
+    lastTick = now;
+    if (!window.BO3D_TEST) {
+      seqTime += dt;
+      var dur = STEP_DURS[seqStep] || 1.5;
+      if (seqTime >= dur) {
+        if (seqStep < 6) {
+          seqStep++;
+          seqTime = 0;
+          applySeqState(seqStep, 0);
+        } else {
+          finishAwe();
+          return;
+        }
+      } else {
+        applySeqState(seqStep, seqTime);
+      }
+    }
+    if (seqActive) rafId = requestAnimationFrame(tickAwe);
+  }
+
+  function startAwe(onDone) {
+    stopAwe();
+    active = true;
+    seqActive = true;
+    seqStep = 0;
+    swapPhase = '';
+    doneCb = onDone || null;
+    seqTime = window.BO3D_TEST ? STEP_PAUSE_T[0] : 0;
+    if (G.root) G.root.classList.add('awe-on');
+    rootEl.hidden = false;
+    applySeqState(seqStep, seqTime);
+    lastTick = performance.now();
+    rafId = requestAnimationFrame(tickAwe);
+    return aweState();
+  }
+
+  function aweNext(arg) {
+    if (!seqActive) return null;
+    if (arg === 'beforeSwap') {
+      seqStep = 4;
+      seqTime = 8.0;
+      swapPhase = 'before';
+      applySeqState(seqStep, seqTime);
+      return aweState();
+    }
+    if (arg === 'afterSwap') {
+      seqStep = 5;
+      seqTime = 0.0;
+      swapPhase = 'after';
+      applySeqState(seqStep, seqTime);
+      return aweState();
+    }
+    if (seqStep === 5 && swapPhase === 'after') {
+      swapPhase = '';
+      seqTime = STEP_PAUSE_T[5];
+      applySeqState(seqStep, seqTime);
+      return aweState();
+    }
+    if (seqStep < 6) {
+      seqStep++;
+      swapPhase = '';
+      seqTime = window.BO3D_TEST ? STEP_PAUSE_T[seqStep] : 0;
+      applySeqState(seqStep, seqTime);
+      return aweState();
+    }
+    finishAwe();
+    return aweState();
+  }
+
+  function aweState() {
+    return {
+      active: seqActive,
+      step: seqActive ? seqStep : null,
+      text: shownText,
+      ref: shownRef,
+      pic: curPic,
+      view: curView,
+      veil: curVeil,
+      t: seqTime
+    };
+  }
+
   function showAwe(view, pic) {
     if (!view || view === 'off') {
-      active = false;
-      if (rootEl) rootEl.hidden = true;
-      if (G.root) G.root.classList.remove('awe-on');
+      stopAwe();
       return null;
     }
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    seqActive = false;
+    seqStep = null;
     active = true;
     reqView = (view === 'near') ? 'near' : 'wide';
     setPic(pic || 2);
-    if (veilEl) veilEl.style.opacity = '0';
+    setVeil(0);
+    setCaptionText(null, 0);
     if (G.root) G.root.classList.add('awe-on');
+    stageEl.hidden = false;
     rootEl.hidden = false;
     layoutAwe();
     return aweRect();
@@ -178,6 +495,10 @@ BO3D.gameModules.awe = function (G) {
   G.aweRect = aweRect;
   G.layoutAwe = layoutAwe;
   G.computeAweLayout = computeLayout;
+  G.startAwe = startAwe;
+  G.stopAwe = stopAwe;
+  G.aweNext = aweNext;
+  G.aweState = aweState;
 
   return function initAwe() {
     var el = G.el;
@@ -189,9 +510,13 @@ BO3D.gameModules.awe = function (G) {
     img2.src = imgSrc(2);
     img3.src = imgSrc(3);
     boardEl = el('div', { class: 'awe-board' }, img2, img3);
-    capEl = el('div', { class: 'awe-cap', hidden: true });
+    metaEl = el('div', { class: 'awe-meta' });
+    lineEl = el('p', { class: 'awe-line' });
+    textWrap = el('div', { class: 'awe-text' }, metaEl, lineEl);
+    capEl = el('div', { class: 'awe-cap', hidden: true }, textWrap);
+    stageEl = el('div', { class: 'awe-stage' }, skyEl, boardEl, capEl);
     veilEl = el('div', { class: 'awe-veil' });
-    rootEl = el('div', { class: 'awe3', hidden: true }, skyEl, boardEl, capEl, veilEl);
+    rootEl = el('div', { class: 'awe3', hidden: true }, stageEl, veilEl);
     G.root.appendChild(rootEl);
     setPic(2);
     window.addEventListener('resize', function () { if (active) layoutAwe(); });

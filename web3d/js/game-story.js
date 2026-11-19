@@ -4,6 +4,7 @@ BO3D.gameModules.story = function (G) {
   'use strict';
   /* ── 처음 화면 ── */
   function menu() {
+    if (G.stopAwe) G.stopAwe();
     G.state = 'menu'; G.cur = 'horeb'; G.dedBtn.hidden = true; G.hud.hidden = true; G.hidePanel(); G.base.hidden = true; G.snd.hidden = true; G.camBtn.hidden = true; G.dexBtn.hidden = true; G.denBtn.hidden = true; G.track.hidden = true;
     if (G.FX) G.FX.audio.pad(false);
     var tier = G.S.tier, ch = G.S.ch, picked = false;
@@ -34,6 +35,7 @@ BO3D.gameModules.story = function (G) {
   }
 
   function begin() {
+    if (G.stopAwe) G.stopAwe();
     G.root.className = 'g3 app ' + G.S.tier;
     G.overlay.hidden = true;
     if (G.FX) { G.FX.audio.start(); G.FX.audio.pad(false); G.snd.hidden = false; }
@@ -97,7 +99,6 @@ BO3D.gameModules.story = function (G) {
   /* ── 사건 목격 ── */
   function startEvent() {
     G.state = 'event'; G.hud.hidden = true; G.hint.hidden = true; G.root.classList.add('ev');
-    if (G.FX) G.FX.audio.pad(true);
     G.mosesWalking = false; G.mosesArrived = true;
     G.place(G.moses.group, G.P.mosesEnd[0], G.P.mosesEnd[1]);
     G.moses.group.rotation.y = Math.atan2(G.P.bush[0] - G.P.mosesEnd[0], G.P.bush[1] - G.P.mosesEnd[1]);
@@ -109,7 +110,16 @@ BO3D.gameModules.story = function (G) {
       var side = k ? 1 : -1, x = px + Math.cos(face) * 1.25 * side, z = pz - Math.sin(face) * 1.25 * side;
       G.place(f.group, x, z); f.group.rotation.y = face; f.spd = 0;
     });
-    G.evIdx = 2; showBeat();
+    G.evIdx = 2;
+    if (G.startAwe) {
+      G.startAwe(function () {
+        if (G.FX) G.FX.audio.pad(true);
+        G.evIdx = 2; showBeat();
+      });
+    } else {
+      if (G.FX) G.FX.audio.pad(true);
+      showBeat();
+    }
   }
   function showBeat() {
     var b = G.SC.beats[G.evIdx], last = G.evIdx === G.SC.beats.length - 1;
