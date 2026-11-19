@@ -14,18 +14,88 @@ function list(dir, ext) {
   const p = path.join(web, 'assets', dir);
   return fs.existsSync(p) ? fs.readdirSync(p).filter((f) => f.endsWith(ext)).sort() : [];
 }
+function rasterSize(buf, ext) {
+  if (ext === '.png') {
+    if (buf.length < 24 || buf[0] !== 0x89 || buf[1] !== 0x50 || buf[2] !== 0x4E || buf[3] !== 0x47) return null;
+    return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+  }
+  if (ext === '.jpg') {
+    if (buf.length < 4 || buf[0] !== 0xFF || buf[1] !== 0xD8) return null;
+    let i = 2;
+    while (i + 1 < buf.length) {
+      if (buf[i] !== 0xFF) return null;
+      while (i < buf.length && buf[i] === 0xFF) i++;
+      if (i >= buf.length) return null;
+      const m = buf[i++];
+      if (m === 0xD8 || m === 0xD9 || (m >= 0xD0 && m <= 0xD7) || m === 0x01) continue;
+      if (i + 1 >= buf.length) return null;
+      const len = buf.readUInt16BE(i);
+      if (len < 2 || i + len > buf.length) return null;
+      if ((m >= 0xC0 && m <= 0xC3) || (m >= 0xC5 && m <= 0xC7) || (m >= 0xC9 && m <= 0xCB) || (m >= 0xCD && m <= 0xCF)) {
+        if (len < 7) return null;
+        return { h: buf.readUInt16BE(i + 3), w: buf.readUInt16BE(i + 5) };
+      }
+      i += len;
+    }
+  }
+  return null;
+}
 
-const art = {}, meta = {};
-for (const f of list('bg', '.svg')) art[f.replace('.svg', '')] = clean(fs.readFileSync(path.join(web, 'assets/bg', f), 'utf8'));
+const art = {}, meta = {}, handSvg = {}, bgByKey = {};
+for (const ext of ['.svg', '.jpg', '.png']) {
+  for (const f of list('bg', ext)) {
+    const k = f.slice(0, -ext.length);
+    (bgByKey[k] = bgByKey[k] || []).push(f);
+  }
+}
+for (const [k, files] of Object.entries(bgByKey)) {
+  if (files.length > 1) {
+    console.error(`같은 키의 배경 그림 파일이 함께 있습니다: ${k} (${files.join(', ')})`);
+    process.exit(1);
+  }
+}
+
+for (const f of list('bg', '.svg')) {
+  const k = f.replace('.svg', '');
+  art[k] = handSvg[k] = clean(fs.readFileSync(path.join(web, 'assets/bg', f), 'utf8'));
+}
+
+let rasterTotal = 0;
+for (const ext of ['.jpg', '.png']) {
+  const mime = ext === '.jpg' ? 'image/jpeg' : 'image/png';
+  for (const f of list('bg', ext)) {
+    const k = f.slice(0, -ext.length);
+    const buf = fs.readFileSync(path.join(web, 'assets/bg', f));
+    if (buf.length > 300 * 1024) {
+      console.error(`사진형 배경 그림 파일이 300KB를 넘습니다: ${f} (${(buf.length / 1024).toFixed(1)}KB)`);
+      process.exit(1);
+    }
+    const sz = rasterSize(buf, ext);
+    if (!sz || sz.w !== 900 || sz.h !== 1200) {
+      console.error(`사진형 배경 그림 크기가 가로 900 × 세로 1200 픽셀이 아닙니다: ${f} (${sz ? sz.w + '×' + sz.h : '크기 확인 불가'})`);
+      process.exit(1);
+    }
+    rasterTotal += buf.length;
+    if (rasterTotal > 1.5 * 1024 * 1024) {
+      console.error(`사진형 배경 그림 파일을 모두 합친 크기가 1.5MB를 넘습니다 (${(rasterTotal / (1024 * 1024)).toFixed(2)}MB)`);
+      process.exit(1);
+    }
+    art[k] = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice"><g id="${k}-state-main"><image href="data:${mime};base64,${buf.toString('base64')}" x="0" y="0" width="900" height="1200" preserveAspectRatio="xMidYMid slice"/></g></svg>`;
+  }
+}
+
 for (const f of list('bg', '.meta.json')) {
   const m = JSON.parse(fs.readFileSync(path.join(web, 'assets/bg', f), 'utf8'));
   meta[m.key || f.replace('.meta.json', '')] = m;
 }
-for (const f of list('char', '.svg')) art[f.replace('.svg', '')] = clean(fs.readFileSync(path.join(web, 'assets/char', f), 'utf8'));
+for (const f of list('char', '.svg')) {
+  const k = f.replace('.svg', '');
+  art[k] = handSvg[k] = clean(fs.readFileSync(path.join(web, 'assets/char', f), 'utf8'));
+}
 
-/* 끼워 넣기 규칙 점검: 금지 요소가 있으면 멈춘다 */
+/* 끼워 넣기 규칙 점검: 손으로 쓴 SVG 파일에 금지 요소가 있으면 멈춘다 */
 const bad = [];
-for (const [k, s] of Object.entries(art)) {
+for (const [k, s] of Object.entries(handSvg)) {
   for (const tag of ['<script', '<image', '<foreignObject', '<text', 'href="http']) if (s.includes(tag)) bad.push(`${k}: ${tag}`);
 }
 if (bad.length) { console.error('금지 요소 발견:\n' + bad.join('\n')); process.exit(1); }

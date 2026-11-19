@@ -16,6 +16,62 @@ BO.content3d = {
     hint: '잘 모르겠으면 성경책 출애굽기 3장을 펴 보세요.',
     warpTitle: '이름을 따라 시간 이동 중'
   },
+  horeb: {
+    intro: {
+      narr2: {
+        t1: '성경에 적힌 대로 답하면 탐지기가 부품이 있는 쪽을 알려 줘요.',
+        t2: '탐지기는 시간 나침반과 이어져 있어요. 이 장면이 성경에 어떻게 적혀 있는지 맞히면 부품의 신호를 잡아요.',
+        t3: '탐지기는 시간 나침반과 이어져 있어요. 이 장면이 성경에 어떻게 적혀 있는지 맞히면 부품의 신호를 잡아요.'
+      }
+    },
+    objective: '탐지기 물음에 답해 첫 부품이 있는 곳을 알아내자',
+    kicker: '탐지기 물음',
+    bookHint: { t1: '성경책 출애굽기 3장을 펴 보세요.', t3: '출애굽기 3장' },
+    lastPart: '등불 유리를 찾았어! 이제 다 모았어.',
+    lookUp: { who: 'choeon', text: '저 위를 봐! 불붙은 떨기나무가 바로 저기야.' },
+    quiz: [
+      {
+        part: 'gear', at: [1, 28], beat: 0, ref: '출 3:1', okRef: { t1: '출 3:1', t2: '출 3:1', t3: '출 3:1' },
+        q: {
+          t1: { type: 'choice', prompt: '모세는 무엇을 돌보고 있었나요?', options: [
+            { label: '낙타 떼', note: '본문에 없음' }, { label: '양 떼', ok: true, note: '출 3:1' }, { label: '소 떼', note: '본문에 없음' }] },
+          t2: { type: 'choice', prompt: '모세는 누구의 무엇을 치고 있었나요?', options: [
+            { label: '바로의 소 떼', note: '본문에 없음' }, { label: '아론의 염소 떼', note: '본문에 없음' }, { label: '장인 이드로의 양 떼', ok: true, note: '출 3:1' }] },
+          t3: { type: 'choice', prompt: '모세가 이끌고 온 양 떼는 누구의 것이었는가? 출애굽기 3장에서 찾아 확인하자.', options: [
+            { label: '모세 자신', note: '출 3:1은 장인 이드로의 양 떼라고 적는다' }, { label: '장인 이드로', ok: true, note: '출 3:1' }, { label: '미디안 상인들', note: '본문에 없음' }] }
+        },
+        found: '탐지기가 양 떼 쪽에서 신호를 잡았어요. 양들이 놀라지 않게 조금 떨어져서 찾아요.',
+        objective: '양 떼에서 조금 떨어진 곳에서 부품을 찾아보자'
+      },
+      {
+        part: 'needle', at: [12, 14], beat: 1, ref: '출 3:1', okRef: { t1: '출 3:1', t2: '출 3:1', t3: '출 3:1' },
+        q: {
+          t1: { type: 'choice', prompt: '모세는 양 떼를 데리고 어디까지 왔나요?', options: [
+            { label: '바닷가', note: '본문에 없음' }, { label: '큰 성읍', note: '본문에 없음' }, { label: '하나님의 산 호렙', ok: true, note: '출 3:1' }] },
+          t2: { type: 'choice', prompt: '빈칸에 들어갈 이름을 골라 보세요. 모세는 양 떼를 이끌고 하나님의 산 (　)에 이르렀어요.', options: [
+            { label: '갈멜', note: '본문에 없음' }, { label: '호렙', ok: true, note: '출 3:1' }, { label: '다볼', note: '본문에 없음' }] },
+          t3: { type: 'choice', prompt: '출애굽기 3장은 모세가 이른 산을 무엇이라고 부르는가?', options: [
+            { label: '하나님의 산 호렙', ok: true, note: '출 3:1' }, { label: '모세의 산 호렙', note: '본문에 없음' }, { label: '이드로의 산 호렙', note: '본문에 없음' }] }
+        },
+        found: '탐지기가 이 산의 기슭 길목에서 신호를 잡았어요. 길목을 찾아봐요.',
+        objective: '산기슭 길목에서 부품을 찾아보자'
+      },
+      {
+        part: 'lens', at: [-9.5, -3.5], beat: null, ref: '출 3:2-4', okRef: { t1: '출 3:2', t2: '출 3:3-4', t3: '출 3:3' },
+        q: {
+          t1: { type: 'choice', prompt: '불꽃은 어디에서 일고 있었나요?', options: [
+            { label: '떨기나무 가운데', ok: true, note: '출 3:2' }, { label: '장막 안', note: '본문에 없음' }, { label: '우물가', note: '본문에 없음' }] },
+          t2: { type: 'choice', prompt: '빈칸에 들어갈 말을 골라 보세요. 모세는 불붙은 떨기나무를 (　).', options: [
+            { label: '보고 놀라 달아났어요', note: '본문에 없음' }, { label: '못 본 척 지나갔어요', note: '본문에 없음' }, { label: '보려고 그쪽으로 갔어요', ok: true, note: '출 3:3-4' }] },
+          t3: { type: 'choice', prompt: '모세가 떨기나무 쪽으로 간 까닭은 무엇인가? 출애굽기 3장에서 찾아 확인하자.', options: [
+            { label: '하나님의 부르심을 먼저 듣고 대답하려고', note: '부르심은 모세가 보려고 온 뒤의 일이다, 출 3:4' }, { label: '떨기나무가 왜 타지 않는지 보려고', ok: true, note: '출 3:3' }, { label: '양 떼에게 먹일 풀을 찾으려고', note: '본문에 없음' }] }
+        },
+        found: '탐지기가 떨기나무가 있는 언덕 아래에서 신호를 잡았어요. 언덕 위로는 올라가지 말아요. 우리는 지켜보는 사람이에요.',
+        foundT1: '언덕 아래에서 신호를 잡았어요. 언덕 위로는 올라가지 않아요.',
+        objective: '떨기나무가 있는 언덕 아래에서 부품을 찾아보자'
+      }
+    ]
+  },
   jordan: {
     unknownPlace: '여기는 어디일까?',
     place: '요단 강, 여리고 맞은편',

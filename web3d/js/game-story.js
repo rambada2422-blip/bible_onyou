@@ -42,47 +42,56 @@ BO3D.gameModules.story = function (G) {
     G.step = 0; G.mosesWalking = false; G.mosesArrived = false; G.evIdx = 2;
     G.place(G.moses.group, G.P.mosesStart[0], G.P.mosesStart[1]); G.moses.group.rotation.y = Math.PI * 0.8;
     if (G.moses.setPose) G.moses.setPose('approach');
-    G.scraps.forEach(function (s, i) { s.group.visible = i === 0; s.taken = false; });
+    G.scraps.forEach(function (s) { s.group.visible = false; s.taken = false; });
     G.ring.material.opacity = 0;
     if (G.hat) { G.hat.parent && G.hat.parent.remove(G.hat); }
     G.hatOn = false; G.sceneDone = false; G.partsFound = 0;
-    G.partObjs.forEach(function (po) { po.taken = false; po.group.visible = true; });
+    G.detectorPart = -1;
+    G.partObjs.forEach(function (po) { po.taken = false; po.group.visible = false; });
     G.partCount.textContent = '부품 0 / ' + G.PARTS.length;
     for (var kk in G.kids) G.kids[kk].group.visible = true;
     G.machine.group.position.y = G.machineY; G.machine.group.rotation.y = -0.5; G.departGlow.material.opacity = 0; G.departGlow.scale.setScalar(5);
-    G.camYaw = Math.PI; G.snapCamera();
+    var pos = G.player.group.position;
+    G.camYaw = Math.atan2((G.P.flock[0] + G.P.mosesStart[0]) / 2 - pos.x, (G.P.flock[1] + G.P.mosesStart[1]) / 2 - pos.z); G.snapCamera();
     G.count.textContent = '말씀 조각 0 / 3';
-    G.setObjective(G.OBJ[0]); G.hud.hidden = false;
+    G.setObjective(G.C3.horeb.objective); G.hud.hidden = false;
     G.updateDexBtn();
     G.state = 'caption';
     var teller = G.S.ch === 'onwoo' ? 'hyu' : 'onwoo';
     G.showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
       G.el('p', { class: 'narr', text: '타임머신이 모래 위에 거칠게 내려앉았어요. 시간 나침반의 부품 세 개가 튕겨 나갔어요. 부품을 모두 찾아야 다시 떠날 수 있어요.' }),
       G.el('div', { class: 'say' }, G.avatar(teller), G.el('div', { class: 'bubble' }, G.el('b', { text: G.C.chars[teller].name, style: 'color:' + G.C.chars[teller].color }), '과거에는 아무것도 남기면 안 돼. 탐지기를 보면서 부품을 꼭 다 찾자.'))],
-      G.btn('출발하자', function () {
-        G.hidePanel(); G.state = 'explore'; G.hint.hidden = false; G.camBtn.hidden = false; G.dexBtn.hidden = false;
-        setTimeout(function () { G.hint.hidden = true; }, 9000);
-        G.toast('저기 빛나는 곳부터 가 보자! 부품 탐지기도 잊지 마.', G.followers.length ? keyOf(G.followers[0]) : null);
+      G.btn('다음', function () {
+        G.showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+          G.el('p', { class: 'narr', text: G.tx(G.C3.horeb.intro.narr2) })],
+          G.btn('출발하자', function () { G.showDetector(0); }));
       }));
   }
-  function keyOf(k) { for (var n in G.kids) if (G.kids[n] === k) return n; return null; }
 
   /* ── 말씀 조각 줍기 ── */
   function collect(i) {
+    if (G.cur !== 'horeb' || i !== G.step || G.scraps[i].taken || !G.partObjs[i].taken) return;
+    var item = G.C3.horeb.quiz[i];
     G.scraps[i].taken = true; G.scraps[i].group.visible = false;
     if (G.FX) G.FX.audio.chime();
     G.count.textContent = '말씀 조각 ' + (i + 1) + ' / 3';
     G.count.classList.remove('pulse'); void G.count.offsetWidth; G.count.classList.add('pulse');
-    if (i < 2) {
+    if (item.beat !== null) {
       G.state = 'caption';
-      G.showPanel([G.el('div', { class: 'q-kicker', text: '말씀 조각 ' + (i + 1) + ' / 3' }), G.beatNodes(G.SC.beats[i])],
+      G.showPanel([G.el('div', { class: 'q-kicker', text: '말씀 조각 ' + (i + 1) + ' / 3' }), G.beatNodes(G.SC.beats[item.beat])],
         G.btn('계속 탐험하기', function () {
-          G.hidePanel(); G.state = 'explore'; G.step = i + 1; G.setObjective(G.OBJ[G.step]);
-          G.scraps[i + 1].group.visible = true;
-          if (i === 0) G.mosesWalking = true;
-          if (i === 1) G.ring.material.opacity = 0.45;
+          G.step = i + 1;
+          if (i === 1) { G.mosesWalking = true; G.ring.material.opacity = 0.45; }
+          G.showDetector(G.step);
         }));
-    } else startEvent();
+    } else {
+      var look = G.C3.horeb.lookUp, who = G.C.chars[look.who];
+      G.state = 'caption'; G.track.hidden = true;
+      G.showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+        G.el('div', { class: 'say' }, G.avatar(look.who), G.el('div', { class: 'bubble' },
+          G.el('b', { text: who.name, style: 'color:' + who.color }), look.text))],
+        G.btn('다음', function () { G.hidePanel(); startEvent(); }));
+    }
   }
 
   /* ── 사건 목격 ── */
@@ -235,6 +244,7 @@ BO3D.gameModules.story = function (G) {
   G.begin = begin;
   G.collect = collect;
   G.goodNote = goodNote;
+  G.lookNote = lookNote;
   G.findBlock = findBlock;
   G.findrefBlock = findrefBlock;
   G.sheetOverlay = sheetOverlay;
