@@ -190,10 +190,10 @@ async function runTier(browser, tierIndex) {
     await aim(P.machine[0], P.machine[1]); await snap('photo-machine');
     await p.locator('.dex3').click(); await shot('dex');
     await p.getByRole('button', { name: '닫기', exact: true }).click();
-    await p.locator('.den3').click(); await shot('den');
+    await p.getByRole('button', { name: '타임머신에 타기', exact: true }).click(); await shot('den');
     await p.locator('.sw').nth(2).click(); await p.locator('.tog').click(); await shot('den-deco');
     await p.getByRole('button', { name: '밖으로 나가기', exact: true }).click();
-    await p.locator('.den3').click();
+    await p.getByRole('button', { name: '타임머신에 타기', exact: true }).click();
     await p.getByRole('button', { name: '다음 시대로 출발', exact: true }).click();
     await p.getByRole('button', { name: '처음부터 다시', exact: true }).waitFor({ timeout: 40000 });
     await shot('endcard');
