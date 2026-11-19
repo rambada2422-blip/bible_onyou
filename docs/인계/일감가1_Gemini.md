@@ -1,17 +1,12 @@
-상태: 하는 중
+상태: 끝
 
 # 일감 가-1 인계 · Gemini
 
-- 날짜와 시각: 2026-11-19 16:07
+- 날짜와 시각: 2026-11-19 16:17
 - AI 이름: Gemini
 - 줄: 코드 줄 가 · 3D 게임
 - 단계: 일감 가-1 · 압도 장면 ① 그림판과 두 가지 보기
 - 브랜치: `relay/horeb`
-
-## 어디까지 했는지
-
-- `tools/build3d.js`, `web3d/js/game-awe.js`, `web3d/index.html`, `web3d/js/game.js`, `web3d/css/game.css`, `web3d/js/game-debug.js`, `tools/test/full/awe_layout.js` 구현을 마쳤고, `node tools/test/full/awe_layout.js dist/check/awe_layout` 통과(9장 촬영, `no errors`)와 화면 사진 확인·저장(`docs/인계/사진/일감가1.png`, `docs/인계/사진/일감가1_가까이.png`), 빠른 점검(`node tools/check.js`, 통과 4/4 합격)까지 확인했다.
-- 이제 전체 점검(`node tools/check.js --full`)을 돌려 합격 확인 후 `상태: 끝`으로 바꾼다.
 
 ## 한 일
 
@@ -26,7 +21,7 @@
   - `game-awe.js`를 불러와 초기화하고, `.awe3`, `.awe-sky`, `.awe-board`, `.awe-cap`, `.awe-veil` 및 `.g3.awe-on` 스타일을 더했으며, `BO3D.debug.awe(view, pic)`과 `BO3D.debug.aweRect()`를 연결했다.
 - `tools/test/full/awe_layout.js` (새 파일):
   - `390×844`, `390×664`, `360×560`, `844×390` 네 가지 화면 크기에서 두 보기를 띄워 찍고, `BO3D.debug.aweRect()`가 10절의 식으로 따로 계산한 값과 차이 1 이하로 일치하는지, 가까이 보기에서 가로 끝이 703 이하인지, 전체 보기에서 글자 자리 윗변이 세로 1300 아래인지, 가로가 긴 화면(`844×390`)에서 가까이 보기를 띄우지 않는지 확인하도록 했다.
-  - 실행 결과 (`node tools/test/full/awe_layout.js dist/check/awe_layout`):
+  - 단독 실행 결과 (`node tools/test/full/awe_layout.js dist/check/awe_layout`):
     - `390x844 near(->near) p2: x=0.0..703.0 y=0.0..1521.3`
     - `390x844 wide(->wide) p2: x=0.0..1024.0 y=0.0..1536.0 capY=1536.0`
     - `390x844 wide(->wide) p3: x=0.0..1024.0 y=0.0..1536.0 capY=1536.0`
@@ -37,8 +32,8 @@
     - `844x390 near(->wide) p2: x=0.0..1024.0 y=0.0..1300.1 capY=1300.1`
     - `844x390 wide(->wide) p2: x=0.0..1024.0 y=0.0..1300.1 capY=1300.1`
     - `awe_layout shots: 9 no errors`
-- `docs/인계/사진/일감가1.png`, `docs/인계/사진/일감가1_가까이.png`:
-  - 찍힌 사진을 직접 열어 가까이 보기에 모세가 보이지 않고, 전체 보기에서 글자 자리가 모세가 선 바위를 가리지 않으며, 하늘 띠에 세로 줄무늬가 없음을 확인한 뒤 복사했다.
+- `docs/인계/사진/일감가1.png`, `docs/인계/사진/일감가1_가까이.png` (새 파일):
+  - 찍힌 사진을 직접 열어 가까이 보기에 모세가 보이지 않고, 전체 보기에서 글자 자리가 모세가 선 바위를 가리지 않으며, 하늘 띠에 세로 줄무늬가 없음을 확인한 뒤 복사해 함께 커밋했다.
 
 ## 바뀐 파일 목록
 
@@ -53,3 +48,20 @@
 - `docs/인계/사진/일감가1.png` (새 파일)
 - `docs/인계/사진/일감가1_가까이.png` (새 파일)
 - `docs/인계/일감가1_Gemini.md` (새 파일)
+
+## 점검
+
+- 단독 배치 점검: `node tools/test/full/awe_layout.js dist/check/awe_layout` → `awe_layout shots: 9 no errors` 통과.
+- 전체 점검 명령: `node tools/check.js --full`
+- 세부 결과: 문법(27개 파일), `tools/build.js`, `tools/build3d.js`, 바뀐 파일 11개 확인, 자동 조작 2D 시범판(60초), 자동 조작 사진형 배경(2초), 자동 조작 3D 호렙 산(269초), 자동 조작 3D 요단 강(138초) 모두 통과.
+- 점검 결과 마지막 두 줄:
+
+```text
+점검 종류: 전체 · 통과 8/8
+점검 결과: 합격
+```
+
+## 남은 일
+
+- 일감 가-1의 구현과 점검에 남은 일은 없다.
+- 코드 줄 가의 다음 단계는 `일감 가-2 · 압도 장면 ② 순서와 글자`이다.
