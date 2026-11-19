@@ -33,56 +33,146 @@ BO3D.gameModules.story = function (G) {
     G.overlay.hidden = false;
   }
 
+  function horebData() { return G.C3 && G.C3.horeb ? G.C3.horeb : null; }
+  function quizBibleHint(H, item) {
+    if (G.S.tier === 't1') return H.bookHint.t1;
+    if (G.S.tier === 't3') return H.bookHint.t3;
+    return item.ref;
+  }
+  function showQuiz(idx) {
+    var H = horebData();
+    if (!H || !H.quiz[idx]) { G.quizReady = true; G.state = 'explore'; return; }
+    var item = H.quiz[idx], q = item.q[G.S.tier];
+    var hint = quizBibleHint(H, item), okRef = item.okRef[G.S.tier];
+    var foundText = (G.S.tier === 't1' && item.foundT1) ? item.foundT1 : item.found;
+    G.state = 'caption'; G.quizReady = false; G.track.hidden = true;
+    if (G.hideToast) G.hideToast();
+    G.camBtn.hidden = true; G.dexBtn.hidden = true;
+    function enterExplore() {
+      G.overlay.hidden = true;
+      G.quizReady = true;
+      if (G.partObjs[idx]) G.partObjs[idx].group.visible = true;
+      if (G.scraps[idx]) G.scraps[idx].group.visible = true;
+      G.setObjective(item.objective);
+      G.state = 'explore';
+      G.camBtn.hidden = false; G.dexBtn.hidden = false;
+      if (idx === 0) {
+        G.hint.hidden = false;
+        setTimeout(function () { G.hint.hidden = true; }, 9000);
+      }
+    }
+    function showFoundT1() {
+      sheetOverlay([
+        G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+        G.el('p', { class: 'narr', text: foundText })
+      ], G.btn('계속 탐험하기', enterExplore));
+    }
+    var nb = G.btn(G.S.tier === 't1' ? '다음' : '계속 탐험하기', G.S.tier === 't1' ? showFoundT1 : enterExplore);
+    nb.disabled = true;
+    var noteBox = G.el('div', { style: 'display:flex;flex-direction:column;gap:10px' });
+    var btns = q.options.map(function (o) {
+      var b = G.el('button', { class: 'opt', on: { click: function () {
+        if (o.ok) {
+          btns.forEach(function (x) { x.disabled = true; if (x !== b) x.classList.add('rest'); });
+          b.classList.add('ok');
+          if (G.S.tier === 't1') noteBox.replaceChildren(goodNote(okRef));
+          else noteBox.replaceChildren(
+            goodNote(okRef),
+            G.el('div', { class: 'closebox reward3 fadein' },
+              G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+              G.el('p', { text: foundText }))
+          );
+          nb.disabled = false;
+        } else {
+          b.classList.add('rest'); b.disabled = true;
+          noteBox.replaceChildren(lookNote(hint));
+        }
+        noteBox.scrollIntoView({ block: 'nearest' });
+      } } }, G.el('span', { text: o.label }));
+      return b;
+    });
+    sheetOverlay([
+      G.el('div', { class: 'q-kicker', text: H.kicker + ' ' + (idx + 1) + ' / ' + H.quiz.length }),
+      G.el('div', { class: 'narr-meta' }, G.refChip(hint)),
+      G.el('p', { class: 'q-prompt', text: q.prompt }),
+      G.el('div', { class: 'opts' }, btns),
+      noteBox
+    ], nb);
+  }
+
   function begin() {
     G.root.className = 'g3 app ' + G.S.tier;
     G.overlay.hidden = true;
     if (G.FX) { G.FX.audio.start(); G.FX.audio.pad(false); G.snd.hidden = false; }
     G.cur = 'horeb'; G.hudMode();
     G.spawnKids();
-    G.step = 0; G.mosesWalking = false; G.mosesArrived = false; G.evIdx = 2;
+    G.step = 0; G.quizReady = false; G.mosesWalking = false; G.mosesArrived = false; G.evIdx = 2;
     G.place(G.moses.group, G.P.mosesStart[0], G.P.mosesStart[1]); G.moses.group.rotation.y = Math.PI * 0.8;
     if (G.moses.setPose) G.moses.setPose('approach');
-    G.scraps.forEach(function (s, i) { s.group.visible = i === 0; s.taken = false; });
+    G.scraps.forEach(function (s) { s.group.visible = false; s.taken = false; });
     G.ring.material.opacity = 0;
     if (G.hat) { G.hat.parent && G.hat.parent.remove(G.hat); }
     G.hatOn = false; G.sceneDone = false; G.partsFound = 0;
-    G.partObjs.forEach(function (po) { po.taken = false; po.group.visible = true; });
+    G.partObjs.forEach(function (po) { po.taken = false; po.group.visible = false; });
     G.partCount.textContent = '부품 0 / ' + G.PARTS.length;
     for (var kk in G.kids) G.kids[kk].group.visible = true;
     G.machine.group.position.y = G.machineY; G.machine.group.rotation.y = -0.5; G.departGlow.material.opacity = 0; G.departGlow.scale.setScalar(5);
-    G.camYaw = Math.PI; G.snapCamera();
+    G.camYaw = Math.atan2(-6 - G.P.start[0], 18 - G.P.start[1]); G.snapCamera();
     G.count.textContent = '말씀 조각 0 / 3';
-    G.setObjective(G.OBJ[0]); G.hud.hidden = false;
+    var H = horebData();
+    G.setObjective(H ? H.objective : G.OBJ[0]); G.hud.hidden = false;
+    G.camBtn.hidden = true; G.dexBtn.hidden = true; G.hint.hidden = true; G.track.hidden = true;
     G.updateDexBtn();
     G.state = 'caption';
     var teller = G.S.ch === 'onwoo' ? 'hyu' : 'onwoo';
     G.showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
       G.el('p', { class: 'narr', text: '타임머신이 모래 위에 거칠게 내려앉았어요. 시간 나침반의 부품 세 개가 튕겨 나갔어요. 부품을 모두 찾아야 다시 떠날 수 있어요.' }),
       G.el('div', { class: 'say' }, G.avatar(teller), G.el('div', { class: 'bubble' }, G.el('b', { text: G.C.chars[teller].name, style: 'color:' + G.C.chars[teller].color }), '과거에는 아무것도 남기면 안 돼. 탐지기를 보면서 부품을 꼭 다 찾자.'))],
-      G.btn('출발하자', function () {
-        G.hidePanel(); G.state = 'explore'; G.hint.hidden = false; G.camBtn.hidden = false; G.dexBtn.hidden = false;
-        setTimeout(function () { G.hint.hidden = true; }, 9000);
-        G.toast('저기 빛나는 곳부터 가 보자! 부품 탐지기도 잊지 마.', G.followers.length ? keyOf(G.followers[0]) : null);
+      G.btn('다음', function () {
+        G.showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+          G.el('p', { class: 'narr', text: G.tx(H.intro.narr2) })],
+          G.btn('출발하자', function () {
+            G.hidePanel();
+            showQuiz(0);
+          }));
       }));
   }
   function keyOf(k) { for (var n in G.kids) if (G.kids[n] === k) return n; return null; }
 
   /* ── 말씀 조각 줍기 ── */
   function collect(i) {
-    G.scraps[i].taken = true; G.scraps[i].group.visible = false;
+    if (!G.quizReady || G.scraps[i].taken) return;
+    if (G.partObjs[i] && !G.partObjs[i].taken) G.takePart(i);
+    G.scraps[i].taken = true; G.scraps[i].group.visible = false; G.quizReady = false;
     if (G.FX) G.FX.audio.chime();
     G.count.textContent = '말씀 조각 ' + (i + 1) + ' / 3';
     G.count.classList.remove('pulse'); void G.count.offsetWidth; G.count.classList.add('pulse');
-    if (i < 2) {
+    var H = horebData(), item = H ? H.quiz[i] : null;
+    if (item ? item.beat !== null : i < 2) {
+      var beatIdx = item ? item.beat : i;
       G.state = 'caption';
-      G.showPanel([G.el('div', { class: 'q-kicker', text: '말씀 조각 ' + (i + 1) + ' / 3' }), G.beatNodes(G.SC.beats[i])],
-        G.btn('계속 탐험하기', function () {
-          G.hidePanel(); G.state = 'explore'; G.step = i + 1; G.setObjective(G.OBJ[G.step]);
-          G.scraps[i + 1].group.visible = true;
-          if (i === 0) G.mosesWalking = true;
-          if (i === 1) G.ring.material.opacity = 0.45;
-        }));
-    } else startEvent();
+      G.showPanel([
+        G.el('div', { class: 'closebox reward3', style: 'padding:8px 12px;gap:2px' },
+          G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+          G.el('p', { style: 'font-size:14.5px;line-height:1.4', text: G.partLine(i) })),
+        G.el('div', { class: 'q-kicker', text: '말씀 조각 ' + (i + 1) + ' / 3' }),
+        G.beatNodes(G.SC.beats[beatIdx])
+      ], G.btn('다음', function () {
+        G.hidePanel();
+        G.step = i + 1;
+        if (i === 1) { G.mosesWalking = true; G.ring.material.opacity = 0.45; }
+        showQuiz(G.step);
+      }));
+    } else {
+      G.state = 'caption';
+      var lu = H ? H.lookUp : { who: 'choeon', text: '저 위를 봐! 불붙은 떨기나무가 바로 저기야.' };
+      var luWho = G.C.chars[lu.who];
+      G.showPanel([
+        G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+        G.el('div', { class: 'say' }, G.avatar(lu.who),
+          G.el('div', { class: 'bubble' }, G.el('b', { text: luWho.name, style: 'color:' + luWho.color }), lu.text))
+      ], G.btn('다음', function () { startEvent(); }));
+    }
   }
 
   /* ── 사건 목격 ── */

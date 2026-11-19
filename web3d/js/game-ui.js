@@ -13,6 +13,7 @@ BO3D.gameModules.ui = function (G) {
     toastEl.hidden = false; toastEl.classList.remove('show'); void toastEl.offsetWidth; toastEl.classList.add('show');
     clearTimeout(toast.t); toast.t = setTimeout(function () { toastEl.hidden = true; }, 4200);
   }
+  function hideToast() { clearTimeout(toast.t); toastEl.hidden = true; }
   function showPanel(kids_, foot) {
     panelBody.replaceChildren(); panelFoot.replaceChildren();
     G.add(panelBody, kids_); G.add(panelFoot, foot);
@@ -34,6 +35,7 @@ BO3D.gameModules.ui = function (G) {
 
   G.setObjective = setObjective;
   G.toast = toast;
+  G.hideToast = hideToast;
   G.showPanel = showPanel;
   G.hidePanel = hidePanel;
   G.btn = btn;
@@ -41,13 +43,16 @@ BO3D.gameModules.ui = function (G) {
   return function initUi() {
     /* ── 상태 ── */
     G.state = 'menu';         /* menu | explore | caption | event | gates | end | free */
-    G.step = 0;               /* 0: 양 떼 쪽, 1: 모세를 따라, 2: 더 가까이 */
+    G.step = 0;               /* 0: 양 떼, 1: 산기슭 길목, 2: 언덕 아래 */
+    G.quizReady = false;
     G.camYaw = Math.PI, G.camPitchH = 1.45, G.camDist = 7.4, G.lastDrag = -9, G.now = 0;
     G.camPos = new G.T.Vector3(), G.camLook = new G.T.Vector3(), G.camLookT = new G.T.Vector3();
     G.stick = { x: 0, y: 0, id: null, bx: 0, by: 0 }, G.drag = { id: null, x: 0 }, G.keys = {};
     G.trail = [], G.mosesWalking = false, G.mosesArrived = false, G.lastToast = -9, G.evIdx = 2, G.pspeed = 0;
     G.baseFov = 62, G.viewShift = 0;
-    G.OBJ = ['양 떼가 있는 곳에서 빛나는 말씀 조각을 찾아보자', '모세가 가는 쪽으로 따라가 보자', '떨기나무가 보이는 곳까지 조금 더 가 보자'];
+    G.OBJ = (G.C3 && G.C3.horeb)
+      ? G.C3.horeb.quiz.map(function (q) { return q.objective; })
+      : ['양 떼에서 조금 떨어진 곳에서 부품을 찾아보자', '산기슭 길목에서 부품을 찾아보자', '떨기나무가 있는 언덕 아래에서 부품을 찾아보자'];
 
     /* ── 화면 위 UI ── */
     G.place_ = G.el('span', { class: 'place', text: G.SC.place });

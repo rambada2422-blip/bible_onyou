@@ -22,13 +22,64 @@ fs.mkdirSync(out, { recursive: true });
   await p.click('text=탐험 시작');
   await p.waitForTimeout(600);
   await p.click('.route-opts .btn:has-text("모세")');
-  await p.waitForSelector('text=출발하자', { timeout: 40000 });
+  await p.waitForSelector('.panel3 .btn.onpaper:has-text("다음")', { timeout: 40000 });
   await p.waitForTimeout(1500);
   await shot('story');
-  await p.click('text=출발하자');
-  await p.waitForTimeout(1500);
-  await shot('start');
+  await p.click('.panel3 .btn.onpaper:has-text("다음")');
+  await p.waitForSelector('.panel3 .btn.onpaper:has-text("출발하자")', { timeout: 10000 });
+  await p.waitForTimeout(400);
+  const C = await p.evaluate(() => BO.content);
+  const H3 = await p.evaluate(() => BO.content3d.horeb);
+  const tier = C.tiers[Number(ti)].id;
+  const intro2Text = await p.locator('.panel3').innerText();
+  if (!intro2Text.includes(H3.intro.narr2[tier])) throw new Error('intro2 text mismatch');
+  await p.click('.panel3 .btn.onpaper:has-text("출발하자")');
+  await p.waitForTimeout(600);
   const st = () => p.evaluate(() => BO3D.debug.state());
+  async function solveQuiz(idx) {
+    const item = H3.quiz[idx], q = item.q[tier];
+    const hint = tier === 't1' ? H3.bookHint.t1 : (tier === 't3' ? H3.bookHint.t3 : item.ref);
+    const okRef = item.okRef[tier];
+    const foundText = (tier === 't1' && item.foundT1) ? item.foundT1 : item.found;
+    await p.waitForSelector('.overlay3:not([hidden]) .q-kicker', { timeout: 10000 });
+    const preText = await p.locator('.overlay3').innerText();
+    if (!preText.includes(H3.kicker + ' ' + (idx + 1) + ' / ' + H3.quiz.length)) throw new Error('quiz kicker mismatch ' + idx);
+    if (!preText.includes(hint)) throw new Error('quiz hint mismatch ' + idx);
+    if (tier === 't3' && preText.includes(item.ref)) throw new Error('t3 leaked verse ref ' + idx);
+    if (preText.includes('본문에 없음')) throw new Error('quiz leaked note ' + idx);
+    if (!(await p.locator('.track3').isHidden())) throw new Error('tracker visible before quiz ' + idx);
+    await shot('quiz' + (idx + 1));
+    const wrongIdx = q.options.findIndex((o) => !o.ok);
+    await p.click('.overlay3 .opt >> nth=' + wrongIdx);
+    await p.waitForTimeout(250);
+    const wrongText = await p.locator('.overlay3').innerText();
+    if (!wrongText.includes('성경에서 확인해 볼까요?') || !wrongText.includes('성경책을 펴서 읽은 뒤 다시 골라 보세요.')) throw new Error('wrong feedback missing ' + idx);
+    if (wrongText.includes('틀렸습니다')) throw new Error('forbidden wrong wording ' + idx);
+    if (!(await p.locator('.overlay3 .sheet-foot .btn.onpaper').isDisabled())) throw new Error('next enabled after wrong ' + idx);
+    const okIdx = q.options.findIndex((o) => o.ok);
+    await p.click('.overlay3 .opt >> nth=' + okIdx);
+    await p.waitForTimeout(300);
+    const okText = await p.locator('.overlay3').innerText();
+    if (!okText.includes('성경에 그렇게 기록되어 있어요.') || !okText.includes(okRef)) throw new Error('ok feedback missing ' + idx);
+    if (tier === 't1') {
+      if (okText.includes(foundText)) throw new Error('t1 did not split found screen ' + idx);
+      await p.click('.overlay3 .sheet-foot .btn.onpaper');
+      await p.waitForTimeout(300);
+      const t1Found = await p.locator('.overlay3').innerText();
+      if (!t1Found.includes('탐험대 이야기') || !t1Found.includes(foundText)) throw new Error('t1 found screen missing ' + idx);
+      await p.click('.overlay3 .sheet-foot .btn.onpaper');
+    } else {
+      if (!okText.includes('탐험대 이야기') || !okText.includes(foundText)) throw new Error('found guide missing ' + idx);
+      await p.click('.overlay3 .sheet-foot .btn.onpaper');
+    }
+    await p.waitForTimeout(500);
+    if (await p.locator('.track3').isHidden()) throw new Error('tracker hidden after quiz ' + idx);
+    const objText = await p.locator('.hud3 .obj').innerText();
+    if (!objText.includes(item.objective)) throw new Error('objective mismatch after quiz ' + idx);
+  }
+  await solveQuiz(0);
+  await p.waitForTimeout(900);
+  await shot('start');
   // 목표 지점을 향해 조이스틱을 민다 (카메라 방향을 목표 쪽으로 고정)
   async function walkTo(x, z, label, stopState) {
     for (let i = 0; i < 400; i++) {
@@ -47,19 +98,21 @@ fs.mkdirSync(out, { recursive: true });
   const aim = async (x, z) => { await p.evaluate(([x, z]) => { const s = BO3D.debug.state(); BO3D.debug.yaw(Math.atan2(x - s.x, z - s.z)); }, [x, z]); await p.waitForTimeout(2600); };
   const snap = async (label) => { await p.click('.cam3'); await p.waitForTimeout(700); await shot(label); console.log(label, JSON.stringify(await p.evaluate(() => BO3D.debug.dex()))); };
   await aim(P.mountain[0], P.mountain[1]); await snap('photo-horeb');
-  const C = await p.evaluate(() => BO.content);
-  const tier = C.tiers[Number(ti)].id;
   await walkTo(P.scraps[0][0], P.scraps[0][1], 'to-flock');
+  if ((await p.evaluate(() => BO3D.debug.parts().found)) !== 1) throw new Error('part 1 not collected');
   await shot('scrap1');
   console.log('after scrap1', JSON.stringify(await st()));
-  await p.click('text=계속 탐험하기'); await p.waitForTimeout(1500);
+  await p.click('.panel3 .btn.onpaper'); await p.waitForTimeout(500);
+  await solveQuiz(1);
   await shot('follow');
   await walkTo(P.flock[0] + 6, P.flock[1] + 6, null);
   await aim(P.flock[0], P.flock[1]); await snap('photo-sheep');
   if ((await p.evaluate(() => BO3D.debug.sheep())) < 30) throw new Error('sheep < 30');
   await walkTo(P.scraps[1][0], P.scraps[1][1], 'to-rise');
+  if ((await p.evaluate(() => BO3D.debug.parts().found)) !== 2) throw new Error('part 2 not collected');
   await shot('scrap2');
-  await p.click('text=계속 탐험하기'); await p.waitForTimeout(600);
+  await p.click('.panel3 .btn.onpaper'); await p.waitForTimeout(500);
+  await solveQuiz(2);
   // 경계 안으로 들어가 보려고 시도
   await walkTo(P.bush[0], P.bush[1] + 3, null);
   await p.waitForTimeout(400);
@@ -68,6 +121,11 @@ fs.mkdirSync(out, { recursive: true });
   console.log('boundary', JSON.stringify(bst));
   if (Math.hypot(bst.x - P.bush[0], bst.z - P.bush[1]) < P.witnessRadius - 0.1) throw new Error('crossed witness boundary');
   await walkTo(P.scraps[2][0], P.scraps[2][1], null);
+  if ((await p.evaluate(() => BO3D.debug.parts().found)) !== 3) throw new Error('part 3 not collected');
+  const luText = await p.locator('.panel3').innerText();
+  if (!luText.includes(H3.lookUp.text)) throw new Error('lookUp text missing');
+  await shot('lookup');
+  await p.click('.panel3 .btn.onpaper');
   await p.waitForTimeout(2600);
   await shot('event1');
   await snap('photo-event');
@@ -79,7 +137,7 @@ fs.mkdirSync(out, { recursive: true });
   for (let g = 0; g < gates.length; g++) {
     const q = gates[g];
     await shot('gate' + (g + 1));
-    const pick = async (qq) => p.click('.overlay3 .opt:has-text("' + qq.options.find((o) => o.ok).label + '")');
+    const pick = async (qq) => p.click('.overlay3 .opt >> nth=' + qq.options.findIndex((o) => o.ok));
     if (q.type === 'choice') await pick(q);
     else if (q.type === 'find') { await p.click('text=찾아서 읽었어요'); await p.waitForTimeout(200); await pick(q.confirm); }
     else if (q.type === 'order') { for (const it of q.items) await p.click('.overlay3 .opt:has-text("' + it + '")'); }
@@ -89,16 +147,10 @@ fs.mkdirSync(out, { recursive: true });
   }
   await shot('end');
   await p.click('.overlay3 .sheet-foot .btn.onpaper'); await p.waitForTimeout(600);
-  const parts = await p.evaluate(() => BO3D.debug.parts());
-  let pi = 0;
-  for (const at of [parts.at[2], parts.at[1], parts.at[0]]) {
-    await walkTo(at[0], at[1], pi === 0 ? 'tracker' : null); pi++;
-    await p.waitForTimeout(300);
-    console.log('part', JSON.stringify(await p.evaluate(() => BO3D.debug.parts().found)));
-    if (pi === 1) await shot('part1');
-  }
-  await walkTo(P.machine[0] - 2, P.machine[1] - 4, "back-to-machine");
+  await walkTo(P.machine[0] - 2, P.machine[1] - 4, 'back-to-machine');
   await aim(P.machine[0], P.machine[1]); await snap('photo-machine');
+  const dexAll = await p.evaluate(() => BO3D.debug.dex());
+  if (dexAll.length < 5) throw new Error('dex incomplete: ' + JSON.stringify(dexAll));
   await p.click('.dex3'); await p.waitForTimeout(500); await shot('dex');
   await p.click('text=닫기'); await p.waitForTimeout(300);
   await p.click('.den3'); await p.waitForTimeout(500); await shot('den');
