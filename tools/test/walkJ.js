@@ -86,6 +86,9 @@ fs.mkdirSync(out, { recursive: true });
   await shot('back');
   await next(); await shot('bonus-card');
   await next();
+  // 호렙 산 도입이 두 화면이 되었다 (docs/07 3.1절). 첫 화면의 '다음'을 눌러야 '출발하자'가 나온다.
+  const horebNext = p.locator('.panel3').getByRole('button', { name: '다음', exact: true });
+  await horebNext.waitFor({ timeout: 40000 }); await p.waitForTimeout(600); await horebNext.click();
   await p.waitForSelector('text=출발하자', { timeout: 40000 }); await p.waitForTimeout(1500);
   await shot('horeb');
   console.log(tier, 'shots:', n, 'level', await p.evaluate(() => BO3D.debug.level()), JSON.stringify(await st()), errs.length ? '\nERR ' + errs.slice(0, 8).join('\n') : 'no errors');
