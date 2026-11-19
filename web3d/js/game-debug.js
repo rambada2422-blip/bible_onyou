@@ -14,6 +14,8 @@ BO3D.gameModules.debug = function (G) {
       parts: function () { return { found: G.partsFound, at: G.PARTS.map(function (p) { return p.at; }), done: G.sceneDone }; },
       dex: function () { return Object.keys(G.dex); },
       sheep: function () { return G.sheep ? G.sheep.length : 0; },
+      awe: function (view, pic) { return G.showAwe ? G.showAwe(view, pic) : null; },
+      aweRect: function () { return G.aweRect ? G.aweRect() : null; },
       state: function () { return { state: G.state, step: G.step, x: G.player && G.player.group.position.x, z: G.player && G.player.group.position.z, mosesArrived: G.mosesArrived }; },
       stick: function (x, y) { G.stick.x = x; G.stick.y = y; },
       yaw: function (v) { G.camYaw = v; G.lastDrag = G.now + 999; },

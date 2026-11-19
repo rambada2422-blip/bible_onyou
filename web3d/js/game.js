@@ -11,6 +11,7 @@
   var initialize = [
     modules.scene(G),
     modules.ui(G),
+    modules.awe(G),
     modules.exploration(G),
     modules.travel(G),
     modules.jordan(G),
