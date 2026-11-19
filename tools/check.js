@@ -17,7 +17,7 @@ const last = (s) => (s || '').trim().split('\n').filter(Boolean).slice(-3).join(
 /* 1. 문법 */
 const skip = (f) => /vendor|art\.js$|avatars\.js$|glbdata\.js$/.test(f);
 const jsFiles = [];
-for (const dir of ['web/js', 'web3d/js', 'tools', 'tools/test']) {
+for (const dir of ['web/js', 'web3d/js', 'tools', 'tools/lint', 'tools/test', 'tools/test/full']) {
   const d = path.join(root, dir);
   if (!fs.existsSync(d)) continue;
   for (const f of fs.readdirSync(d)) if (f.endsWith('.js') && !skip(f)) jsFiles.push(path.join(dir, f));
@@ -47,7 +47,19 @@ try {
   if (hit.length) add('내용 파일이 바뀜', '⚠️', hit.join(', ') + ' → Claude가 쓰고 별도 검증을 거쳐야 한다 (AGENTS.md 업무 분담)');
 } catch (e) { add('바뀐 파일', '⚠️', 'git을 쓸 수 없어 확인하지 못함'); }
 
-/* 4. 전체 점검: 자동 조작 */
+/* 4. 추가 검사 (tools/lint/*.js: 빠른·전체 점검 모두 이름순 실행. exit 0 통과, 1 불합격, 2 확인 필요) */
+const lintDir = path.join(root, 'tools/lint');
+if (fs.existsSync(lintDir)) {
+  const lints = fs.readdirSync(lintDir).filter((f) => f.endsWith('.js')).sort();
+  for (const f of lints) {
+    const r = run([path.join('tools/lint', f)]);
+    const state = r.status === 0 ? '✅' : r.status === 2 ? '⚠️' : '❌';
+    const note = last(r.stdout || r.stderr) || (r.error ? String(r.error.message) : '');
+    add('검사 ' + path.basename(f, '.js'), state, note);
+  }
+}
+
+/* 5. 전체 점검: 자동 조작 */
 if (full) {
   let hasPw = true;
   try { require.resolve('playwright'); } catch (e) { hasPw = false; }
@@ -67,6 +79,19 @@ if (full) {
       const text = (r.stdout || '') + (r.stderr || '');
       const ok = r.status === 0 && /no errors/.test(text) && !/\nERR |FAIL/.test(text);
       add('자동 조작 ' + name, ok ? '✅' : '❌', Math.round((Date.now() - t0) / 1000) + '초' + (ok ? '' : ' · ' + (r.error ? String(r.error.message) : last(text))));
+    }
+    /* tools/test/full/*.js: 이름순 실행, 첫 인자는 dist/check/<파일이름> */
+    const fullDir = path.join(root, 'tools/test/full');
+    if (fs.existsSync(fullDir)) {
+      const extras = fs.readdirSync(fullDir).filter((f) => f.endsWith('.js')).sort();
+      for (const f of extras) {
+        const base = path.basename(f, '.js');
+        const t0 = Date.now();
+        const r = run([path.join('tools/test/full', f), path.join(out, base)], 20 * 60 * 1000);
+        const text = (r.stdout || '') + (r.stderr || '');
+        const ok = r.status === 0 && !/\nERR |FAIL/.test(text);
+        add('자동 조작 ' + base, ok ? '✅' : '❌', Math.round((Date.now() - t0) / 1000) + '초' + (ok ? '' : ' · ' + (r.error ? String(r.error.message) : last(text))));
+      }
     }
   }
 }
