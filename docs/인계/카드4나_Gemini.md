@@ -2,9 +2,9 @@
 
 # 카드 4-나 인계 · Gemini
 
-- 날짜와 시각: 2026-11-19 12:01
+- 날짜와 시각: 2026-11-19 12:07
 - AI 이름: Gemini
-- 브랜치: `relay/horeb`
+- 브랜치: `gemini/card-4na` (이 PC의 GitHub 미인증 사이 `origin/relay/horeb`에 GPT가 동시 작업해 대표 결정으로 기존 기록을 덮어쓰지 않고 별도 브랜치에 올림)
 
 ## 어디까지 했는지
 
