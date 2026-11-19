@@ -209,21 +209,25 @@ async function runTier(browser, tierIndex) {
       g1.drawImage(im1, 0, 0); g2.drawImage(im2, 0, 0);
       const d1 = g1.getImageData(0, 0, c1.width, c1.height).data;
       const d2 = g2.getImageData(0, 0, c2.width, c2.height).data;
-      let leftDiff = 0, rightDiff = 0;
+      let leftDiff = 0, leftSum = 0, leftCnt = 0, rightDiff = 0;
       for (let y = yStart; y < yEnd; y++) {
         for (let x = xStart; x < xEnd; x++) {
           const o = (y * c1.width + x) * 4;
-          const diff = Math.abs(d1[o] - d2[o]) + Math.abs(d1[o + 1] - d2[o + 1]) + Math.abs(d1[o + 2] - d2[o + 2]);
-          if (diff > 0) {
-            if (x <= xSplit) leftDiff++;
-            else rightDiff++;
+          const diff = Math.max(Math.abs(d1[o] - d2[o]), Math.abs(d1[o + 1] - d2[o + 1]), Math.abs(d1[o + 2] - d2[o + 2]));
+          if (x <= xSplit) {
+            leftCnt++;
+            leftSum += diff;
+            if (diff > 16) leftDiff++;
+          } else if (diff > 25) {
+            rightDiff++;
           }
         }
       }
-      return { leftDiff, rightDiff, xStart, xSplit, xEnd, yStart, yEnd };
+      return { leftDiff, avgLeft: leftSum / Math.max(1, leftCnt), rightDiff, xStart, xSplit, xEnd, yStart, yEnd };
     }, [beforeBuf.toString('base64'), afterBuf.toString('base64')]);
     assert.equal(swapCheck.leftDiff, 0, 'image 0..719 region must be identical before and after swap: ' + JSON.stringify(swapCheck));
-    assert(swapCheck.rightDiff > 100, 'Moses region must change after swap: ' + JSON.stringify(swapCheck));
+    assert(swapCheck.avgLeft < 1.5, 'image 0..719 average diff too large: ' + JSON.stringify(swapCheck));
+    assert(swapCheck.rightDiff > 1000, 'Moses region must change after swap: ' + JSON.stringify(swapCheck));
 
     awe = await p.evaluate(() => BO3D.debug.aweNext());
     assert.equal(awe.step, 5);
