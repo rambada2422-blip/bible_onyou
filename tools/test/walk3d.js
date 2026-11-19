@@ -11,6 +11,9 @@ fs.mkdirSync(out, { recursive: true });
 const design = fs.readFileSync(path.resolve(__dirname, '../../docs/07_호렙_퀴즈와_동선.md'), 'utf8').replace(/\r\n/g, '\n');
 const approvedBlock = design.split('## 5. 구현할 때 넣을 자료')[1].split('```js\n')[1].split('```')[0].trim();
 const approved = JSON.parse(JSON.stringify(vm.runInNewContext('({' + approvedBlock + '}).horeb')));
+const aweDoc = fs.readFileSync(path.resolve(__dirname, '../../docs/일감/가-2.md'), 'utf8').replace(/\r\n/g, '\n');
+const aweBlock = aweDoc.split('```js\n')[1].split('```')[0].trim();
+approved.awe = JSON.parse(JSON.stringify(vm.runInNewContext('({' + aweBlock + '}).awe')));
 
 async function runTier(browser, tierIndex) {
   const tierOut = path.join(out, 't' + (tierIndex + 1));
@@ -159,8 +162,86 @@ async function runTier(browser, tierIndex) {
       }
     }
     await waitState('event');
-    await p.waitForTimeout(1800);
+    let awe = await p.evaluate(() => BO3D.debug.aweState());
+    assert.equal(awe.active, true, 'awe scene must start after lookUp');
+    assert.equal(awe.step, 0);
+    for (const sel of ['.hud3', '.cam3', '.dex3', '.snd3', '.stick']) {
+      assert.equal(await p.locator(sel).isVisible(), false, sel + ' must be hidden during awe scene');
+    }
+    await p.waitForTimeout(1500);
     await shot('look-up');
+
+    awe = await p.evaluate(() => BO3D.debug.aweNext());
+    assert.equal(awe.step, 1);
+    awe = await p.evaluate(() => BO3D.debug.aweNext());
+    assert.equal(awe.step, 2);
+    awe = await p.evaluate(() => BO3D.debug.aweNext());
+    assert.equal(awe.step, 3);
+    awe = await p.evaluate(() => BO3D.debug.aweNext());
+    assert.equal(awe.step, 4);
+    assert.equal(awe.ref, H.awe.call.ref);
+    assert.equal(awe.text, H.awe.call[tier]);
+    assert.equal(await p.locator('.awe-cap .ref').innerText(), H.awe.call.ref);
+    assert.equal(await p.locator('.awe-cap .awe-line').innerText(), H.awe.call[tier]);
+    await shot('awe-call');
+
+    await p.evaluate(() => BO3D.debug.aweNext('beforeSwap'));
+    n++;
+    const beforeBuf = await p.screenshot({ path: path.join(tierOut, String(n).padStart(2, '0') + '-awe-before-swap.png') });
+    await p.evaluate(() => BO3D.debug.aweNext('afterSwap'));
+    n++;
+    const afterBuf = await p.screenshot({ path: path.join(tierOut, String(n).padStart(2, '0') + '-awe-after-swap.png') });
+
+    const swapCheck = await p.evaluate(async ([b1, b2]) => {
+      const r = BO3D.debug.aweRect();
+      const load = src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.src = src; });
+      const im1 = await load('data:image/png;base64,' + b1);
+      const im2 = await load('data:image/png;base64,' + b2);
+      const dpr = im1.naturalWidth / r.W;
+      const xStart = Math.max(0, Math.round(r.left * dpr));
+      const xSplit = Math.min(im1.naturalWidth, Math.floor((r.left + r.width * (719 / 1024)) * dpr));
+      const xEnd = Math.min(im1.naturalWidth, Math.floor((r.left + r.width) * dpr));
+      const yStart = Math.max(0, Math.round(r.top * dpr));
+      const yEnd = Math.min(im1.naturalHeight, Math.floor(Math.min(r.top + r.height, r.H - 150) * dpr));
+      const c1 = document.createElement('canvas'), c2 = document.createElement('canvas');
+      c1.width = c2.width = im1.naturalWidth; c1.height = c2.height = im1.naturalHeight;
+      const g1 = c1.getContext('2d'), g2 = c2.getContext('2d');
+      g1.drawImage(im1, 0, 0); g2.drawImage(im2, 0, 0);
+      const d1 = g1.getImageData(0, 0, c1.width, c1.height).data;
+      const d2 = g2.getImageData(0, 0, c2.width, c2.height).data;
+      let leftDiff = 0, leftSum = 0, leftCnt = 0, rightDiff = 0;
+      for (let y = yStart; y < yEnd; y++) {
+        for (let x = xStart; x < xEnd; x++) {
+          const o = (y * c1.width + x) * 4;
+          const diff = Math.max(Math.abs(d1[o] - d2[o]), Math.abs(d1[o + 1] - d2[o + 1]), Math.abs(d1[o + 2] - d2[o + 2]));
+          if (x <= xSplit) {
+            leftCnt++;
+            leftSum += diff;
+            if (diff > 16) leftDiff++;
+          } else if (diff > 25) {
+            rightDiff++;
+          }
+        }
+      }
+      return { leftDiff, avgLeft: leftSum / Math.max(1, leftCnt), rightDiff, xStart, xSplit, xEnd, yStart, yEnd };
+    }, [beforeBuf.toString('base64'), afterBuf.toString('base64')]);
+    assert.equal(swapCheck.leftDiff, 0, 'image 0..719 region must be identical before and after swap: ' + JSON.stringify(swapCheck));
+    assert(swapCheck.avgLeft < 1.5, 'image 0..719 average diff too large: ' + JSON.stringify(swapCheck));
+    assert(swapCheck.rightDiff > 1000, 'Moses region must change after swap: ' + JSON.stringify(swapCheck));
+
+    awe = await p.evaluate(() => BO3D.debug.aweNext());
+    assert.equal(awe.step, 5);
+    assert.equal(awe.ref, H.awe.hide.ref);
+    assert.equal(awe.text, H.awe.hide[tier]);
+    assert.equal(await p.locator('.awe-cap .ref').innerText(), H.awe.hide.ref);
+    assert.equal(await p.locator('.awe-cap .awe-line').innerText(), H.awe.hide[tier]);
+    await shot('awe-hide');
+
+    awe = await p.evaluate(() => BO3D.debug.aweNext());
+    assert.equal(awe.step, 6);
+    awe = await p.evaluate(() => BO3D.debug.aweNext());
+    assert.equal(awe.active, false, 'awe scene must finish after step 6');
+    assert.equal(await p.locator('.cam3').isVisible(), true, 'camera button must be restored after awe scene');
     await snap('photo-event');
     const scene = C.scenes['EX-01'];
     for (let beat = 2; beat < scene.beats.length; beat++) {
