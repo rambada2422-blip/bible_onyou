@@ -22,6 +22,38 @@ BO3D.gameModules.ui = function (G) {
   function hidePanel() { panel.hidden = true; }
   function btn(label, fn, cls) { return G.el('button', { class: 'btn ' + (cls || 'onpaper'), on: { click: fn } }, label); }
 
+  /* 문구와 보기 순서는 승인된 horeb 자료에서만 읽는다. note는 화면에 내보내지 않는다. */
+  function detectorQuestion(item, index, onReady) {
+    var data = G.C3.horeb, tier = G.S.tier, q = item.q[tier], solved = false;
+    var noteBox = G.el('div', {});
+    function foundNodes() {
+      return [G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+        G.el('p', { class: 'narr', text: tier === 't1' && item.foundT1 ? item.foundT1 : item.found })];
+    }
+    function answer() {
+      var good = G.goodNote(item.okRef[tier]), go = btn('계속 탐험하기', onReady);
+      if (tier === 't1') showPanel([good], btn('다음', function () { showPanel(foundNodes(), go); }));
+      else showPanel([good].concat(foundNodes()), go);
+    }
+    var opts = q.options.map(function (option) {
+      var b = G.el('button', { class: 'opt', on: { click: function () {
+        if (solved) return;
+        if (option.ok) { solved = true; answer(); }
+        else {
+          b.classList.add('rest'); b.disabled = true;
+          noteBox.replaceChildren(G.lookNote());
+          noteBox.scrollIntoView({ block: 'nearest' });
+        }
+      } } }, G.el('span', { text: option.label }));
+      return b;
+    });
+    showPanel([
+      G.el('div', { class: 'q-kicker', 'data-detector-quiz': String(index), text: data.kicker + ' ' + (index + 1) + ' / ' + data.quiz.length }),
+      G.el('div', { class: 'narr-meta' }, tier === 't2' ? G.refChip(item.ref) : G.el('span', { text: data.bookHint[tier] })),
+      G.el('p', { class: 'q-prompt', text: q.prompt }), G.el('div', { class: 'opts' }, opts), noteBox
+    ], []);
+  }
+
   function beatNodes(b) {
     var who = b.say && G.C.chars[b.say.who];
     return [
@@ -37,17 +69,17 @@ BO3D.gameModules.ui = function (G) {
   G.showPanel = showPanel;
   G.hidePanel = hidePanel;
   G.btn = btn;
+  G.detectorQuestion = detectorQuestion;
   G.beatNodes = beatNodes;
   return function initUi() {
     /* ── 상태 ── */
-    G.state = 'menu';         /* menu | explore | caption | event | gates | end | free */
-    G.step = 0;               /* 0: 양 떼 쪽, 1: 모세를 따라, 2: 더 가까이 */
+    G.state = 'menu';         /* menu | detector | explore | caption | event | gates | end | free */
+    G.step = 0;               /* 지금 찾는 부품과 이어질 말씀 조각 (0~2) */
     G.camYaw = Math.PI, G.camPitchH = 1.45, G.camDist = 7.4, G.lastDrag = -9, G.now = 0;
     G.camPos = new G.T.Vector3(), G.camLook = new G.T.Vector3(), G.camLookT = new G.T.Vector3();
     G.stick = { x: 0, y: 0, id: null, bx: 0, by: 0 }, G.drag = { id: null, x: 0 }, G.keys = {};
     G.trail = [], G.mosesWalking = false, G.mosesArrived = false, G.lastToast = -9, G.evIdx = 2, G.pspeed = 0;
     G.baseFov = 62, G.viewShift = 0;
-    G.OBJ = ['양 떼가 있는 곳에서 빛나는 말씀 조각을 찾아보자', '모세가 가는 쪽으로 따라가 보자', '떨기나무가 보이는 곳까지 조금 더 가 보자'];
 
     /* ── 화면 위 UI ── */
     G.place_ = G.el('span', { class: 'place', text: G.SC.place });

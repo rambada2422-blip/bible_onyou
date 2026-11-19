@@ -69,21 +69,36 @@ BO3D.gameModules.exploration = function (G) {
     g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
     return g;
   }
+  function showDetector(i) {
+    var item = G.C3.horeb.quiz[i];
+    G.detectorPart = -1; G.state = 'detector';
+    G.track.hidden = true; G.hint.hidden = true; G.hudRef.hidden = true;
+    G.camBtn.hidden = true; G.dexBtn.hidden = true; G.denBtn.hidden = true;
+    G.detectorQuestion(item, i, function () {
+      G.detectorPart = i; G.partObjs[i].group.visible = true;
+      G.hidePanel(); G.state = 'explore'; G.hudRef.hidden = false;
+      G.camBtn.hidden = false; G.dexBtn.hidden = false;
+      G.setObjective(item.objective);
+      if (i === 0) { G.hint.hidden = false; setTimeout(function () { G.hint.hidden = true; }, 9000); }
+    });
+  }
   function takePart(i) {
+    if (G.cur !== 'horeb' || G.state !== 'explore' || i !== G.detectorPart || G.partObjs[i].taken) return;
     var po = G.partObjs[i]; po.taken = true; po.group.visible = false; G.partsFound++;
+    G.detectorPart = -1;
     G.partCount.textContent = '부품 ' + G.partsFound + ' / ' + G.PARTS.length;
     G.partCount.classList.remove('pulse'); void G.partCount.offsetWidth; G.partCount.classList.add('pulse');
     if (G.FX) G.FX.audio.chime();
     var all = G.partsFound === G.PARTS.length;
-    G.toast(G.PARTS[i].line + (all ? ' 이제 다 모았어. 타임머신에 끼우러 가자.' : ' 남은 부품은 ' + (G.PARTS.length - G.partsFound) + '개야.'), G.S.ch);
-    if (all && (G.state === 'free')) G.setObjective('타임머신으로 돌아가자');
+    G.toast(all ? G.C3.horeb.lastPart : G.PARTS[i].line + ' 남은 부품은 ' + (G.PARTS.length - G.partsFound) + '개야.', G.S.ch);
+    G.collect(i);
   }
   function updateTracker() {
-    var p = G.player.group.position, best = null, bd = 1e9;
-    G.partObjs.forEach(function (po, i) { if (po.taken) return; var d = G.dist2(p.x, p.z, G.PARTS[i].at[0], G.PARTS[i].at[1]); if (d < bd) { bd = d; best = G.PARTS[i]; } });
+    var p = G.player.group.position;
+    var best = G.detectorPart >= 0 && !G.partObjs[G.detectorPart].taken ? G.PARTS[G.detectorPart] : null;
     var show = (G.state === 'explore' || G.state === 'free');
     G.denBtn.hidden = !(show && G.dist2(p.x, p.z, G.P.machine[0], G.P.machine[1]) < 6.5);
-    var target = best ? best.at : ((G.sceneDone || G.partsFound === G.PARTS.length) ? G.P.machine : null);
+    var target = best ? best.at : (G.sceneDone ? G.P.machine : null);
     if (!show || !target) { G.track.hidden = true; return; }
     var d = G.dist2(p.x, p.z, target[0], target[1]);
     if (!best && d < 6.5) { G.track.hidden = true; return; }
@@ -97,6 +112,7 @@ BO3D.gameModules.exploration = function (G) {
   G.updateDexBtn = updateDexBtn;
   G.takeShot = takeShot;
   G.openDex = openDex;
+  G.showDetector = showDetector;
   G.takePart = takePart;
   G.updateTracker = updateTracker;
   return function initExploration() {
@@ -108,7 +124,7 @@ BO3D.gameModules.exploration = function (G) {
         pos: function () { var p = G.moses.group.position; return v3(p.x, p.y + 1.1, p.z); } },
       { id: 'horeb', name: '하나님의 산 호렙', desc: '모세가 양 떼를 이끌고 이른 산', ref: '출 3:1', hint: '가장 높은 봉우리를 화면 가운데에 담아 보세요.', range: 500, crop: 0.95,
         pos: function () { return v3(G.P.mountain[0], G.H(G.P.mountain[0], G.P.mountain[1]) * 0.62, G.P.mountain[1]); } },
-      { id: 'bush', name: '불붙은 떨기나무', desc: '불이 붙었으나 타서 없어지지 않은 떨기나무', ref: '출 3:2', hint: '모세가 가는 쪽으로 따라가면 보여요.', range: 36,
+      { id: 'bush', name: '불붙은 떨기나무', desc: '불이 붙었으나 타서 없어지지 않은 떨기나무', ref: '출 3:2', hint: '언덕 아래에서 올려다보면 보여요.', range: 36,
         pos: function () { return v3(G.P.bush[0], G.H(G.P.bush[0], G.P.bush[1]) + 1.3, G.P.bush[1]); } },
       { id: 'machine', name: '타임머신', desc: '탐험대가 타고 온 놋쇠 타임머신. 성경에 나오는 물건은 아니다', ref: null, hint: '처음 도착한 자리에 서 있어요.', range: 17,
         pos: function () { return v3(G.P.machine[0], G.H(G.P.machine[0], G.P.machine[1]) + 1.3, G.P.machine[1]); } }
@@ -125,13 +141,14 @@ BO3D.gameModules.exploration = function (G) {
       { id: 'lens', name: '등불 유리', at: [-9.5, -3.5], line: '등불 유리를 찾았어!' }
     ];
     G.partsFound = 0, G.sceneDone = false, G.flagColor = null, G.hatOn = false, G.flag = null, G.departT = 0, G.machineY = G.machine.group.position.y;
+    G.detectorPart = -1;
     G.brass = new G.T.MeshStandardMaterial({ color: '#D9A441', metalness: 0.55, roughness: 0.35, flatShading: true });
     G.partObjs = G.PARTS.map(function (p, i) {
       var grp = new G.T.Group(), mesh = partMesh(p.id);
       mesh.position.y = 0.95; grp.add(mesh);
       var beam = new G.T.Mesh(new G.T.CylinderGeometry(0.05, 0.22, 5, 8, 1, true), new G.T.MeshBasicMaterial({ color: '#8FE3DA', transparent: true, opacity: 0.16, blending: G.T.AdditiveBlending, depthWrite: false, side: G.T.DoubleSide, fog: false }));
       beam.position.y = 2.7; if (G.FX) beam.layers.set(G.FX.GLOW); grp.add(beam);
-      G.place(grp, p.at[0], p.at[1]); G.scene.add(grp);
+      G.place(grp, p.at[0], p.at[1]); grp.visible = false; G.scene.add(grp);
       if (G.M.rock) { var rk = G.M.rock(40 + i); rk.scale.multiplyScalar(1.7); G.place(rk, p.at[0] + 1.5, p.at[1] - 1.1, -0.05); G.scene.add(rk); }
       return { group: grp, mesh: mesh, taken: false };
     });
