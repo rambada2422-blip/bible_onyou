@@ -53,6 +53,9 @@ async function runTier(browser, tierIndex) {
       await p.waitForTimeout(1500);
     };
     const snap = async label => { await p.locator('.cam3').click(); await p.waitForTimeout(400); await shot(label); };
+    const lv = () => p.evaluate(() => BO3D.debug.audioLevels());
+    const muteRun = tierIndex === 2;
+    const near = (a, b, tol, msg) => assert(Math.abs(a - b) <= tol, msg + ': ' + a + ' vs ' + b);
     await p.goto(require('url').pathToFileURL(path.resolve(__dirname, '../../dist/preview3d.html')).href);
     await p.evaluate(() => document.fonts.ready);
     const { C, H, P } = await p.evaluate(() => ({ C: BO.content, H: BO.content3d.horeb, P: BO3D.world.P }));
@@ -136,6 +139,11 @@ async function runTier(browser, tierIndex) {
         assert((await p.evaluate(() => BO3D.debug.sheep())) >= 30, 'sheep < 30');
       }
       if (i === 2) {
+        if (muteRun) {
+          // 소리 끄기 단추를 누른 채로도 압도 장면을 한 번 지나간다 (세 번째 나이 단계).
+          await p.locator('.snd3').click();
+          assert.equal(await p.locator('.snd3').getAttribute('aria-pressed'), 'true', 'sound button must be pressed for muted run');
+        }
         const before = await st();
         await p.evaluate(P => { BO3D.debug.goto(P.bush[0], P.bush[1] + P.witnessRadius + 0.2); BO3D.debug.yaw(Math.PI); BO3D.debug.stick(0, 1); }, P);
         await p.waitForTimeout(900);
@@ -170,15 +178,37 @@ async function runTier(browser, tierIndex) {
     }
     await p.waitForTimeout(1500);
     await shot('look-up');
+    // 소리 (docs/09 5절): 장면 동안 거리 계산을 멈추고, 순서마다 정한 크기를 따른다.
+    const a0 = await lv();
+    assert(a0, 'audio levels must be readable');
+    assert.equal(a0.running, 'running', 'audio context must be running');
+    assert.equal(a0.held, true, 'distance-based fire sound must pause during awe scene');
+    assert.equal(a0.muted, muteRun, 'mute state must follow the sound button');
+    if (muteRun) assert(a0.total <= 0.001, 'muted total must be silent: ' + a0.total);
+    else near(a0.total, a0.normal, 0.02, 'total before scene must be normal');
 
     awe = await p.evaluate(() => BO3D.debug.aweNext());
     assert.equal(awe.step, 1);
+    await p.waitForTimeout(700);
+    const a1 = await lv();
+    near(a1.wind, a0.wind / 2, 0.01, 'step 1 wind must drop to half');
+    near(a1.fire, a0.fire / 2, 0.01, 'step 1 fire must drop to half');
     awe = await p.evaluate(() => BO3D.debug.aweNext());
     assert.equal(awe.step, 2);
+    await p.waitForTimeout(5400);
+    const a2 = await lv();
+    assert(a2.fire > a1.fire + 0.02, 'fire at end of step 2 must be louder than at end of step 1: ' + a2.fire + ' vs ' + a1.fire);
+    assert(a2.fire <= a2.fireMax + 0.001 && a2.crackle <= a2.crackleMax + 0.001, 'fire must not exceed boundary level: ' + JSON.stringify(a2));
+    near(a2.wind, a1.wind, 0.005, 'step 2 wind must stay low');
     awe = await p.evaluate(() => BO3D.debug.aweNext());
     assert.equal(awe.step, 3);
     awe = await p.evaluate(() => BO3D.debug.aweNext());
     assert.equal(awe.step, 4);
+    await p.waitForTimeout(600);
+    const a4 = await lv();
+    assert(a4.total <= a4.normal / 100, 'step 4 total must be at most 1/100 of normal after 0.5s: ' + JSON.stringify(a4));
+    for (const k of ['wind', 'fire', 'crackle', 'music']) assert(a4[k] <= 0.001, 'step 4 ' + k + ' must be silent: ' + a4[k]);
+    assert.equal(a4.musicOn, false, 'music must not play before step 5');
     assert.equal(awe.ref, H.awe.call.ref);
     assert.equal(awe.text, H.awe.call[tier]);
     assert.equal(await p.locator('.awe-cap .ref').innerText(), H.awe.call.ref);
@@ -236,12 +266,34 @@ async function runTier(browser, tierIndex) {
     assert.equal(await p.locator('.awe-cap .ref').innerText(), H.awe.hide.ref);
     assert.equal(await p.locator('.awe-cap .awe-line').innerText(), H.awe.hide[tier]);
     await shot('awe-hide');
+    await p.waitForTimeout(400);
+    const a5 = await lv();
+    assert(Math.abs(a5.music - 0.9) <= 0.05, 'step 5 music must play at watching level: ' + a5.music);
+    assert.equal(a5.musicOn, true);
+    assert.equal(a5.musicStarts, a4.musicStarts + 1, 'music must start once in step 5');
+    for (const k of ['wind', 'fire', 'crackle']) assert(a5[k] <= 0.001, 'step 5 ' + k + ' must be silent: ' + a5[k]);
+    if (muteRun) assert(a5.total <= 0.001, 'muted total must stay silent in step 5');
+    else near(a5.total, a5.normal, 0.02, 'step 5 total must be back to normal');
 
     awe = await p.evaluate(() => BO3D.debug.aweNext());
     assert.equal(awe.step, 6);
     awe = await p.evaluate(() => BO3D.debug.aweNext());
     assert.equal(awe.active, false, 'awe scene must finish after step 6');
     assert.equal(await p.locator('.cam3').isVisible(), true, 'camera button must be restored after awe scene');
+    await panel.locator('.q-kicker').filter({ hasText: '지켜보기 1 / ' }).waitFor();
+    await p.waitForTimeout(900);
+    const a6 = await lv();
+    assert.equal(a6.musicStarts, a5.musicStarts, 'music must not restart when watching begins');
+    assert(a6.music >= a5.music - 0.02, 'music must continue at the same level when watching begins: ' + a6.music + ' vs ' + a5.music);
+    assert.equal(a6.held, false, 'distance-based fire sound must resume after awe scene');
+    near(a6.wind, a0.wind, 0.01, 'wind must return to normal');
+    assert(a6.fire > 0.01, 'fire sound must return after awe scene: ' + a6.fire);
+    assert.equal(a6.muted, muteRun, 'mute state must be kept after awe scene');
+    if (muteRun) {
+      assert(a6.total <= 0.001, 'muted total must stay silent after awe scene');
+      assert.equal(await p.locator('.snd3').getAttribute('aria-pressed'), 'true', 'sound button must stay pressed');
+    } else near(a6.total, a6.normal, 0.02, 'total must be normal after awe scene');
+    console.log(tier, 'awe sound', muteRun ? '(muted)' : '', 'step1 fire', a1.fire.toFixed(3), 'step2 fire', a2.fire.toFixed(3), 'step4 total', a4.total.toFixed(4), 'step5 music', a5.music.toFixed(3), 'starts', a6.musicStarts);
     await snap('photo-event');
     const scene = C.scenes['EX-01'];
     for (let beat = 2; beat < scene.beats.length; beat++) {
