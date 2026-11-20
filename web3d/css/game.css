@@ -149,7 +149,7 @@
 .tog { min-height: 44px; padding: 0 16px; border-radius: 999px; font-family: var(--f-display); font-size: 14.5px; background: rgba(251, 247, 238, .12); color: var(--paper); }
 .tog[aria-pressed="true"] { background: var(--brass); color: var(--ink-3); }
 .tog[disabled] { opacity: .45; }
-.journal-note summary { min-height: 44px; align-content: center; cursor: pointer; }
+.journal-note summary, .panel3 details > summary { min-height: 44px; align-content: center; cursor: pointer; }
 .journal-note p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
 .den-foot { display: flex; gap: 8px; margin-top: 8px; }
 .den-foot .btn { flex: 1; }

@@ -128,6 +128,10 @@ async function run(output) {
     }
     await audit('menu');
     await button('탐험 시작').tap(); await audit('route');
+    await button('모세').tap(); await button('샤론에게 물어보기').waitFor(); await audit('horeb-landing');
+    await button('샤론에게 물어보기').tap(); await audit('sharon-help');
+    await page.locator('summary').filter({ hasText: '샤론 소개' }).tap(); await audit('sharon-help-open');
+    await resume('route');
     await button('여호수아').tap(); await button('둘러보자').waitFor(); await audit('jordan-arrival');
     await resume('horeb'); await page.locator('[data-detector-quiz]').waitFor(); await audit('horeb-question');
     await resume('gates'); await page.locator('.overlay3 .q-kicker').first().waitFor(); await audit('horeb-gate');
@@ -145,7 +149,7 @@ async function run(output) {
     await button('추리하기').tap(); await page.locator('.evi').first().waitFor(); await audit('jordan-evidence');
     for (const issue of errors) console.error(issue);
     assert.equal(errors.size, 0, '3D 누르는 영역, 이름 또는 글자 대비');
-    console.log('호렙·요단 강 11개 화면, 세로·가로 · 터치 44×44, 읽을 이름, 실제 배경 대비 4.5 이상 · no errors');
+    console.log('호렙·요단 강 14개 화면, 세로·가로 · 터치 44×44, 읽을 이름, 실제 배경 대비 4.5 이상 · no errors');
   } finally { await browser.close(); }
 }
 
