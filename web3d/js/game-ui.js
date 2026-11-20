@@ -4,6 +4,13 @@ BO3D.gameModules.ui = function (G) {
   'use strict';
   var objText, toastEl, panelBody, panelFoot, panel;
 
+  G.showWebGLNotice = function () {
+    G.canvas.hidden = true;
+    G.ui.replaceChildren(G.el('main', { class: 'webgl-notice', 'aria-labelledby': 'webgl-title' },
+      G.el('div', {},
+        G.el('h1', { id: 'webgl-title', text: '이 기기에서는 3D 탐험을 열 수 없어요' }),
+        G.el('p', { text: '다른 휴대폰이나 컴퓨터에서 다시 열어 주세요.' }))));
+  };
 
   G.setMuted = function (muted) {
     if (G.FX) G.FX.audio.mute(muted);
