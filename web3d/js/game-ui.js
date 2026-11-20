@@ -5,6 +5,11 @@ BO3D.gameModules.ui = function (G) {
   var objText, toastEl, panelBody, panelFoot, panel;
 
 
+  G.setMuted = function (muted) {
+    if (G.FX) G.FX.audio.mute(muted);
+    G.snd.setAttribute('aria-pressed', String(muted));
+    G.snd.setAttribute('aria-label', muted ? '소리 켜기' : '소리 끄기');
+  };
   function setObjective(t) { objText.textContent = t; }
   function toast(html, who) {
     // 첫 탐험의 알림은 도움말과 거리 표시 바로 아래에 놓는다.
@@ -132,7 +137,7 @@ BO3D.gameModules.ui = function (G) {
     G.overlay = G.el('div', { class: 'overlay3', hidden: '' });
     G.touch = G.el('div', { class: 'touch3' });
     G.snd = G.el('button', { class: 'snd3', hidden: '', 'aria-label': '소리 끄기', 'aria-pressed': 'false', on: { click: function () {
-      var m = !G.FX.audio.isMuted(); G.FX.audio.mute(m); G.snd.setAttribute('aria-pressed', String(m)); G.snd.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기');
+      G.setMuted(!G.FX.audio.isMuted()); G.checkpoint();
     } } }, G.icon('speaker'));
     G.dexLabel = G.el('span', { text: '도감 0 / 5' });
     G.dexBtn = G.el('button', { class: 'dex3', hidden: '', on: { click: function () { if (G.cur === 'jordan') G.openClues(); else G.openDex(); } } }, G.icon('journal'), G.dexLabel);

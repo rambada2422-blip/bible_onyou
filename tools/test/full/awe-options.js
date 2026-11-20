@@ -41,6 +41,8 @@ async function withPage(browser, options, test) {
 
 async function openAwe(page, { missing = false } = {}) {
   await page.goto(preview);
+  const restart = page.getByRole('button', { name: '처음부터 다시', exact: true });
+  if (await restart.isVisible()) await restart.click();
   assert.equal(await page.locator('.awe-board img[src]').count(), 0, 'preload begins when Horeb starts');
   if (missing) await page.evaluate(() => { BO3D.aweData.bush_3 = 'AA'; });
   await page.getByRole('button', { name: '탐험 시작', exact: true }).click();

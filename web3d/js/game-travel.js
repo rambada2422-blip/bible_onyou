@@ -70,7 +70,7 @@ BO3D.gameModules.travel = function (G) {
     if (G.departT > 4.3) endCard();
   }
   function endCard() {
-    G.state = 'end2';
+    G.state = 'end2'; G.checkpoint('end');
     G.overlay.className = 'overlay3 den3ov pad';
     G.overlay.replaceChildren(
       G.el('div', { class: 'eyebrow', text: '출애굽기 3장 탐험 완료' }),
@@ -81,7 +81,7 @@ BO3D.gameModules.travel = function (G) {
         G.el('div', { class: 'slot on' }, G.icon('camera'), G.el('b', { text: '탐험 도감' }), G.el('span', { text: G.dexCount() + ' / ' + G.DEX.length })),
         G.el('div', { class: 'slot on' }, G.icon('gear'), G.el('b', { text: '찾은 부품' }), G.el('span', { text: G.partsFound + ' / ' + G.PARTS.length }))),
       G.el('p', { class: 'den-msg', text: '다음 장면(하나님의 이름과 세 가지 표징, 출 3:13-4:17)은 목사님 감수를 마친 뒤 열립니다.' }),
-      G.el('div', { class: 'den-foot' }, G.btn('처음부터 다시', G.menu, 'quiet'), G.btn('다른 이름으로 가 보기', function () { if (G.C3 && BO3D.jordan) route(); else G.menu(); }, 'wide')));
+      G.el('div', { class: 'den-foot' }, G.btn('처음부터 다시', G.restart, 'quiet'), G.btn('다른 이름으로 가 보기', function () { if (G.C3 && BO3D.jordan) route(); else G.menu(); }, 'wide')));
     G.overlay.hidden = false;
   }
 
@@ -96,12 +96,14 @@ BO3D.gameModules.travel = function (G) {
     if (j) { G.track.hidden = true; G.denBtn.hidden = true; }
   }
   function route() {
+    G.checkpoint('route');
     G.state = 'route'; G.hud.hidden = true; G.hidePanel(); G.camBtn.hidden = true; G.dexBtn.hidden = true; G.denBtn.hidden = true; G.dedBtn.hidden = true; G.track.hidden = true;
     G.root.className = 'g3 app ' + G.S.tier;
     if (G.FX) { G.FX.audio.start(); G.FX.audio.pad(false); }
     var opts = G.C.route.options.map(function (o) {
       var ready = o.to === 'EX-01' || o.to === 'ALT-02';
       var b = G.btn(ready ? o.label : G.C3.route.locked, function () {
+        G.chooseRoute(o.to);
         warpTo(G.C3.route.warpTitle, function () { if (o.to === 'ALT-02') G.enterJordan(); else G.begin(); });
       }, 'wide');
       if (!ready) b.disabled = true;
@@ -164,6 +166,7 @@ BO3D.gameModules.travel = function (G) {
     });
   }
 
+  G.endCard = endCard;
   G.openDen = openDen;
   G.updateDepart = updateDepart;
   G.hudMode = hudMode;

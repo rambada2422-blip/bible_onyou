@@ -3,10 +3,24 @@ BO3D.gameModules = BO3D.gameModules || {};
 BO3D.gameModules.story = function (G) {
   'use strict';
   /* ── 처음 화면 ── */
-  function menu() {
+  function menu(fresh) {
     if (G.stopAwe) G.stopAwe();
     G.state = 'menu'; G.cur = 'horeb'; G.dedBtn.hidden = true; G.hud.hidden = true; G.hidePanel(); G.base.hidden = true; G.snd.hidden = true; G.camBtn.hidden = true; G.dexBtn.hidden = true; G.denBtn.hidden = true; G.track.hidden = true;
     if (G.FX) G.FX.audio.pad(false);
+    var progress = fresh !== true && G.readProgress();
+    if (progress) {
+      var age = G.C.tiers.find(function (t) { return t.id === progress.tier; }).label;
+      var jordan = ['jordan', 'deduce', 'return'].includes(progress.stage);
+      var details = progress.stage === 'route' ? G.C3.route.title : jordan
+        ? '추리 수첩 ' + Object.keys(progress.clues).length + ' / ' + G.JD.clues.length
+        : '부품 ' + progress.parts + ' / ' + G.PARTS.length;
+      G.overlay.className = 'overlay3 menu3 pad';
+      G.overlay.replaceChildren(G.el('h1', { class: 'game-title', text: '성경 탐험대' }),
+        G.el('p', { class: 'game-sub', text: age + ' · ' + details }),
+        G.btn('이어서 탐험하기', G.resume, 'wide'), G.btn('처음부터 다시', G.restart, 'quiet'));
+      G.overlay.hidden = false;
+      return;
+    }
     var tier = G.S.tier, ch = G.S.ch, picked = false;
     var ids = ['choeon', 'hyu', 'onwoo'];
     var tb = G.C.tiers.map(function (t) {
@@ -34,7 +48,7 @@ BO3D.gameModules.story = function (G) {
     G.overlay.hidden = false;
   }
 
-  function begin() {
+  function begin(record) {
     if (G.stopAwe) G.stopAwe();
     if (G.preloadAwe) G.preloadAwe();
     G.root.className = 'g3 app ' + G.S.tier;
@@ -57,6 +71,8 @@ BO3D.gameModules.story = function (G) {
     var pos = G.player.group.position;
     G.camYaw = Math.atan2((G.P.flock[0] + G.P.mosesStart[0]) / 2 - pos.x, (G.P.flock[1] + G.P.mosesStart[1]) / 2 - pos.z); G.snapCamera();
     G.count.textContent = '말씀 조각 0 / 3';
+    if (record && (record.parts > 0 || 'sheep' in G.dex)) { restoreHoreb(record); return; }
+    G.checkpoint('horeb');
     G.state = 'explore';
     G.hidePanel();
     G.hud.hidden = false; G.camBtn.hidden = false; G.dexBtn.hidden = false;
@@ -64,6 +80,34 @@ BO3D.gameModules.story = function (G) {
     G.updateDexBtn();
     G.setObjective('약한 신호가 잡혀요. 멀리 움직이는 무리를 사진에 담아 보세요.');
     G.toast('시간 나침반의 부품 세 개가 튕겨 나갔어요!', G.S.ch === 'onwoo' ? 'hyu' : 'onwoo');
+  }
+
+  function restoreHoreb(record) {
+    var n = record.parts;
+    G.partsFound = n; G.step = Math.min(n, G.PARTS.length - 1);
+    for (var i = 0; i < n; i++) { G.partObjs[i].taken = true; G.scraps[i].taken = true; }
+    G.partCount.textContent = '부품 ' + n + ' / ' + G.PARTS.length;
+    G.count.textContent = '말씀 조각 ' + n + ' / ' + G.PARTS.length;
+    G.updateDexBtn();
+    if (n) {
+      var at = G.PARTS[n - 1].at;
+      G.place(G.player.group, at[0], at[1]);
+      G.followers.forEach(function (f, k) { G.place(f.group, at[0] + (k ? 1.5 : -1.5), at[1] + 0.5); });
+      G.snapCamera();
+    }
+    if (n >= 2) {
+      G.place_.textContent = G.SC.place;
+      G.ring.material.opacity = 0.45;
+      if (n === 2) G.mosesWalking = true;
+      else { G.place(G.moses.group, G.P.mosesEnd[0], G.P.mosesEnd[1]); G.mosesArrived = true; }
+    }
+    G.hud.hidden = record.stage !== 'horeb'; G.hint.hidden = true;
+    if (record.stage === 'horeb') G.showDetector(n);
+    else if (record.stage === 'watch') startEvent();
+    else if (record.stage === 'gates') startGates();
+    else if (record.stage === 'reward') finish();
+    else if (record.stage === 'free') freeExplore();
+    else { G.sceneDone = true; G.endCard(); }
   }
 
   function hasGlossForTier(gloss) {
@@ -103,6 +147,7 @@ BO3D.gameModules.story = function (G) {
 
   /* ── 사건 목격 ── */
   function startEvent() {
+    G.checkpoint('watch');
     G.state = 'event'; G.hud.hidden = true; G.hint.hidden = true; G.root.classList.add('ev');
     G.mosesWalking = false; G.mosesArrived = true;
     G.place(G.moses.group, G.P.mosesEnd[0], G.P.mosesEnd[1]);
@@ -237,6 +282,7 @@ BO3D.gameModules.story = function (G) {
     G.overlay.hidden = false;
   }
   function startGates() {
+    G.checkpoint('gates');
     G.state = 'gates'; G.hidePanel(); G.root.classList.remove('ev'); G.camBtn.hidden = true; G.dexBtn.hidden = true;
     var gates = G.SC.gates[G.S.tier], gi = 0;
     (function show() {
@@ -262,6 +308,7 @@ BO3D.gameModules.story = function (G) {
     G.player.group.add(G.hat);
   }
   function finish() {
+    G.checkpoint('reward');
     G.state = 'end';
     if (G.FX) G.FX.audio.pad(false);
     var c = G.SC.close[G.S.tier], kids_ = [
@@ -278,10 +325,12 @@ BO3D.gameModules.story = function (G) {
     }
     kids_.push(G.el('div', { class: 'closebox' }, G.el('h3', { text: '탐험 도감' }), G.el('p', { text: '지금까지 ' + G.dexCount() + ' / ' + G.DEX.length + '장을 담았어요. 더 둘러보며 남은 사진을 찍을 수 있어요.' })));
     kids_.push(G.el('div', { class: 'closebox reward3' }, G.el('h3', { text: '탐험대 이야기' }), G.el('p', { text: (G.partsFound < G.PARTS.length ? '남은 부품 ' + (G.PARTS.length - G.partsFound) + '개를 찾아 타임머신으로 돌아가요. ' : '부품을 다 찾았으니 타임머신으로 돌아가요. ') + '아지트에서 탐험 모자를 쓸 수 있게 됐어요. 믿음의 점수가 아니라, 다녀온 곳을 기념하는 물건이에요.' })));
-    sheetOverlay(kids_, [G.btn('처음부터', menu, 'plain'), G.btn('계속 탐험하기', function () {
-      G.overlay.hidden = true; G.sceneDone = true; G.state = 'free'; G.hud.hidden = false; G.camBtn.hidden = false; G.dexBtn.hidden = false;
-      G.setObjective(G.partsFound < G.PARTS.length ? '남은 부품을 찾아 타임머신으로 돌아가자' : '타임머신으로 돌아가자'); G.ring.material.opacity = 0.45;
-    })]);
+    sheetOverlay(kids_, [G.btn('처음부터', G.restart, 'plain'), G.btn('계속 탐험하기', freeExplore)]);
+  }
+  function freeExplore() {
+    G.overlay.hidden = true; G.sceneDone = true; G.state = 'free'; G.hud.hidden = false; G.camBtn.hidden = false; G.dexBtn.hidden = false;
+    G.setObjective(G.partsFound < G.PARTS.length ? '남은 부품을 찾아 타임머신으로 돌아가자' : '타임머신으로 돌아가자'); G.ring.material.opacity = 0.45;
+    G.checkpoint('free');
   }
 
   G.menu = menu;

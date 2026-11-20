@@ -32,6 +32,7 @@ BO3D.gameModules.exploration = function (G) {
     });
     updateDexBtn();
     if (fresh.length) {
+      G.checkpoint();
       if (G.FX) G.FX.audio.chime();
       G.dexBtn.classList.remove('pulse'); void G.dexBtn.offsetWidth; G.dexBtn.classList.add('pulse');
       G.toast('도감에 새로 담았어요: ' + fresh.map(function (f) { return f.d.name; }).join(', ') + (dexCount() === G.DEX.length ? '. 도감을 모두 채웠어요!' : ''));
@@ -108,6 +109,7 @@ BO3D.gameModules.exploration = function (G) {
     var all = G.partsFound === G.PARTS.length;
     G.toast(all ? G.C3.horeb.lastPart : G.PARTS[i].line + ' 남은 부품은 ' + (G.PARTS.length - G.partsFound) + '개야.', G.S.ch);
     G.collect(i);
+    G.checkpoint(all ? 'watch' : 'horeb');
   }
   function updateTracker() {
     var p = G.player.group.position;
