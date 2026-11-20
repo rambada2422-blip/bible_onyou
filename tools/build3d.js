@@ -43,7 +43,7 @@ const page = [
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
   '<title>성경 탐험대 3D</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',
-  `<link rel="stylesheet" href="${fonts}">`,
+  `<link rel="stylesheet" media="print" onload="this.media='all'" href="${fonts}">`,
   '<style>\n' + read('web/css/app.css') + '\n' + read('web3d/css/game.css') + '\n</style>',
   '</head><body>',
   '<div id="game" class="g3 app"><canvas id="c"></canvas><div id="ui"></div></div>',

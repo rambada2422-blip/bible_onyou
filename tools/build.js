@@ -116,7 +116,7 @@ const page = [
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
   '<title>성경 탐험대</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',
-  `<link rel="stylesheet" href="${fonts}">`,
+  `<link rel="stylesheet" media="print" onload="this.media='all'" href="${fonts}">`,
   '<style>\n' + read('css/app.css') + '\n</style>',
   '</head><body>',
   '<div id="app" class="app"></div>',
