@@ -15,9 +15,12 @@
   --ok-bg: #DFF1E8;
   --warm: #B4532A;
   --warm-bg: #FBE9DC;
-  --f-display: 'Jua', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
-  --f-body: 'Gowun Dodum', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
-  --f-verse: 'Gowun Batang', 'Nanum Myeongjo', 'AppleMyungjo', 'Batang', serif;
+  /* 인터넷 글꼴을 받지 못하면 기기에 있는 한글 글꼴을 차례로 쓴다. */
+  --f-local-sans: 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', 'Noto Sans KR', 'Noto Sans CJK KR', Dotum;
+  --f-display: 'Jua', var(--f-local-sans), sans-serif;
+  --f-body: 'Gowun Dodum', var(--f-local-sans), sans-serif;
+  --f-verse: 'Gowun Batang', 'Nanum Myeongjo', 'AppleMyungjo', Batang, '바탕',
+    'Noto Serif KR', 'Noto Serif CJK KR', var(--f-local-sans), serif;
   --gutter-l: max(16px, env(safe-area-inset-left, 0px));
   --gutter-r: max(16px, env(safe-area-inset-right, 0px));
   color-scheme: light;
