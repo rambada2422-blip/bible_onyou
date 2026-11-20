@@ -37,7 +37,7 @@ fs.writeFileSync(path.join(root, 'web3d/js/sharondata.js'),
 
 const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fonts = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Jua&display=swap';
-const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/sharondata.js', 'web3d/js/models.js', 'web3d/js/models_jordan.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/jordan.js', 'web3d/js/fx.js', 'web3d/js/game-scene.js', 'web3d/js/game-ui.js', 'web3d/js/game-awe.js', 'web3d/js/game-exploration.js', 'web3d/js/game-travel.js', 'web3d/js/game-jordan.js', 'web3d/js/game-story.js', 'web3d/js/game-controls.js', 'web3d/js/game-loop.js', 'web3d/js/game-debug.js', 'web3d/js/game.js'];
+const scripts = ['web/js/content.js', 'web3d/js/content3d.js', 'web/js/icons.js', 'web3d/js/avatars.js', 'web3d/js/sharondata.js', 'web3d/js/models.js', 'web3d/js/models_jordan.js', 'web3d/js/glbdata.js', 'web3d/js/world.js', 'web3d/js/jordan.js', 'web3d/js/fx.js', 'web3d/js/game-scene.js', 'web3d/js/game-ui.js', 'web3d/js/game-awe.js', 'web3d/js/game-exploration.js', 'web3d/js/game-travel.js', 'web3d/js/game-jordan.js', 'web3d/js/game-story.js', 'web3d/js/game-controls.js', 'web3d/js/game-loop.js', 'web3d/js/game-debug.js', 'web3d/js/game-save.js', 'web3d/js/game.js'];
 const page = [
   '<title>성경 탐험대 3D</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',

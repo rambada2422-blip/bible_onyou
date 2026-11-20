@@ -5,21 +5,29 @@ BO3D.gameModules.jordan = function (G) {
   var dedReady;
 
   function clueN() { return Object.keys(G.clue).length; }
-  function enterJordan() {
+  function enterJordan(record) {
     if (!G.JL) { G.JL = BO3D.jordan.build(); G.loadJordanGlb(); }
-    G.cur = 'jordan'; G.overlay.hidden = true; G.clue = {}; dedReady = false;
+    G.cur = 'jordan'; G.overlay.hidden = true; G.clue = record ? record.clues : {}; dedReady = clueN() >= G.JD.need[G.S.tier];
     G.spawnKids(); G.hudMode();
     G.camYaw = Math.PI; G.snapCamera();
-    G.clueCount.textContent = '단서 0 / ' + G.JD.clues.length; G.dexLabel.textContent = '추리 수첩 0 / ' + G.JD.clues.length;
-    G.setObjective(G.JD.objective); G.hud.hidden = false; G.snd.hidden = false;
+    G.clueCount.textContent = '단서 ' + clueN() + ' / ' + G.JD.clues.length; G.dexLabel.textContent = '추리 수첩 ' + clueN() + ' / ' + G.JD.clues.length;
+    G.setObjective(dedReady ? G.JD.objectiveReady : G.JD.objective); G.hud.hidden = false; G.snd.hidden = false;
     G.state = 'caption';
+    function explore() {
+      G.hidePanel(); G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false; G.dedBtn.hidden = !dedReady; G.hint.hidden = false;
+      setTimeout(function () { G.hint.hidden = true; }, 9000);
+    }
+    if (record) {
+      explore();
+      if (record.stage === 'deduce') startDeduce();
+      else if (record.stage === 'return') { prepareDeduction(); conclude(); }
+      return;
+    }
+    G.checkpoint('jordan');
     var sy = G.JD.story.say, who = G.C.chars[sy.who];
     G.showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }), G.el('p', { class: 'narr', text: G.tx(G.JD.story.text) }),
       G.el('div', { class: 'say' }, G.avatar(sy.who), G.el('div', { class: 'bubble' }, G.el('b', { text: who.name, style: 'color:' + who.color }), sy.text))],
-      G.btn('둘러보자', function () {
-        G.hidePanel(); G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false; G.hint.hidden = false;
-        setTimeout(function () { G.hint.hidden = true; }, 9000);
-      }));
+      G.btn('둘러보자', explore));
   }
   function shutterFx() {
     G.flash.hidden = false; G.flash.classList.remove('go'); void G.flash.offsetWidth; G.flash.classList.add('go');
@@ -47,6 +55,7 @@ BO3D.gameModules.jordan = function (G) {
     fresh.forEach(function (f) { G.clue[f.c.id] = thumbAt(f.n, f.t.crop); });
     G.clueCount.textContent = '단서 ' + clueN() + ' / ' + G.JD.clues.length; G.dexLabel.textContent = '추리 수첩 ' + clueN() + ' / ' + G.JD.clues.length;
     if (fresh.length) {
+      G.checkpoint('jordan');
       if (G.FX) G.FX.audio.chime();
       G.clueCount.classList.remove('pulse'); void G.clueCount.offsetWidth; G.clueCount.classList.add('pulse');
       G.toast('단서를 찾았어요: ' + fresh.map(function (f) { return f.c.name; }).join(', '));
@@ -88,7 +97,7 @@ BO3D.gameModules.jordan = function (G) {
     } } }, '확인');
     return [G.el('p', { class: 'q-prompt', text: q.prompt }), G.el('div', { class: 'opts' }, btns), check, noteBox];
   }
-  function backToExplore() { G.overlay.hidden = true; G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false; G.dedBtn.hidden = false; }
+  function backToExplore() { G.checkpoint('jordan'); G.overlay.hidden = true; G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false; G.dedBtn.hidden = false; }
   function evidenceBlock(ev, onOk) {
     var noteBox = G.el('div', {}), have = G.JD.clues.filter(function (c) { return c.id in G.clue; });
     if (!have.some(function (c) { return ev.ok.indexOf(c.id) >= 0; })) {
@@ -116,9 +125,12 @@ BO3D.gameModules.jordan = function (G) {
     });
     return [G.el('p', { class: 'q-prompt', text: G.tx(ev.q) }), G.el('div', { class: 'evigrid' }, btns), noteBox];
   }
-  function startDeduce() {
+  function prepareDeduction() {
     G.state = 'deduce'; G.stick.x = G.stick.y = 0; G.stick.id = null; G.base.hidden = true;
     G.dedBtn.hidden = true; G.camBtn.hidden = true; G.dexBtn.hidden = true; G.hint.hidden = true;
+  }
+  function startDeduce() {
+    prepareDeduction(); G.checkpoint('deduce');
     var evs = G.JD.evidence.filter(function (e) { return e.tiers.indexOf(G.S.tier) >= 0; }), steps = [];
     evs.forEach(function (e) { steps.push({ k: '증거 고르기', make: function (ok) { return evidenceBlock(e, ok); } }); });
     steps.push({ k: '성경에서 확인', make: function (ok) { return G.findBlock(G.JD.river, ok); } });
@@ -132,6 +144,7 @@ BO3D.gameModules.jordan = function (G) {
     })();
   }
   function conclude() {
+    G.checkpoint('return');
     var cc = G.JD.conclusion, who = G.C.chars[cc.say.who];
     G.sheetOverlay([G.el('div', { class: 'q-kicker', text: '추리 결과' }),
       G.el('p', { class: 'q-prompt', text: G.JD.place }),

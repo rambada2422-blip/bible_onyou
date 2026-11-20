@@ -20,6 +20,7 @@
     modules.loop(G),
     modules.debug(G)
   ];
+  modules.save(G);
   initialize.forEach(function (init) { init(); });
 
   G.resize(); G.menu(); requestAnimationFrame(G.frame);
