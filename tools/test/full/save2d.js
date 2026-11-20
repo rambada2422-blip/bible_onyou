@@ -153,6 +153,73 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
       assert.match(await page.locator('.q-kicker').innerText(), /타임머신 다시 맞추기/);
     }));
 
+    results.push(await checkCase(browser, '다른 장면을 둘러본 뒤에도 찾은 단서와 읽던 대목 보존', async (page) => {
+      await open(page);
+      await startNew(page, 0);
+      await button(page, '목적지 다시 고르기').click();
+      await button(page, '요셉').click();
+      await button(page, '둘러보기').click();
+      const next = page.locator('.sheet-foot .btn.onpaper');
+      while (await page.locator('.sheet .narr').count()) await next.click();
+      await button(page, '단서 2').click();
+      await button(page, '시간표로 돌아가기').click();
+      const cloud = page.locator('.node.play').filter({ hasText: '구름 기둥과 불 기둥' });
+      await cloud.click();
+      await button(page, '둘러보기').click();
+      await next.click();
+      const narration = await page.locator('.sheet .narr').innerText();
+      await page.reload();
+      await button(page, '이어서 탐험하기').click();
+      assert.equal(await page.locator('.sheet .narr').innerText(), narration);
+      await button(page, '시간표로 돌아가기').click();
+      assert.equal(await button(page, '요셉 · 이어서 탐험하기').count(), 1, '다른 장면에 다녀오면 요셉의 단서로 돌아가는 길이 사라졌다');
+      await shot(page, 'resume-two-scenes');
+      await button(page, '목적지 다시 고르기').click();
+      await button(page, '요셉').click();
+      assert(await button(page, '단서 2').isDisabled());
+      assert(await button(page, '단서 1').isEnabled());
+      await button(page, '시간표로 돌아가기').click();
+      assert.match(await cloud.innerText(), /이어서 탐험하기/);
+      await cloud.click();
+      assert.equal(await page.locator('.sheet .narr').innerText(), narration);
+      await button(page, '시간표로 돌아가기').click();
+      await button(page, '단계').click();
+      await page.locator('.tier').nth(1).click();
+      await button(page, '출발 준비 완료').click();
+      assert.equal(await button(page, '요셉 · 이어서 탐험하기').count(), 0);
+      assert.doesNotMatch(await cloud.innerText(), /이어서 탐험하기/);
+    }));
+
+    results.push(await checkCase(browser, '옛 저장으로 시작해 우회 탐험을 마치면 읽던 호렙으로 복귀', async (page) => {
+      await open(page);
+      await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, {
+        ...sample, tier: 't1', char: 'choeon', routed: true, journey: { id: 'EX-01', tier: 't1', step: 'beat-1' }
+      }]);
+      await page.reload();
+      await button(page, '이어서 탐험하기').click();
+      const previous = await page.locator('.narr').innerText();
+      await button(page, '시간표로 돌아가기').click();
+      await button(page, '목적지 다시 고르기').click();
+      await button(page, '여호수아').click();
+      await button(page, '둘러보기').click();
+      const next = page.locator('.sheet-foot .btn.onpaper');
+      while (await page.locator('.narr').count()) await next.click();
+      for (let i = 1; i <= 3; i++) await button(page, '단서 ' + i).click();
+      await next.click();
+      await button(page, '찾아서 읽었어요').click();
+      const correct = await page.evaluate(() => BO.content.scenes['ALT-02'].back.confirm.options.find(option => option.ok).label);
+      await button(page, correct).click();
+      await next.click();
+      await button(page, '모세가 있는 곳으로').click();
+      await page.locator('.narr').waitFor();
+      assert.equal(await page.locator('.narr').innerText(), previous);
+      await button(page, '시간표로 돌아가기').click();
+      assert.equal(await button(page, '여호수아 · 이어서 탐험하기').count(), 0);
+      const saved = JSON.parse(await readSave(page));
+      assert.equal(saved.pausedJourneys, undefined);
+      assert(saved.cards.length > 0);
+    }));
+
     results.push(await checkCase(browser, '다른 단계와 깨진 위치에서 기존 일지 보존', async (page) => {
       await open(page);
       const data = { ...sample, done: { 'EX-00': true }, notes: { 'EX-00': '시험 기록' } };
@@ -161,9 +228,12 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
         { id: 'EX-00', tier: 't3', step: 'gate-25' },
         { id: '없는 곳', tier: 't3', step: 'arrive' }
       ]) {
-        await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, { ...data, journey }]);
+        const broken = { 'ALT-03': { id: 'EX-00', tier: 't3', step: 'beat-0' },
+          'EX-01': { id: 'EX-01', tier: 't3', step: 'gate-99' } };
+        await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, { ...data, journey, pausedJourneys: broken }]);
         await page.reload(); await button(page, '이어서 탐험하기').click();
         await page.locator('.node.done').waitFor();
+        assert.equal(await page.getByRole('button', { name: /이어서 탐험하기/ }).count(), 0);
         assert.equal(JSON.parse(await readSave(page)).notes['EX-00'], '시험 기록');
       }
       await page.locator('.node.play').first().click(); await button(page, '둘러보기').click();

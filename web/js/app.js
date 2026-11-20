@@ -37,7 +37,10 @@
     var tier = app.state.tier, ch = app.state.char, picked = !!app.state.char;
     var line = el('p', { class: 'char-line' });
     var go = el('button', { class: 'btn wide', on: { click: function () {
-      if (tier !== app.state.tier) delete app.state.journey;
+      if (tier !== app.state.tier) {
+        delete app.state.journey;
+        delete app.state.pausedJourneys;
+      }
       app.state.tier = tier; app.state.char = ch; save(); renderHub();
     } } }, '출발 준비 완료');
     var tierBtns = C.tiers.map(function (t) {
@@ -68,16 +71,17 @@
 
   /* ════════════ 시간표 ════════════ */
   function renderHub() {
-    var nextId = null, journey = app.savedJourney();
-    var detour = journey && C.scenes[journey.id].alt &&
-      C.route.options.find(function (option) { return option.to === journey.id; });
+    var nextId = null;
+    var detours = C.route.options.filter(function (option) {
+      return C.scenes[option.to].alt && app.savedJourney(option.to);
+    });
     C.timeline.forEach(function (n) { if (!nextId && n.playable && !app.state.done[n.id]) nextId = n.id; });
     var items = C.timeline.map(function (n, i) {
       var done = !!app.state.done[n.id];
       var cls = 'node ' + (n.playable ? 'play' : 'locked') + (done ? ' done' : '') + (n.id === nextId ? ' next' : '');
       var dot = el('span', { class: 'dot' }, done ? icon('check') : (n.playable ? String(i + 1) : icon('lock')));
       var status = n.playable ? (done ? '다시 보기' : '출발') : '감수 후 열림';
-      if (journey && journey.id === n.id) status = '이어서 탐험하기';
+      if (n.playable && app.savedJourney(n.id)) status = '이어서 탐험하기';
       var body = [dot,
         el('span', { class: 'tt' }, el('b', { text: n.title }), el('span', { text: n.ref })),
         el('span', { class: 'st', text: status })];
@@ -103,8 +107,10 @@
         el('div', { class: 'hub-hero' },
           pic('timemachine', '', ''),
           el('div', {}, el('h2', { text: '출애굽기 시간표' }),
-            el('p', { text: '놋쇠 다이얼이 가리키는 장면으로 떠나요. 다음 장면으로 가려면 성경을 알아야 해요.' }))),
-        detour ? el('button', { class: 'btn wide', on: { click: continueJourney } }, detour.label + ' · 이어서 탐험하기') : null,
+            el('p', { text: '열린 장면은 원하는 순서로 둘러볼 수 있어요.' }))),
+        detours.map(function (option) {
+          return el('button', { class: 'btn wide', on: { click: function () { depart(option.to); } } }, option.label + ' · 이어서 탐험하기');
+        }),
         locked.length ? toggle : null,
         el('ol', { class: 'tl', id: 'journey-list' }, items),
         el('p', { class: 'hub-note', text: '시범판에는 목사님 감수가 필요 없는 세 장면만 열려 있습니다.' }),
@@ -117,12 +123,12 @@
     app.runScene(id, renderHub, renderRoute, journey);
   }
   function travelTo(id, title, description) {
-    app.rememberArrival(id);
-    warp('시간 이동', title, description, function () { runScene(id); });
+    var journey = app.rememberArrival(id);
+    warp('시간 이동', title, description, function () { runScene(id, journey); });
   }
   function depart(id) {
-    var journey = app.savedJourney();
-    if (journey && journey.id === id) { runScene(id, journey); return; }
+    var journey = app.savedJourney(id);
+    if (journey) { runScene(id, journey); return; }
     if (id === 'EX-01' && !app.state.routed) { renderRoute(); return; }
     var sc = C.scenes[id];
     travelTo(id, sc.place, sc.ref);
