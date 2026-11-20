@@ -28,7 +28,9 @@ async function startWithoutFonts(browser, url, next) {
     const setup = page => page.getByRole('button', { name: '출발 준비 완료', exact: true });
     await startWithoutFonts(browser, origin + '/index.html', setup);
     await startWithoutFonts(browser, origin + '/preview.html', setup);
-    await startWithoutFonts(browser, origin + '/preview3d.html', page => page.locator('.route-opts .btn').first());
+    const routes = page => page.locator('.route-opts .btn').first();
+    await startWithoutFonts(browser, origin + '/web3d/index.html', routes);
+    await startWithoutFonts(browser, origin + '/preview3d.html', routes);
     console.log('웹·단일 파일 2D·3D 모두 외부 글꼴 응답 전에 출발, 뒤늦은 스타일 적용 · no errors');
   } finally {
     await browser.close();
