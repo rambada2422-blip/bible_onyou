@@ -19,6 +19,12 @@
 .stick i { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; border-radius: 50%; background: var(--brass); box-shadow: 0 3px 0 var(--brass-deep); transform: translate(-50%, -50%); }
 .hint { position: absolute; left: 50%; bottom: 218px; transform: translateX(-50%); width: max-content; max-width: 86%; text-align: center; font-size: 14px; line-height: 1.4; color: var(--paper); background: rgba(14, 23, 48, .72); padding: 8px 14px; border-radius: 14px; pointer-events: none !important; }
 
+/* 낮은 가로 화면에서 조작 안내와 탐험 목표가 서로 덮이지 않게 나란히 놓는다. */
+@media (orientation: landscape) and (max-height: 440px) {
+  .g3:has(.hint:not([hidden])) .hud3 { right: 39%; }
+  .g3 .hint { top: max(10px, env(safe-area-inset-top, 0px)); right: var(--gutter-r); bottom: auto; left: auto; width: 34%; max-width: none; transform: none; }
+}
+
 .toast3 { position: absolute; left: var(--gutter-l); right: var(--gutter-r); top: 138px; display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-radius: 16px; background: var(--paper); color: var(--text); font-size: 15px; line-height: 1.4; box-shadow: 0 8px 22px rgba(0, 0, 0, .28); pointer-events: none !important; }
 .hud3 .toast3 { position: static; }
 .toast3 b { font-family: var(--f-display); font-weight: 400; }

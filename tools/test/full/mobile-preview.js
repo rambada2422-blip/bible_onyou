@@ -97,6 +97,14 @@ async function checkControls(page) {
     await page.getByRole('button', { name: '탐험 시작', exact: true }).tap();
     await page.locator('.route-opts .btn').filter({ hasText: '모세' }).tap();
     await page.waitForFunction(() => BO3D.debug.state().state === 'explore');
+    for (const [width, height] of [[568, 320], [844, 390]]) {
+      await page.setViewportSize({ width, height });
+      const hint = await page.locator('.hint').boundingBox();
+      const objective = await page.locator('.hud3 .obj').boundingBox();
+      assert(hint && objective && objective.x + objective.width <= hint.x,
+        '가로 화면에서 이동 안내가 탐험 목표를 덮는다');
+      await page.screenshot({ path: path.join(output, 'landing-' + width + '.png') });
+    }
     await walkToFirstPhoto(page, output);
     assert.deepEqual(errors, []);
     console.log('2D·3D 휴대폰 미리보기, 도감과 창 전환 입력, 세로·가로에서 직접 걸어 첫 촬영 · no errors');
