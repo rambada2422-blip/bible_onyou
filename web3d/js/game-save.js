@@ -2,7 +2,8 @@
 BO3D.gameModules = BO3D.gameModules || {};
 BO3D.gameModules.save = function (G) {
   'use strict';
-  var key = 'bo3d.save.v1', stage = null, chosen = null, previous = null;
+  var key = 'bo3d.save.v1', stage = null, question = 0, chosen = null, previous = null;
+  G.horebNote = '';
   var stages = ['route', 'horeb', 'watch', 'gates', 'reward', 'free', 'end', 'jordan', 'deduce', 'return'];
 
   function photos(value, entries) {
@@ -37,8 +38,11 @@ BO3D.gameModules.save = function (G) {
     G.checkpoint(chosen === 'ALT-02' ? 'jordan' : 'horeb');
   };
 
-  G.checkpoint = function (next) {
-    if (next) stage = next;
+  G.checkpoint = function (next, nextQuestion) {
+    if (next) {
+      stage = next;
+      question = nextQuestion || 0;
+    }
     if (!stage) return;
     if (stage === 'route') chosen = null;
     else if (!chosen) chosen = 'EX-01';
@@ -46,6 +50,8 @@ BO3D.gameModules.save = function (G) {
       parts: G.cur === 'horeb' && stage !== 'route' && G.state !== 'route' ? G.partsFound : 0,
       flagColor: G.flagColor, hatOn: (stage === 'free' || stage === 'end') && G.hatOn,
       dex: G.dex, clues: G.clue, muted: !!(G.FX && G.FX.audio.isMuted()) };
+    if (stage === 'gates' || stage === 'deduce') data.question = question;
+    if (G.horebNote) data.horebNote = G.horebNote;
     try {
       // 다른 탭에서 새로 시작했거나 더 진행했다면 이전 화면이 그 저장을 덮지 않는다.
       if (localStorage.getItem(key) !== previous) return;
@@ -76,7 +82,7 @@ BO3D.gameModules.save = function (G) {
   };
 
   G.restart = function () {
-    stage = null; chosen = null; previous = null; G.dex = {}; G.clue = {};
+    stage = null; question = 0; chosen = null; previous = null; G.horebNote = ''; G.dex = {}; G.clue = {};
     G.setFlag(null); G.setHat(false);
     try { localStorage.removeItem(key); } catch (e) { /* 기기 저장이 꺼져 있다. */ }
     G.menu(true);
@@ -87,6 +93,7 @@ BO3D.gameModules.save = function (G) {
     if (!s) { G.menu(); return; }
     stage = s.stage; chosen = s.route === 'ALT-02' ? 'ALT-02' : 'EX-01';
     G.S.tier = s.tier; G.S.ch = s.ch; G.dex = s.dex; G.clue = s.clues;
+    G.horebNote = typeof s.horebNote === 'string' ? s.horebNote : '';
     G.root.className = 'g3 app ' + G.S.tier;
     G.setFlag(s.flagColor);
     G.setMuted(s.muted === true);
