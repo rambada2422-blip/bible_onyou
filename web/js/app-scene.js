@@ -125,6 +125,14 @@
       svg.style.transformOrigin = px + 'px ' + py + 'px';
       svg.style.transform = 'translate(' + tx_ + 'px,' + ty_ + 'px) scale(' + z + ')';
     }
+    if (svg && window.ResizeObserver) {
+      var focusSize = new ResizeObserver(function () {
+        if (!stage.isConnected) { focusSize.disconnect(); return; }
+        var st = steps[idx];
+        if (st && st.k === 'beat') setFocus(sc.beats[st.i].focus);
+      });
+      focusSize.observe(stage);
+    }
     function setDots(n, cur) {
       dots.replaceChildren();
       for (var i = 0; i < n; i++) dots.appendChild(el('i', { class: i === cur ? 'on' : '' }));
@@ -183,7 +191,7 @@
     function stepBeat(b, i) {
       compact(false); setDots(sc.beats.length, i);
       setState(b.state);
-      requestAnimationFrame(function () { setFocus(b.focus); });
+      setFocus(b.focus);
       var text = tx(b.text), who = b.say && C.chars[b.say.who];
       var status = app.state.tier === 't1' && canSpeak ? el('p', { class: 'read-status', hidden: '', role: 'status' }) : null;
       fill([
