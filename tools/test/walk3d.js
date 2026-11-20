@@ -1,6 +1,7 @@
 // 3D 전체 자동 점검. 첫 tierIndex부터 나이 단계 셋을 모두 실행한다.
 // 사용: node tools/test/walk3d.js <firstTierIndex 0-2> <outDir> [dsf]
 const { chromium } = require('playwright');
+const { gameOrigin, proxy } = require('./game-server');
 const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
@@ -15,7 +16,7 @@ const aweDoc = fs.readFileSync(path.resolve(__dirname, '../../docs/일감/가-2.
 const aweBlock = aweDoc.split('```js\n')[1].split('```')[0].trim();
 approved.awe = JSON.parse(JSON.stringify(vm.runInNewContext('({' + aweBlock + '}).awe')));
 
-async function runTier(browser, tierIndex) {
+async function runTier(browser, tierIndex, url) {
   const tierOut = path.join(out, 't' + (tierIndex + 1));
   fs.mkdirSync(tierOut, { recursive: true });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: dsf });
@@ -60,7 +61,7 @@ async function runTier(browser, tierIndex) {
     const lv = () => p.evaluate(() => BO3D.debug.audioLevels());
     const muteRun = tierIndex === 2;
     const near = (a, b, tol, msg) => assert(Math.abs(a - b) <= tol, msg + ': ' + a + ' vs ' + b);
-    await p.goto(require('url').pathToFileURL(path.resolve(__dirname, '../../dist/preview3d.html')).href);
+    await p.goto(url);
     await p.evaluate(() => document.fonts.ready);
     const { C, H, P, sharon } = await p.evaluate(() => ({
       C: BO.content, H: BO.content3d.horeb, P: BO3D.world.P, sharon: BO.content3d.sharon
@@ -501,8 +502,10 @@ async function runTier(browser, tierIndex) {
 }
 
 (async () => {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const browser = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
-  try { for (const index of [ti].concat([0, 1, 2].filter(i => i !== ti))) await runTier(browser, index); }
+  try {
+    const url = (await gameOrigin(browser)) + '/preview3d.html';
+    for (const index of [ti].concat([0, 1, 2].filter(i => i !== ti))) await runTier(browser, index, url);
+  }
   finally { await browser.close(); }
 })().catch(e => { console.error('FAIL', e.stack || e.message); process.exitCode = 1; });
