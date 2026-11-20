@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { gameOrigin, proxy } = require('../game-server');
-const { photographFlock } = require('./photograph-flock');
+const { photographFlock } = require('../photograph-flock');
 const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '../../..');
