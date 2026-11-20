@@ -105,7 +105,7 @@ BO3D.gameModules.story = function (G) {
     G.hud.hidden = record.stage !== 'horeb'; G.hint.hidden = true;
     if (record.stage === 'horeb') G.showDetector(n);
     else if (record.stage === 'watch') startEvent();
-    else if (record.stage === 'gates') startGates();
+    else if (record.stage === 'gates') startGates(record.question);
     else if (record.stage === 'reward') finish();
     else if (record.stage === 'free') freeExplore();
     else { G.sceneDone = true; G.endCard(); }
@@ -260,15 +260,19 @@ BO3D.gameModules.story = function (G) {
     G.overlay.replaceChildren(G.el('div', { class: 'sheet' }, body, ft));
     G.overlay.hidden = false;
   }
-  function startGates() {
-    G.checkpoint('gates');
+  function startGates(savedIndex) {
     G.state = 'gates'; G.hidePanel(); G.root.classList.remove('ev'); G.camBtn.hidden = true; G.dexBtn.hidden = true;
-    var gates = G.SC.gates[G.S.tier], gi = 0;
+    var gates = G.SC.gates[G.S.tier];
+    var gi = Number.isInteger(savedIndex) && savedIndex >= 0 && savedIndex < gates.length ? savedIndex : 0;
     (function show() {
+      G.checkpoint('gates', gi);
       var q = gates[gi], last = gi === gates.length - 1;
       var nb = G.btn(last ? '관문 통과' : '다음 관문', function () { if (last) finish(); else { gi++; show(); } });
       nb.disabled = true;
-      sheetOverlay([G.el('div', { class: 'q-kicker', text: '다음으로 가는 관문 ' + (gi + 1) + ' / ' + gates.length }), blockFor(q, function () { nb.disabled = false; }, gi)], nb);
+      sheetOverlay([G.el('div', { class: 'q-kicker', text: '다음으로 가는 관문 ' + (gi + 1) + ' / ' + gates.length }), blockFor(q, function () {
+        nb.disabled = false;
+        G.checkpoint(last ? 'reward' : 'gates', gi + 1);
+      }, gi)], nb);
     })();
   }
   function makeHat() {
@@ -299,7 +303,10 @@ BO3D.gameModules.story = function (G) {
     if (c.kind === 'prayer') kids_.push(G.el('div', { class: 'closebox' }, G.el('h3', { text: '한 문장 기도' }), G.el('p', { text: c.text })));
     if (c.kind === 'practice') kids_.push(G.el('div', { class: 'closebox' }, G.el('h3', { text: '이번 주 실천 한 가지' }), G.el('p', { text: c.text })));
     if (c.kind === 'note') {
-      kids_.push(G.el('div', { class: 'closebox' }, G.el('h3', { text: '탐험 기록' }), G.el('p', { text: c.prompt }), G.el('textarea', { id: 'g-note', 'aria-label': '기록', placeholder: '여기에 적어 보세요.' })));
+      var note = G.el('textarea', { id: 'g-note', 'aria-label': '기록', placeholder: '여기에 적어 보세요.' });
+      note.value = G.horebNote;
+      note.addEventListener('input', function () { G.horebNote = note.value; G.checkpoint(); });
+      kids_.push(G.el('div', { class: 'closebox' }, G.el('h3', { text: '탐험 기록' }), G.el('p', { text: c.prompt }), note));
       kids_.push(G.el('p', { class: 'pending', text: '뜻과 삶의 적용을 묻는 질문은 목사님 감수를 마친 뒤 이 자리에 열립니다.' }));
     }
     kids_.push(G.el('div', { class: 'closebox' }, G.el('h3', { text: '탐험 도감' }), G.el('p', { text: '지금까지 ' + G.dexCount() + ' / ' + G.DEX.length + '장을 담았어요. 더 둘러보며 남은 사진을 찍을 수 있어요.' })));

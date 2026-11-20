@@ -97,6 +97,11 @@ BO3D.gameModules.travel = function (G) {
         G.el('div', { class: 'slot on' }, G.icon('gear'), G.el('b', { text: '찾은 부품' }), G.el('span', { text: G.partsFound + ' / ' + G.PARTS.length }))),
       G.el('p', { class: 'den-msg', text: '다음 장면(하나님의 이름과 세 가지 표징, 출 3:13-4:17)은 목사님 감수를 마친 뒤 열립니다.' }),
       G.el('div', { class: 'den-foot' }, G.btn('처음부터 다시', G.restart, 'quiet'), G.btn('다른 이름으로 가 보기', function () { if (G.C3 && BO3D.jordan) route(); else G.menu(); }, 'wide')));
+    if (G.horebNote.trim()) {
+      var journal = G.el('details', { class: 'journal-note' },
+        G.el('summary', { text: '내 탐험 기록' }), G.el('p', { text: G.horebNote }));
+      G.overlay.insertBefore(journal, G.overlay.querySelector('.den-foot'));
+    }
     G.overlay.hidden = false;
   }
 

@@ -19,7 +19,7 @@ BO3D.gameModules.jordan = function (G) {
     }
     if (record) {
       explore();
-      if (record.stage === 'deduce') startDeduce();
+      if (record.stage === 'deduce') startDeduce(record.question);
       else if (record.stage === 'return') { prepareDeduction(); conclude(); }
       return;
     }
@@ -129,18 +129,22 @@ BO3D.gameModules.jordan = function (G) {
     G.state = 'deduce';
     G.dedBtn.hidden = true; G.camBtn.hidden = true; G.dexBtn.hidden = true; G.hint.hidden = true;
   }
-  function startDeduce() {
-    prepareDeduction(); G.checkpoint('deduce');
+  function startDeduce(savedIndex) {
+    prepareDeduction();
     var evs = G.JD.evidence.filter(function (e) { return e.tiers.indexOf(G.S.tier) >= 0; }), steps = [];
     evs.forEach(function (e) { steps.push({ k: '증거 고르기', make: function (ok) { return evidenceBlock(e, ok); } }); });
     steps.push({ k: '성경에서 확인', make: function (ok) { return G.findBlock(G.JD.river, ok); } });
     if (G.S.tier === 't2') steps.push({ k: '마지막 추리', make: function (ok) { return multiBlock(G.ALT.spot.t2, ok); } });
     if (G.S.tier === 't3') steps.push({ k: '마지막 추리', make: function (ok) { return G.findrefBlock(G.ALT.spot.t3, ok, 'ded'); } });
-    var i = 0;
+    var i = Number.isInteger(savedIndex) && savedIndex >= 0 && savedIndex < steps.length ? savedIndex : 0;
     (function show() {
+      G.checkpoint('deduce', i);
       var st = steps[i], last = i === steps.length - 1;
       var nb = G.btn(last ? '추리 결과 보기' : '다음', function () { if (last) conclude(); else { i++; show(); } }); nb.disabled = true;
-      G.sheetOverlay([G.el('div', { class: 'q-kicker', text: '추리 ' + (i + 1) + ' / ' + steps.length + ' · ' + st.k }), st.make(function () { nb.disabled = false; })], nb);
+      G.sheetOverlay([G.el('div', { class: 'q-kicker', text: '추리 ' + (i + 1) + ' / ' + steps.length + ' · ' + st.k }), st.make(function () {
+        nb.disabled = false;
+        G.checkpoint(last ? 'return' : 'deduce', i + 1);
+      })], nb);
     })();
   }
   function conclude() {
