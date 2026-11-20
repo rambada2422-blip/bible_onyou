@@ -35,6 +35,17 @@ async function runTier(browser, tierIndex, url) {
       await p.screenshot({ path: path.join(tierOut, String(n).padStart(2, '0') + '-' + label + '.png') });
     };
     const st = () => p.evaluate(() => BO3D.debug.state());
+    const performanceRows = [];
+    async function sampleFrames(stage) {
+      const stats = await p.evaluate(async () => {
+        // 첫 프레임 전에 있던 조작·화면 사진 시간을 이 장면의 표에 섞지 않는다.
+        for (let i = 0; i < 13; i++) await new Promise(requestAnimationFrame);
+        return BO3D.debug.perf(12);
+      });
+      assert.equal(stats.samples, 12);
+      assert(stats.meanMs > 0 && stats.maxMs >= stats.meanMs && stats.drawCalls > 0);
+      performanceRows.push({ stage, ...stats });
+    }
     const parts = () => p.evaluate(() => BO3D.debug.parts());
     const panel = p.locator('.panel3');
     const panelButton = label => panel.getByRole('button', { name: label, exact: true }).click();
@@ -241,6 +252,7 @@ async function runTier(browser, tierIndex, url) {
     for (let i = 0; i < H.quiz.length; i++) {
       await solveDetector(i);
       if (i === 0) {
+        await sampleFrames('탐험 시작');
         // 나중 부품과 독립된 말씀 조각을 미리 줍지 못하는지, 위치만 옮겨 실제 프레임에서 확인한다.
         const start = await st();
         for (const at of H.quiz.slice(1).map(q => q.at)) {
@@ -255,7 +267,9 @@ async function runTier(browser, tierIndex, url) {
       if (i === 1) {
         assert.equal((await st()).mosesArrived, false, 'Moses must not have arrived before fragment 2');
         await walkTo(P.flock[0] + 6, P.flock[1] + 6);
-        await aim(P.flock[0], P.flock[1]); await snap('photo-sheep');
+        await aim(P.flock[0], P.flock[1]);
+        await sampleFrames('양 떼 가까이');
+        await snap('photo-sheep');
         assert((await p.evaluate(() => BO3D.debug.sheep())) >= 30, 'sheep < 30');
       }
       if (i === 2) {
@@ -271,6 +285,7 @@ async function runTier(browser, tierIndex, url) {
         const edge = await st();
         assert(Math.hypot(edge.x - P.bush[0], edge.z - P.bush[1]) >= P.witnessRadius - 0.1, 'crossed witness boundary');
         await shot('boundary');
+        await sampleFrames('언덕 아래');
         await p.evaluate(at => BO3D.debug.goto(at[0], at[1]), [before.x, before.z]);
       }
       await walkTo(H.quiz[i].at[0], H.quiz[i].at[1], 'part' + (i + 1));
@@ -307,6 +322,7 @@ async function runTier(browser, tierIndex, url) {
     }
     await p.waitForTimeout(1500);
     await shot('look-up');
+    await sampleFrames('압도 장면');
     // 소리 (docs/09 5절): 장면 동안 거리 계산을 멈추고, 순서마다 정한 크기를 따른다.
     const a0 = await lv();
     assert(a0, 'audio levels must be readable');
@@ -424,6 +440,7 @@ async function runTier(browser, tierIndex, url) {
     } else near(a6.total, a6.normal, 0.02, 'total must be normal after awe scene');
     console.log(tier, 'awe sound', muteRun ? '(muted)' : '', 'step1 fire', a1.fire.toFixed(3), 'step2 fire', a2.fire.toFixed(3), 'step4 total', a4.total.toFixed(4), 'step5 music', a5.music.toFixed(3), 'starts', a6.musicStarts);
     await snap('photo-event');
+    await sampleFrames('지켜보기');
     await passWatching();
     afterLastPart = false;
     await passReview(reviewPages, tier !== 't3', false);
@@ -495,6 +512,10 @@ async function runTier(browser, tierIndex, url) {
       await passReview(publicPages, false, true);
     }
     assert.deepEqual(errs, [], 'browser errors');
+    assert.equal(performanceRows.length, 5);
+    fs.writeFileSync(path.join(tierOut, 'perf.json'), JSON.stringify(performanceRows, null, 2) + '\n');
+    console.table(performanceRows.map(row => ({ 구간: row.stage, 평균ms: +row.meanMs.toFixed(1),
+      최대ms: +row.maxMs.toFixed(1), 그리기: row.drawCalls })));
     console.log(tier, 'shots:', n, 'all three quizzes and full journey passed; restart resets progress; no errors');
   } finally { await ctx.close(); }
 }

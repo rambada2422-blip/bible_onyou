@@ -3,6 +3,35 @@ BO3D.gameModules = BO3D.gameModules || {};
 BO3D.gameModules.loop = function (G) {
   'use strict';
   var last;
+  var intervals = new Float64Array(300), nextInterval = 0, intervalCount = 0;
+  var previousFrame = null, drawCalls = 0, perfLabel, lastLabelUpdate = 0;
+
+  function frameStats(recentFrames) {
+    var count = intervalCount, sum = 0, max = 0;
+    if (Number.isInteger(recentFrames) && recentFrames > 0) count = Math.min(count, recentFrames);
+    for (var i = 1; i <= count; i++) {
+      var ms = intervals[(nextInterval + intervals.length - i) % intervals.length];
+      sum += ms;
+      max = Math.max(max, ms);
+    }
+    return { samples: count, meanMs: count ? sum / count : 0, maxMs: max, drawCalls: drawCalls };
+  }
+
+  function recordFrame(t) {
+    drawCalls = G.renderer.info.render.calls;
+    if (document.hidden) { previousFrame = null; return; }
+    if (previousFrame !== null && t > previousFrame) {
+      intervals[nextInterval] = t - previousFrame;
+      nextInterval = (nextInterval + 1) % intervals.length;
+      intervalCount = Math.min(intervalCount + 1, intervals.length);
+    }
+    previousFrame = t;
+    if (perfLabel && intervalCount && t - lastLabelUpdate >= 500) {
+      var stats = frameStats();
+      perfLabel.textContent = '평균 ' + stats.meanMs.toFixed(1) + 'ms · 최대 ' + stats.maxMs.toFixed(1) + 'ms · 그리기 ' + drawCalls + '회';
+      lastLabelUpdate = t;
+    }
+  }
   function resize() {
     var w = G.root.clientWidth, h = G.root.clientHeight;
     if (!w || !h) return;
@@ -52,14 +81,23 @@ BO3D.gameModules.loop = function (G) {
     if (horeb && G.bushFx) G.bushFx.update(G.now, G.camera, G.renderer.domElement.height);
     if (G.FX && G.player) G.FX.audio.setFire(horeb ? G.dist2(G.player.group.position.x, G.player.group.position.z, G.P.bush[0], G.P.bush[1]) : 999);
     var rs = horeb ? G.scene : G.JL.scene;
+    // 빛과 그림자를 위한 중간 그리기까지 한 화면으로 센다.
+    G.renderer.info.reset();
     if (G.post) G.post.render(rs, G.camera); else G.renderer.render(rs, G.camera);
+    recordFrame(t);
     if (G.wantShot) { G.wantShot = false; if (horeb) G.takeShot(); else G.takeClue(); }
   }
 
   G.resize = resize;
   G.frame = frame;
+  G.frameStats = frameStats;
   return function initLoop() {
-
+    G.renderer.info.autoReset = false;
+    if (new URLSearchParams(location.search).get('perf') === '1') {
+      perfLabel = G.el('div', { class: 'perf3', 'aria-hidden': 'true' });
+      G.ui.appendChild(perfLabel);
+    }
+    document.addEventListener('visibilitychange', function () { previousFrame = null; });
     window.addEventListener('resize', resize);
 
     last = performance.now();
