@@ -62,38 +62,6 @@
       el('div', {}, el('div', { class: 'big', text: bookName(q.ref) }), el('p', { text: tx(q.prompt) }))),
       readBtn, after];
   }
-  function orderBlock(q, onOk) {
-    var n = q.items.length, perm = [], i;
-    for (i = 1; i < n; i += 2) perm.push(i);
-    for (i = n - 1 - ((n - 1) % 2); i >= 0; i -= 2) perm.push(i);
-    var picked = [], noteBox = el('div', {});
-    var btns = perm.map(function (orig) {
-      var num = el('span', { class: 'num', text: '' });
-      var b = el('button', { class: 'opt', 'aria-pressed': 'false', on: { click: function () {
-        if (picked.indexOf(orig) >= 0) return;
-        picked.push(orig); num.textContent = String(picked.length); b.setAttribute('aria-pressed', 'true');
-        if (picked.length === n) check();
-      } } }, num, el('span', { text: q.items[orig] }));
-      b._num = num;
-      return b;
-    });
-    function reset() { picked = []; btns.forEach(function (b) { b._num.textContent = ''; b.setAttribute('aria-pressed', 'false'); b.classList.remove('ok'); }); }
-    function check() {
-      var ok = picked.every(function (v, k) { return v === k; });
-      if (ok) {
-        btns.forEach(function (b) { b.classList.add('ok'); b.disabled = true; });
-        resetBtn.disabled = true;
-        noteBox.replaceChildren(goodNote(q.ref, '성경에 기록된 순서예요.'));
-        onOk();
-      } else {
-        noteBox.replaceChildren(lookNote(q.ref, '순서를 다시 살펴볼까요? 성경책을 차례로 읽으며 다시 눌러 보세요.'));
-        reset();
-      }
-      noteBox.scrollIntoView({ block: 'nearest' });
-    }
-    var resetBtn = el('button', { class: 'btn plain', on: { click: function () { reset(); noteBox.replaceChildren(); } } }, '다시 놓기');
-    return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' }, btns), resetBtn, noteBox];
-  }
   function multiBlock(q, onOk) {
     var noteBox = el('div', {});
     var btns = q.options.map(function (o) {
@@ -153,7 +121,7 @@
     if (q.type === 'choice') return choiceBlock(q, q.ref, onOk);
     if (q.type === 'find') return findBlock(q, onOk);
     if (q.type === 'findref') return findrefBlock(q, onOk, scene.inputSuffix);
-    if (q.type === 'order') return orderBlock(q, onOk);
+    if (q.type === 'order') return BO.orderQuestion(q, onOk, { el: el, goodNote: goodNote, lookNote: lookNote });
     if (q.type === 'multi') return multiBlock(q, onOk);
     if (q.type === 'hotspots') return hotspotBlock(q, onOk, scene);
     return [];

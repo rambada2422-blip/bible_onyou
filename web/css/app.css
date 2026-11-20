@@ -247,6 +247,7 @@ h1, h2, h3 { text-wrap: balance; }
 .q-prompt { font-size: 18px; line-height: 1.5; font-weight: 700; color: var(--ink); }
 .t1 .q-prompt { font-size: 20px; }
 .t3 .q-prompt { font-size: 16.5px; }
+.order-hint { font-size: 15px; line-height: 1.45; color: var(--text-soft); }
 .opts { display: flex; flex-direction: column; gap: 8px; }
 .opts.pics { display: grid; grid-template-columns: repeat(3, 1fr); }
 .opt {

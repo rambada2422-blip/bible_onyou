@@ -245,33 +245,11 @@ BO3D.gameModules.story = function (G) {
     } } }, '확인');
     return [G.el('p', { class: 'q-prompt', text: q.prompt }), G.el('div', { class: 'refin' }, G.el('span', { text: q.book }), ch, G.el('span', { text: '장' }), vs, G.el('span', { text: '절' }), check), noteBox];
   }
-  function orderBlock(q, onOk) {
-    var n = q.items.length, perm = [], i, picked = [], noteBox = G.el('div', {});
-    for (i = 1; i < n; i += 2) perm.push(i);
-    for (i = n - 1 - ((n - 1) % 2); i >= 0; i -= 2) perm.push(i);
-    var btns = perm.map(function (orig) {
-      var num = G.el('span', { class: 'num', text: '' });
-      var b = G.el('button', { class: 'opt', 'aria-pressed': 'false', on: { click: function () {
-        if (picked.indexOf(orig) >= 0) return;
-        picked.push(orig); num.textContent = String(picked.length); b.setAttribute('aria-pressed', 'true');
-        if (picked.length === n) check();
-      } } }, num, G.el('span', { text: q.items[orig] }));
-      b._num = num; return b;
-    });
-    function reset() { picked = []; btns.forEach(function (b) { b._num.textContent = ''; b.setAttribute('aria-pressed', 'false'); }); }
-    function check() {
-      if (picked.every(function (v, k) { return v === k; })) { btns.forEach(function (b) { b.classList.add('ok'); b.disabled = true; }); rb.disabled = true; noteBox.replaceChildren(goodNote(q.ref, '성경에 기록된 순서예요.')); onOk(); }
-      else { noteBox.replaceChildren(lookNote(q.ref, '순서를 다시 살펴볼까요? 성경책을 차례로 읽으며 다시 눌러 보세요.')); reset(); }
-      noteBox.scrollIntoView({ block: 'nearest' });
-    }
-    var rb = G.el('button', { class: 'btn plain', on: { click: function () { reset(); noteBox.replaceChildren(); } } }, '다시 놓기');
-    return [G.el('p', { class: 'q-prompt', text: q.prompt }), G.el('div', { class: 'opts' }, btns), rb, noteBox];
-  }
   function blockFor(q, onOk, idp) {
     if (q.type === 'choice') return choiceBlock(q, q.ref, onOk);
     if (q.type === 'find') return findBlock(q, onOk);
     if (q.type === 'findref') return findrefBlock(q, onOk, idp);
-    if (q.type === 'order') return orderBlock(q, onOk);
+    if (q.type === 'order') return BO.orderQuestion(q, onOk, { el: G.el, goodNote: goodNote, lookNote: lookNote });
     return [];
   }
   function sheetOverlay(kids_, foot, extraClass) {
