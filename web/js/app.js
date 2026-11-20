@@ -11,8 +11,30 @@
 
   /* ── 저장 (이 기기에만, 실패해도 게임은 돌아간다) ── */
   function fresh() { return { v: 1, tier: null, char: null, done: {}, cards: [], notes: {}, routed: false }; }
+  function isRecord(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+  }
+  function validSave(saved) {
+    if (!isRecord(saved) || saved.v !== 1) return false;
+    var unselected = saved.tier === null && saved.char === null;
+    var selected = C.tiers.some(function (tier) { return tier.id === saved.tier; }) &&
+      typeof saved.char === 'string' && Object.prototype.hasOwnProperty.call(C.chars, saved.char);
+    return (unselected || selected) &&
+      typeof saved.routed === 'boolean' &&
+      isRecord(saved.done) && Object.keys(saved.done).every(function (id) { return typeof saved.done[id] === 'boolean'; }) &&
+      Array.isArray(saved.cards) && saved.cards.every(function (card) {
+        return isRecord(card) && typeof card.ref === 'string' && typeof card.title === 'string' &&
+          typeof card.scene === 'string' && typeof card.bonus === 'boolean';
+      }) &&
+      isRecord(saved.notes) && Object.keys(saved.notes).every(function (id) {
+        return Object.prototype.hasOwnProperty.call(C.scenes, id) && typeof saved.notes[id] === 'string';
+      });
+  }
   function load() {
-    try { var r = JSON.parse(localStorage.getItem(KEY)); if (r && r.v === 1) return r; } catch (e) { /* 저장소를 못 쓰는 환경 */ }
+    try {
+      var saved = JSON.parse(localStorage.getItem(KEY));
+      if (validSave(saved)) return saved;
+    } catch (e) { /* 저장 값이 깨졌거나 저장소를 열 수 없는 환경 */ }
     return fresh();
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 무시 */ } }
