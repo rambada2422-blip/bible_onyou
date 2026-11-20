@@ -114,6 +114,28 @@ async function checkSize(browser, width, height) {
     assert.match(await page.locator('.sheet .narr').innerText(), /양 떼/);
     assert.equal(await target.count(), 0);
     await capture('12-horeb-first-discovery');
+    if (width === 390 && height === 844) {
+      async function flockPosition() {
+        return page.locator('#ex01-sheep').evaluate(async flock => {
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const windowBox = flock.closest('.stage').getBoundingClientRect();
+          const box = flock.getBoundingClientRect();
+          return [box.x - windowBox.x, box.y - windowBox.y];
+        });
+      }
+      const portrait = await flockPosition();
+      await page.setViewportSize({ width: height, height: width });
+      const rotated = await flockPosition();
+      await next.click();
+      await click('이전');
+      const reopened = await flockPosition();
+      assert(rotated.every((coord, i) => Math.abs(coord - reopened[i]) < 1),
+        '가로로 돌린 뒤에도 같은 대목을 처음 열었을 때와 양 떼의 위치가 같아야 합니다.');
+      await page.setViewportSize({ width, height });
+      const returned = await flockPosition();
+      assert(returned.every((coord, i) => Math.abs(coord - portrait[i]) < 1),
+        '세로로 돌려 놓으면 원래 양 떼의 위치로 돌아와야 합니다.');
+    }
   } catch (error) {
     issues.push(error.message);
   } finally {

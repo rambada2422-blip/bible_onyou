@@ -33,23 +33,7 @@
     return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' + (pics ? ' pics' : '') }, btns), noteBox];
   }
   function findrefBlock(q, onOk, inputSuffix) {
-    var ch = el('input', { id: 'in-ch-' + inputSuffix, type: 'text', inputmode: 'numeric', 'aria-label': '장', autocomplete: 'off', maxlength: '3' });
-    var vs = el('input', { id: 'in-vs-' + inputSuffix, type: 'text', inputmode: 'numeric', 'aria-label': '절', autocomplete: 'off', maxlength: '3' });
-    var noteBox = el('div', {});
-    var check = el('button', { class: 'btn plain', on: { click: function () {
-      var v = parseInt(ch.value, 10) + ':' + parseInt(vs.value, 10);
-      if (q.accept.indexOf(v) >= 0) {
-        ch.disabled = vs.disabled = check.disabled = true;
-        noteBox.replaceChildren(goodNote(null, '맞게 찾았어요. ' + q.book + ' ' + ch.value.trim() + '장 ' + vs.value.trim() + '절.'));
-        onOk();
-      } else {
-        noteBox.replaceChildren(el('div', { class: 'note look fadein' }, el('b', { text: '그 절에는 다른 내용이 적혀 있어요.' }), el('span', { text: q.hint })));
-      }
-      noteBox.scrollIntoView({ block: 'nearest' });
-    } } }, '확인');
-    return [el('p', { class: 'q-prompt', text: q.prompt }),
-      el('div', { class: 'refin' }, el('span', { text: q.book }), ch, el('span', { text: '장' }), vs, el('span', { text: '절' }), check),
-      noteBox];
+    return BO.referenceInput(q, onOk, el, goodNote, 'in-ch-' + inputSuffix, 'in-vs-' + inputSuffix);
   }
   function findBlock(q, onOk) {
     var after = el('div', { style: 'display:flex;flex-direction:column;gap:12px' });
