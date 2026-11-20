@@ -5,15 +5,43 @@
   var el = app.el, add = app.add, tx = app.tx, pic = app.pic, icon = app.icon, refChip = app.refChip;
   var show = app.show, bookName = app.bookName, warp = app.warp, save = app.save, questions = app.questions;
 
-  function speak(text) {
-    try {
-      window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(text);
-      u.lang = 'ko-KR'; u.rate = 0.9;
-      window.speechSynthesis.speak(u);
-    } catch (e) { /* 읽어주기를 못 쓰는 환경 */ }
+  var canSpeak = 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function';
+  var reading = null;
+  function stopReading() {
+    if (!reading) return;
+    reading.label.textContent = '읽어 줘';
+    reading = null;
+    try { window.speechSynthesis.cancel(); } catch (e) { /* 기기에서 음성 기능을 닫은 경우 */ }
   }
-  var canSpeak = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+  function readButton(text, status) {
+    var label = el('span', { text: '읽어 줘' });
+    return el('button', { class: 'readbtn', on: { click: function () {
+      if (reading) { stopReading(); return; }
+      status.hidden = true;
+      var current = { label: label, utterance: null };
+      reading = current;
+      label.textContent = '그만 듣기';
+      function finish(failed) {
+        if (reading !== current) return;
+        reading = null;
+        label.textContent = '읽어 줘';
+        if (failed) {
+          status.hidden = false;
+          status.textContent = '지금은 소리로 읽어 줄 수 없어요.';
+        }
+      }
+      try {
+        var voice = new SpeechSynthesisUtterance(text);
+        current.utterance = voice;
+        voice.lang = 'ko-KR'; voice.rate = 0.9;
+        voice.onend = function () { finish(false); };
+        voice.onerror = function (event) { finish(event.error !== 'canceled' && event.error !== 'interrupted'); };
+        window.speechSynthesis.speak(voice);
+      } catch (e) { finish(true); }
+    } } }, icon('speaker'), label);
+  }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) stopReading(); });
+  window.addEventListener('pagehide', stopReading);
 
   /* ════════════ 장면 ════════════ */
   function sceneSteps(sc) {
@@ -62,7 +90,7 @@
     var hots = el('div', { class: 'hot-layer' });
     var stage = el('div', { class: 'stage' }, artBox,
       el('div', { class: 'hud pad' },
-        el('button', { class: 'iconbtn', 'aria-label': '시간표로 돌아가기', on: { click: renderHub } }, icon('back')),
+        el('button', { class: 'iconbtn', 'aria-label': '시간표로 돌아가기', on: { click: function () { stopReading(); renderHub(); } } }, icon('back')),
         el('div', { class: 'where' }, el('span', { class: 'place', text: sc.place }), refChip(sc.ref, true))),
       dots, hots);
     var body = el('div', { class: 'sheet-body pad' });
@@ -117,6 +145,7 @@
     function prev() { if (idx > 0) { idx--; step(); } }
 
     function step(found) {
+      stopReading();
       hots.replaceChildren();
       var st = steps[idx];
       remember(st, found);
@@ -156,9 +185,11 @@
       setState(b.state);
       requestAnimationFrame(function () { setFocus(b.focus); });
       var text = tx(b.text), who = b.say && C.chars[b.say.who];
+      var status = app.state.tier === 't1' && canSpeak ? el('p', { class: 'read-status', hidden: '', role: 'status' }) : null;
       fill([
         el('div', { class: 'narr-meta' }, refChip(b.ref),
-          (app.state.tier === 't1' && canSpeak) ? el('button', { class: 'readbtn', on: { click: function () { speak(text); } } }, icon('speaker'), '읽어 줘') : null),
+          status ? readButton(text, status) : null),
+        status,
         el('p', { class: 'narr', text: text }),
         b.say ? el('div', { class: 'say' }, pic(b.say.who + '-avatar', 'avatar', ''),
           el('div', { class: 'bubble' }, el('b', { text: who.name, style: 'color:' + who.color }), b.say.text)) : null,

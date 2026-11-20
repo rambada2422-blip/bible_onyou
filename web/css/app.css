@@ -229,6 +229,7 @@ h1, h2, h3 { text-wrap: balance; }
 .t3 .narr { font-size: 16px; line-height: 1.7; }
 .narr-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .readbtn { min-height: 32px; padding: 0 10px; border-radius: 999px; background: var(--paper-2); color: var(--ink-2); font-size: 13px; display: inline-flex; align-items: center; gap: 5px; }
+.read-status { font-size: 14px; line-height: 1.45; color: var(--text-soft); }
 .readbtn svg { width: 15px; height: 15px; }
 .say { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: start; }
 .say .bubble { background: var(--paper-2); border-radius: 4px 16px 16px 16px; padding: 9px 13px; font-size: 15.5px; line-height: 1.5; }
