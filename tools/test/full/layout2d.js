@@ -123,6 +123,7 @@ async function checkSize(browser, width, height) {
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce' });
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
+  page.setDefaultNavigationTimeout(30000);
   const issues = [];
   page.on('pageerror', (error) => issues.push(`화면 실행 오류 · ${error.message}`));
   page.on('console', (message) => {
