@@ -47,24 +47,31 @@ BO3D.gameModules.ui = function (G) {
   }
 
   /* 물음과 보기 순서는 승인된 horeb 자료에서 읽는다. */
-  function detectorQuestion(item, index, onReady) {
+  function detectorQuestion(item, index, onReady, savedPage) {
     var data = G.C3.horeb, sharon = G.C3.sharon, tier = G.S.tier, q = item.q[tier], solved = false;
     var split = q.prompt.search(/[.?] /);
     var speech = sharonSay('ask', split === -1 ? q.prompt : q.prompt.slice(0, split + 1));
     var continuation = split === -1 ? null : G.el('p', { class: 'q-prompt', text: q.prompt.slice(split + 2) });
     var noteBox = G.el('div', {});
-    function answer() {
-      if (index === 0) { onReady(); return; }
-      showPanel([G.goodNote(item.okRef[tier])], btn('다음', function () {
-        var found = sharon.found[index];
-        showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
-          sharonSay('joy', tier === 't1' && found.t1 ? found.t1 : found.text)], btn('계속 탐험하기', onReady));
-      }));
+    function showSharon() {
+      G.rememberDetectorAnswer(index, 'sharon');
+      var found = sharon.found[index];
+      showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+        sharonSay('joy', tier === 't1' && found.t1 ? found.t1 : found.text)], btn('계속 탐험하기', onReady));
     }
+    function showReference() {
+      G.rememberDetectorAnswer(index, 'reference');
+      showPanel([G.goodNote(item.okRef[tier])], btn('다음', showSharon));
+    }
+    if (savedPage === 'reference') { showReference(); return; }
+    if (savedPage === 'sharon') { showSharon(); return; }
     var opts = q.options.map(function (option) {
       var b = G.el('button', { class: 'opt', on: { click: function () {
         if (solved) return;
-        if (option.ok) { solved = true; answer(); }
+        if (option.ok) {
+          solved = true;
+          if (index === 0) onReady(); else showReference();
+        }
         else {
           b.classList.add('rest'); b.disabled = true;
           if (!noteBox.firstChild) {

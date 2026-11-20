@@ -49,6 +49,9 @@ async function checkJourney(page, url) {
   if (await button('다음').isVisible()) { await button('다음').click(); await button('계속 탐험하기').click(); }
   await state('explore');
   if (!(await page.evaluate(() => BO3D.debug.dex())).includes('sheep')) await sheepPhoto();
+  await resume(); await state('explore');
+  assert.deepEqual((await snapshot()).signal, { part: 0, step: 'search' });
+  await page.locator('.track3').waitFor({ state: 'visible' });
   await button('소리 끄기').click();
   await page.evaluate(([x, z]) => BO3D.debug.goto(x, z), first.at);
   await page.waitForFunction(k => JSON.parse(localStorage.getItem(k)).parts === 1, key);
@@ -56,6 +59,7 @@ async function checkJourney(page, url) {
   for (const selector of ['.cam3', '.dex3', '.hud3 .obj'])
     assert(await page.locator(selector).isHidden(), '말씀을 읽을 때 지난 탐색 항목을 접는다 · ' + selector);
   const firstPart = await snapshot();
+  assert.equal(firstPart.signal, undefined, '획득한 부품 신호를 다음 질문에서 재사용하지 않는다');
   assert.equal(firstPart.route, 'EX-01'); assert.equal(firstPart.ch, 'onwoo'); assert.equal(firstPart.tier, 't2');
   assert.equal(firstPart.muted, true); assert.match(firstPart.dex.sheep, /^data:image\/jpeg;base64,/);
   await page.reload(); await button('이어서 탐험하기').waitFor();
@@ -129,11 +133,17 @@ async function checkJourney(page, url) {
   }
   console.log('다섯 호렙 구간, 깃발·탐험 모자, 요단 강 수첩·추리·결과 복원, 처음부터 다시');
 
-  await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, firstPart]);
+  await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)),
+    [key, { ...firstPart, signal: { part: 0, step: 'search' } }]);
   await resume();
+  await page.locator('[data-detector-quiz="1"]').waitFor(); // 이미 주운 부품 번호는 다음 신호를 열 수 없다.
   await button('소리 켜기').click(); await button('소리 끄기').click();
   const secondAnswer = await page.evaluate(() => BO.content3d.horeb.quiz[1].q.t2.options.find(o => o.ok).label);
-  await button(secondAnswer).click(); await button('다음').click(); await button('계속 탐험하기').click();
+  await button(secondAnswer).click(); await resume();
+  assert.equal((await snapshot()).signal.step, 'reference');
+  await button('다음').click(); await resume();
+  assert.equal((await snapshot()).signal.step, 'sharon');
+  await button('계속 탐험하기').click();
   await state('explore');
   await page.evaluate(() => {
     const write = Storage.prototype.setItem;

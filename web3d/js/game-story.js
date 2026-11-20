@@ -103,8 +103,10 @@ BO3D.gameModules.story = function (G) {
       else { G.place(G.moses.group, G.P.mosesEnd[0], G.P.mosesEnd[1]); G.mosesArrived = true; }
     }
     G.hud.hidden = record.stage !== 'horeb'; G.hint.hidden = true;
-    if (record.stage === 'horeb') G.showDetector(n);
-    else if (record.stage === 'watch') startEvent();
+    if (record.stage === 'horeb') {
+      if (record.signal && record.signal.step === 'search') G.startPartSearch(n);
+      else G.showDetector(n, record.signal && record.signal.step);
+    } else if (record.stage === 'watch') startEvent();
     else if (record.stage === 'gates') startGates(record.question);
     else if (record.stage === 'reward') finish();
     else if (record.stage === 'free') freeExplore();

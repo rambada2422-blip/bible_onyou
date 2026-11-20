@@ -107,19 +107,23 @@ BO3D.gameModules.exploration = function (G) {
         G.hidePanel(); G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false;
       }));
   }
-  function showDetector(i) {
+  function startPartSearch(i) {
+    G.detectorPart = i; G.partObjs[i].group.visible = true;
+    G.hidePanel(); G.state = 'explore'; G.hudRef.hidden = false;
+    G.camBtn.hidden = false; G.dexBtn.hidden = false;
+    if (i >= 1) G.place_.textContent = G.SC.place;
+    G.setObjective(G.C3.horeb.quiz[i].objective);
+    G.rememberDetectorAnswer(i, 'search');
+  }
+  function showDetector(i, savedPage) {
     var item = G.C3.horeb.quiz[i];
     G.detectorPart = -1; G.state = 'detector';
     G.track.hidden = true; G.hint.hidden = true; G.hudRef.hidden = true;
     G.camBtn.hidden = true; G.dexBtn.hidden = true; G.denBtn.hidden = true;
     G.detectorQuestion(item, i, function () {
-      G.detectorPart = i; G.partObjs[i].group.visible = true;
-      G.hidePanel(); G.state = 'explore'; G.hudRef.hidden = false;
-      G.camBtn.hidden = false; G.dexBtn.hidden = false;
-      if (i === 1) G.place_.textContent = G.SC.place;
-      G.setObjective(item.objective);
+      startPartSearch(i);
       if (i === 0) G.toast('성경에서 확인했어요. ' + item.okRef[G.S.tier] + ' · 부품 신호가 선명해졌어요.');
-    });
+    }, savedPage);
   }
   function takePart(i) {
     if (G.cur !== 'horeb' || G.state !== 'explore' || i !== G.detectorPart || G.partObjs[i].taken) return;
@@ -154,6 +158,7 @@ BO3D.gameModules.exploration = function (G) {
   G.takeShot = takeShot;
   G.openDex = openDex;
   G.showDetector = showDetector;
+  G.startPartSearch = startPartSearch;
   G.askSharon = askSharon;
   G.takePart = takePart;
   G.updateTracker = updateTracker;
