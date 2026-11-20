@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <clipPath id="mallang-joy-clip">
+    <circle cx="120" cy="120" r="120"/>
+  </clipPath>
+  <g clip-path="url(#mallang-joy-clip)">
+    <circle cx="120" cy="120" r="120" fill="#FBF7EE"/>
+    <path d="M0 176Q120 136 240 176V240H0Z" fill="#F3E9D6"/>
+    <ellipse cx="120" cy="183" rx="57" ry="8" fill="#DAC9AC"/>
+    <g id="mallang-joy-body" transform="translate(120 184) scale(.95 1.13) translate(-120 -184)">
+      <path d="M40 133C40 88 75 49 119 49C163 49 200 86 200 132C200 168 168 185 121 185C73 185 40 168 40 133Z" fill="#2AA3EC"/>
+      <path d="M158 59C184 73 200 100 200 132C200 168 168 185 121 185C96 185 78 180 64 171C93 179 132 175 156 163C180 151 186 131 183 109C180 86 168 68 158 59Z" fill="#1B88D5"/>
+      <path d="M66 82C72 72 84 64 97 62C104 61 106 65 101 68C90 72 80 77 72 84C68 87 64 86 66 82Z" fill="#FFFFFF"/>
+      <g id="mallang-joy-face">
+        <path d="M72 99q10-14 20 0" fill="none" stroke="#16233F" stroke-width="6.5" stroke-linecap="round"/>
+        <path d="M148 99q10-14 20 0" fill="none" stroke="#16233F" stroke-width="6.5" stroke-linecap="round"/>
+        <path d="M109 117Q120 120 131 117Q131 131 120 132Q109 131 109 117Z" fill="#16233F"/>
+      </g>
+      <g id="mallang-joy-meter" fill="#BDF3FF">
+        <rect id="mallang-joy-cell-1" x="94" y="160" width="8" height="5.5" rx="1.5"/>
+        <rect id="mallang-joy-cell-2" x="105" y="160" width="8" height="5.5" rx="1.5"/>
+        <rect id="mallang-joy-cell-3" x="116" y="160" width="8" height="5.5" rx="1.5"/>
+        <rect id="mallang-joy-cell-4" x="127" y="160" width="8" height="5.5" rx="1.5"/>
+        <rect id="mallang-joy-cell-5" x="138" y="160" width="8" height="5.5" rx="1.5"/>
+      </g>
+    </g>
+  </g>
+</svg>
