@@ -69,6 +69,7 @@ async function inspectHoreb(page) {
   } else {
     await capture('introduction');
     await button('다음').tap();
+    await button('다음').tap();
     await button('출발하자').tap();
   }
 
