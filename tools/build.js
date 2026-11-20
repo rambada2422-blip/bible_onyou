@@ -115,6 +115,7 @@ const page = [
   '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
   '<title>성경 탐험대</title>',
+  '<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,' + Buffer.from(read('assets/char/timemachine.svg')).toString('base64') + '">',
   '<meta name="claude:viewport-fit-sides" content="cover">',
   '<style>\n' + read('css/app.css') + '\n</style>',
   '</head><body>',
