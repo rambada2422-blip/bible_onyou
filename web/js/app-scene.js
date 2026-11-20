@@ -38,6 +38,11 @@
     return steps.some(function (st) { return stepName(st) === journey.step; }) ? journey : null;
   }
 
+  function rememberArrival(id) {
+    app.state.journey = { id: id, tier: app.state.tier, step: 'arrive' };
+    save();
+  }
+
   function runScene(id, renderHub, renderRoute, journey) {
     var sc = C.scenes[id], steps = sceneSteps(sc);
     var idx = journey ? steps.findIndex(function (st) { return stepName(st) === journey.step; }) : 0;
@@ -208,8 +213,7 @@
     function finish() {
       if (sc.alt) {
         app.state.routed = true;
-        app.state.journey = { id: 'EX-01', tier: app.state.tier, step: 'arrive' };
-        save();
+        rememberArrival('EX-01');
         var to = C.scenes['EX-01'];
         warp('목적지를 다시 맞췄어요', to.place, to.ref, function () { runScene('EX-01', renderHub, renderRoute); });
         return;
@@ -238,6 +242,7 @@
       c.bonus ? el('span', { class: 'tag', text: '돌아가는 길에 찾은 말씀' }) : null);
   }
 
+  app.rememberArrival = rememberArrival;
   app.runScene = runScene;
   app.savedJourney = savedJourney;
   app.cardNode = cardNode;
