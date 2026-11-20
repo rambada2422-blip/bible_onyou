@@ -521,6 +521,10 @@ async function runTier(browser, tierIndex, url) {
       }
     }
     assert.deepEqual(errs, [], 'browser errors');
+    const recent = await p.evaluate(() => BO3D.debug.perf());
+    assert.equal(recent.samples, 300, '전체 탐험 후에는 최근 300프레임만 남아야 한다');
+    assert(recent.maxMs >= recent.meanMs && recent.meanMs > 0);
+    assert.equal(await p.locator('.perf3').count(), new URL(url).searchParams.get('perf') === '1' ? 1 : 0);
     assert.equal(performanceRows.length, 5);
     fs.writeFileSync(path.join(tierOut, 'perf.json'), JSON.stringify(performanceRows, null, 2) + '\n');
     console.table(performanceRows.map(row => ({ 구간: row.stage, 평균ms: +row.meanMs.toFixed(1),
