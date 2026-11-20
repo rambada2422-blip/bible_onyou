@@ -316,3 +316,38 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
   .trio { height: 120px; margin-top: -40px; }
   .char img { height: 92px; }
 }
+
+/* 낮은 2D 화면에서는 안쪽 여백까지 화면 높이에 넣고 선택 화면을 세로로 움직인다. */
+@media (max-height: 700px) {
+  .app:not(.g3) .title-screen,
+  .app:not(.g3) .setup { box-sizing: border-box; overflow-y: auto; }
+  .app:not(.g3) .title-screen { padding-block: 16px; gap: 12px; }
+  .app:not(.g3) .title-screen > *,
+  .app:not(.g3) .setup > * { flex-shrink: 0; }
+  .app:not(.g3) .title-screen .game-title { font-size: clamp(34px, 8vh, 52px); }
+  .app:not(.g3) .title-screen .tm-hero { width: min(54%, 28vh, 218px); }
+  .app:not(.g3) .title-screen .trio { height: clamp(76px, 18vh, 118px); margin-top: -36px; }
+}
+
+/* 낮은 가로 화면은 그림과 대화 칸을 나란히 놓아 단서와 다음 단추를 가리지 않게 한다. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .app:not(.g3) { max-width: 900px; }
+  .app:not(.g3) .title-screen {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr; align-items: center; gap: 12px 28px;
+  }
+  .app:not(.g3) .title-top { grid-column: 1 / -1; }
+  .app:not(.g3) .setup {
+    padding-left: max(var(--gutter-l), calc((100% - 560px) / 2));
+    padding-right: max(var(--gutter-r), calc((100% - 560px) / 2));
+  }
+  .app:not(.g3) .scene {
+    display: grid; grid-template-columns: min(44%, 75vh) minmax(0, 1fr);
+  }
+  .app:not(.g3) .scene .stage { height: 100%; }
+  .app:not(.g3) .scene .place { white-space: normal; }
+  .app:not(.g3) .scene .sheet {
+    min-width: 0; margin-top: 0; border-radius: 20px 0 0 20px;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, .28);
+  }
+}
