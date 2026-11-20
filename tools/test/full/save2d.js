@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { gameOrigin, proxy } = require('../game-server');
 
 const outputFolder = process.argv[2];
 if (!outputFolder) {
@@ -11,7 +11,7 @@ if (!outputFolder) {
 
 const { chromium } = require('playwright');
 const key = 'bo_demo_v1';
-const url = pathToFileURL(path.resolve(__dirname, '../../../web/index.html')).href;
+let url;
 const folder = path.resolve(outputFolder);
 const sample = { v: 1, tier: 't3', char: 'onwoo', done: {}, cards: [], notes: {}, routed: false };
 const invalidValues = [
@@ -81,8 +81,8 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
 
 (async () => {
   await fs.mkdir(folder, { recursive: true });
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const browser = await chromium.launch({ proxy });
+  url = (await gameOrigin(browser)) + '/index.html';
   const results = [];
   try {
     for (const [name, label, value] of invalidValues) {

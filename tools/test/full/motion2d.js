@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { gameOrigin, proxy } = require('../game-server');
 
 const outputFolder = process.argv[2];
 if (!outputFolder) {
@@ -10,7 +10,7 @@ if (!outputFolder) {
 }
 
 const { chromium } = require('playwright');
-const url = pathToFileURL(path.resolve(__dirname, '../../../web/index.html')).href;
+let url;
 const viewport = { width: 390, height: 664 };
 
 function watchMotion() {
@@ -168,8 +168,8 @@ async function checkNormal(browser) {
 (async () => {
   const folder = path.resolve(outputFolder);
   await fs.mkdir(folder, { recursive: true });
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const browser = await chromium.launch({ proxy });
+  url = (await gameOrigin(browser)) + '/index.html';
   try {
     const viewed = await checkReduced(browser, folder);
     await checkNormal(browser);

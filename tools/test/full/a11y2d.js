@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { gameOrigin, proxy } = require('../game-server');
 
 const outputFolder = process.argv[2];
 if (!outputFolder) {
@@ -10,7 +10,7 @@ if (!outputFolder) {
 }
 
 const { chromium } = require('playwright');
-const url = pathToFileURL(path.resolve(__dirname, '../../../web/index.html')).href;
+let url;
 const screens = [
   { width: 320, height: 568, age: 0, destination: '여호수아' },
   { width: 844, height: 390, age: 0, destination: '요셉' },
@@ -204,8 +204,8 @@ async function checkScreen(browser, { width, height, age, destination }) {
 }
 
 (async () => {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const browser = await chromium.launch({ proxy });
+  url = (await gameOrigin(browser)) + '/index.html';
   try {
     const results = await Promise.all(screens.map((view) => checkScreen(browser, view)));
     if (results.includes(false)) process.exitCode = 1;

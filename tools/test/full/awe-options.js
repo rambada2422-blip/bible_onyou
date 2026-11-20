@@ -3,12 +3,13 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { gameOrigin, proxy } = require('../game-server');
+const { photographFlock } = require('./photograph-flock');
 const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '../../..');
 const out = process.argv[2] || path.join(root, 'dist/check/awe-options');
-const preview = pathToFileURL(path.join(root, 'dist/preview3d.html')).href;
+let preview;
 const seenKey = 'bo3d.awe.bush.seen';
 fs.mkdirSync(out, { recursive: true });
 
@@ -46,17 +47,15 @@ async function openAwe(page, { missing = false } = {}) {
   await page.locator('.route-opts .btn').filter({ hasText: '모세' }).click();
   const panel = page.locator('.panel3');
   const click = name => panel.getByRole('button', { name, exact: true }).click();
-  await panel.getByRole('button', { name: '다음', exact: true }).waitFor({ timeout: 40000 });
+  await page.waitForFunction(() => BO3D.debug.state().state === 'explore');
   assert.equal(await page.locator('.awe-board img[src]').count(), 2, 'both pictures preload before the first question');
-  await click('다음');
-  await click('출발하자');
+  await photographFlock(page);
   const quiz = await page.evaluate(() => BO.content3d.horeb.quiz.map(item => ({
     at: item.at, correct: item.q.t2.options.find(o => o.ok).label
   })));
   for (const [index, { at, correct }] of quiz.entries()) {
     await click(correct);
-    await click('다음');
-    await click('계속 탐험하기');
+    if (index > 0) { await click('다음'); await click('계속 탐험하기'); }
     await page.waitForFunction(() => BO3D.debug.state().state === 'explore');
     await page.evaluate(([x, z]) => BO3D.debug.goto(x, z), at);
     await page.waitForFunction(() => BO3D.debug.state().state === 'caption');
@@ -192,8 +191,8 @@ async function noPicture(page) {
 }
 
 (async () => {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const browser = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
+  preview = (await gameOrigin(browser)) + '/preview3d.html';
   try {
     await withPage(browser, {}, firstAndRepeat);
     await withPage(browser, { reducedMotion: 'reduce' }, page => stillView(page, 'reduced-motion'));

@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { gameOrigin, proxy } = require('../game-server');
 
 const outputFolder = process.argv[2];
 if (!outputFolder) {
@@ -10,7 +10,7 @@ if (!outputFolder) {
 }
 
 const { chromium } = require('playwright');
-const gameUrl = pathToFileURL(path.resolve(__dirname, '../../../web/index.html')).href;
+let gameUrl;
 const sizes = [[320, 568], [390, 664], [844, 390]];
 
 function findClippedText() {
@@ -154,8 +154,8 @@ async function checkScreen(browser, [width, height], age) {
 }
 
 (async () => {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const browser = await chromium.launch({ proxy });
+  gameUrl = (await gameOrigin(browser)) + '/index.html';
   try {
     const results = await Promise.all(sizes.map((size, age) => checkScreen(browser, size, age)));
     if (results.every(Boolean)) console.log('글꼴 차단 시험 통과 · no errors');
