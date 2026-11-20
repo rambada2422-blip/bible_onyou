@@ -3,12 +3,12 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { gameOrigin, proxy } = require('../game-server');
 const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '../../..');
 const out = process.argv[2] || path.join(root, 'dist/check/awe-options');
-const preview = pathToFileURL(path.join(root, 'dist/preview3d.html')).href;
+let preview;
 const seenKey = 'bo3d.awe.bush.seen';
 fs.mkdirSync(out, { recursive: true });
 
@@ -40,6 +40,8 @@ async function withPage(browser, options, test) {
 
 async function openAwe(page, { missing = false } = {}) {
   await page.goto(preview);
+  const restart = page.getByRole('button', { name: '처음부터 다시', exact: true });
+  if (await restart.isVisible()) await restart.click();
   assert.equal(await page.locator('.awe-board img[src]').count(), 0, 'preload begins when Horeb starts');
   if (missing) await page.evaluate(() => { BO3D.aweData.bush_3 = 'AA'; });
   await page.getByRole('button', { name: '탐험 시작', exact: true }).click();
@@ -192,8 +194,8 @@ async function noPicture(page) {
 }
 
 (async () => {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const browser = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
+  preview = (await gameOrigin(browser)) + '/preview3d.html';
   try {
     await withPage(browser, {}, firstAndRepeat);
     await withPage(browser, { reducedMotion: 'reduce' }, page => stillView(page, 'reduced-motion'));

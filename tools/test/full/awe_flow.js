@@ -3,12 +3,12 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { gameOrigin, proxy } = require('../game-server');
 const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '../../..');
 const out = process.argv[2] || path.join(root, 'dist/check/awe-flow');
-const preview = pathToFileURL(path.join(root, 'dist/preview3d.html')).href;
+let preview;
 const design = fs.readFileSync(path.join(root, 'docs/09_떨기나무_압도장면.md'), 'utf8');
 const textSection = design.split(/^## 4\. .*$/m)[1].split(/^## 5\./m)[0];
 const captions = textSection.split(/\r?\n/).filter(line => /^\|\s*[45]\./.test(line))
@@ -226,8 +226,8 @@ async function captureFlow(browser, tier, viewport, reducedMotion = 'no-preferen
 }
 
 (async () => {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const browser = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
+  preview = (await gameOrigin(browser)) + '/preview3d.html';
   try {
     for (const tier of tiers) {
       for (const viewport of viewports) await captureFlow(browser, tier, viewport);
