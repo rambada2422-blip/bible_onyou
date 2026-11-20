@@ -132,10 +132,20 @@
     function stepArrive() {
       compact(false); setDots(0, 0); setFocus(null);
       if (sc.beats[0].state) setState(sc.beats[0].state);
+      var flock = id === 'EX-01' && svg && region('sheep');
+      if (flock) {
+        // SVG가 있는 장면은 그림 속 양 전체를 고를 수 있게 실제 그림의 범위를 쓴다.
+        var sheep = svg.querySelector('#ex01-sheep');
+        var bounds = sheep ? sheep.getBBox() : { x: flock.x, y: flock.y, width: flock.w, height: flock.h };
+        hots.appendChild(el('button', { class: 'look-target', 'aria-label': '양 떼 살펴보기', on: { click: next },
+          style: '--dx:' + (bounds.x + bounds.width / 2 - 450) + ';--dy:' + (bounds.y + bounds.height / 2 - 600) +
+            ';--w:' + bounds.width + ';--h:' + bounds.height }));
+      }
       fill([
         el('div', { class: 'kicker', text: sc.alt ? '타임머신이 멈춘 곳' : '도착했어요' }),
         el('h2', { text: sc.place }),
         el('p', { text: sc.alt ? '어? 가려던 곳과 조금 달라 보여요. 먼저 둘러봐요.' : sc.title }),
+        flock ? el('p', { class: 'look-prompt', text: '그림에서 양 떼를 찾아 눌러 보세요.' }) : null,
         refChip(sc.ref)
       ], nextBtn('둘러보기'));
       body.classList.add('arrive');

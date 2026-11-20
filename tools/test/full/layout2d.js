@@ -96,6 +96,24 @@ async function checkSize(browser, width, height) {
     await click('시간표로 돌아가기');
     await click('목적지 다시 고르기');
     await checkClues('요셉', '09-joseph-clues');
+    await page.setViewportSize({ width, height });
+    await click('시간표로 돌아가기');
+    await click('목적지 다시 고르기');
+    await click('모세');
+    const target = page.getByRole('button', { name: '양 떼 살펴보기', exact: true });
+    await target.waitFor();
+    await capture('11-horeb-arrival');
+    const sheep = await page.locator('#ex01-sheep > g').evaluateAll(groups => groups.map(group => {
+      const box = group.getBoundingClientRect();
+      const x = box.x + box.width / 2, y = box.y + box.height / 2;
+      return { x, y, canTap: document.elementFromPoint(x, y)?.classList.contains('look-target') };
+    }));
+    assert(sheep.length > 1 && sheep.every(animal => animal.canTap), '그림에 보이는 양을 각각 누를 수 있어야 한다');
+    const animal = sheep[sheep.length - 1];
+    await page.touchscreen.tap(animal.x, animal.y);
+    assert.match(await page.locator('.sheet .narr').innerText(), /양 떼/);
+    assert.equal(await target.count(), 0);
+    await capture('12-horeb-first-discovery');
   } catch (error) {
     issues.push(error.message);
   } finally {
@@ -104,7 +122,7 @@ async function checkSize(browser, width, height) {
   if (issues.length) {
     console.error(`실패 · ${size}\n${[...new Set(issues)].join('\n')}`);
   } else {
-    console.log(`${size} · 두 경로의 단서와 다음 화면 확인 · no errors`);
+    console.log(`${size} · 두 경로의 단서, 호렙의 양 떼 직접 발견 · no errors`);
   }
   return issues.length === 0;
 }

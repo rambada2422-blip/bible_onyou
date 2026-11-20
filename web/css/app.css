@@ -195,6 +195,15 @@ h1, h2, h3 { text-wrap: balance; }
   top: clamp(22px, calc(50% + var(--dy) * var(--unit)), calc(100% - 22px));
   transform: translate(-50%, -50%);
 }
+.look-target {
+  --unit: max(0.111111cqw, 0.083333cqh);
+  position: absolute; pointer-events: auto; cursor: zoom-in; background: transparent; border-radius: 12px;
+  left: calc(50% + var(--dx) * var(--unit)); top: calc(50% + var(--dy) * var(--unit));
+  width: max(44px, var(--w) * var(--unit)); height: max(44px, var(--h) * var(--unit));
+  transform: translate(-50%, -50%);
+}
+.look-target:focus-visible { outline: 3px solid var(--paper); box-shadow: 0 0 0 5px var(--ink); }
+.sheet-body.arrive .look-prompt { color: var(--ink-2); font-family: var(--f-display); }
 /* 좁은 가로 화면에서는 그림과 단서를 함께 확대해 손가락으로 각각 누를 자리를 확보한다. */
 .stage:has(#alt03-state-main):has(.hot) > :is(.art, .hot-layer) {
   left: 50%; right: auto; width: max(100%, 360px); transform: translateX(-50%);
