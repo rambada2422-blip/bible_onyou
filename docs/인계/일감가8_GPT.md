@@ -4,3 +4,9 @@ AI: GPT(Codex)
 브랜치: relay/horeb
 
 3D 그림 기능을 끈 Chromium에서 단일 파일과 웹 원본을 열면 게임 화면이 비고 장면을 만들지 못했다는 오류가 발생했다. 같은 기기의 2D 첫 화면은 열렸다. 3D 첫 화면에 기기 안내를 표시하고 세로·가로 화면과 전체 게임 진행을 검증한다.
+
+그림 장치를 처음 여는 Three.js 호출에서만 실패를 처리한다. 장치를 열 수 없으면 캔버스를 접고 두 문구를 화면 중앙에 보여 준다. 장면 초기화가 여기서 멈췄을 때 메뉴와 그리기를 시작하면 다시 예외가 발생하므로, 시작 순서를 맡은 `web3d/js/game.js`에도 중단 결과를 전달했다. 정상 기기는 같은 순서로 초기화한다.
+
+바뀐 파일은 `web3d/js/game-scene.js`, `web3d/js/game-ui.js`, `web3d/js/game.js`, `web3d/css/game.css`, `tools/test/full/nowebgl.js`와 이 문서·사진이다. 단일 HTML은 빌드 도구가 생성한다.
+
+`node tools/test/full/nowebgl.js dist/check/nowebgl` 통과. Chromium 자체에서 WebGL을 끄고 320×568과 844×390으로 열어 두 문구를 확인했다. 드라이버가 예외를 던지는 경우에도 안내가 표시된다. 3D 탐험 저장은 그대로이고, 같은 브라우저에서 2D 탐험의 나이 선택이 열린다. 빠른 점검 4/4를 통과했다. [320×568 안내 화면](사진/일감가8.png)

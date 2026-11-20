@@ -150,7 +150,12 @@ BO3D.gameModules.scene = function (G) {
     G.root = document.getElementById('game'), G.canvas = document.getElementById('c'), G.ui = document.getElementById('ui');
 
     /* ── 장면 구성 ── */
-    G.renderer = new G.T.WebGLRenderer({ canvas: G.canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: !!window.BO3D_TEST });
+    try {
+      G.renderer = new G.T.WebGLRenderer({ canvas: G.canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: !!window.BO3D_TEST });
+    } catch (error) {
+      G.showWebGLNotice();
+      return false;
+    }
     G.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     G.renderer.shadowMap.enabled = true;
     G.renderer.shadowMap.type = G.T.PCFSoftShadowMap;

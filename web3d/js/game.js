@@ -21,7 +21,9 @@
     modules.debug(G)
   ];
   modules.save(G);
-  initialize.forEach(function (init) { init(); });
+  for (var i = 0; i < initialize.length; i++) {
+    if (initialize[i]() === false) return;
+  }
 
   G.resize(); G.menu(); requestAnimationFrame(G.frame);
 })();
