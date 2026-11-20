@@ -39,7 +39,6 @@ BO3D.gameModules.exploration = function (G) {
     if (lookingForFlock() && found.some(function (f) { return f.d.id === 'sheep'; })) G.showDetector(0);
   }
   function openDex() {
-    G.stick.x = G.stick.y = 0; G.stick.id = null; G.base.hidden = true;
     var cells = G.DEX.map(function (d) {
       var has = d.id in G.dex;
       return G.el('div', { class: 'dexcell' + (has ? '' : ' none') },

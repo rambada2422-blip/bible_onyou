@@ -20,7 +20,7 @@ BO3D.gameModules.ui = function (G) {
     panelBody.replaceChildren(); panelFoot.replaceChildren();
     G.add(panelBody, kids_); G.add(panelFoot, foot);
     panel.hidden = false; panelBody.scrollTop = 0;
-    G.base.hidden = true; G.stick.x = G.stick.y = 0; G.stick.id = null;
+    G.releaseControls();
   }
   function hidePanel() { panel.hidden = true; }
   function btn(label, fn, cls) { return G.el('button', { class: 'btn ' + (cls || 'onpaper'), on: { click: fn } }, label); }

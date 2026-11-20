@@ -112,12 +112,16 @@ const scripts = [
   'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/app.js',
 ];
 const page = [
+  '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
+  '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
   '<title>성경 탐험대</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',
   `<link rel="stylesheet" href="${fonts}">`,
   '<style>\n' + read('css/app.css') + '\n</style>',
+  '</head><body>',
   '<div id="app" class="app"></div>',
-  ...scripts.map((p) => '<script>\n' + esc(read(p)) + '\n</script>')
+  ...scripts.map((p) => '<script>\n' + esc(read(p)) + '\n</script>'),
+  '</body></html>'
 ].join('\n');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/preview.html'), page);

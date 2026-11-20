@@ -20,7 +20,7 @@ BO3D.gameModules.loop = function (G) {
       G.scraps.forEach(function (s) { if (s.group.visible && s.update) s.update(G.now); });
     } else G.JL.update(dt, G.now);
     if (G.player) {
-      if (G.state === 'explore' || G.state === 'free') {
+      if (G.canMove()) {
         G.movePlayer(dt); G.moveFollowers(dt);
         if (horeb) {
           G.partObjs.forEach(function (po, pi) {

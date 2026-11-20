@@ -63,7 +63,6 @@ BO3D.gameModules.jordan = function (G) {
       has && c.aside ? G.el('span', { class: 'aside', text: c.aside }) : null);
   }
   function openClues() {
-    G.stick.x = G.stick.y = 0; G.stick.id = null; G.base.hidden = true;
     G.sheetOverlay([G.el('div', { class: 'q-kicker', text: '추리 수첩 ' + clueN() + ' / ' + G.JD.clues.length }),
       G.el('p', { class: 'q-prompt', text: '찍은 사진이 단서예요. 장절을 성경책에서 찾아보면 더 알 수 있어요.' }),
       G.el('div', { class: 'dexgrid' }, G.JD.clues.map(clueCell))],
@@ -117,7 +116,7 @@ BO3D.gameModules.jordan = function (G) {
     return [G.el('p', { class: 'q-prompt', text: G.tx(ev.q) }), G.el('div', { class: 'evigrid' }, btns), noteBox];
   }
   function startDeduce() {
-    G.state = 'deduce'; G.stick.x = G.stick.y = 0; G.stick.id = null; G.base.hidden = true;
+    G.state = 'deduce';
     G.dedBtn.hidden = true; G.camBtn.hidden = true; G.dexBtn.hidden = true; G.hint.hidden = true;
     var evs = G.JD.evidence.filter(function (e) { return e.tiers.indexOf(G.S.tier) >= 0; }), steps = [];
     evs.forEach(function (e) { steps.push({ k: '증거 고르기', make: function (ok) { return evidenceBlock(e, ok); } }); });

@@ -19,7 +19,7 @@ BO3D.gameModules.travel = function (G) {
     if (on) G.wearHat();
   }
   function openDen() {
-    var prev = G.state; G.state = 'den'; G.stick.x = G.stick.y = 0; G.stick.id = null; G.base.hidden = true;
+    var prev = G.state; G.state = 'den'; G.releaseControls();
     function render() {
       var ready = G.partsFound === G.PARTS.length && G.sceneDone;
       var slots = G.PARTS.map(function (p, i) {

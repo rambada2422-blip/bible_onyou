@@ -20,8 +20,8 @@ async function serve(req, res) {
     }
     const pathname = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
     let file;
-    if (pathname === '/preview3d.html') {
-      file = path.join(root, 'dist/preview3d.html');
+    if (pathname === '/preview3d.html' || pathname === '/preview.html') {
+      file = path.join(root, 'dist', pathname.slice(1));
     } else {
       file = await fs.realpath(path.resolve(web, '.' + pathname));
       if (!file.startsWith(web + path.sep)) {

@@ -229,6 +229,7 @@ BO3D.gameModules.story = function (G) {
     return [];
   }
   function sheetOverlay(kids_, foot, extraClass) {
+    G.releaseControls();
     var body = G.el('div', { class: 'sheet-body pad' }), ft = G.el('div', { class: 'sheet-foot pad' });
     G.add(body, kids_); G.add(ft, foot);
     G.overlay.className = 'overlay3 sheet3' + (extraClass ? ' ' + extraClass : '');
