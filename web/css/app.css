@@ -186,7 +186,15 @@ h1, h2, h3 { text-wrap: balance; }
 .dots { position: absolute; left: 0; right: 0; bottom: 28px; display: flex; justify-content: center; gap: 6px; z-index: 3; }
 .dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(251, 247, 238, .45); }
 .dots i.on { background: var(--brass); width: 20px; border-radius: 999px; }
-.hot { position: absolute; z-index: 4; border-radius: 50%; }
+/* 그림의 900×1200 기준점을 SVG의 xMidYMid slice 배율로 화면에 맞춘다. */
+.hot-layer { position: absolute; inset: 0; z-index: 4; container-type: size; pointer-events: none; }
+.hot {
+  --unit: max(0.111111cqw, 0.083333cqh);
+  position: absolute; pointer-events: auto; width: 44px; height: 44px; border-radius: 50%;
+  left: clamp(22px, calc(50% + var(--dx) * var(--unit)), calc(100% - 22px));
+  top: clamp(22px, calc(50% + var(--dy) * var(--unit)), calc(100% - 22px));
+  transform: translate(-50%, -50%);
+}
 .hot::before, .hot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--brass); }
 .hot::after { animation: ring 1.8s ease-out infinite; }
 .hot.found::before { border-color: var(--teal); background: rgba(122, 208, 200, .25); }
@@ -336,23 +344,15 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
   .char img { height: 92px; }
 }
 
-/* 낮은 2D 화면에서는 안쪽 여백까지 화면 높이에 넣고 선택 화면을 세로로 움직인다. */
+/* 화면 높이에 위아래 여백을 포함하고, 큰 글씨에서도 아래 단추까지 움직일 수 있게 한다. */
+.app:not(.g3) .title-screen, .app:not(.g3) .setup { box-sizing: border-box; overflow-y: auto; }
 @media (max-height: 700px) {
-  .app:not(.g3) .title-screen,
-  .app:not(.g3) .setup { box-sizing: border-box; overflow-y: auto; }
   .app:not(.g3) .title-screen { padding-block: 16px; gap: 12px; }
   .app:not(.g3) .title-screen > *,
   .app:not(.g3) .setup > * { flex-shrink: 0; }
   .app:not(.g3) .title-screen .game-title { font-size: clamp(34px, 8vh, 52px); }
   .app:not(.g3) .title-screen .tm-hero { width: min(54%, 28vh, 218px); }
   .app:not(.g3) .title-screen .trio { height: clamp(76px, 18vh, 118px); margin-top: -36px; }
-
-  /* 요셉 장면 단서는 반지, 사슬, 바로 순서다. 가까운 세 원을 떨어뜨린다. */
-  .app:not(.g3) .stage:has(#alt03-state-main) .hot:nth-child(1) { transform: translateY(13px) scale(.7); }
-  .app:not(.g3) .stage:has(#alt03-state-main) .hot:nth-child(2) { transform: translate(5px, -14px) scale(.7); }
-  .app:not(.g3) .stage:has(#alt03-state-main) .hot:nth-child(3) { transform: translateX(-24px) scale(.43); }
-  .app:not(.g3) .stage:has(#alt03-state-main) .hot:nth-child(3)::before,
-  .app:not(.g3) .stage:has(#alt03-state-main) .hot:nth-child(3)::after { border-width: 5px; }
 }
 
 /* 낮은 가로 화면은 그림과 대화 칸을 나란히 놓아 단서와 다음 단추를 가리지 않게 한다. */

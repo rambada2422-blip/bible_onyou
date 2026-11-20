@@ -69,9 +69,17 @@
       var body = [dot,
         el('span', { class: 'tt' }, el('b', { text: n.title }), el('span', { text: n.ref })),
         el('span', { class: 'st', text: n.playable ? (done ? '다시 보기' : '출발') : '감수 후 열림' })];
-      if (!n.playable) return el('li', {}, el('div', { class: cls }, body));
+      if (!n.playable) return el('li', { hidden: true }, el('div', { class: cls }, body));
       return el('li', {}, el('button', { class: cls, on: { click: function () { depart(n.id); } } }, body));
     });
+    var locked = items.filter(function (_, i) { return !C.timeline[i].playable; });
+    var toggle = el('button', { class: 'pillbtn', 'aria-expanded': 'false', 'aria-controls': 'journey-list',
+      on: { click: function () {
+        var expand = toggle.getAttribute('aria-expanded') === 'false';
+        locked.forEach(function (row) { row.hidden = !expand; });
+        toggle.setAttribute('aria-expanded', String(expand));
+        toggle.textContent = expand ? '갈 수 있는 장면만 보기' : '전체 여정 보기';
+      } } }, '전체 여정 보기');
     var c = C.chars[app.state.char], t = tierInfo();
     show(el('div', { class: 'screen sky hub' },
       el('div', { class: 'hub-head pad' },
@@ -84,7 +92,8 @@
           pic('timemachine', '', ''),
           el('div', {}, el('h2', { text: '출애굽기 시간표' }),
             el('p', { text: '놋쇠 다이얼이 가리키는 장면으로 떠나요. 다음 장면으로 가려면 성경을 알아야 해요.' }))),
-        el('ol', { class: 'tl' }, items),
+        locked.length ? toggle : null,
+        el('ol', { class: 'tl', id: 'journey-list' }, items),
         el('p', { class: 'hub-note', text: '시범판에는 목사님 감수가 필요 없는 세 장면만 열려 있습니다.' }),
         el('div', {},
           el('button', { class: 'linkbtn', on: { click: function () { app.state.routed = false; save(); renderRoute(); } } }, '목적지 다시 고르기'), ' · ',

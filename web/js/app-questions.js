@@ -127,26 +127,20 @@
       list.appendChild(row);
       return row;
     });
-    function place() {
-      hots.replaceChildren();
-      q.items.forEach(function (it, k) {
-        var r = scene.region(it.region) || { x: 150 + k * 250, y: 500, w: 160, h: 160 };
-        var m = scene.mapRect(r), d = Math.max(64, Math.min(120, Math.max(m.w, m.h) * 0.8));
-        var b = el('button', { class: 'hot' + (it.found ? ' found' : ''), 'aria-label': '단서 ' + (k + 1),
-          style: 'left:' + (m.x + m.w / 2 - d / 2) + 'px;top:' + (m.y + m.h / 2 - d / 2) + 'px;width:' + d + 'px;height:' + d + 'px',
-          on: { click: function () {
-            if (it.found) return;
-            it.found = true; found++; b.classList.add('found');
-            rows[k].className = 'it fadein';
-            rows[k].replaceChildren(el('span', {}, it.text + ' '), refChip(it.ref));
-            if (found === q.items.length) onOk();
-          } } });
-        hots.appendChild(b);
-      });
-    }
-    q.items.forEach(function (it) { it.found = false; });
-    setTimeout(place, 520);
-    window.addEventListener('resize', place);
+    q.items.forEach(function (it, k) {
+      var r = scene.region(it.region) || { x: 150 + k * 250, y: 500, w: 160, h: 160 };
+      var x = r.tap ? r.tap[0] : r.x + r.w / 2;
+      var y = r.tap ? r.tap[1] : r.y + r.h / 2;
+      var b = el('button', { class: 'hot', 'aria-label': '단서 ' + (k + 1),
+        style: '--dx:' + (x - 450) + ';--dy:' + (y - 600),
+        on: { click: function () {
+          b.disabled = true; b.classList.add('found'); found++;
+          rows[k].className = 'it fadein';
+          rows[k].replaceChildren(el('span', {}, it.text + ' '), refChip(it.ref));
+          if (found === q.items.length) onOk();
+        } } });
+      hots.appendChild(b);
+    });
     return [el('p', { class: 'q-prompt', text: q.prompt }), list];
   }
   function blockFor(q, onOk, scene) {

@@ -31,7 +31,7 @@
     var artBox = el('div', { class: 'art', html: ART[sc.art] || '' });
     var svg = artBox.querySelector('svg');
     var dots = el('div', { class: 'dots' });
-    var hots = el('div', {});
+    var hots = el('div', { class: 'hot-layer' });
     var stage = el('div', { class: 'stage' }, artBox,
       el('div', { class: 'hud pad' },
         el('button', { class: 'iconbtn', 'aria-label': '시간표로 돌아가기', on: { click: renderHub } }, icon('back')),
@@ -75,7 +75,7 @@
     }
     function compact(on) { stage.classList.toggle('compact', !!on); if (on) setFocus(null); }
     function fill(kids, footKids) {
-      body.replaceChildren(); foot.replaceChildren(); hots.replaceChildren();
+      body.replaceChildren(); foot.replaceChildren();
       add(body, kids); add(foot, footKids);
       body.scrollTop = 0;
       body.classList.remove('arrive');
@@ -89,6 +89,7 @@
     function prev() { if (idx > 0) { idx--; step(); } }
 
     function step() {
+      hots.replaceChildren();
       var st = steps[idx];
       if (st.k === 'arrive') return stepArrive();
       if (st.k === 'beat') return stepBeat(sc.beats[st.i], st.i);
@@ -130,7 +131,7 @@
 
     function questionBlock(q, onOk) {
       return questions.blockFor(q, onOk, {
-        inputSuffix: id + '-' + idx, hots: hots, region: region, mapRect: mapRect
+        inputSuffix: id + '-' + idx, hots: hots, region: region
       });
     }
 

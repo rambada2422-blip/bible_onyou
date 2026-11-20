@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { gameOrigin, proxy } = require('../game-server');
 
 const outputFolder = process.argv[2];
 if (!outputFolder) {
@@ -10,8 +10,8 @@ if (!outputFolder) {
 }
 
 const { chromium } = require('playwright');
-const sizes = [[320, 568], [360, 560], [390, 664], [844, 390]];
-const url = pathToFileURL(path.resolve(__dirname, '../../../web/index.html')).href;
+const sizes = [[320, 568], [360, 560], [390, 664], [390, 844], [844, 390]];
+let url;
 
 // 내용이 세로로 길면 읽을 수 있도록 움직인 뒤 살핀다. 가로 넘침은 허용하지 않는다.
 function layoutIssues() {
@@ -152,8 +152,18 @@ async function checkSize(browser, width, height) {
     await capture(filename);
     const clues = await page.locator('.hot').all();
     assert.equal(clues.length, 3, `${destination} 경로의 단서가 세 개여야 합니다.`);
-    for (const clue of clues) await clue.click();
+    await clues[0].click();
+    if (destination === '요셉' && width === 390 && height === 844) {
+      await page.setViewportSize({ width: height, height: width });
+      assert.equal(await page.locator('.hot').count(), 3);
+      assert(await clues[0].isDisabled(), '회전 후에도 이미 찾은 단서가 표시되어야 합니다.');
+      assert.equal(await next.isEnabled(), false);
+      await capture('10-joseph-rotated');
+    }
+    for (const clue of clues.slice(1)) await clue.click();
     assert(await next.isEnabled(), `${destination} 경로에서 단서를 모두 눌렀으나 다음 화면이 열리지 않았습니다.`);
+    await next.click();
+    assert.equal(await page.locator('.hot').count(), 0, '이전 그림의 단서가 새 화면에 남아 있습니다.');
   }
 
   try {
@@ -165,6 +175,13 @@ async function checkSize(browser, width, height) {
     await page.locator('.tier').first().click();
     await capture('02-setup');
     await click('출발 준비 완료');
+    const rows = page.locator('#journey-list li:visible');
+    const playable = await page.locator('#journey-list .node.play').count();
+    assert.equal(await rows.count(), playable);
+    await page.getByRole('button', { name: '전체 여정 보기' }).click();
+    assert.equal(await rows.count(), await page.evaluate(() => BO.content.timeline.length));
+    await page.getByRole('button', { name: '갈 수 있는 장면만 보기' }).click();
+    assert.equal(await rows.count(), playable);
     await capture('03-timeline');
     await page.locator('.node.play').first().click();
     await click('둘러보기');
@@ -190,14 +207,14 @@ async function checkSize(browser, width, height) {
   if (issues.length) {
     console.error(`실패 · ${size}\n${[...new Set(issues)].join('\n')}`);
   } else {
-    console.log(`${size} · 9화면 확인 · no errors`);
+    console.log(`${size} · 두 경로의 단서와 다음 화면 확인 · no errors`);
   }
   return issues.length === 0;
 }
 
 (async () => {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const browser = await chromium.launch({ proxy });
+  url = (await gameOrigin(browser)) + '/index.html';
   try {
     const results = await Promise.all(sizes.map(([width, height]) => checkSize(browser, width, height)));
     if (results.includes(false)) process.exitCode = 1;
