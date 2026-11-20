@@ -1,12 +1,12 @@
 // 시대 추리(요단 강) 자동 점검. 사용: node walkJ.js <tierIndex> <outDir> [dsf] [url]
 const { chromium } = require('playwright');
+const { gameOrigin, proxy } = require('./game-server');
 const path = require('path');
 const fs = require('fs');
 const ti = process.argv[2] || '1', out = process.argv[3], dsf = Number(process.argv[4] || '1');
-const url = process.argv[5] || require('url').pathToFileURL(require('path').resolve(__dirname, '../../dist/preview3d.html')).href;
 fs.mkdirSync(out, { recursive: true });
 (async () => {
-  const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
+  const b = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: dsf });
   const p = await ctx.newPage();
   await p.addInitScript(() => { window.BO3D_TEST = true; });
@@ -15,6 +15,7 @@ fs.mkdirSync(out, { recursive: true });
   p.on('console', (m) => { if (m.type() === 'error' && !/ERR_FILE_NOT_FOUND|Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
   const shot = async (label) => { n++; await p.screenshot({ path: path.join(out, String(n).padStart(2, '0') + '-' + label + '.png') }); };
   const st = () => p.evaluate(() => BO3D.debug.state());
+  const url = process.argv[5] || (await gameOrigin(b)) + '/preview3d.html';
   await p.goto(url);
   await p.waitForTimeout(2500);
   await p.evaluate(() => document.fonts.ready);
