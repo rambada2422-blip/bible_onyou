@@ -78,9 +78,16 @@ async function watching(page) {
 }
 
 async function setHidden(page, hidden) {
-  await page.evaluate(hidden => {
+  return page.evaluate(async hidden => {
     Object.defineProperty(document, 'hidden', { configurable: true, value: hidden });
     document.dispatchEvent(new Event('visibilitychange'));
+    if (hidden) return;
+    // 복귀 때 0.5초 동안만 소리가 난다. 렌더러와 시험 도구를 왕복하기 전에 측정한다.
+    const started = performance.now();
+    while (BO3D.debug.audioLevels().scene === 0 && performance.now() - started < 500) {
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+    return BO3D.debug.audioLevels().scene;
   }, hidden);
 }
 
@@ -97,13 +104,13 @@ async function firstAndRepeat(page) {
   assert.equal((await state(page)).paused, true);
   assert.equal(await page.evaluate(() => BO3D.debug.audioLevels().scene), 0);
   assert.equal(await page.evaluate(() => BO3D.debug.aweNext()), null);
-  await setHidden(page, false);
+  const resumedGain = await setHidden(page, false);
   const resumed = await state(page);
   assert.equal(resumed.paused, false);
   assert.equal(resumed.step, 4);
   assert.equal(resumed.t, 0);
   assert.equal(resumed.text, '');
-  assert(await page.evaluate(() => BO3D.debug.audioLevels().scene > 0), 'audio restarts from the beginning of the step');
+  assert(resumedGain > 0, 'audio restarts from the beginning of the step');
   await next(page, 5);
   assert.equal(await seen(page), null);
   assert.equal(await skip(page).isVisible(), false);
