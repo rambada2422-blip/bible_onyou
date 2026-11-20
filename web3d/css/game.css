@@ -141,11 +141,14 @@
 /* 불붙은 떨기나무 압도 장면 그림판 */
 .awe3 { position: absolute; inset: 0; z-index: 40; overflow: hidden; pointer-events: auto; }
 .awe-stage { position: absolute; inset: 0; overflow: hidden; background: var(--ink); pointer-events: none; }
-.awe-sky { position: absolute; background: #2D93F5; pointer-events: none; }
+.awe-sky { position: absolute; top: 0; background: var(--awe-sky, #2D93F5); pointer-events: none; }
 .awe-board { position: absolute; overflow: hidden; pointer-events: none; }
 .awe-board img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* 같은 하늘 띠 색을 그림의 위쪽 40줄에 걸쳐 잇는다. */
+.awe-board.sky-blend::after { content: ''; position: absolute; inset: 0 0 auto; height: 2.60417%; background: var(--awe-sky, #2D93F5); mask-image: linear-gradient(#000 1px, transparent); }
 .awe-cap { position: absolute; left: 0; right: 0; bottom: 0; height: 150px; box-sizing: border-box; padding: 50px var(--gutter-r) 16px var(--gutter-l); display: flex; flex-direction: column; justify-content: center; background: linear-gradient(180deg, rgba(14, 23, 48, 0) 0px, var(--ink) 50px, var(--ink) 150px); color: var(--paper); font-family: var(--f-serif); font-size: 18px; line-height: 1.5; pointer-events: none; }
 .awe-text { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; opacity: 0; }
 .awe-line { margin: 0; color: var(--paper); font-family: var(--f-serif); font-size: 18px; line-height: 1.48; word-break: keep-all; }
 .awe-veil { position: absolute; inset: 0; background: #E4BE7E; opacity: 0; pointer-events: none; }
+.awe-skip { position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); right: var(--gutter-r); min-height: 44px; padding: 0 14px; font-size: 16px; }
 .g3.awe-on .hud3, .g3.awe-on .stick, .g3.awe-on .cam3, .g3.awe-on .dex3, .g3.awe-on .snd3, .g3.awe-on .hint, .g3.awe-on .toast3, .g3.awe-on .panel3, .g3.awe-on .overlay3, .g3.awe-on .den3 { display: none !important; }
