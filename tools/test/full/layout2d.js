@@ -81,7 +81,16 @@ async function checkSize(browser, width, height) {
     assert.equal(await rows.count(), playable);
     await capture('03-timeline');
     await page.locator('.node.play').first().click();
-    await click('둘러보기');
+    await page.getByRole('button', { name: '짓고 있는 성 살펴보기' }).waitFor();
+    await capture('03-egypt-arrival');
+    // 성벽과 중앙 건물을 실제 그림 좌표로 눌러 본다.
+    const city = await page.locator('#ex00-city').evaluate(g => [[520, 555], [670, 563]].map(([x, y]) => {
+      const pt = new DOMPoint(x, y).matrixTransform(g.getScreenCTM());
+      return { x: pt.x, y: pt.y, canTap: !!document.elementFromPoint(pt.x, pt.y)?.closest('.look-target') };
+    }));
+    assert(city.every(p => p.canTap), '성벽과 중앙 건물을 모두 누를 수 있어야 한다');
+    await page.touchscreen.tap(city[0].x, city[0].y);
+    assert.match(await page.locator('.sheet .narr').innerText(), /새 왕/);
     await capture('04-scene');
     await advanceTo('.q-prompt');
     await capture('05-question');
@@ -144,7 +153,7 @@ async function checkSize(browser, width, height) {
   if (issues.length) {
     console.error(`실패 · ${size}\n${[...new Set(issues)].join('\n')}`);
   } else {
-    console.log(`${size} · 두 경로의 단서, 호렙의 양 떼 직접 발견 · no errors`);
+    console.log(`${size} · 두 경로의 단서, 애굽의 성과 호렙의 양 떼 직접 발견 · no errors`);
   }
   return issues.length === 0;
 }

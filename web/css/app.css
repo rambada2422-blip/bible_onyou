@@ -198,9 +198,16 @@ h1, h2, h3 { text-wrap: balance; }
 .look-target {
   --unit: max(0.111111cqw, 0.083333cqh);
   position: absolute; pointer-events: auto; cursor: zoom-in; background: transparent; border-radius: 12px;
-  left: calc(50% + var(--dx) * var(--unit)); top: calc(50% + var(--dy) * var(--unit));
-  width: max(44px, var(--w) * var(--unit)); height: max(44px, var(--h) * var(--unit));
-  transform: translate(-50%, -50%);
+  --center-x: calc(50% + var(--dx) * var(--unit));
+  --center-y: calc(50% + var(--dy) * var(--unit));
+  --half-w: max(22px, var(--w) * var(--unit) / 2);
+  --half-h: max(22px, var(--h) * var(--unit) / 2);
+  /* 가로 화면에서 잘린 그림만큼 누르는 영역도 잘라 시간표 단추와 대목을 살려 둔다. */
+  --left: clamp(0px, var(--center-x) - var(--half-w), 100% - 44px);
+  --top: clamp(0px, var(--center-y) - var(--half-h), 100% - 44px);
+  left: var(--left); top: var(--top);
+  width: max(44px, min(100%, var(--center-x) + var(--half-w)) - var(--left));
+  height: max(44px, min(100%, var(--center-y) + var(--half-h)) - var(--top));
 }
 .look-target:focus-visible { outline: 3px solid var(--paper); box-shadow: 0 0 0 5px var(--ink); }
 .sheet-body.arrive .look-prompt { color: var(--ink-2); font-family: var(--f-display); }
