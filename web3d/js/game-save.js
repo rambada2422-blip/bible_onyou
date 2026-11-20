@@ -53,11 +53,22 @@ BO3D.gameModules.save = function (G) {
       try { localStorage.setItem(key, raw); }
       catch (e) {
         if (e.name !== 'QuotaExceededError') return;
-        // 사진을 더 담을 공간이 없어도 찾은 항목과 진행 구간은 남긴다.
-        data.dex = {}; data.clues = {};
-        Object.keys(G.dex).forEach(function (id) { data.dex[id] = ''; });
-        Object.keys(G.clue).forEach(function (id) { data.clues[id] = ''; });
-        raw = JSON.stringify(data); localStorage.setItem(key, raw);
+        // 새 사진이 넘칠 때는 이미 저장된 사진과 새 발견 표시를 먼저 지킨다.
+        var old;
+        try { old = JSON.parse(previous) || {}; } catch (invalid) { old = {}; }
+        function reduced(album, stored) {
+          var kept = {};
+          Object.keys(album).forEach(function (id) { kept[id] = stored && stored[id] === album[id] ? album[id] : ''; });
+          return kept;
+        }
+        data.dex = reduced(G.dex, old.dex); data.clues = reduced(G.clue, old.clues);
+        raw = JSON.stringify(data);
+        try { localStorage.setItem(key, raw); }
+        catch (again) {
+          if (again.name !== 'QuotaExceededError') return;
+          data.dex = reduced(G.dex); data.clues = reduced(G.clue);
+          raw = JSON.stringify(data); localStorage.setItem(key, raw);
+        }
       }
       previous = raw;
     } catch (e) { /* 저장할 수 없어도 지금 탐험은 이어진다. */ }
