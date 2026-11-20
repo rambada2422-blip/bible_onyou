@@ -10,6 +10,11 @@
   var cardNode = app.cardNode;
 
   /* ════════════ 처음 화면 ════════════ */
+  function continueJourney() {
+    var journey = app.savedJourney();
+    if (journey) runScene(journey.id, journey);
+    else renderHub();
+  }
   function renderTitle() {
     show(el('div', { class: 'screen sky title-screen pad' },
       el('div', { class: 'title-top' },
@@ -21,7 +26,7 @@
         el('div', { class: 'trio' },
           pic('choeon-full', '', '최온'), pic('onwoo-full', '', '온우'), pic('hyu-full', '', '휴'))),
       el('div', { class: 'title-actions' },
-        el('button', { class: 'btn wide', on: { click: function () { (app.state.tier && app.state.char) ? renderHub() : renderSetup(); } } },
+        el('button', { class: 'btn wide', on: { click: function () { (app.state.tier && app.state.char) ? continueJourney() : renderSetup(); } } },
           (app.state.tier && app.state.char) ? '이어서 탐험하기' : '탐험 시작'),
         el('button', { class: 'btn wide quiet', on: { click: renderGuide } }, '구성 안내 (선생님·부모님용)'),
         el('p', { class: 'fine', text: '감수 전 시범 화면입니다. 성경 본문은 싣지 않고 장절만 안내합니다.' }))));
@@ -31,7 +36,10 @@
   function renderSetup() {
     var tier = app.state.tier, ch = app.state.char, picked = !!app.state.char;
     var line = el('p', { class: 'char-line' });
-    var go = el('button', { class: 'btn wide', on: { click: function () { app.state.tier = tier; app.state.char = ch; save(); renderHub(); } } }, '출발 준비 완료');
+    var go = el('button', { class: 'btn wide', on: { click: function () {
+      if (tier !== app.state.tier) delete app.state.journey;
+      app.state.tier = tier; app.state.char = ch; save(); renderHub();
+    } } }, '출발 준비 완료');
     var tierBtns = C.tiers.map(function (t) {
       return el('button', { class: 'tier', 'aria-pressed': 'false', on: { click: function () { tier = t.id; if (!picked) ch = t.char; sync(); } } },
         el('span', { class: 'age', text: t.label }), el('span', { class: 'nm', text: t.name }), el('span', { class: 'ds', text: t.desc }));
@@ -60,15 +68,19 @@
 
   /* ════════════ 시간표 ════════════ */
   function renderHub() {
-    var nextId = null;
+    var nextId = null, journey = app.savedJourney();
+    var detour = journey && C.scenes[journey.id].alt &&
+      C.route.options.find(function (option) { return option.to === journey.id; });
     C.timeline.forEach(function (n) { if (!nextId && n.playable && !app.state.done[n.id]) nextId = n.id; });
     var items = C.timeline.map(function (n, i) {
       var done = !!app.state.done[n.id];
       var cls = 'node ' + (n.playable ? 'play' : 'locked') + (done ? ' done' : '') + (n.id === nextId ? ' next' : '');
       var dot = el('span', { class: 'dot' }, done ? icon('check') : (n.playable ? String(i + 1) : icon('lock')));
+      var status = n.playable ? (done ? '다시 보기' : '출발') : '감수 후 열림';
+      if (journey && journey.id === n.id) status = '이어서 탐험하기';
       var body = [dot,
         el('span', { class: 'tt' }, el('b', { text: n.title }), el('span', { text: n.ref })),
-        el('span', { class: 'st', text: n.playable ? (done ? '다시 보기' : '출발') : '감수 후 열림' })];
+        el('span', { class: 'st', text: status })];
       if (!n.playable) return el('li', { hidden: true }, el('div', { class: cls }, body));
       return el('li', {}, el('button', { class: cls, on: { click: function () { depart(n.id); } } }, body));
     });
@@ -92,6 +104,7 @@
           pic('timemachine', '', ''),
           el('div', {}, el('h2', { text: '출애굽기 시간표' }),
             el('p', { text: '놋쇠 다이얼이 가리키는 장면으로 떠나요. 다음 장면으로 가려면 성경을 알아야 해요.' }))),
+        detour ? el('button', { class: 'btn wide', on: { click: continueJourney } }, detour.label + ' · 이어서 탐험하기') : null,
         locked.length ? toggle : null,
         el('ol', { class: 'tl', id: 'journey-list' }, items),
         el('p', { class: 'hub-note', text: '시범판에는 목사님 감수가 필요 없는 세 장면만 열려 있습니다.' }),
@@ -100,10 +113,12 @@
           el('button', { class: 'linkbtn', on: { click: renderGuide } }, '구성 안내'), ' · ',
           el('button', { class: 'linkbtn', on: { click: function () { app.state = fresh(); save(); renderTitle(); } } }, '처음부터 다시')))));
   }
-  function runScene(id) {
-    app.runScene(id, renderHub, renderRoute);
+  function runScene(id, journey) {
+    app.runScene(id, renderHub, renderRoute, journey);
   }
   function depart(id) {
+    var journey = app.savedJourney();
+    if (journey && journey.id === id) { runScene(id, journey); return; }
     if (id === 'EX-01' && !app.state.routed) { renderRoute(); return; }
     var sc = C.scenes[id];
     warp('시간 이동', sc.place, sc.ref, function () { runScene(id); });

@@ -120,7 +120,7 @@
   }
   function hotspotBlock(q, onOk, scene) {
     var hots = scene.hots;
-    var found = 0;
+    var found = [];
     var list = el('div', { class: 'found-list' });
     var rows = q.items.map(function (it, k) {
       var row = el('div', { class: 'it wait' }, el('span', { text: '단서 ' + (k + 1) + ': 아직 못 찾았어요' }));
@@ -134,13 +134,19 @@
       var b = el('button', { class: 'hot', 'aria-label': '단서 ' + (k + 1),
         style: '--dx:' + (x - 450) + ';--dy:' + (y - 600),
         on: { click: function () {
-          b.disabled = true; b.classList.add('found'); found++;
-          rows[k].className = 'it fadein';
-          rows[k].replaceChildren(el('span', {}, it.text + ' '), refChip(it.ref));
-          if (found === q.items.length) onOk();
+          reveal();
+          if (found.length === q.items.length) onOk();
+          else scene.onFind(found);
         } } });
+      function reveal() {
+        b.disabled = true; b.classList.add('found'); found.push(it.region);
+        rows[k].className = 'it fadein';
+        rows[k].replaceChildren(el('span', {}, it.text + ' '), refChip(it.ref));
+      }
+      if (scene.found && scene.found.includes(it.region)) reveal();
       hots.appendChild(b);
     });
+    if (found.length === q.items.length) onOk();
     return [el('p', { class: 'q-prompt', text: q.prompt }), list];
   }
   function blockFor(q, onOk, scene) {

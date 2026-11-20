@@ -16,8 +16,7 @@
   var canSpeak = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
 
   /* ════════════ 장면 ════════════ */
-  function runScene(id, renderHub, renderRoute) {
-    var sc = C.scenes[id];
+  function sceneSteps(sc) {
     var gates = sc.alt ? [] : (sc.gates[app.state.tier] || []);
     var steps = [{ k: 'arrive' }];
     sc.beats.forEach(function (b, i) { steps.push({ k: 'beat', i: i }); });
@@ -26,7 +25,31 @@
       gates.forEach(function (g, i) { steps.push({ k: 'gate', g: g, i: i }); });
       steps.push({ k: 'cards' }); steps.push({ k: 'close' });
     }
-    var idx = 0;
+    return steps;
+  }
+
+  function stepName(st) { return st.i === undefined ? st.k : st.k + '-' + st.i; }
+
+  function savedJourney() {
+    var journey = app.state.journey;
+    if (!journey || journey.tier !== app.state.tier || typeof journey.id !== 'string' ||
+        !Object.prototype.hasOwnProperty.call(C.scenes, journey.id)) return null;
+    var steps = sceneSteps(C.scenes[journey.id]);
+    return steps.some(function (st) { return stepName(st) === journey.step; }) ? journey : null;
+  }
+
+  function runScene(id, renderHub, renderRoute, journey) {
+    var sc = C.scenes[id], steps = sceneSteps(sc);
+    var idx = journey ? steps.findIndex(function (st) { return stepName(st) === journey.step; }) : 0;
+    function remember(st, found) {
+      app.state.journey = { id: id, tier: app.state.tier, step: stepName(st) };
+      if (found && found.length) app.state.journey.found = found.slice();
+      save();
+    }
+    function solved(nextButton) {
+      nextButton.disabled = false;
+      remember(steps[idx + 1]);
+    }
 
     var artBox = el('div', { class: 'art', html: ART[sc.art] || '' });
     var svg = artBox.querySelector('svg');
@@ -88,13 +111,14 @@
     function next() { idx++; if (idx >= steps.length) finish(); else step(); }
     function prev() { if (idx > 0) { idx--; step(); } }
 
-    function step() {
+    function step(found) {
       hots.replaceChildren();
       var st = steps[idx];
+      remember(st, found);
       if (st.k === 'arrive') return stepArrive();
       if (st.k === 'beat') return stepBeat(sc.beats[st.i], st.i);
-      if (st.k === 'gate') return stepGate(st.g, st.i, gates.length);
-      if (st.k === 'spot') return stepSpot();
+      if (st.k === 'gate') return stepGate(st.g, st.i, sc.gates[app.state.tier].length);
+      if (st.k === 'spot') return stepSpot(found);
       if (st.k === 'back') return stepBack();
       if (st.k === 'cards') return stepCards();
       if (st.k === 'close') return stepClose();
@@ -129,29 +153,30 @@
         nextBtn(i === sc.beats.length - 1 ? (sc.alt ? '단서를 찾아보자' : '다음으로 가는 관문') : '다음')]);
     }
 
-    function questionBlock(q, onOk) {
+    function questionBlock(q, onOk, found) {
       return questions.blockFor(q, onOk, {
-        inputSuffix: id + '-' + idx, hots: hots, region: region
+        inputSuffix: id + '-' + idx, hots: hots, region: region, found: found,
+        onFind: function (regions) { remember(steps[idx], regions); }
       });
     }
 
     function stepGate(q, i, n) {
       compact(true); setDots(0, 0);
       var nb = nextBtn(i === n - 1 ? '관문 통과' : '다음 관문', true);
-      fill([el('div', { class: 'q-kicker', text: '다음으로 가는 관문 ' + (i + 1) + ' / ' + n }), questionBlock(q, function () { nb.disabled = false; })], nb);
+      fill([el('div', { class: 'q-kicker', text: '다음으로 가는 관문 ' + (i + 1) + ' / ' + n }), questionBlock(q, function () { solved(nb); })], nb);
     }
-    function stepSpot() {
+    function stepSpot(found) {
       var q = sc.spot[app.state.tier];
       var isHot = q.type === 'hotspots';
       compact(!isHot); setDots(0, 0); setFocus(null);
       var nb = nextBtn('성경에서 확인하기', true);
-      fill([el('div', { class: 'q-kicker', text: '어긋난 단서 찾기' }), questionBlock(q, function () { nb.disabled = false; })], nb);
+      fill([el('div', { class: 'q-kicker', text: '어긋난 단서 찾기' }), questionBlock(q, function () { solved(nb); }, found)], nb);
     }
     function stepBack() {
       compact(true); setDots(0, 0);
       var nb = nextBtn('다음', true);
       fill([el('div', { class: 'q-kicker', text: '타임머신 다시 맞추기' }),
-        questions.findBlock({ ref: sc.back.ref, prompt: sc.back.prompt, confirm: sc.back.confirm }, function () { nb.disabled = false; })], nb);
+        questions.findBlock({ ref: sc.back.ref, prompt: sc.back.prompt, confirm: sc.back.confirm }, function () { solved(nb); })], nb);
     }
     function stepCards() {
       compact(true); setDots(0, 0);
@@ -182,15 +207,28 @@
     }
     function finish() {
       if (sc.alt) {
-        app.state.routed = true; save();
+        app.state.routed = true;
+        app.state.journey = { id: 'EX-01', tier: app.state.tier, step: 'arrive' };
+        save();
         var to = C.scenes['EX-01'];
         warp('목적지를 다시 맞췄어요', to.place, to.ref, function () { runScene('EX-01', renderHub, renderRoute); });
         return;
       }
+      delete app.state.journey;
       app.state.done[id] = true; save();
       if (id === 'EX-00' && !app.state.routed) renderRoute(); else renderHub();
     }
-    step();
+    if (journey) {
+      // 단서나 관문에서 바로 열어도 직전에 본 그림의 상태가 맞아야 한다.
+      steps.slice(0, idx).forEach(function (st) { if (st.k === 'beat') setState(sc.beats[st.i].state); });
+    }
+    var found;
+    if (journey && steps[idx].k === 'spot' && Array.isArray(journey.found)) {
+      var spot = sc.spot[app.state.tier];
+      if (spot.type === 'hotspots') found = spot.items.map(function (item) { return item.region; })
+        .filter(function (region) { return journey.found.includes(region); });
+    }
+    step(found);
   }
 
   function cardNode(c, sc, pop) {
@@ -201,5 +239,6 @@
   }
 
   app.runScene = runScene;
+  app.savedJourney = savedJourney;
   app.cardNode = cardNode;
 })();

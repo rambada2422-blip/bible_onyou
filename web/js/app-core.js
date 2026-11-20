@@ -27,14 +27,25 @@
         return Object.prototype.hasOwnProperty.call(C.scenes, id) && typeof saved.notes[id] === 'string';
       });
   }
+  var previousSave = null;
   function load() {
     try {
-      var saved = JSON.parse(localStorage.getItem(KEY));
+      previousSave = localStorage.getItem(KEY);
+      var saved = JSON.parse(previousSave);
       if (validSave(saved)) return saved;
     } catch (e) { /* 저장 값이 깨졌거나 저장소를 열 수 없는 환경 */ }
     return fresh();
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(app.state)); } catch (e) { /* 무시 */ } }
+  function save() {
+    try {
+      // 오래 열어 둔 탭이 다른 탭의 새 탐험을 덮지 않게 한다.
+      if (localStorage.getItem(KEY) !== previousSave) return;
+      var data = JSON.stringify(app.state);
+      if (data === previousSave) return;
+      localStorage.setItem(KEY, data);
+      previousSave = data;
+    } catch (e) { /* 저장이 막혀 있어도 현재 화면에서 계속 탐험한다. */ }
+  }
 
   /* ── 작은 도구 ── */
   function el(tag, props) {

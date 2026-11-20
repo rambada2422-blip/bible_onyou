@@ -122,6 +122,54 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
       }));
     }
 
+    results.push(await checkCase(browser, '요셉의 이야기와 반지 단서에서 이어서 탐험', async (page) => {
+      await open(page);
+      await startNew(page, 0);
+      const resume = async () => { await page.reload(); await button(page, '이어서 탐험하기').click(); };
+      await button(page, '목적지 다시 고르기').click();
+      await button(page, '요셉').click();
+      await button(page, '둘러보기').click();
+      await button(page, '다음').click();
+      const narration = await page.locator('.sheet .narr').innerText();
+      await resume();
+      assert.equal(await page.locator('.sheet .narr').innerText(), narration);
+      const next = page.locator('.sheet-foot .btn.onpaper');
+      while (await page.locator('.sheet .narr').count()) await next.click();
+      await button(page, '단서 2').click();
+      await resume();
+      assert(await button(page, '단서 2').isDisabled());
+      assert(await button(page, '단서 1').isEnabled());
+      assert(await next.isDisabled());
+      await shot(page, 'resume-joseph-clue');
+      await button(page, '시간표로 돌아가기').click();
+      await page.locator('.hub').waitFor();
+      await button(page, '요셉 · 이어서 탐험하기').click();
+      assert(await button(page, '단서 2').isDisabled());
+      await button(page, '단서 1').click(); await button(page, '단서 3').click();
+      assert(await next.isEnabled());
+      await resume();
+      assert.match(await page.locator('.q-kicker').innerText(), /타임머신 다시 맞추기/);
+    }));
+
+    results.push(await checkCase(browser, '다른 단계와 깨진 위치에서 기존 일지 보존', async (page) => {
+      await open(page);
+      const data = { ...sample, done: { 'EX-00': true }, notes: { 'EX-00': '시험 기록' } };
+      for (const journey of [
+        { id: 'ALT-03', tier: 't1', step: 'spot' },
+        { id: 'EX-00', tier: 't3', step: 'gate-25' },
+        { id: '없는 곳', tier: 't3', step: 'arrive' }
+      ]) {
+        await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, { ...data, journey }]);
+        await page.reload(); await button(page, '이어서 탐험하기').click();
+        await page.locator('.node.done').waitFor();
+        assert.equal(JSON.parse(await readSave(page)).notes['EX-00'], '시험 기록');
+      }
+      await page.locator('.node.play').first().click(); await button(page, '둘러보기').click();
+      await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, data]);
+      await button(page, '다음').click();
+      assert.deepEqual(JSON.parse(await readSave(page)), data, '오래 열린 탭이 다른 탭의 진행을 덮었다');
+    }));
+
     results.push(await checkCase(browser, '이어서 탐험하기와 처음부터 다시', async (page) => {
       await open(page);
       await startNew(page, 2);
