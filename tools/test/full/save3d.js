@@ -44,6 +44,9 @@ async function checkJourney(page, url) {
   await button('소리 끄기').click();
   await page.evaluate(([x, z]) => BO3D.debug.goto(x, z), first.at);
   await page.waitForFunction(k => JSON.parse(localStorage.getItem(k)).parts === 1, key);
+  assert(await page.locator('.panel3').isVisible(), '부품을 얻으면 말씀 조각을 읽는다');
+  for (const selector of ['.cam3', '.dex3', '.hud3 .obj'])
+    assert(await page.locator(selector).isHidden(), '말씀을 읽을 때 지난 탐색 항목을 접는다 · ' + selector);
   const firstPart = await snapshot();
   assert.equal(firstPart.route, 'EX-01'); assert.equal(firstPart.ch, 'onwoo'); assert.equal(firstPart.tier, 't2');
   assert.equal(firstPart.muted, true); assert.match(firstPart.dex.sheep, /^data:image\/jpeg;base64,/);

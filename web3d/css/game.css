@@ -67,6 +67,8 @@
 .g3 [hidden] { display: none !important; }
 
 .snd3 { position: absolute; right: var(--gutter-r); bottom: 22px; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: rgba(14, 23, 48, .72); color: var(--paper); }
+/* 읽는 동안 지난 탐색 목표와 자막 뒤에 가려질 촬영 단추를 접는다. */
+.g3:not(.ev):has(.panel3:not([hidden])) :is(.hud3 .obj, .cam3, .dex3) { display: none; }
 /* 아래 자막과 선택지가 열려 있을 때도 소리 단추를 누를 수 있게 한다. */
 .g3:has(.panel3:not([hidden])) .snd3 { top: max(10px, env(safe-area-inset-top, 0px)); bottom: auto; }
 .g3:has(.panel3:not([hidden])) .hud3 .row { padding-right: 52px; }
