@@ -18,6 +18,12 @@
 .stick i { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; border-radius: 50%; background: var(--brass); box-shadow: 0 3px 0 var(--brass-deep); transform: translate(-50%, -50%); }
 .hint { position: absolute; left: 50%; bottom: 218px; transform: translateX(-50%); width: max-content; max-width: 86%; text-align: center; font-size: 14px; line-height: 1.4; color: var(--paper); background: rgba(14, 23, 48, .72); padding: 8px 14px; border-radius: 14px; pointer-events: none !important; }
 
+/* 낮은 가로 화면에서 조작 안내와 탐험 목표가 서로 덮이지 않게 나란히 놓는다. */
+@media (orientation: landscape) and (max-height: 440px) {
+  .g3:has(.hint:not([hidden])) .hud3 { right: calc(39% + 8px); }
+  .g3 .hint { top: max(10px, env(safe-area-inset-top, 0px)); right: var(--gutter-r); bottom: auto; left: auto; width: 34%; max-width: none; transform: none; }
+}
+
 .toast3 { position: absolute; left: var(--gutter-l); right: var(--gutter-r); top: 138px; display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-radius: 16px; background: var(--paper); color: var(--text); font-size: 15px; line-height: 1.4; box-shadow: 0 8px 22px rgba(0, 0, 0, .28); pointer-events: none !important; }
 .toast3 b { font-family: var(--f-display); font-weight: 400; }
 .toast3.show { animation: toastin .3s ease both; }
@@ -59,6 +65,11 @@
 .g3 [hidden] { display: none !important; }
 
 .snd3 { position: absolute; right: var(--gutter-r); bottom: 22px; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: rgba(14, 23, 48, .72); color: var(--paper); }
+/* 읽는 동안 지난 탐색 목표와 자막 뒤에 가려질 촬영 단추를 접는다. */
+.g3:not(.ev):has(.panel3:not([hidden])) :is(.hud3 .obj, .cam3, .dex3) { display: none; }
+/* 아래 자막과 선택지가 열려 있을 때도 소리 단추를 누를 수 있게 한다. */
+.g3:has(.panel3:not([hidden])) .snd3 { top: max(10px, env(safe-area-inset-top, 0px)); bottom: auto; }
+.g3:has(.panel3:not([hidden])) .hud3 .row { padding-right: 52px; }
 .snd3 svg { width: 22px; height: 22px; }
 .snd3[aria-pressed="true"] { color: #8FA0C8; background: rgba(14, 23, 48, .5); }
 .snd3[aria-pressed="true"]::after { content: ""; position: absolute; width: 30px; height: 3px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
