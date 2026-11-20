@@ -8,6 +8,7 @@ BO3D.gameModules.debug = function (G) {
   return function initDebug() {
     /* 자동 점검용 (화면에는 영향 없음) */
     BO3D.debug = {
+      aweOverviewOnly: false,
       includeReviewRequiredGloss: true,
       level: function () { return G.cur; },
       clues: function () { return Object.keys(G.clue); },
