@@ -63,6 +63,7 @@ BO3D.gameModules.story = function (G) {
     G.ring.material.opacity = 0;
     if (G.hat) { G.hat.parent && G.hat.parent.remove(G.hat); }
     G.hatOn = false; G.sceneDone = false; G.partsFound = 0;
+    if (record && record.hatOn === true && (record.stage === 'free' || record.stage === 'end')) G.setHat(true);
     G.detectorPart = -1;
     G.partObjs.forEach(function (po) { po.taken = false; po.group.visible = false; });
     G.partCount.textContent = '부품 0 / ' + G.PARTS.length;

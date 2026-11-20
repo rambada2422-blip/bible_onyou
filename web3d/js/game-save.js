@@ -44,6 +44,7 @@ BO3D.gameModules.save = function (G) {
     else if (!chosen) chosen = 'EX-01';
     var data = { stage: stage, route: chosen, tier: G.S.tier, ch: G.S.ch,
       parts: G.cur === 'horeb' && stage !== 'route' && G.state !== 'route' ? G.partsFound : 0,
+      flagColor: G.flagColor, hatOn: (stage === 'free' || stage === 'end') && G.hatOn,
       dex: G.dex, clues: G.clue, muted: !!(G.FX && G.FX.audio.isMuted()) };
     try {
       // 다른 탭에서 새로 시작했거나 더 진행했다면 이전 화면이 그 저장을 덮지 않는다.
@@ -76,6 +77,7 @@ BO3D.gameModules.save = function (G) {
 
   G.restart = function () {
     stage = null; chosen = null; previous = null; G.dex = {}; G.clue = {};
+    G.setFlag(null); G.setHat(false);
     try { localStorage.removeItem(key); } catch (e) { /* 기기 저장이 꺼져 있다. */ }
     G.menu(true);
   };
@@ -86,6 +88,7 @@ BO3D.gameModules.save = function (G) {
     stage = s.stage; chosen = s.route === 'ALT-02' ? 'ALT-02' : 'EX-01';
     G.S.tier = s.tier; G.S.ch = s.ch; G.dex = s.dex; G.clue = s.clues;
     G.root.className = 'g3 app ' + G.S.tier;
+    G.setFlag(s.flagColor);
     G.setMuted(s.muted === true);
     if (G.FX) G.FX.audio.start();
     if (stage === 'route') G.route();

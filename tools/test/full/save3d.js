@@ -30,7 +30,15 @@ async function checkJourney(page, url) {
   if (await page.evaluate(() => BO3D.debug.state().state === 'caption')) {
     await button('다음').click(); await button('출발하자').click();
   } else {
+    await button('타임머신에 타기').click();
+    const teal = button('청록색 깃발');
+    await teal.click();
+    assert(await teal.evaluate(el => el === document.activeElement), '깃발을 바꿔도 고른 단추에 초점이 남는다');
+    assert(await button('쓰기').isDisabled(), '아직 얻지 않은 모자는 쓸 수 없다');
     await resume(); await state('explore');
+    await button('타임머신에 타기').click();
+    assert.equal(await teal.getAttribute('aria-pressed'), 'true');
+    await button('밖으로 나가기').click();
     assert.equal(await page.locator('[data-detector-quiz="0"]').count(), 0);
     await sheepPhoto();
     await resume();
@@ -65,10 +73,25 @@ async function checkJourney(page, url) {
     await resume(); await state(expected);
     assert.equal(await page.evaluate(() => BO3D.debug.parts().found), 3);
     if (stage === 'watch') assert(await page.evaluate(() => BO3D.debug.aweState().active));
+    if (stage === 'free') {
+      const board = async () => {
+        await page.evaluate(() => BO3D.debug.goto(...BO3D.world.P.machine));
+        await button('타임머신에 타기').click();
+      };
+      await board(); await button('쓰기').click(); await button('남색 깃발').click();
+      await resume(); await state('free'); await board();
+      assert.equal(await button('쓰고 있어요').getAttribute('aria-pressed'), 'true');
+      assert.equal(await button('남색 깃발').getAttribute('aria-pressed'), 'true');
+      await page.screenshot({ path: path.join(out, 'restored-den.png') });
+      await button('쓰고 있어요').click(); await button('깃발 없음').click();
+      assert.equal((await snapshot()).flagColor, null); assert.equal((await snapshot()).hatOn, false);
+    }
   }
   await button('처음부터 다시').click();
   assert.equal(await snapshot(), null);
-  await button('탐험 시작').click(); await page.locator('.route-opts .btn').filter({ hasText: '여호수아' }).click();
+  await button('탐험 시작').click();
+  assert.equal((await snapshot()).flagColor, null);
+  await page.locator('.route-opts .btn').filter({ hasText: '여호수아' }).click();
   await button('둘러보자').click();
   await page.evaluate(() => {
     const mark = BO3D.debug.jordan().targets.find(([id]) => id === 'ark');
@@ -104,7 +127,7 @@ async function checkJourney(page, url) {
     await resume(); await page.locator('.overlay3 .q-kicker').filter({ hasText: title }).waitFor();
     assert.equal((await snapshot()).stage, stage);
   }
-  console.log('다섯 호렙 구간, 요단 강 수첩·추리·결과 복원, 처음부터 다시');
+  console.log('다섯 호렙 구간, 깃발·탐험 모자, 요단 강 수첩·추리·결과 복원, 처음부터 다시');
 
   await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, firstPart]);
   await resume();
