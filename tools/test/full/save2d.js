@@ -122,7 +122,7 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
       }));
     }
 
-    results.push(await checkCase(browser, '요셉의 이야기와 반지 단서에서 이어서 탐험', async (page) => {
+    results.push(await checkCase(browser, '요셉의 이야기와 금 사슬 단서에서 이어서 탐험', async (page) => {
       await open(page);
       await startNew(page, 0);
       const resume = async () => { await page.reload(); await button(page, '이어서 탐험하기').click(); };
