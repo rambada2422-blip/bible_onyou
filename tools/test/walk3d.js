@@ -24,8 +24,12 @@ async function runTier(browser, tierIndex) {
     await p.addInitScript(() => { window.BO3D_TEST = true; });
     p.on('pageerror', e => errs.push('pageerror: ' + e.message));
     p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
-    let n = 0;
+    let n = 0, afterLastPart = false;
+    const noSharon = async () => assert.equal(await p.locator('[data-sharon]').count(), 0);
+    const noLegacyLabel = async () => assert(!(await p.locator('#game').innerText()).includes('탐지기'));
     const shot = async label => {
+      await noLegacyLabel();
+      if (afterLastPart) await noSharon();
       n++;
       await p.screenshot({ path: path.join(tierOut, String(n).padStart(2, '0') + '-' + label + '.png') });
     };
@@ -58,7 +62,9 @@ async function runTier(browser, tierIndex) {
     const near = (a, b, tol, msg) => assert(Math.abs(a - b) <= tol, msg + ': ' + a + ' vs ' + b);
     await p.goto(require('url').pathToFileURL(path.resolve(__dirname, '../../dist/preview3d.html')).href);
     await p.evaluate(() => document.fonts.ready);
-    const { C, H, P } = await p.evaluate(() => ({ C: BO.content, H: BO.content3d.horeb, P: BO3D.world.P }));
+    const { C, H, P, sharon } = await p.evaluate(() => ({
+      C: BO.content, H: BO.content3d.horeb, P: BO3D.world.P, sharon: BO.content3d.sharon
+    }));
     assert.deepEqual(H, approved, 'horeb data must exactly match approved document, including all labels and notes');
     assert.deepEqual((await parts()).at, H.quiz.map(q => q.at), 'part positions');
     assert.deepEqual(P.scraps, H.quiz.map(q => q.at), 'parts and scripture fragments share positions');
@@ -69,10 +75,33 @@ async function runTier(browser, tierIndex) {
     await p.locator('.route-opts .btn').filter({ hasText: '모세' }).click();
     await panel.getByRole('button', { name: '다음', exact: true }).waitFor({ timeout: 40000 });
     assert((await panel.innerText()).includes('타임머신이 모래 위에 거칠게 내려앉았어요.'));
+    assert((await panel.innerText()).includes(sharon.teamLine));
+    assert.equal(await p.locator('.hud3 .obj span').innerText(), sharon.objective);
+    await noSharon();
     await shot('intro1');
-    await panelButton('다음');
-    assert.equal(await panel.locator('.narr').innerText(), H.intro.narr2[tier]);
-    await panelButton('출발하자');
+
+    async function passIntro(takePhotos) {
+      await panelButton('다음');
+      assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
+      const lines = panel.locator('.sharon-line');
+      const names = panel.locator('.sharon-say b');
+      const faces = panel.locator('img.avatar[data-sharon="avatar"]');
+      const firstLines = tier === 't1' ? [sharon.intro[tier][0]] : sharon.intro[tier];
+      assert.deepEqual(await lines.allTextContents(), firstLines);
+      assert.deepEqual(await names.allTextContents(), firstLines.map(() => sharon.name));
+      assert.equal(await faces.count(), firstLines.length);
+      assert(await faces.first().evaluate(async img => { await img.decode(); return img.naturalWidth === 192; }));
+      if (takePhotos) await shot('sharon-intro');
+      if (tier === 't1') {
+        assert.equal(await panel.getByRole('button', { name: '출발하자', exact: true }).count(), 0);
+        await panelButton('다음');
+        assert.deepEqual(await lines.allTextContents(), [sharon.intro[tier][1]]);
+        assert.equal(await faces.count(), 1);
+        if (takePhotos) await shot('sharon-intro2');
+      }
+      await panelButton('출발하자');
+    }
+    await passIntro(true);
 
     async function solveDetector(index) {
       const item = H.quiz[index], q = item.q[tier];
@@ -80,8 +109,14 @@ async function runTier(browser, tierIndex) {
       assert.equal((await st()).state, 'detector');
       await hiddenTracker();
       assert.equal(await p.locator('.hud3 .ref').isVisible(), false, 'HUD must not reveal verse hints during quiz');
-      assert.equal(await panel.locator('.q-kicker').innerText(), H.kicker + ' ' + (index + 1) + ' / 3');
-      assert.equal(await panel.locator('.q-prompt').innerText(), q.prompt);
+      assert.equal(await panel.locator('.q-kicker').innerText(), sharon.kicker + ' ' + (index + 1) + ' / 3');
+      const bubble = panel.locator('.sharon-say .bubble'), question = panel.locator('.sharon-line');
+      const rest = panel.locator('.q-prompt');
+      const firstSentence = q.prompt.match(/^.*?[.?](?= )/)?.[0];
+      assert.equal(await question.textContent(), firstSentence || q.prompt);
+      assert.equal(await rest.count(), firstSentence ? 1 : 0);
+      assert.equal([await question.textContent(), ...await rest.allTextContents()].join(' '), q.prompt);
+      assert.equal(await panel.locator('img.avatar[data-sharon="ask"]').count(), 1);
       assert.deepEqual(await panel.locator('.opt').allTextContents(), q.options.map(o => o.label));
       if (tier === 't2') assert.equal(await panel.locator('.narr-meta .ref').innerText(), item.ref);
       else {
@@ -90,8 +125,20 @@ async function runTier(browser, tierIndex) {
       }
       assert(!(await panel.innerText()).includes('본문에 없음'), 'internal option notes must not be rendered');
       await shot('detector' + (index + 1));
-      const wrong = q.options.find(o => !o.ok);
-      await panel.getByRole('button', { name: wrong.label, exact: true }).click();
+      const bubbleNode = await bubble.elementHandle();
+      const bubbleText = await bubble.textContent();
+      for (const wrong of q.options.filter(o => !o.ok)) {
+        const option = panel.getByRole('button', { name: wrong.label, exact: true });
+        await option.click();
+        assert(await option.isDisabled());
+        assert(await option.evaluate(el => el.classList.contains('rest')));
+        assert.equal(await panel.locator('img.avatar[data-sharon="cheer"]').count(), 1);
+        assert.equal(await panel.locator('[data-sharon="ask"]').count(), 0);
+        assert(await bubble.evaluate((el, original) => el === original, bubbleNode));
+        assert.equal(await bubble.textContent(), bubbleText);
+        assert.equal(await panel.locator('.note.look').count(), 1);
+      }
+      if (index === 0) await shot('sharon-retry');
       assert.equal(await panel.locator('.note.look b').innerText(), '성경에서 확인해 볼까요?');
       assert((await panel.locator('.note.look').innerText()).includes('성경책을 펴서 읽은 뒤 다시 골라 보세요.'));
       assert.equal((await parts()).found, index, 'wrong answer must not collect or unlock a part');
@@ -104,16 +151,21 @@ async function runTier(browser, tierIndex) {
       await panel.getByRole('button', { name: q.options.find(o => o.ok).label, exact: true }).click();
       assert.equal(await panel.locator('.note.good b').innerText(), '성경에 그렇게 기록되어 있어요.');
       assert.equal(await panel.locator('.note.good .ref').innerText(), item.okRef[tier]);
-      if (tier === 't1') {
-        assert(!(await panel.innerText()).includes('탐험대 이야기'), 't1 Bible answer and detector guidance must be separate screens');
-        await panelButton('다음');
-        assert.equal(await panel.locator('.note.good').count(), 0);
-      }
+      assert(!(await panel.innerText()).includes('탐험대 이야기'), 'Bible answer and guidance must be separate screens');
+      await noSharon();
+      await noLegacyLabel();
+      await panelButton('다음');
+      assert.equal(await panel.locator('.note.good').count(), 0);
       assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
-      assert.equal(await panel.locator('.narr').innerText(), tier === 't1' && item.foundT1 ? item.foundT1 : item.found);
+      const found = sharon.found[index];
+      assert.equal(await question.textContent(), tier === 't1' && found.t1 ? found.t1 : found.text);
+      assert.equal(await panel.locator('img.avatar[data-sharon="joy"]').count(), 1);
+      if (index === 0) await shot('sharon-guidance');
       await panelButton('계속 탐험하기');
       await waitState('explore');
       await p.locator('.track3').waitFor({ state: 'visible' });
+      const distance = await p.locator('.track3 span').innerText();
+      assert(distance.startsWith(sharon.track) && /^\d+m$/.test(distance.slice(sharon.track.length)), distance);
       assert.equal(await p.locator('.hud3 .obj span').innerText(), item.objective);
       console.log(tier, 'detector', index + 1, 'wrong answer -> retry -> correct; guidance and signal verified');
     }
@@ -156,6 +208,9 @@ async function runTier(browser, tierIndex) {
       await walkTo(H.quiz[i].at[0], H.quiz[i].at[1], 'part' + (i + 1));
       assert.equal((await parts()).found, i + 1, 'part was not collected');
       assert.equal((await st()).state, 'caption');
+      await noSharon();
+      assert.equal(await p.locator('.toast3 img.avatar').count(), 1, 'part toast uses the player portrait');
+      afterLastPart = i === H.quiz.length - 1;
       await shot('part' + (i + 1));
       if (H.quiz[i].beat !== null) {
         assert.equal(await panel.locator('.q-kicker').innerText(), '말씀 조각 ' + (i + 1) + ' / 3');
@@ -170,6 +225,7 @@ async function runTier(browser, tierIndex) {
       }
     }
     await waitState('event');
+    await noSharon();
     let awe = await p.evaluate(() => BO3D.debug.aweState());
     assert.equal(awe.active, true, 'awe scene must start after lookUp');
     assert.equal(awe.step, 0);
@@ -297,6 +353,8 @@ async function runTier(browser, tierIndex) {
     await snap('photo-event');
     const scene = C.scenes['EX-01'];
     for (let beat = 2; beat < scene.beats.length; beat++) {
+      await noSharon();
+      await noLegacyLabel();
       assert.equal(await panel.locator('.q-kicker').innerText(), '지켜보기 ' + (beat - 1) + ' / ' + (scene.beats.length - 2));
       await panel.locator('.sheet-foot .btn.onpaper').click();
     }
@@ -335,7 +393,8 @@ async function runTier(browser, tierIndex) {
     await p.getByRole('button', { name: '처음부터 다시', exact: true }).click();
     await p.getByRole('button', { name: '탐험 시작', exact: true }).click();
     await p.locator('.route-opts .btn').filter({ hasText: '모세' }).click();
-    await panelButton('다음'); await panelButton('출발하자');
+    afterLastPart = false;
+    await passIntro(false);
     await panel.locator('[data-detector-quiz="0"]').waitFor();
     assert.equal((await parts()).found, 0);
     await hiddenTracker();

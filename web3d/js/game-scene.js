@@ -33,6 +33,12 @@ BO3D.gameModules.scene = function (G) {
     if (!AV[key]) return el('span', { class: 'avatar' });
     return el('img', { class: 'avatar', alt: '', src: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(AV[key]) });
   }
+  function sharonFace(key) {
+    var png = BO3D.sharonData && BO3D.sharonData[key];
+    if (!png) return null;
+    return el('img', { class: 'avatar', alt: '', 'data-sharon': key, src: 'data:image/png;base64,' + png,
+      on: { error: function () { this.remove(); } } });
+  }
   function bookName(ref) {
     return ref.replace(/^출 /, '출애굽기 ').replace(/^창 /, '창세기 ').replace(/^수 /, '여호수아 ').replace(/(\d+):/, '$1장 ').replace(/$/, '절');
   }
@@ -127,6 +133,7 @@ BO3D.gameModules.scene = function (G) {
   G.icon = icon;
   G.refChip = refChip;
   G.avatar = avatar;
+  G.sharonFace = sharonFace;
   G.bookName = bookName;
   G.dist2 = dist2;
   G.lerpAngle = lerpAngle;
