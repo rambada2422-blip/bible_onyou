@@ -93,6 +93,9 @@ async function checkJourney(page, url) {
 
   await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, firstPart]);
   await resume();
+  const secondAnswer = await page.evaluate(() => BO.content3d.horeb.quiz[1].q.t2.options.find(o => o.ok).label);
+  await button(secondAnswer).click(); await button('다음').click(); await button('계속 탐험하기').click();
+  await state('explore');
   await page.evaluate(() => {
     const write = Storage.prototype.setItem;
     Storage.prototype.setItem = function (k, data) {
