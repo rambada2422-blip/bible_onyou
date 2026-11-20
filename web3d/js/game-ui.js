@@ -30,6 +30,14 @@ BO3D.gameModules.ui = function (G) {
         G.el('span', { class: 'sharon-line', text: line })));
   }
 
+  function sharonGloss(gloss) {
+    var tier = G.S.tier;
+    return G.el('section', { class: 'sharon-gloss', 'data-sharon-gloss': gloss.id },
+      G.el('div', { class: 'q-kicker' }, G.icon('bookline'), G.C3.sharon.glossKicker),
+      sharonSay('avatar', gloss.text[tier]),
+      G.el('div', { class: 'narr-meta' }, gloss.refs[tier].map(function (ref) { return G.refChip(ref); })));
+  }
+
   /* 물음과 보기 순서는 승인된 horeb 자료에서 읽는다. */
   function detectorQuestion(item, index, onReady) {
     var data = G.C3.horeb, sharon = G.C3.sharon, tier = G.S.tier, q = item.q[tier], solved = false;
@@ -85,6 +93,7 @@ BO3D.gameModules.ui = function (G) {
   G.hidePanel = hidePanel;
   G.btn = btn;
   G.sharonSay = sharonSay;
+  G.sharonGloss = sharonGloss;
   G.detectorQuestion = detectorQuestion;
   G.beatNodes = beatNodes;
   return function initUi() {

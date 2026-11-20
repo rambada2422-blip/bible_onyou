@@ -8,6 +8,7 @@ BO3D.gameModules.debug = function (G) {
   return function initDebug() {
     /* 자동 점검용 (화면에는 영향 없음) */
     BO3D.debug = {
+      includeReviewRequiredGloss: true,
       level: function () { return G.cur; },
       clues: function () { return Object.keys(G.clue); },
       jordan: function () { return G.JL ? { P: G.JL.P, targets: Object.keys(G.JL.targets).map(function (k) { var v = G.JL.targets[k].pos(); return [k, v.x, v.y, v.z]; }) } : null; },

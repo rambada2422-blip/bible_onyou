@@ -68,7 +68,11 @@ async function runTier(browser, tierIndex) {
     assert.deepEqual(H, approved, 'horeb data must exactly match approved document, including all labels and notes');
     assert.deepEqual((await parts()).at, H.quiz.map(q => q.at), 'part positions');
     assert.deepEqual(P.scraps, H.quiz.map(q => q.at), 'parts and scripture fragments share positions');
-    const tier = C.tiers[tierIndex].id;
+    const tier = C.tiers[tierIndex].id, scene = C.scenes['EX-01'];
+    const pieceGloss = sharon.gloss.find(g => g.at === 'piece1');
+    const reviewPages = sharon.gloss.filter(g => g.at.startsWith('watch') && g.text[tier]);
+    assert.equal(reviewPages.length, tier === 't1' ? 4 : 7);
+    assert.equal(await p.evaluate(() => BO3D.debug.includeReviewRequiredGloss), true);
     await shot('menu');
     await p.locator('.tier').nth(tierIndex).click();
     await p.getByRole('button', { name: '탐험 시작', exact: true }).click();
@@ -102,6 +106,69 @@ async function runTier(browser, tierIndex) {
       await panelButton('출발하자');
     }
     await passIntro(true);
+
+    async function assertGloss(container, entry) {
+      const gloss = container.locator('[data-sharon-gloss]');
+      assert.equal(await gloss.count(), 1);
+      assert.equal(await gloss.getAttribute('data-sharon-gloss'), entry.id);
+      assert.equal(await gloss.locator('.q-kicker').innerText(), sharon.glossKicker);
+      assert.equal(await gloss.locator('.q-kicker svg').count(), 1);
+      const text = await gloss.locator('.sharon-line').textContent();
+      assert.equal(text, entry.text[tier]);
+      assert(text.endsWith('찾아볼까요?'));
+      assert.deepEqual(await gloss.locator('.ref').allTextContents(), entry.refs[tier]);
+      assert.equal(await gloss.locator('img.avatar[data-sharon="avatar"]').count(), 1);
+      assert.equal(await gloss.locator('button, a').count(), 0, 'verse chips must be static');
+    }
+
+    async function passWatching() {
+      for (let beat = 2; beat < scene.beats.length; beat++) {
+        await noSharon();
+        await noLegacyLabel();
+        assert.equal(await panel.locator('.q-kicker').innerText(), '지켜보기 ' + (beat - 1) + ' / ' + (scene.beats.length - 2));
+        await panel.locator('.sheet-foot .btn.onpaper').click();
+      }
+    }
+
+    async function passReview(pages, takePhotos, skip) {
+      await waitState('review');
+      const review = p.locator('.overlay3.sharon-review'), title = review.locator('.sharon-review-title');
+      const button = name => review.getByRole('button', { name, exact: true });
+      assert.equal(await panel.isVisible(), false);
+      assert(await review.evaluate(el => {
+        const style = getComputedStyle(el);
+        const overlay = el.getBoundingClientRect(), game = document.querySelector('#game').getBoundingClientRect();
+        return style.backgroundColor.startsWith('rgb(') && style.opacity === '1' &&
+          ['x', 'y', 'width', 'height'].every(key => overlay[key] === game[key]);
+      }), 'review must cover the whole 3D scene with an opaque background');
+      for (const [index, gloss] of pages.entries()) {
+        const last = index === pages.length - 1;
+        const beat = scene.beats[1 + Number(gloss.at.slice('watch'.length))];
+        assert.equal(await title.innerText(), sharon.reviewTitle + ' ' + (index + 1) + ' / ' + pages.length);
+        assert.equal(await review.locator('.sharon-watch .ref').innerText(), beat.ref);
+        assert.equal(await review.locator('.sharon-watch .narr').textContent(), beat.text[tier]);
+        await assertGloss(review, gloss);
+        assert.equal(await button('이전').count(), index === 0 ? 0 : 1);
+        assert.equal(await button(sharon.skip).count(), 1);
+        assert.deepEqual(await review.locator('.sharon-ask-adult').allTextContents(), last ? [sharon.askAdult] : []);
+        if (index === 1 && takePhotos) {
+          await button('이전').click();
+          assert.equal(await title.innerText(), sharon.reviewTitle + ' 1 / ' + pages.length);
+          await assertGloss(review, pages[0]);
+          await button('다음').click();
+          await assertGloss(review, gloss);
+        }
+        if (takePhotos) {
+          if (index === 0) await shot('sharon-review-first');
+          if (index === 1 && gloss.refs[tier].length > 1) await shot('sharon-review-refs');
+          if (last) await shot('sharon-review-last');
+        }
+        await button(last ? (skip ? sharon.skip : '다음으로 가는 관문') : '다음').click();
+      }
+      await waitState('gates');
+      assert.equal(await review.count(), 0);
+      await noSharon();
+    }
 
     async function solveDetector(index) {
       const item = H.quiz[index], q = item.q[tier];
@@ -216,6 +283,11 @@ async function runTier(browser, tierIndex) {
         assert.equal(await panel.locator('.q-kicker').innerText(), '말씀 조각 ' + (i + 1) + ' / 3');
         assert.equal(await panel.locator('.narr-meta .ref').innerText(), C.scenes['EX-01'].beats[H.quiz[i].beat].ref);
         await panelButton('계속 탐험하기');
+        if (i === 0) {
+          await assertGloss(panel, pieceGloss);
+          if (tier !== 't3') await shot('sharon-piece-gloss');
+          await panelButton('계속 탐험하기');
+        }
       } else {
         assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
         assert((await panel.innerText()).includes(H.lookUp.text));
@@ -351,14 +423,10 @@ async function runTier(browser, tierIndex) {
     } else near(a6.total, a6.normal, 0.02, 'total must be normal after awe scene');
     console.log(tier, 'awe sound', muteRun ? '(muted)' : '', 'step1 fire', a1.fire.toFixed(3), 'step2 fire', a2.fire.toFixed(3), 'step4 total', a4.total.toFixed(4), 'step5 music', a5.music.toFixed(3), 'starts', a6.musicStarts);
     await snap('photo-event');
-    const scene = C.scenes['EX-01'];
-    for (let beat = 2; beat < scene.beats.length; beat++) {
-      await noSharon();
-      await noLegacyLabel();
-      assert.equal(await panel.locator('.q-kicker').innerText(), '지켜보기 ' + (beat - 1) + ' / ' + (scene.beats.length - 2));
-      await panel.locator('.sheet-foot .btn.onpaper').click();
-    }
-    await waitState('gates');
+    await passWatching();
+    afterLastPart = false;
+    await passReview(reviewPages, tier !== 't3', false);
+    afterLastPart = true;
     for (const [index, q] of scene.gates[tier].entries()) {
       await shot('gate' + (index + 1));
       const pick = qq => p.locator('.overlay3').getByRole('button', { name: qq.options.find(o => o.ok).label, exact: true }).click();
@@ -398,6 +466,33 @@ async function runTier(browser, tierIndex) {
     await panel.locator('[data-detector-quiz="0"]').waitFor();
     assert.equal((await parts()).found, 0);
     await hiddenTracker();
+    if (tier === 't2') {
+      await p.evaluate(() => { BO3D.debug.includeReviewRequiredGloss = false; });
+      for (const [index, item] of H.quiz.entries()) {
+        await panel.locator('[data-detector-quiz="' + index + '"]').waitFor();
+        await panelButton(item.q[tier].options.find(o => o.ok).label);
+        await panelButton('다음');
+        await panelButton('계속 탐험하기');
+        await waitState('explore');
+        await p.evaluate(([x, z]) => BO3D.debug.goto(x, z), item.at);
+        await waitState('caption');
+        if (index === 2) {
+          await noSharon();
+          await panelButton('다음');
+        } else {
+          await panelButton('계속 탐험하기');
+          if (index === 0) await panelButton('계속 탐험하기');
+        }
+      }
+      await waitState('event');
+      await p.evaluate(() => {
+        for (let step = 0; step <= 6; step++) BO3D.debug.aweNext();
+      });
+      await passWatching();
+      const publicPages = reviewPages.filter(g => !g.review);
+      assert.equal(publicPages.length, reviewPages.length - 2);
+      await passReview(publicPages, false, true);
+    }
     assert.deepEqual(errs, [], 'browser errors');
     console.log(tier, 'shots:', n, 'all three quizzes and full journey passed; restart resets progress; no errors');
   } finally { await ctx.close(); }
