@@ -23,6 +23,25 @@ async function runTier(browser, tierIndex, url) {
   try {
     const p = await ctx.newPage(), errs = [];
     await p.addInitScript(() => { window.BO3D_TEST = true; });
+    const requestedLow = new URL(url).searchParams.get('q') === 'low';
+    const exerciseAuto = !requestedLow && tierIndex === (ti + 1) % 3;
+    if (exerciseAuto) {
+      // 기본 주소에서 첫 화면만 느린 기기처럼 그린다. 전환 뒤에는 실제 속도로 끝까지 걷는다.
+      await p.addInitScript(() => {
+        const nativeFrame = window.requestAnimationFrame.bind(window);
+        window.requestAnimationFrame = function (callback) {
+          if (window.BO3D?.debug?.quality() === 'low') {
+            window.requestAnimationFrame = nativeFrame;
+            return nativeFrame(callback);
+          }
+          const due = performance.now() + 55;
+          return nativeFrame(function waitUntilDue(now) {
+            if (now < due) return nativeFrame(waitUntilDue);
+            callback(now);
+          });
+        };
+      });
+    }
     p.on('pageerror', e => errs.push('pageerror: ' + e.message));
     p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
     let n = 0, afterLastPart = false;
@@ -73,7 +92,11 @@ async function runTier(browser, tierIndex, url) {
     const muteRun = tierIndex === 2;
     const near = (a, b, tol, msg) => assert(Math.abs(a - b) <= tol, msg + ': ' + a + ' vs ' + b);
     await p.goto(url);
-    if (new URL(url).searchParams.get('q') === 'low') {
+    if (exerciseAuto) {
+      await p.waitForFunction(() => BO3D.debug.quality() === 'low', null, { timeout: 15000 });
+      assert.equal(await p.evaluate(() => BO3D.debug.quality('normal')), 'low');
+    }
+    if (requestedLow || exerciseAuto) {
       assert.equal(await p.evaluate(() => BO3D.debug.quality()), 'low');
       assert.equal(await p.evaluate(() => BO3D.debug.sheep()), 32);
     }
