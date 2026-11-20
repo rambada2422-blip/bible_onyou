@@ -77,35 +77,29 @@ async function runTier(browser, tierIndex) {
     await p.locator('.tier').nth(tierIndex).click();
     await p.getByRole('button', { name: '탐험 시작', exact: true }).click();
     await p.locator('.route-opts .btn').filter({ hasText: '모세' }).click();
-    await panel.getByRole('button', { name: '다음', exact: true }).waitFor({ timeout: 40000 });
-    assert((await panel.innerText()).includes('타임머신이 모래 위에 거칠게 내려앉았어요.'));
-    assert((await panel.innerText()).includes(sharon.teamLine));
-    assert.equal(await p.locator('.hud3 .obj span').innerText(), sharon.objective);
-    await noSharon();
-    await shot('intro1');
-
-    async function passIntro(takePhotos) {
-      await panelButton('다음');
-      assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
-      const lines = panel.locator('.sharon-line');
-      const names = panel.locator('.sharon-say b');
-      const faces = panel.locator('img.avatar[data-sharon="avatar"]');
-      const firstLines = tier === 't1' ? [sharon.intro[tier][0]] : sharon.intro[tier];
-      assert.deepEqual(await lines.allTextContents(), firstLines);
-      assert.deepEqual(await names.allTextContents(), firstLines.map(() => sharon.name));
-      assert.equal(await faces.count(), firstLines.length);
-      assert(await faces.first().evaluate(async img => { await img.decode(); return img.naturalWidth === 192; }));
-      if (takePhotos) await shot('sharon-intro');
-      if (tier === 't1') {
-        assert.equal(await panel.getByRole('button', { name: '출발하자', exact: true }).count(), 0);
-        await panelButton('다음');
-        assert.deepEqual(await lines.allTextContents(), [sharon.intro[tier][1]]);
-        assert.equal(await faces.count(), 1);
-        if (takePhotos) await shot('sharon-intro2');
+    async function photographFlock(checkHelp) {
+      await waitState('explore');
+      await hiddenTracker();
+      assert.equal(await panel.isVisible(), false);
+      assert.equal((await parts()).found, 0);
+      if (checkHelp) {
+        await shot('landing');
+        await p.getByRole('button', { name: '샤론에게 물어보기' }).click();
+        assert((await panel.innerText()).includes('양 떼 쪽으로'));
+        await panel.locator('summary').click();
+        assert.deepEqual(await panel.locator('details p').allTextContents(), sharon.intro[tier]);
+        await panelButton('계속 탐험하기');
+        await waitState('explore');
+        await aim(P.machine[0], P.machine[1]); await snap('before-flock');
+        assert.equal((await st()).state, 'explore', 'a photo without sheep must not start the question');
       }
-      await panelButton('출발하자');
+      await walkTo(P.flock[0] + 6, P.flock[1] + 6);
+      await aim(P.flock[0], P.flock[1]);
+      await p.getByRole('button', { name: '사진 찍기' }).click();
+      await waitState('detector');
+      assert((await p.evaluate(() => BO3D.debug.dex())).includes('sheep'));
     }
-    await passIntro(true);
+    await photographFlock(true);
 
     async function assertGloss(container, entry) {
       const gloss = container.locator('[data-sharon-gloss]');
@@ -216,21 +210,27 @@ async function runTier(browser, tierIndex) {
       const after = await st();
       assert.deepEqual([after.x, after.z], [before.x, before.z], 'quiz must pause player movement');
       await panel.getByRole('button', { name: q.options.find(o => o.ok).label, exact: true }).click();
-      assert.equal(await panel.locator('.note.good b').innerText(), '성경에 그렇게 기록되어 있어요.');
-      assert.equal(await panel.locator('.note.good .ref').innerText(), item.okRef[tier]);
-      assert(!(await panel.innerText()).includes('탐험대 이야기'), 'Bible answer and guidance must be separate screens');
-      await noSharon();
-      await noLegacyLabel();
-      await panelButton('다음');
-      assert.equal(await panel.locator('.note.good').count(), 0);
-      assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
-      const found = sharon.found[index];
-      assert.equal(await question.textContent(), tier === 't1' && found.t1 ? found.t1 : found.text);
-      assert.equal(await panel.locator('img.avatar[data-sharon="joy"]').count(), 1);
-      if (index === 0) await shot('sharon-guidance');
-      await panelButton('계속 탐험하기');
+      if (index > 0) {
+        assert.equal(await panel.locator('.note.good b').innerText(), '성경에 그렇게 기록되어 있어요.');
+        assert.equal(await panel.locator('.note.good .ref').innerText(), item.okRef[tier]);
+        assert(!(await panel.innerText()).includes('탐험대 이야기'), 'Bible answer and guidance must be separate screens');
+        await noSharon();
+        await noLegacyLabel();
+        await panelButton('다음');
+        assert.equal(await panel.locator('.note.good').count(), 0);
+        assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
+        const found = sharon.found[index];
+        assert.equal(await question.textContent(), tier === 't1' && found.t1 ? found.t1 : found.text);
+        assert.equal(await panel.locator('img.avatar[data-sharon="joy"]').count(), 1);
+        await panelButton('계속 탐험하기');
+      }
       await waitState('explore');
       await p.locator('.track3').waitFor({ state: 'visible' });
+      if (index === 0) {
+        assert.equal(await panel.isVisible(), false);
+        assert((await p.locator('.toast3').innerText()).includes(item.okRef[tier]));
+        await shot('first-signal');
+      }
       const distance = await p.locator('.track3 span').innerText();
       assert(distance.startsWith(sharon.track) && /^\d+m$/.test(distance.slice(sharon.track.length)), distance);
       assert.equal(await p.locator('.hud3 .obj span').innerText(), item.objective);
@@ -462,7 +462,7 @@ async function runTier(browser, tierIndex) {
     await p.getByRole('button', { name: '탐험 시작', exact: true }).click();
     await p.locator('.route-opts .btn').filter({ hasText: '모세' }).click();
     afterLastPart = false;
-    await passIntro(false);
+    await photographFlock(false);
     await panel.locator('[data-detector-quiz="0"]').waitFor();
     assert.equal((await parts()).found, 0);
     await hiddenTracker();
@@ -471,8 +471,10 @@ async function runTier(browser, tierIndex) {
       for (const [index, item] of H.quiz.entries()) {
         await panel.locator('[data-detector-quiz="' + index + '"]').waitFor();
         await panelButton(item.q[tier].options.find(o => o.ok).label);
-        await panelButton('다음');
-        await panelButton('계속 탐험하기');
+        if (index > 0) {
+          await panelButton('다음');
+          await panelButton('계속 탐험하기');
+        }
         await waitState('explore');
         await p.evaluate(([x, z]) => BO3D.debug.goto(x, z), item.at);
         await waitState('caption');

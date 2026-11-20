@@ -86,11 +86,8 @@ fs.mkdirSync(out, { recursive: true });
   await shot('back');
   await next(); await shot('bonus-card');
   await next();
-  // 8~10세는 샤론의 도입을 두 화면에 나눠 본다.
-  const horebNext = p.locator('.panel3').getByRole('button', { name: '다음', exact: true });
-  await horebNext.waitFor({ timeout: 40000 }); await p.waitForTimeout(600); await horebNext.click();
-  if (tier === 't1') await horebNext.click();
-  await p.waitForSelector('text=출발하자', { timeout: 40000 }); await p.waitForTimeout(1500);
+  await p.waitForFunction(() => BO3D.debug.level() === 'horeb' && BO3D.debug.state().state === 'explore', null, { timeout: 40000 });
+  await p.getByRole('button', { name: '샤론에게 물어보기' }).waitFor();
   await shot('horeb');
   console.log(tier, 'shots:', n, 'level', await p.evaluate(() => BO3D.debug.level()), JSON.stringify(await st()), errs.length ? '\nERR ' + errs.slice(0, 8).join('\n') : 'no errors');
   await b.close();

@@ -56,26 +56,13 @@ BO3D.gameModules.story = function (G) {
     var pos = G.player.group.position;
     G.camYaw = Math.atan2((G.P.flock[0] + G.P.mosesStart[0]) / 2 - pos.x, (G.P.flock[1] + G.P.mosesStart[1]) / 2 - pos.z); G.snapCamera();
     G.count.textContent = '말씀 조각 0 / 3';
-    var sharon = G.C3.sharon, intro = sharon.intro[G.S.tier];
-    G.setObjective(sharon.objective); G.hud.hidden = false;
+    G.state = 'explore';
+    G.hidePanel();
+    G.hud.hidden = false; G.camBtn.hidden = false; G.dexBtn.hidden = false;
+    G.hint.hidden = false;
     G.updateDexBtn();
-    G.state = 'caption';
-    var teller = G.S.ch === 'onwoo' ? 'hyu' : 'onwoo';
-    function showIntro(lines, foot) {
-      G.showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
-        lines.map(function (line) { return G.sharonSay('avatar', line); })], foot);
-    }
-    G.showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
-      G.el('p', { class: 'narr', text: '타임머신이 모래 위에 거칠게 내려앉았어요. 시간 나침반의 부품 세 개가 튕겨 나갔어요. 부품을 모두 찾아야 다시 떠날 수 있어요.' }),
-      G.el('div', { class: 'say' }, G.avatar(teller), G.el('div', { class: 'bubble' }, G.el('b', { text: G.C.chars[teller].name, style: 'color:' + G.C.chars[teller].color }), sharon.teamLine))],
-      G.btn('다음', function () {
-        var start = G.btn('출발하자', function () { G.showDetector(0); });
-        if (G.S.tier === 't1') {
-          showIntro([intro[0]], G.btn('다음', function () { showIntro([intro[1]], start); }));
-        } else {
-          showIntro(intro, start);
-        }
-      }));
+    G.setObjective('약한 신호가 잡혀요. 멀리 움직이는 무리를 사진에 담아 보세요.');
+    G.toast('시간 나침반의 부품 세 개가 튕겨 나갔어요!', G.S.ch === 'onwoo' ? 'hyu' : 'onwoo');
   }
 
   function hasGlossForTier(gloss) {

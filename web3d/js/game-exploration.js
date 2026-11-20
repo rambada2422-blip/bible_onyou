@@ -36,6 +36,7 @@ BO3D.gameModules.exploration = function (G) {
       G.dexBtn.classList.remove('pulse'); void G.dexBtn.offsetWidth; G.dexBtn.classList.add('pulse');
       G.toast('도감에 새로 담았어요: ' + fresh.map(function (f) { return f.d.name; }).join(', ') + (dexCount() === G.DEX.length ? '. 도감을 모두 채웠어요!' : ''));
     } else G.toast('이미 도감에 있는 사진이에요: ' + best.d.name);
+    if (lookingForFlock() && found.some(function (f) { return f.d.id === 'sheep'; })) G.showDetector(0);
   }
   function openDex() {
     G.stick.x = G.stick.y = 0; G.stick.id = null; G.base.hidden = true;
@@ -69,6 +70,21 @@ BO3D.gameModules.exploration = function (G) {
     g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
     return g;
   }
+  function lookingForFlock() {
+    return G.cur === 'horeb' && G.state === 'explore' && G.step === 0 &&
+      G.detectorPart === -1 && !G.partObjs[0].taken;
+  }
+  function askSharon() {
+    if (!lookingForFlock()) return;
+    G.state = 'caption'; G.hint.hidden = true; G.camBtn.hidden = true; G.dexBtn.hidden = true;
+    G.showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+      G.sharonSay('avatar', '양 떼 쪽으로 걸어가요. 양들을 화면 가운데에 놓고 사진기 버튼을 눌러 보세요.'),
+      G.el('details', {}, G.el('summary', { text: '샤론 소개' }), G.C3.sharon.intro[G.S.tier].map(function (line) {
+        return G.el('p', { text: line });
+      }))], G.btn('계속 탐험하기', function () {
+        G.hidePanel(); G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false;
+      }));
+  }
   function showDetector(i) {
     var item = G.C3.horeb.quiz[i];
     G.detectorPart = -1; G.state = 'detector';
@@ -79,7 +95,7 @@ BO3D.gameModules.exploration = function (G) {
       G.hidePanel(); G.state = 'explore'; G.hudRef.hidden = false;
       G.camBtn.hidden = false; G.dexBtn.hidden = false;
       G.setObjective(item.objective);
-      if (i === 0) { G.hint.hidden = false; setTimeout(function () { G.hint.hidden = true; }, 9000); }
+      if (i === 0) G.toast('성경에서 확인했어요. ' + item.okRef[G.S.tier] + ' · 부품 신호가 선명해졌어요.');
     });
   }
   function takePart(i) {
@@ -97,6 +113,7 @@ BO3D.gameModules.exploration = function (G) {
     var p = G.player.group.position;
     var best = G.detectorPart >= 0 && !G.partObjs[G.detectorPart].taken ? G.PARTS[G.detectorPart] : null;
     var show = (G.state === 'explore' || G.state === 'free');
+    G.sharonHelp.hidden = !lookingForFlock();
     G.denBtn.hidden = !(show && G.dist2(p.x, p.z, G.P.machine[0], G.P.machine[1]) < 6.5);
     var target = best ? best.at : (G.sceneDone ? G.P.machine : null);
     if (!show || !target) { G.track.hidden = true; return; }
@@ -113,6 +130,7 @@ BO3D.gameModules.exploration = function (G) {
   G.takeShot = takeShot;
   G.openDex = openDex;
   G.showDetector = showDetector;
+  G.askSharon = askSharon;
   G.takePart = takePart;
   G.updateTracker = updateTracker;
   return function initExploration() {

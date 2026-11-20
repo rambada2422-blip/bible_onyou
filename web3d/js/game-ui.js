@@ -7,6 +7,9 @@ BO3D.gameModules.ui = function (G) {
 
   function setObjective(t) { objText.textContent = t; }
   function toast(html, who) {
+    // 첫 탐험의 알림은 도움말과 거리 표시 바로 아래에 놓는다.
+    if (G.cur === 'horeb' && G.state === 'explore' && G.step === 0) G.hud.appendChild(toastEl);
+    else G.ui.insertBefore(toastEl, G.dexBtn);
     toastEl.replaceChildren();
     if (who) { G.add(toastEl, [G.avatar(who), G.el('span', {}, G.el('b', { text: G.C.chars[who].name + ' ', style: 'color:' + G.C.chars[who].color }), html)]); }
     else G.add(toastEl, G.el('span', { text: html }));
@@ -46,6 +49,7 @@ BO3D.gameModules.ui = function (G) {
     var continuation = split === -1 ? null : G.el('p', { class: 'q-prompt', text: q.prompt.slice(split + 2) });
     var noteBox = G.el('div', {});
     function answer() {
+      if (index === 0) { onReady(); return; }
       showPanel([G.goodNote(item.okRef[tier])], btn('다음', function () {
         var found = sharon.found[index];
         showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
@@ -114,10 +118,12 @@ BO3D.gameModules.ui = function (G) {
     G.trackArrow = G.el('i', {}, G.icon('arrow')), G.trackText = G.el('span', { text: '' });
     G.track = G.el('div', { class: 'track3', hidden: '' }, G.trackArrow, G.trackText);
     G.hudRef = G.refChip(G.SC.ref, true), G.clueCount = G.el('span', { class: 'count teal', hidden: '', text: '단서 0 / 5' });
+    G.sharonHelp = btn('샤론에게 물어보기', G.askSharon, 'sharon-help');
+    G.sharonHelp.hidden = true;
     G.hud = G.el('div', { class: 'hud3 pad', hidden: '' },
       G.el('div', { class: 'row' }, G.place_, G.hudRef),
       G.el('div', { class: 'row' }, G.count, G.partCount, G.clueCount),
-      G.el('div', { class: 'obj' }, G.icon('compass'), objText), G.track);
+      G.el('div', { class: 'obj' }, G.icon('compass'), objText), G.sharonHelp, G.track);
     G.knob = G.el('i', {}), G.base = G.el('div', { class: 'stick', hidden: '' }, G.knob);
     G.hint = G.el('div', { class: 'hint', hidden: '' }, '왼쪽 아래를 누른 채 밀면 걸어요. 오른쪽을 밀면 둘러봐요. 사진기 버튼으로 본 것을 찍어 도감에 담아요.');
     toastEl = G.el('div', { class: 'toast3', hidden: '' });
