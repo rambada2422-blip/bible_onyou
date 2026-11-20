@@ -105,7 +105,7 @@ BO3D.gameModules.exploration = function (G) {
     G.track.hidden = false;
     var rel = Math.atan2(target[0] - p.x, target[1] - p.z) - G.camYaw;
     G.trackArrow.style.transform = 'rotate(' + (-rel) + 'rad)';
-    G.trackText.textContent = (best ? '부품 탐지기 ' : '타임머신까지 ') + Math.round(d) + 'm';
+    G.trackText.textContent = (best ? G.C3.sharon.track : '타임머신까지 ') + Math.round(d) + 'm';
   }
 
   G.dexCount = dexCount;

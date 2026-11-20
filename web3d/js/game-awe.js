@@ -225,6 +225,76 @@ BO3D.gameModules.awe = function (G) {
     return u * u * (3 - 2 * u);
   }
 
+  /* ── 소리 (docs/09 5절 표, 10절) ──
+   * 순서에 들어갈 때(또는 시험용 값으로 그 순서의 t초로 옮길 때) 한 번만 정한다. 매 프레임 부르지 않는다.
+   * 지금 있는 바람, 불 타는 소리, 낮은 음악만 쓴다. 하나님의 음성은 소리로 만들지 않는다. */
+  var aweBase = null;
+  function audioApi() {
+    var A = G.FX && G.FX.audio;
+    return (A && A.levels && A.levels()) ? A : null;
+  }
+  /* from에서 to까지 dur초 동안 바뀌는 소리의 t초 자리에서 시작해 남은 시간 동안 바꾼다 */
+  function rampAt(A, name, from, to, t, dur) {
+    var u = dur > 0 ? Math.max(0, Math.min(1, t / dur)) : 1;
+    A.glide(name, to, Math.max(0, dur - t), from + (to - from) * u);
+  }
+  function applyAudio(step, t) {
+    var A = audioApi(); if (!A) return;
+    t = Math.max(0, t || 0);
+    /* 장면 동안에는 떨기나무와의 거리로 불 소리를 정하는 계산을 멈춘다 */
+    A.hold(true);
+    if (!aweBase) { var L0 = A.levels(); aweBase = { wind: L0.wind, fire: L0.fire, crackle: L0.crackle }; }
+    var b = aweBase, half = { wind: b.wind / 2, fire: b.fire / 2, crackle: b.crackle / 2 };
+    /* 다 커졌을 때의 불 소리 = 지금 게임에서 넘지 못하는 선에 섰을 때의 크기. 그보다 크게 하지 않는다 */
+    var top = A.fireLevel(G.P.witnessRadius);
+    var full = { fire: Math.max(half.fire, top.fire), crackle: Math.max(half.crackle, top.crackle) };
+    if (step !== 4) A.glide('scene', 1, 0);
+    if (step === 0) {
+      /* 0. 직전: 바람, 멀리 불 소리 (그때 크기 그대로) */
+      A.glide('wind', b.wind, 0); A.glide('fire', b.fire, 0); A.glide('crackle', b.crackle, 0);
+    } else if (step === 1) {
+      /* 1. 넘어감: 바람과 불 타는 소리가 1.5초 동안 그때 크기의 절반으로 낮아진다 */
+      rampAt(A, 'wind', b.wind, half.wind, t, 1.5);
+      rampAt(A, 'fire', b.fire, half.fire, t, 1.5);
+      rampAt(A, 'crackle', b.crackle, half.crackle, t, 1.5);
+    } else if (step === 2) {
+      /* 2. 떨기나무: 불 타는 소리만 5초에 걸쳐 차츰 커진다. 바람은 낮아진 그대로 */
+      A.glide('wind', half.wind, 0);
+      rampAt(A, 'fire', half.fire, full.fire, t, 5.0);
+      rampAt(A, 'crackle', half.crackle, full.crackle, t, 5.0);
+    } else if (step === 3) {
+      /* 3. 모세: 그대로 이어진다 */
+      A.glide('wind', half.wind, 0); A.glide('fire', full.fire, 0); A.glide('crackle', full.crackle, 0);
+    } else if (step === 4) {
+      /* 4. 부르심: 바람과 불 소리를 포함한 모든 소리가 0.5초에 걸쳐 멎고 4번이 끝날 때까지 조용하다 */
+      rampAt(A, 'scene', 1, 0, t, 0.5);
+      rampAt(A, 'wind', half.wind, 0, t, 0.5);
+      rampAt(A, 'fire', full.fire, 0, t, 0.5);
+      rampAt(A, 'crackle', full.crackle, 0, t, 0.5);
+      A.glide('music', 0, 0);
+    } else if (step === 5) {
+      /* 5. 얼굴을 가림: 낮고 조용한 음악이 지켜보기 음악과 같은 크기로 2초에 걸쳐 시작된다. 불과 바람 소리는 없다 */
+      A.glide('wind', 0, 0); A.glide('fire', 0, 0); A.glide('crackle', 0, 0);
+      A.pad(true);
+      rampAt(A, 'music', 0, A.NORMAL.music, t, 2.0);
+    } else if (step === 6) {
+      /* 6. 돌아옴: 음악이 이어지고, 바람과 불 소리가 평소 크기로 돌아온다 */
+      A.pad(true);
+      A.glide('music', A.NORMAL.music, 0);
+      rampAt(A, 'wind', 0, A.NORMAL.wind, t, 1.5);
+      A.hold(false);
+    }
+  }
+  /* 장면이 끝나거나 멈추면 거리 계산과 평소 크기로 되돌린다. 음악은 부른 쪽(지켜보기, 처음 화면)이 정한다 */
+  function releaseAudio() {
+    var A = audioApi();
+    if (!A || !aweBase) { aweBase = null; return; }
+    A.hold(false);
+    A.glide('scene', 1, 0);
+    A.glide('wind', A.NORMAL.wind, 0.5);
+    aweBase = null;
+  }
+
   /* 순서 0~6의 시각 t(초) 상태를 화면에 반영한다 */
   function applySeqState(step, t) {
     var aweData = G.C3 && G.C3.horeb && G.C3.horeb.awe;
@@ -341,6 +411,7 @@ BO3D.gameModules.awe = function (G) {
     doneCb = null;
     setCaptionText(null, 0);
     setVeil(0);
+    releaseAudio();
     if (rootEl) rootEl.hidden = true;
     if (G.root) G.root.classList.remove('awe-on');
   }
@@ -363,6 +434,7 @@ BO3D.gameModules.awe = function (G) {
           seqStep++;
           seqTime = 0;
           applySeqState(seqStep, 0);
+          applyAudio(seqStep, 0);
         } else {
           finishAwe();
           return;
@@ -385,6 +457,7 @@ BO3D.gameModules.awe = function (G) {
     if (G.root) G.root.classList.add('awe-on');
     rootEl.hidden = false;
     applySeqState(seqStep, seqTime);
+    applyAudio(seqStep, seqTime);
     lastTick = performance.now();
     rafId = requestAnimationFrame(tickAwe);
     return aweState();
@@ -397,6 +470,7 @@ BO3D.gameModules.awe = function (G) {
       seqTime = 8.0;
       swapPhase = 'before';
       applySeqState(seqStep, seqTime);
+      applyAudio(seqStep, seqTime);
       return aweState();
     }
     if (arg === 'afterSwap') {
@@ -404,12 +478,14 @@ BO3D.gameModules.awe = function (G) {
       seqTime = 0.0;
       swapPhase = 'after';
       applySeqState(seqStep, seqTime);
+      applyAudio(seqStep, seqTime);
       return aweState();
     }
     if (seqStep === 5 && swapPhase === 'after') {
       swapPhase = '';
       seqTime = STEP_PAUSE_T[5];
       applySeqState(seqStep, seqTime);
+      applyAudio(seqStep, seqTime);
       return aweState();
     }
     if (seqStep < 6) {
@@ -417,6 +493,7 @@ BO3D.gameModules.awe = function (G) {
       swapPhase = '';
       seqTime = window.BO3D_TEST ? STEP_PAUSE_T[seqStep] : 0;
       applySeqState(seqStep, seqTime);
+      applyAudio(seqStep, seqTime);
       return aweState();
     }
     finishAwe();

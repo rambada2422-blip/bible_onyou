@@ -22,18 +22,35 @@ BO3D.gameModules.ui = function (G) {
   function hidePanel() { panel.hidden = true; }
   function btn(label, fn, cls) { return G.el('button', { class: 'btn ' + (cls || 'onpaper'), on: { click: fn } }, label); }
 
-  /* 문구와 보기 순서는 승인된 horeb 자료에서만 읽는다. note는 화면에 내보내지 않는다. */
+  function sharonSay(face, line) {
+    var sharon = G.C3.sharon;
+    return G.el('div', { class: 'say sharon-say' }, G.sharonFace(face),
+      G.el('div', { class: 'bubble' },
+        G.el('b', { text: sharon.name, style: 'color:' + sharon.color }),
+        G.el('span', { class: 'sharon-line', text: line })));
+  }
+
+  function sharonGloss(gloss) {
+    var tier = G.S.tier;
+    return G.el('section', { class: 'sharon-gloss', 'data-sharon-gloss': gloss.id },
+      G.el('div', { class: 'q-kicker' }, G.icon('bookline'), G.C3.sharon.glossKicker),
+      sharonSay('avatar', gloss.text[tier]),
+      G.el('div', { class: 'narr-meta' }, gloss.refs[tier].map(function (ref) { return G.refChip(ref); })));
+  }
+
+  /* 물음과 보기 순서는 승인된 horeb 자료에서 읽는다. */
   function detectorQuestion(item, index, onReady) {
-    var data = G.C3.horeb, tier = G.S.tier, q = item.q[tier], solved = false;
+    var data = G.C3.horeb, sharon = G.C3.sharon, tier = G.S.tier, q = item.q[tier], solved = false;
+    var split = q.prompt.search(/[.?] /);
+    var speech = sharonSay('ask', split === -1 ? q.prompt : q.prompt.slice(0, split + 1));
+    var continuation = split === -1 ? null : G.el('p', { class: 'q-prompt', text: q.prompt.slice(split + 2) });
     var noteBox = G.el('div', {});
-    function foundNodes() {
-      return [G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
-        G.el('p', { class: 'narr', text: tier === 't1' && item.foundT1 ? item.foundT1 : item.found })];
-    }
     function answer() {
-      var good = G.goodNote(item.okRef[tier]), go = btn('계속 탐험하기', onReady);
-      if (tier === 't1') showPanel([good], btn('다음', function () { showPanel(foundNodes(), go); }));
-      else showPanel([good].concat(foundNodes()), go);
+      showPanel([G.goodNote(item.okRef[tier])], btn('다음', function () {
+        var found = sharon.found[index];
+        showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+          sharonSay('joy', tier === 't1' && found.t1 ? found.t1 : found.text)], btn('계속 탐험하기', onReady));
+      }));
     }
     var opts = q.options.map(function (option) {
       var b = G.el('button', { class: 'opt', on: { click: function () {
@@ -41,16 +58,22 @@ BO3D.gameModules.ui = function (G) {
         if (option.ok) { solved = true; answer(); }
         else {
           b.classList.add('rest'); b.disabled = true;
-          noteBox.replaceChildren(G.lookNote());
+          if (!noteBox.firstChild) {
+            var ask = speech.querySelector('[data-sharon="ask"]');
+            var cheer = G.sharonFace('cheer');
+            if (ask) ask.remove();
+            if (cheer) speech.prepend(cheer);
+            noteBox.appendChild(G.lookNote());
+          }
           noteBox.scrollIntoView({ block: 'nearest' });
         }
       } } }, G.el('span', { text: option.label }));
       return b;
     });
     showPanel([
-      G.el('div', { class: 'q-kicker', 'data-detector-quiz': String(index), text: data.kicker + ' ' + (index + 1) + ' / ' + data.quiz.length }),
+      G.el('div', { class: 'q-kicker', 'data-detector-quiz': String(index), text: sharon.kicker + ' ' + (index + 1) + ' / ' + data.quiz.length }),
       G.el('div', { class: 'narr-meta' }, tier === 't2' ? G.refChip(item.ref) : G.el('span', { text: data.bookHint[tier] })),
-      G.el('p', { class: 'q-prompt', text: q.prompt }), G.el('div', { class: 'opts' }, opts), noteBox
+      speech, continuation, G.el('div', { class: 'opts' }, opts), noteBox
     ], []);
   }
 
@@ -69,6 +92,8 @@ BO3D.gameModules.ui = function (G) {
   G.showPanel = showPanel;
   G.hidePanel = hidePanel;
   G.btn = btn;
+  G.sharonSay = sharonSay;
+  G.sharonGloss = sharonGloss;
   G.detectorQuestion = detectorQuestion;
   G.beatNodes = beatNodes;
   return function initUi() {

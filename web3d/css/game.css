@@ -24,6 +24,8 @@
 @keyframes toastin { from { transform: translateY(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
 
 .panel3.sheet { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; max-height: 50%; flex: none; animation: sheetup .28s ease both; }
+.panel3.sheet:has([data-detector-quiz]) { max-height: 64%; }
+.sharon-say .bubble:only-child { grid-column: 1 / -1; }
 @keyframes sheetup { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 
 .overlay3 { position: absolute; inset: 0; }
@@ -34,6 +36,19 @@
 .overlay3.menu3 .char .avatar { width: 64px; height: 64px; }
 .overlay3.sheet3 { display: flex; flex-direction: column; justify-content: flex-end; background: rgba(14, 23, 48, .35); }
 .overlay3.sheet3 .sheet { margin: 0; flex: none; max-height: 82%; animation: sheetup .28s ease both; }
+.sharon-gloss { display: flex; flex-direction: column; gap: 10px; }
+.sharon-gloss .q-kicker { display: flex; align-items: center; gap: 6px; color: var(--ink-2); }
+.sharon-gloss .q-kicker svg { width: 16px; height: 16px; }
+.sharon-gloss .bubble { background: var(--paper); border: 1px solid var(--ink-2); }
+
+.overlay3.sheet3.sharon-review { background: var(--paper); }
+.overlay3.sheet3.sharon-review .sheet { flex: 1; max-height: 100%; border-radius: 0; }
+.sharon-review .sheet-body { gap: 18px; }
+.sharon-review-title { color: var(--ink); font: 24px/1.25 var(--f-display); }
+.sharon-watch { display: grid; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--paper-2); }
+.sharon-ask-adult { font-size: 14px; color: var(--text-soft); }
+.sharon-review .sheet-foot .btn { padding-inline: min(3vw, 16px); }
+
 .reward3 { background: #FFF6DA; box-shadow: inset 0 0 0 2px #F0D58A; }
 
 @media (prefers-reduced-motion: reduce) {
