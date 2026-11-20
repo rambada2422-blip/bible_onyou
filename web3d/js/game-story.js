@@ -236,16 +236,7 @@ BO3D.gameModules.story = function (G) {
     return [G.el('div', { class: 'findcard' }, G.icon('book'), G.el('div', {}, G.el('div', { class: 'big', text: G.bookName(q.ref) }), G.el('p', { text: G.tx(q.prompt) }))), rb, after];
   }
   function findrefBlock(q, onOk, idp) {
-    var ch = G.el('input', { id: 'g-ch-' + idp, type: 'text', inputmode: 'numeric', 'aria-label': '장', autocomplete: 'off', maxlength: '3' });
-    var vs = G.el('input', { id: 'g-vs-' + idp, type: 'text', inputmode: 'numeric', 'aria-label': '절', autocomplete: 'off', maxlength: '3' });
-    var noteBox = G.el('div', {});
-    var check = G.el('button', { class: 'btn plain', on: { click: function () {
-      var v = parseInt(ch.value, 10) + ':' + parseInt(vs.value, 10);
-      if (q.accept.indexOf(v) >= 0) { ch.disabled = vs.disabled = check.disabled = true; noteBox.replaceChildren(goodNote(null, '맞게 찾았어요. ' + q.book + ' ' + ch.value.trim() + '장 ' + vs.value.trim() + '절.')); onOk(); }
-      else noteBox.replaceChildren(G.el('div', { class: 'note look fadein' }, G.el('b', { text: '그 절에는 다른 내용이 적혀 있어요.' }), G.el('span', { text: q.hint })));
-      noteBox.scrollIntoView({ block: 'nearest' });
-    } } }, '확인');
-    return [G.el('p', { class: 'q-prompt', text: q.prompt }), G.el('div', { class: 'refin' }, G.el('span', { text: q.book }), ch, G.el('span', { text: '장' }), vs, G.el('span', { text: '절' }), check), noteBox];
+    return BO.referenceInput(q, onOk, G.el, goodNote, 'g-ch-' + idp, 'g-vs-' + idp);
   }
   function blockFor(q, onOk, idp) {
     if (q.type === 'choice') return choiceBlock(q, q.ref, onOk);
