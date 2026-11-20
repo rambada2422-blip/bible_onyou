@@ -6,15 +6,36 @@ BO3D.gameModules.exploration = function (G) {
   /* ── 사진과 탐험 도감 ──
    * 세 아이는 목격자다. 본 것을 사진으로 담아 도감을 채운다. 설명은 본문에 있는 사실만 적는다. */
   function v3(x, y, z) { return new G.T.Vector3(x, y, z); }
+  var flockEntry, focusFrame;
+  function photoPoint(entry) {
+    var point = entry.pos();
+    if (point.distanceTo(G.camera.position) > entry.range) return null;
+    point.applyMatrix4(G.camera.matrixWorldInverse);
+    if (point.z > -0.5) return null;
+    point.applyMatrix4(G.camera.projectionMatrix);
+    return Math.abs(point.x) <= 0.82 && Math.abs(point.y) <= 0.86 ? point : null;
+  }
+  function updatePhotoFocus() {
+    var point = G.overlay.hidden && lookingForFlock() ? photoPoint(flockEntry) : null;
+    var hidden = !point;
+    if (focusFrame.hidden !== hidden) {
+      focusFrame.hidden = hidden;
+      G.camBtn.classList.toggle('focused', !hidden);
+      if (point) G.camBtn.setAttribute('aria-description', '움직이는 무리가 화면에 들어왔어요.');
+      else G.camBtn.removeAttribute('aria-description');
+    }
+    if (point) {
+      focusFrame.style.left = ((1 + point.x) * 50).toFixed(2) + '%';
+      focusFrame.style.top = ((1 - point.y) * 50).toFixed(2) + '%';
+    }
+  }
   function dexCount() { return Object.keys(G.dex).length; }
   function updateDexBtn() { G.dexLabel.textContent = '도감 ' + dexCount() + ' / ' + G.DEX.length; }
   function takeShot() {
     var cw = G.canvas.width, ch = G.canvas.height, found = [], best = null;
     G.DEX.forEach(function (d) {
-      var wp = d.pos(), cs = wp.clone().applyMatrix4(G.camera.matrixWorldInverse);
-      if (cs.z > -0.5 || wp.distanceTo(G.camera.position) > d.range) return;
-      var n = wp.clone().project(G.camera);
-      if (Math.abs(n.x) > 0.82 || Math.abs(n.y) > 0.86) return;
+      var n = photoPoint(d);
+      if (!n) return;
       var item = { d: d, n: n, c: n.x * n.x + n.y * n.y };
       found.push(item); if (!best || item.c < best.c) best = item;
     });
@@ -135,6 +156,7 @@ BO3D.gameModules.exploration = function (G) {
   G.askSharon = askSharon;
   G.takePart = takePart;
   G.updateTracker = updateTracker;
+  G.updatePhotoFocus = updatePhotoFocus;
   return function initExploration() {
 
     G.DEX = [
@@ -149,6 +171,9 @@ BO3D.gameModules.exploration = function (G) {
       { id: 'machine', name: '타임머신', desc: '탐험대가 타고 온 놋쇠 타임머신. 성경에 나오는 물건은 아니다', ref: null, hint: '처음 도착한 자리에 서 있어요.', range: 17,
         pos: function () { return v3(G.P.machine[0], G.H(G.P.machine[0], G.P.machine[1]) + 1.3, G.P.machine[1]); } }
     ];
+    flockEntry = G.DEX.find(function (entry) { return entry.id === 'sheep'; });
+    focusFrame = G.el('div', { class: 'photo-focus3', hidden: '', 'aria-hidden': 'true' });
+    G.ui.insertBefore(focusFrame, G.hud);
     G.dex = {}, G.wantShot = false;
 
 

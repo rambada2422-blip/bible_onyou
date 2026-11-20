@@ -53,6 +53,7 @@ BO3D.gameModules.loop = function (G) {
     if (G.FX && G.player) G.FX.audio.setFire(horeb ? G.dist2(G.player.group.position.x, G.player.group.position.z, G.P.bush[0], G.P.bush[1]) : 999);
     var rs = horeb ? G.scene : G.JL.scene;
     if (G.post) G.post.render(rs, G.camera); else G.renderer.render(rs, G.camera);
+    G.updatePhotoFocus();
     if (G.wantShot) { G.wantShot = false; if (horeb) G.takeShot(); else G.takeClue(); }
   }
 
