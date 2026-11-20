@@ -120,7 +120,7 @@ function layoutIssues() {
 async function checkSize(browser, width, height) {
   const size = `${width}x${height}`;
   const folder = path.resolve(outputFolder, size);
-  const context = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce' });
+  const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
   page.setDefaultNavigationTimeout(30000);
@@ -152,7 +152,7 @@ async function checkSize(browser, width, height) {
     await capture(filename);
     const clues = await page.locator('.hot').all();
     assert.equal(clues.length, 3, `${destination} 경로의 단서가 세 개여야 합니다.`);
-    await clues[0].click();
+    await clues[0].tap();
     if (destination === '요셉' && width === 390 && height === 844) {
       await page.setViewportSize({ width: height, height: width });
       assert.equal(await page.locator('.hot').count(), 3);
@@ -160,7 +160,7 @@ async function checkSize(browser, width, height) {
       assert.equal(await next.isEnabled(), false);
       await capture('10-joseph-rotated');
     }
-    for (const clue of clues.slice(1)) await clue.click();
+    for (const clue of clues.slice(1)) await clue.tap();
     assert(await next.isEnabled(), `${destination} 경로에서 단서를 모두 눌렀으나 다음 화면이 열리지 않았습니다.`);
     await next.click();
     assert.equal(await page.locator('.hot').count(), 0, '이전 그림의 단서가 새 화면에 남아 있습니다.');
