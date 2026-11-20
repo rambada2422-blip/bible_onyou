@@ -116,20 +116,24 @@
   function runScene(id, journey) {
     app.runScene(id, renderHub, renderRoute, journey);
   }
+  function travelTo(id, title, description) {
+    app.rememberArrival(id);
+    warp('시간 이동', title, description, function () { runScene(id); });
+  }
   function depart(id) {
     var journey = app.savedJourney();
     if (journey && journey.id === id) { runScene(id, journey); return; }
     if (id === 'EX-01' && !app.state.routed) { renderRoute(); return; }
     var sc = C.scenes[id];
-    warp('시간 이동', sc.place, sc.ref, function () { runScene(id); });
+    travelTo(id, sc.place, sc.ref);
   }
 
   /* ════════════ 다음 목적지 정하기 ════════════ */
   function renderRoute() {
     var opts = C.route.options.map(function (o) {
       return el('button', { class: 'btn wide', on: { click: function () {
-        if (o.to === 'EX-01') { app.state.routed = true; save(); }
-        warp('시간 이동', o.label + '의 시대로', '타임머신이 이름을 따라 시대를 찾고 있어요.', function () { runScene(o.to); });
+        if (o.to === 'EX-01') app.state.routed = true;
+        travelTo(o.to, o.label + '의 시대로', '타임머신이 이름을 따라 시대를 찾고 있어요.');
       } } }, o.label);
     });
     show(el('div', { class: 'screen sky setup pad' },

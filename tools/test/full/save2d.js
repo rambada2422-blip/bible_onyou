@@ -128,6 +128,8 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
       const resume = async () => { await page.reload(); await button(page, '이어서 탐험하기').click(); };
       await button(page, '목적지 다시 고르기').click();
       await button(page, '요셉').click();
+      await page.locator('.warp').waitFor();
+      await resume();
       await button(page, '둘러보기').click();
       await button(page, '다음').click();
       const narration = await page.locator('.sheet .narr').innerText();
