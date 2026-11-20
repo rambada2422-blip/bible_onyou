@@ -116,12 +116,13 @@ async function runTier(browser, tierIndex, url) {
       assert.equal(await gloss.locator('button, a').count(), 0, 'verse chips must be static');
     }
 
-    async function passWatching() {
+    async function passWatching(openReview) {
       for (let beat = 2; beat < scene.beats.length; beat++) {
         await noSharon();
         await noLegacyLabel();
         assert.equal(await panel.locator('.q-kicker').innerText(), '지켜보기 ' + (beat - 1) + ' / ' + (scene.beats.length - 2));
-        await panel.locator('.sheet-foot .btn.onpaper').click();
+        if (openReview && beat === scene.beats.length - 1) await panelButton(sharon.reviewTitle);
+        else await panel.locator('.sheet-foot .btn.onpaper').click();
       }
     }
 
@@ -170,6 +171,7 @@ async function runTier(browser, tierIndex, url) {
       await panel.locator('[data-detector-quiz="' + index + '"]').waitFor();
       assert.equal((await st()).state, 'detector');
       await hiddenTracker();
+      assert.equal(await p.locator('.hud3 .place').innerText(), index < 2 ? '광야' : scene.place);
       assert.equal(await p.locator('.hud3 .ref').isVisible(), false, 'HUD must not reveal verse hints during quiz');
       assert.equal(await panel.locator('.q-kicker').innerText(), sharon.kicker + ' ' + (index + 1) + ' / 3');
       const bubble = panel.locator('.sharon-say .bubble'), question = panel.locator('.sharon-line');
@@ -424,7 +426,7 @@ async function runTier(browser, tierIndex, url) {
     } else near(a6.total, a6.normal, 0.02, 'total must be normal after awe scene');
     console.log(tier, 'awe sound', muteRun ? '(muted)' : '', 'step1 fire', a1.fire.toFixed(3), 'step2 fire', a2.fire.toFixed(3), 'step4 total', a4.total.toFixed(4), 'step5 music', a5.music.toFixed(3), 'starts', a6.musicStarts);
     await snap('photo-event');
-    await passWatching();
+    await passWatching(true);
     afterLastPart = false;
     await passReview(reviewPages, tier !== 't3', false);
     afterLastPart = true;
@@ -467,7 +469,7 @@ async function runTier(browser, tierIndex, url) {
     await panel.locator('[data-detector-quiz="0"]').waitFor();
     assert.equal((await parts()).found, 0);
     await hiddenTracker();
-    if (tier === 't2') {
+    if (tier !== 't1') {
       await p.evaluate(() => { BO3D.debug.includeReviewRequiredGloss = false; });
       for (const [index, item] of H.quiz.entries()) {
         await panel.locator('[data-detector-quiz="' + index + '"]').waitFor();
@@ -491,10 +493,15 @@ async function runTier(browser, tierIndex, url) {
       await p.evaluate(() => {
         for (let step = 0; step <= 6; step++) BO3D.debug.aweNext();
       });
-      await passWatching();
-      const publicPages = reviewPages.filter(g => !g.review);
-      assert.equal(publicPages.length, reviewPages.length - 2);
-      await passReview(publicPages, false, true);
+      await passWatching(tier === 't2');
+      if (tier === 't2') {
+        const publicPages = reviewPages.filter(g => !g.review);
+        assert.equal(publicPages.length, reviewPages.length - 2);
+        await passReview(publicPages, false, true);
+      } else {
+        await waitState('gates');
+        assert.equal(await p.locator('.sharon-review').count(), 0);
+      }
     }
     assert.deepEqual(errs, [], 'browser errors');
     console.log(tier, 'shots:', n, 'all three quizzes and full journey passed; restart resets progress; no errors');

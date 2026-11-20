@@ -90,7 +90,7 @@ BO3D.gameModules.travel = function (G) {
    * 도착한 곳이 언제, 어디인지 모르는 채로 사진으로 단서를 모으고, 증거를 골라 추리한 뒤 성경에서 확인한다. */
   function hudMode() {
     var j = G.cur === 'jordan';
-    G.place_.textContent = j ? G.JD.unknownPlace : G.SC.place;
+    G.place_.textContent = j ? G.JD.unknownPlace : '광야';
     G.hudRef.hidden = j; G.count.hidden = j; G.partCount.hidden = j; G.clueCount.hidden = !j;
     G.dedBtn.hidden = true;
     if (j) { G.track.hidden = true; G.denBtn.hidden = true; }

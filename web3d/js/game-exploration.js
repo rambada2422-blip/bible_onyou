@@ -94,6 +94,7 @@ BO3D.gameModules.exploration = function (G) {
       G.detectorPart = i; G.partObjs[i].group.visible = true;
       G.hidePanel(); G.state = 'explore'; G.hudRef.hidden = false;
       G.camBtn.hidden = false; G.dexBtn.hidden = false;
+      if (i === 1) G.place_.textContent = G.SC.place;
       G.setObjective(item.objective);
       if (i === 0) G.toast('성경에서 확인했어요. ' + item.okRef[G.S.tier] + ' · 부품 신호가 선명해졌어요.');
     });
