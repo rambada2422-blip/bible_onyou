@@ -1,5 +1,5 @@
 // 3D 전체 자동 점검. 첫 tierIndex부터 나이 단계 셋을 모두 실행한다.
-// 사용: node tools/test/walk3d.js <firstTierIndex 0-2> <outDir> [dsf]
+// 사용: node tools/test/walk3d.js <firstTierIndex 0-2> <outDir> [dsf] [low]
 const { chromium } = require('playwright');
 const { gameOrigin, proxy } = require('./game-server');
 const path = require('path');
@@ -73,6 +73,10 @@ async function runTier(browser, tierIndex, url) {
     const muteRun = tierIndex === 2;
     const near = (a, b, tol, msg) => assert(Math.abs(a - b) <= tol, msg + ': ' + a + ' vs ' + b);
     await p.goto(url);
+    if (new URL(url).searchParams.get('q') === 'low') {
+      assert.equal(await p.evaluate(() => BO3D.debug.quality()), 'low');
+      assert.equal(await p.evaluate(() => BO3D.debug.sheep()), 32);
+    }
     await p.evaluate(() => document.fonts.ready);
     const { C, H, P, sharon } = await p.evaluate(() => ({
       C: BO.content, H: BO.content3d.horeb, P: BO3D.world.P, sharon: BO.content3d.sharon
@@ -528,7 +532,11 @@ async function runTier(browser, tierIndex, url) {
   const browser = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
   try {
     const url = (await gameOrigin(browser)) + '/preview3d.html';
-    for (const index of [ti].concat([0, 1, 2].filter(i => i !== ti))) await runTier(browser, index, url);
+    // 첫 연령은 명시적인 낮은 품질에서 끝까지, 나머지는 기본 주소로 자동 조정까지 조작한다.
+    for (const index of [ti].concat([0, 1, 2].filter(i => i !== ti))) {
+      const low = index === ti || process.argv[5] === 'low';
+      await runTier(browser, index, url + (low ? '?q=low' : ''));
+    }
   }
   finally { await browser.close(); }
 })().catch(e => { console.error('FAIL', e.stack || e.message); process.exitCode = 1; });

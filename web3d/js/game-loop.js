@@ -2,7 +2,8 @@
 BO3D.gameModules = BO3D.gameModules || {};
 BO3D.gameModules.loop = function (G) {
   'use strict';
-  var last;
+  var last, lastShadow = -Infinity;
+  var windowStart = null, windowFrames = 0, slowSince = null;
   var intervals = new Float64Array(300), nextInterval = 0, intervalCount = 0;
   var previousFrame = null, drawCalls = 0, perfLabel, lastLabelUpdate = 0;
 
@@ -15,6 +16,27 @@ BO3D.gameModules.loop = function (G) {
       max = Math.max(max, ms);
     }
     return { samples: count, meanMs: count ? sum / count : 0, maxMs: max, drawCalls: drawCalls };
+  }
+
+  function resetTimingWindow() {
+    previousFrame = null;
+    windowStart = null;
+    windowFrames = 0;
+    slowSince = null;
+  }
+
+  function watchQuality(t) {
+    if (G.lowQuality || document.hidden) return;
+    if (windowStart === null) { windowStart = t; return; }
+    windowFrames++;
+    var elapsed = t - windowStart;
+    if (elapsed < 250) return;
+    // 짧은 묶음마다 실제 평균을 확인한다. 한 번의 긴 멈춤만으로는 품질을 낮추지 않는다.
+    if (elapsed / windowFrames <= 40) slowSince = null;
+    else if (slowSince === null) slowSince = windowStart;
+    else if (t - slowSince > 2000) G.quality('low');
+    windowStart = t;
+    windowFrames = 0;
   }
 
   function recordFrame(t) {
@@ -78,10 +100,15 @@ BO3D.gameModules.loop = function (G) {
       G.camera.position.set(G.P.start[0] + Math.sin(a) * 9, G.H(G.P.start[0], G.P.start[1]) + 5.5, G.P.start[1] + 10);
       G.camera.lookAt(G.P.bush[0], 6, G.P.bush[1] - 30);
     }
+    watchQuality(t);
     if (horeb && G.bushFx) G.bushFx.update(G.now, G.camera, G.renderer.domElement.height);
     if (G.FX && G.player) G.FX.audio.setFire(horeb ? G.dist2(G.player.group.position.x, G.player.group.position.z, G.P.bush[0], G.P.bush[1]) : 999);
     var rs = horeb ? G.scene : G.JL.scene;
     // 빛과 그림자를 위한 중간 그리기까지 한 화면으로 센다.
+    if (G.lowQuality && t - lastShadow >= 160) {
+      G.renderer.shadowMap.needsUpdate = true;
+      lastShadow = t;
+    }
     G.renderer.info.reset();
     if (G.post) G.post.render(rs, G.camera); else G.renderer.render(rs, G.camera);
     recordFrame(t);
@@ -97,7 +124,7 @@ BO3D.gameModules.loop = function (G) {
       perfLabel = G.el('div', { class: 'perf3', 'aria-hidden': 'true' });
       G.ui.appendChild(perfLabel);
     }
-    document.addEventListener('visibilitychange', function () { previousFrame = null; });
+    document.addEventListener('visibilitychange', resetTimingWindow);
     window.addEventListener('resize', resize);
 
     last = performance.now();
