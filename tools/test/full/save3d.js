@@ -93,6 +93,7 @@ async function checkJourney(page, url) {
 
   await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, firstPart]);
   await resume();
+  await button('소리 켜기').click(); await button('소리 끄기').click();
   const secondAnswer = await page.evaluate(() => BO.content3d.horeb.quiz[1].q.t2.options.find(o => o.ok).label);
   await button(secondAnswer).click(); await button('다음').click(); await button('계속 탐험하기').click();
   await state('explore');
