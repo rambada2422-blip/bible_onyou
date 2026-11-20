@@ -1,20 +1,40 @@
-// 글꼴 서버 응답을 보류한 채 게임을 시작하고, 도착한 스타일이 뒤늦게 적용되는지 본다.
+// 네 진입점에서 외부 연결 없이 실제 게임 글꼴을 사용하고, 글꼴이 늦어도 출발하는지 본다.
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
 const { gameOrigin, proxy } = require('../game-server');
 
-async function startWithoutFonts(browser, url, next) {
+async function checkEntry(browser, origin, entry, next, bundled) {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   try {
-    let request;
-    await page.route('https://fonts.googleapis.com/**', route => { request = route; });
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    await page.getByRole('button', { name: '탐험 시작', exact: true }).tap({ timeout: 15000 });
-    assert(await next(page).isVisible(), '글꼴 응답 전에도 시작 버튼이 작동해야 한다');
-    assert(request, '게임이 사용하는 글꼴 스타일 요청을 가로채야 한다');
-    await request.fulfill({ contentType: 'text/css', body: ':root { --font-test-loaded: yes; }' });
-    await page.waitForFunction(() =>
-      getComputedStyle(document.documentElement).getPropertyValue('--font-test-loaded').trim() === 'yes');
+    const external = [], files = [];
+    let stylesheet;
+    await page.route('**/*', async route => {
+      const url = new URL(route.request().url());
+      if (url.protocol === 'data:') return route.continue();
+      if (url.origin !== origin) {
+        external.push(url.hostname);
+        return route.abort();
+      }
+      if (url.pathname.endsWith('/fonts.css')) { stylesheet = route; return; }
+      if (url.pathname.endsWith('.woff2')) files.push(url.pathname);
+      return route.continue();
+    });
+    await page.goto(origin + entry, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: '탐험 시작', exact: true }).tap();
+    assert(await next(page).isVisible(), '글꼴 응답 전에도 출발해야 한다');
+    if (!bundled) {
+      assert(stylesheet, '웹 원본의 글꼴 스타일 요청을 기다린다');
+      const applied = page.waitForFunction(() => document.fonts.size === 4);
+      await stylesheet.continue(); await applied;
+    }
+    const loaded = await page.evaluate(async () => {
+      const faces = ['20px Jua', '20px "Gowun Dodum"', '20px "Gowun Batang"', 'bold 20px "Gowun Batang"'];
+      return Promise.all(faces.map(async css => (await document.fonts.load(css, '성경탐험대')).map(f => f.status)));
+    });
+    assert.deepEqual(loaded, Array(4).fill(['loaded']));
+    assert.equal(files.length, bundled ? 0 : 4);
+    assert.deepEqual(external, []);
+    console.log(entry, '실제 한글 글꼴 네 파일, 외부 요청 없음');
   } finally {
     await page.close();
   }
@@ -26,12 +46,12 @@ async function startWithoutFonts(browser, url, next) {
   try {
     const origin = await gameOrigin(browser);
     const setup = page => page.getByRole('button', { name: '출발 준비 완료', exact: true });
-    await startWithoutFonts(browser, origin + '/index.html', setup);
-    await startWithoutFonts(browser, origin + '/preview.html', setup);
     const routes = page => page.locator('.route-opts .btn').first();
-    await startWithoutFonts(browser, origin + '/web3d/index.html', routes);
-    await startWithoutFonts(browser, origin + '/preview3d.html', routes);
-    console.log('웹·단일 파일 2D·3D 모두 외부 글꼴 응답 전에 출발, 뒤늦은 스타일 적용 · no errors');
+    await checkEntry(browser, origin, '/index.html', setup, false);
+    await checkEntry(browser, origin, '/preview.html', setup, true);
+    await checkEntry(browser, origin, '/web3d/index.html', routes, false);
+    await checkEntry(browser, origin, '/preview3d.html', routes, true);
+    console.log('웹·단일 파일 2D·3D의 오프라인 글꼴과 출발 · no errors');
   } finally {
     await browser.close();
   }

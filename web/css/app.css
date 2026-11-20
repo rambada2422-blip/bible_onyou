@@ -15,7 +15,7 @@
   --ok-bg: #DFF1E8;
   --warm: #B4532A;
   --warm-bg: #FBE9DC;
-  /* 인터넷 글꼴을 받지 못하면 기기에 있는 한글 글꼴을 차례로 쓴다. */
+  /* 게임 글꼴을 불러올 수 없으면 기기에 있는 한글 글꼴을 차례로 쓴다. */
   --f-local-sans: 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', 'Noto Sans KR', 'Noto Sans CJK KR', Dotum;
   --f-display: 'Jua', var(--f-local-sans), sans-serif;
   --f-body: 'Gowun Dodum', var(--f-local-sans), sans-serif;
