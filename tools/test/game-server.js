@@ -10,7 +10,7 @@ const web3d = path.join(root, 'web3d');
 const types = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml',
-  '.jpg': 'image/jpeg', '.png': 'image/png'
+  '.jpg': 'image/jpeg', '.png': 'image/png', '.woff2': 'font/woff2'
 };
 
 async function serve(req, res) {

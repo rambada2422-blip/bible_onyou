@@ -87,9 +87,9 @@ async function checkScreen(browser, [width, height], age) {
     page.on('pageerror', (error) => issues.push(`게임 실행 오류 · ${error.message}`));
     const blocked = new Set();
     await page.route(
-      (url) => ['fonts.googleapis.com', 'fonts.gstatic.com'].includes(url.hostname),
+      (url) => url.pathname.endsWith('/assets/fonts/fonts.css'),
       (route) => {
-        blocked.add(new URL(route.request().url()).hostname);
+        blocked.add(route.request().url());
         return route.abort('blockedbyclient');
       }
     );
@@ -106,8 +106,8 @@ async function checkScreen(browser, [width, height], age) {
 
     await fs.mkdir(folder, { recursive: true });
     await page.goto(gameUrl);
-    assert(blocked.has('fonts.googleapis.com'), '인터넷 글꼴 주소를 실제로 차단하지 못했습니다.');
-    assert.equal(await page.evaluate(() => document.fonts.size), 0, '인터넷 글꼴 선언이 화면에 남았습니다.');
+    assert(blocked.size > 0, '게임 글꼴 스타일 요청을 실제로 차단하지 못했습니다.');
+    assert.equal(await page.evaluate(() => document.fonts.size), 0, '차단한 게임 글꼴 선언이 화면에 남았습니다.');
     const families = await localFontFamilies(context, page);
     await capture('01-title');
     await click('구성 안내 (선생님·부모님용)');
