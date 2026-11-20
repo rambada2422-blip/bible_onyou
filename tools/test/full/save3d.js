@@ -29,7 +29,12 @@ async function checkJourney(page, url) {
   // 기존 호렙 소개와 사진부터 시작하는 통합 검토본 모두 같은 첫 부품을 얻는다.
   if (await page.evaluate(() => BO3D.debug.state().state === 'caption')) {
     await button('다음').click(); await button('출발하자').click();
-  } else await sheepPhoto();
+  } else {
+    await resume(); await state('explore');
+    assert.equal(await page.locator('[data-detector-quiz="0"]').count(), 0);
+    await sheepPhoto();
+    await resume();
+  }
   await page.locator('[data-detector-quiz="0"]').waitFor();
   const first = await page.evaluate(() => BO.content3d.horeb.quiz[0]);
   await button(first.q.t2.options.find(o => o.ok).label).click();
