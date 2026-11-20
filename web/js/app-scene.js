@@ -58,26 +58,54 @@
 
   function stepName(st) { return st.i === undefined ? st.k : st.k + '-' + st.i; }
 
-  function savedJourney() {
+  function pausedJourneys() {
+    var entries = app.state.pausedJourneys;
+    return entries && typeof entries === 'object' && !Array.isArray(entries) ? entries : null;
+  }
+
+  function savedJourney(id) {
     var journey = app.state.journey;
+    if (id !== undefined && (!journey || journey.id !== id)) {
+      var paused = pausedJourneys();
+      journey = paused && Object.prototype.hasOwnProperty.call(paused, id) ? paused[id] : null;
+      if (!journey || journey.id !== id) return null;
+    }
     if (!journey || journey.tier !== app.state.tier || typeof journey.id !== 'string' ||
         !Object.prototype.hasOwnProperty.call(C.scenes, journey.id)) return null;
     var steps = sceneSteps(C.scenes[journey.id]);
     return steps.some(function (st) { return stepName(st) === journey.step; }) ? journey : null;
   }
 
-  function rememberArrival(id) {
-    app.state.journey = { id: id, tier: app.state.tier, step: 'arrive' };
+  function rememberJourney(journey) {
+    var paused = pausedJourneys();
+    if (app.state.journey && app.state.journey.id !== journey.id) {
+      var previous = savedJourney();
+      if (previous) {
+        if (!paused) app.state.pausedJourneys = paused = {};
+        paused[previous.id] = previous;
+      }
+    }
+    if (paused && Object.prototype.hasOwnProperty.call(paused, journey.id)) {
+      delete paused[journey.id];
+      if (!Object.keys(paused).length) delete app.state.pausedJourneys;
+    }
+    app.state.journey = journey;
     save();
+  }
+
+  function rememberArrival(id) {
+    var journey = savedJourney(id) || { id: id, tier: app.state.tier, step: 'arrive' };
+    rememberJourney(journey);
+    return journey;
   }
 
   function runScene(id, renderHub, renderRoute, journey) {
     var sc = C.scenes[id], steps = sceneSteps(sc);
     var idx = journey ? steps.findIndex(function (st) { return stepName(st) === journey.step; }) : 0;
     function remember(st, found) {
-      app.state.journey = { id: id, tier: app.state.tier, step: stepName(st) };
-      if (found && found.length) app.state.journey.found = found.slice();
-      save();
+      var progress = { id: id, tier: app.state.tier, step: stepName(st) };
+      if (found && found.length) progress.found = found.slice();
+      rememberJourney(progress);
     }
     function solved(nextButton) {
       nextButton.disabled = false;
@@ -260,14 +288,14 @@
         nextBtn(id === 'EX-00' ? '다음 목적지 정하기' : '시간표로 돌아가기'));
     }
     function finish() {
+      delete app.state.journey;
       if (sc.alt) {
         app.state.routed = true;
-        rememberArrival('EX-01');
+        var destination = rememberArrival('EX-01');
         var to = C.scenes['EX-01'];
-        warp('목적지를 다시 맞췄어요', to.place, to.ref, function () { runScene('EX-01', renderHub, renderRoute); });
+        warp('목적지를 다시 맞췄어요', to.place, to.ref, function () { runScene('EX-01', renderHub, renderRoute, destination); });
         return;
       }
-      delete app.state.journey;
       app.state.done[id] = true; save();
       if (id === 'EX-00' && !app.state.routed) renderRoute(); else renderHub();
     }
