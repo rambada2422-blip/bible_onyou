@@ -52,10 +52,11 @@ BO3D.gameModules.jordan = function (G) {
     shutterFx();
     if (!found.length) { G.toast('사진에 단서가 담기지 않았어요. 눈에 띄는 것을 화면 가운데에 놓고 찍어 보세요.'); return; }
     var fresh = found.filter(function (f) { return !(f.c.id in G.clue); });
-    fresh.forEach(function (f) { G.clue[f.c.id] = thumbAt(f.n, f.t.crop); });
+    var missing = found.filter(function (f) { return !G.clue[f.c.id]; });
+    missing.forEach(function (f) { G.clue[f.c.id] = thumbAt(f.n, f.t.crop); });
     G.clueCount.textContent = '단서 ' + clueN() + ' / ' + G.JD.clues.length; G.dexLabel.textContent = '추리 수첩 ' + clueN() + ' / ' + G.JD.clues.length;
+    if (missing.length) G.checkpoint('jordan');
     if (fresh.length) {
-      G.checkpoint('jordan');
       if (G.FX) G.FX.audio.chime();
       G.clueCount.classList.remove('pulse'); void G.clueCount.offsetWidth; G.clueCount.classList.add('pulse');
       G.toast('단서를 찾았어요: ' + fresh.map(function (f) { return f.c.name; }).join(', '));
