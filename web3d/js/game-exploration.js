@@ -22,8 +22,9 @@ BO3D.gameModules.exploration = function (G) {
     setTimeout(function () { G.flash.hidden = true; }, 420);
     if (G.FX) G.FX.audio.shutter();
     if (!found.length) { G.toast('사진에 담긴 것이 없어요. 찍고 싶은 것을 화면 가운데에 놓고 다시 찍어 보세요.'); return; }
-    var fresh = found.filter(function (f) { return !G.dex[f.d.id]; });
-    fresh.forEach(function (f) {
+    var fresh = found.filter(function (f) { return !(f.d.id in G.dex); });
+    var missing = found.filter(function (f) { return !G.dex[f.d.id]; });
+    missing.forEach(function (f) {
       var size = Math.min(cw, ch) * (f.d.crop || 0.5), sx = (f.n.x * 0.5 + 0.5) * cw - size / 2, sy = (1 - (f.n.y * 0.5 + 0.5)) * ch - size / 2;
       sx = Math.max(0, Math.min(cw - size, sx)); sy = Math.max(0, Math.min(ch - size, sy));
       var cv = document.createElement('canvas'); cv.width = cv.height = 220;
@@ -31,8 +32,8 @@ BO3D.gameModules.exploration = function (G) {
       catch (e) { G.dex[f.d.id] = ''; }
     });
     updateDexBtn();
+    if (missing.length) G.checkpoint();
     if (fresh.length) {
-      G.checkpoint();
       if (G.FX) G.FX.audio.chime();
       G.dexBtn.classList.remove('pulse'); void G.dexBtn.offsetWidth; G.dexBtn.classList.add('pulse');
       G.toast('도감에 새로 담았어요: ' + fresh.map(function (f) { return f.d.name; }).join(', ') + (dexCount() === G.DEX.length ? '. 도감을 모두 채웠어요!' : ''));

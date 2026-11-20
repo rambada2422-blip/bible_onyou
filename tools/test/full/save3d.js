@@ -81,6 +81,18 @@ async function checkJourney(page, url) {
   await page.locator('.dex3').click();
   assert(await page.locator('.dexcell img').first().isVisible());
   await button('닫기').click();
+  // 한도 때문에 사진 자리만 남았으면 같은 대상을 다시 찍어 그림을 되살릴 수 있다.
+  await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)),
+    [key, { ...jordan, clues: { ...jordan.clues, ark: '' } }]);
+  await resume(); await state('explore');
+  await page.evaluate(() => {
+    const mark = BO3D.debug.jordan().targets.find(([id]) => id === 'ark');
+    BO3D.debug.goto(mark[1] + 5, mark[3] + 5); BO3D.debug.yaw(-3 * Math.PI / 4);
+  });
+  await page.waitForTimeout(2200); await button('사진 찍기').click();
+  await page.waitForFunction(k => JSON.parse(localStorage.getItem(k)).clues.ark.startsWith('data:image/jpeg'), key);
+  assert.deepEqual(Object.keys((await snapshot()).clues).sort(), Object.keys(jordan.clues).sort());
+  assert.match(await page.locator('.toast3').innerText(), /이미 찾은 단서/);
   // 수첩에 모은 단서가 충분할 때 추리와 그 결과도 해당 구간부터 열린다.
   const clueIds = await page.evaluate(() => BO.content3d.jordan.clues.map(c => c.id));
   const allClues = Object.fromEntries(clueIds.map(id => [id, jordan.clues.ark]));
@@ -109,7 +121,15 @@ async function checkJourney(page, url) {
   await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, { ...compact, stage: 'route', parts: 0 }]);
   await button('소리 끄기').click();
   assert.equal((await snapshot()).stage, 'route', '다른 탭의 새 진행을 이전 탭이 덮지 않는다');
-  console.log('저장 공간 부족 시 진행 유지, 오래된 탭의 덮어쓰기 방지');
+  await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)),
+    [key, { ...firstPart, dex: { ...firstPart.dex, sheep: '' } }]);
+  await resume();
+  await button(secondAnswer).click(); await button('다음').click(); await button('계속 탐험하기').click();
+  await state('explore'); await sheepPhoto();
+  await page.waitForFunction(k => JSON.parse(localStorage.getItem(k)).dex.sheep.startsWith('data:image/jpeg'), key);
+  assert.deepEqual(Object.keys((await snapshot()).dex).sort(), Object.keys(firstPart.dex).sort());
+  assert.match(await page.locator('.toast3').innerText(), /이미 도감에 있는 사진/);
+  console.log('저장 공간 부족 시 진행 유지, 오래된 탭 보호, 호렙·요단 강에서 빈 사진 다시 촬영');
 
   await page.evaluate(k => localStorage.setItem(k, '{'), key);
   await page.reload(); await button('탐험 시작').waitFor();
