@@ -143,6 +143,18 @@ async function checkSize(browser, width, height) {
     await page.screenshot({ path: path.join(folder, `${name}.png`), animations: 'disabled' });
   }
 
+  async function checkClues(destination, filename) {
+    await click(destination);
+    await click('둘러보기');
+    await advanceTo('.found-list');
+    await page.locator('.hot').last().waitFor();
+    await capture(filename);
+    const clues = await page.locator('.hot').all();
+    assert.equal(clues.length, 3, `${destination} 경로의 단서가 세 개여야 합니다.`);
+    for (const clue of clues) await clue.click();
+    assert(await next.isEnabled(), `${destination} 경로에서 단서를 모두 눌렀으나 다음 화면이 열리지 않았습니다.`);
+  }
+
   try {
     await fs.mkdir(folder, { recursive: true });
     await page.goto(url);
@@ -165,13 +177,10 @@ async function checkSize(browser, width, height) {
     await capture('06-ending');
     await click('다음 목적지 정하기');
     await capture('07-route');
-    await click('여호수아');
-    await click('둘러보기');
-    await advanceTo('.found-list');
-    await page.locator('.hot').last().waitFor();
-    await capture('08-clues');
-    for (const clue of await page.locator('.hot').all()) await clue.click();
-    assert(await next.isEnabled(), '단서 세 개를 눌렀으나 다음 화면이 열리지 않았습니다.');
+    await checkClues('여호수아', '08-clues');
+    await click('시간표로 돌아가기');
+    await click('목적지 다시 고르기');
+    await checkClues('요셉', '09-joseph-clues');
   } catch (error) {
     issues.push(error.message);
   } finally {
@@ -180,7 +189,7 @@ async function checkSize(browser, width, height) {
   if (issues.length) {
     console.error(`실패 · ${size}\n${[...new Set(issues)].join('\n')}`);
   } else {
-    console.log(`${size} · 8화면 확인 · no errors`);
+    console.log(`${size} · 9화면 확인 · no errors`);
   }
   return issues.length === 0;
 }
