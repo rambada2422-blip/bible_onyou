@@ -48,3 +48,15 @@ node tools/build3d.js
 ```
 
 사실적 3D 외주 제작의 비용 자료는 [docs/04_외주_시세조사.md](docs/04_외주_시세조사.md)에 있다.
+
+## 클라우드 브라우저에서 미리보기
+
+클라우드 브라우저가 HTML 파일을 직접 열 수 없을 때는 저장소 폴더에서 두 미리보기를 만들고 로컬 웹 서버를 실행한다.
+
+```bash
+node tools/build.js
+node tools/build3d.js
+python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
+```
+
+서버가 실행 중인 클라우드 컴퓨터의 Chrome 주소창에 2D는 `http://127.0.0.1:4173/preview.html`, 3D는 `http://127.0.0.1:4173/preview3d.html`을 입력한다. Codex 데스크톱 앱에서는 오른쪽 패널의 **+ → 데스크톱**에서 공유 화면을 열 수 있다. 게임 진행은 브라우저에 저장되므로 같은 브라우저에서 같은 주소로 다시 열면 이어서 탐험할 수 있다.
