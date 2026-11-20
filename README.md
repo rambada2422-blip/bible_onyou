@@ -17,7 +17,7 @@
 | 위치 | 내용 |
 |---|---|
 | `web/js/content.js` | 장면 대본, 질문, 정답 장절 (나이 단계별) |
-| `web/js/app.js` | 화면과 진행 |
+| `web/js/app-core.js`, `web/js/app-questions.js`, `web/js/app-scene.js`, `web/js/app.js` | 저장·공통 도구, 물음·시대 단서, 장면 진행, 시작·시간표·일지·안내 |
 | `web/css/app.css` | 화면 디자인 |
 | `web/assets/` | 배경 그림과 캐릭터 그림 (SVG. 대표가 승인한 사진형 배경은 JPG·PNG, 그림 스타일 가이드 5.2절) |
 | `web/js/art.js` | 그림을 한 파일로 묶은 것. 직접 고치지 않는다 |
