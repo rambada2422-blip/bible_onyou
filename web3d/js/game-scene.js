@@ -125,6 +125,21 @@ BO3D.gameModules.scene = function (G) {
     }
   }
 
+  function quality(requested) {
+    if (requested === 'low' && !G.lowQuality) {
+      G.lowQuality = true;
+      G.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1) * 0.85);
+      G.renderer.shadowMap.autoUpdate = false;
+      G.renderer.shadowMap.needsUpdate = true;
+      if (G.post) {
+        // 낮아진 크기를 전달하면 이전 고해상도용 버퍼가 해제된다.
+        G.post.setSize();
+        G.post = null;
+      }
+    }
+    return G.lowQuality ? 'low' : 'normal';
+  }
+
   G.H = H;
   G.WALK = WALK;
   G.el = el;
@@ -137,6 +152,7 @@ BO3D.gameModules.scene = function (G) {
   G.bookName = bookName;
   G.dist2 = dist2;
   G.lerpAngle = lerpAngle;
+  G.quality = quality;
   G.place = place;
   G.spawnKids = spawnKids;
   G.updateSheep = updateSheep;
@@ -156,14 +172,15 @@ BO3D.gameModules.scene = function (G) {
       G.showWebGLNotice();
       return false;
     }
-    G.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    if (new URLSearchParams(location.search).get('q') === 'low') quality('low');
+    else G.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     G.renderer.shadowMap.enabled = true;
     G.renderer.shadowMap.type = G.T.PCFSoftShadowMap;
     G.scene = new G.T.Scene();
     G.camera = new G.T.PerspectiveCamera(58, 1, 0.3, 700);
     G.env = W.build(G.scene);
     G.camera.layers.enable(1); G.camera.layers.enable(2);
-    G.post = G.FX ? new G.FX.Post(G.renderer) : null;
+    G.post = G.FX && !G.lowQuality ? new G.FX.Post(G.renderer) : null;
 
     G.machine = mk('timeMachine', null, function () { return { group: fallback('#D9A441', 2.4, 0.9), update: function () {} }; });
     G.scene.add(place(G.machine.group, G.P.machine[0], G.P.machine[1]));

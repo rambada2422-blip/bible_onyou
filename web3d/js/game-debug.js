@@ -9,6 +9,7 @@ BO3D.gameModules.debug = function (G) {
     /* 자동 점검용 (화면에는 영향 없음) */
     BO3D.debug = {
       perf: G.frameStats,
+      quality: G.quality,
       aweOverviewOnly: false,
       includeReviewRequiredGloss: true,
       level: function () { return G.cur; },
