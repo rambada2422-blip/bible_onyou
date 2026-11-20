@@ -1,0 +1,31 @@
+/* Google Fonts, SIL Open Font License 1.1. See OFL.txt.
+   Upstream https://github.com/google/fonts/tree/869789e84da92782c144d83d69b64cec54905b5f/ofl
+   Original TTF converted to WOFF2. */
+@font-face {
+  font-family: 'Jua';
+  src: url("Jua-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gowun Dodum';
+  src: url("GowunDodum-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gowun Batang';
+  src: url("GowunBatang-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gowun Batang';
+  src: url("GowunBatang-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

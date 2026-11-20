@@ -106,14 +106,18 @@ fs.writeFileSync(path.join(web, 'js/art.js'), artJs);
 
 const read = (p) => fs.readFileSync(path.join(web, p), 'utf8');
 const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
-const fonts = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Jua&display=swap';
+const fontCss = require('./font-css');
 const page = [
+  '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
+  '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
   '<title>성경 탐험대</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',
-  `<link rel="stylesheet" href="${fonts}">`,
   '<style>\n' + read('css/app.css') + '\n</style>',
+  '</head><body>',
   '<div id="app" class="app"></div>',
-  ...['js/content.js', 'js/icons.js', 'js/art.js', 'js/app.js'].map((p) => '<script>\n' + esc(read(p)) + '\n</script>')
+  ...['js/content.js', 'js/icons.js', 'js/art.js', 'js/app.js'].map((p) => '<script>\n' + esc(read(p)) + '\n</script>'),
+  '<style>\n' + fontCss() + '\n</style>',
+  '</body></html>'
 ].join('\n');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/preview.html'), page);

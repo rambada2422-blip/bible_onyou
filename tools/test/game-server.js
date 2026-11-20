@@ -6,10 +6,11 @@ const { once } = require('node:events');
 
 const root = path.resolve(__dirname, '../..');
 const web = path.join(root, 'web');
+const web3d = path.join(root, 'web3d');
 const types = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml',
-  '.jpg': 'image/jpeg', '.png': 'image/png'
+  '.jpg': 'image/jpeg', '.png': 'image/png', '.woff2': 'font/woff2'
 };
 
 async function serve(req, res) {
@@ -20,11 +21,13 @@ async function serve(req, res) {
     }
     const pathname = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
     let file;
-    if (pathname === '/preview3d.html') {
-      file = path.join(root, 'dist/preview3d.html');
+    if (pathname === '/preview3d.html' || pathname === '/preview.html') {
+      file = path.join(root, 'dist', pathname.slice(1));
     } else {
-      file = await fs.realpath(path.resolve(web, '.' + pathname));
-      if (!file.startsWith(web + path.sep)) {
+      const source = pathname.startsWith('/web3d/') ? web3d : web;
+      const relative = pathname.replace(/^\/web(?:3d)?(?=\/)/, '');
+      file = await fs.realpath(path.resolve(source, '.' + relative));
+      if (!file.startsWith(source + path.sep)) {
         res.writeHead(404).end();
         return;
       }
