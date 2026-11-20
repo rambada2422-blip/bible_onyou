@@ -10,3 +10,5 @@ AI: GPT(Codex)
 게임 쪽 변경은 `web3d/css/game.css`와 단일 파일을 만드는 `tools/build3d.js`다. CSS에 들어오는 너비 자체가 달라 묶음 도구도 고쳤다. `tools/test/full/layout3d.js`가 실제 게임의 첫 화면에서 끝 카드까지 연다. `tools/test/layout-issues.js`가 단추 사이의 겹침과 스크롤로 읽을 수 있는지를 확인한다.
 
 [320×568 수정 전](사진/일감가7_수정전.png) · [같은 화면 수정 후](사진/일감가7.png)
+
+`node tools/test/full/layout3d.js dist/night-role-layout`는 320×568, 360×560, 390×664, 390×844, 568×320, 844×390에서 각 10화면, 총 60장을 확인했다. 단추와 글자 검사에서 걸린 곳은 0개다. 전체 점검은 긴 3D 자동 조작이 겹치지 않도록 차례로 실행한다.
