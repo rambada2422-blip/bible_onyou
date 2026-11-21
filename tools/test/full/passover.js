@@ -265,6 +265,8 @@ async function play(browser, url, age) {
     const touchPicture = (x,y) => page.touchscreen.tap(room.x + room.width*x, room.y + room.height*y);
     await touchPicture(.62,.40);
     assert.equal(await page.locator('.po-chips .found').count(), 0);
+    await touchPicture(.55,.63);
+    assert.equal(await page.locator('.po-clue b').innerText(), '식탁');
     await touchPicture(.44,.72);
     await resume();
     assert.equal(await page.locator('.po-return-note').innerText(), '이어서 보는 단서 · 식탁');
@@ -291,6 +293,12 @@ async function play(browser, url, age) {
     await button('왼쪽 단서 살펴보기').focus();
     await page.keyboard.press('Enter');
     assert.deepEqual(await page.locator('.po-chips li').allTextContents(), ['✓ 문','✓ 식탁','✓ 떠날 차림']);
+    for (const [x,y] of [[.09,.39],[.22,.20],[.35,.39]]) {
+      await tap('식탁 단서 다시 보기');
+      await touchPicture(x,y);
+      assert.equal(await page.locator('.po-clue b').innerText(), '문');
+      assert.equal(await page.locator('.po-chips .found').count(), 3);
+    }
     assert.deepEqual(await page.evaluate(layoutIssues, '.po-screen'), []);
     const card = await page.locator('.po-clue').boundingBox();
     assert(card.y >= 0 && card.y + card.height <= height, '누른 단서 설명 전체가 화면 안에 들어야 한다');

@@ -474,7 +474,7 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-finding small { color: var(--po-mark); font-weight: 700; }
 .po-finding p { margin-block: 3px; }
 .po-meal .po-land { height: auto; aspect-ratio: 3 / 2; }
-.po-meal .po-title { pointer-events: none; inset: 0 0 auto; padding: 8px 16px 15px; background: linear-gradient(#201a16d9, transparent); }
+.po-meal .po-title { pointer-events: none; inset: 0 0 auto 42%; padding: 6px 8px 12px; text-align: right; background: linear-gradient(#201a16df, transparent); }
 .po-meal .po-title small { font-size: 12px; }
 .po-meal .po-title h2 { font-size: 22px; }
 .po-pins { position: absolute; inset: 0; }
@@ -642,3 +642,12 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-clue-zoom svg { width: 15px; height: 15px; }
 
 .po-screen :is(.po-clue-zoom, .po-lens-map, .po-recall .opt, .po-record summary):focus-visible { outline: 3px solid var(--po-mark); outline-offset: 1px; }
+
+/* 한밤중 문설주와 인방은 모든 화면에서 그림 안에 온전히 들어온다. */
+.po-land[data-view="plague-midnight"] { height: auto; background: var(--ink); }
+.po-land[data-view="plague-midnight"] .po-picture { position: relative; height: min(30vh, 66.667vw); }
+.po-land[data-view="plague-midnight"] img { object-fit: contain; }
+.po-land[data-view="plague-midnight"] .po-title { position: static; padding: 5px 12px; background: var(--ink); }
+@media (orientation: landscape) and (max-height: 500px) {
+  .po-land[data-view="plague-midnight"] .po-picture { height: clamp(104px, 35vh, 150px); }
+}

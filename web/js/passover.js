@@ -242,7 +242,7 @@
   }
   function exploreRoom(s, land, body, advance) {
     var targets = [
-      {position:'왼쪽',x:.09,y:.48,alt:'짙은 붉은 자국이 있는 나무 문설주'},
+      {position:'왼쪽',x:.09,y:.34,pinY:.63,alt:'양쪽 문설주와 위 인방에 바른 짙은 붉은 자국'},
       {position:'가운데',x:.44,y:.72,alt:'통째로 구운 어린 양 한 마리, 무교병, 쓴 나물이 놓인 식탁'},
       {position:'오른쪽',x:.81,y:.80,alt:'지팡이 아래 놓인 신과 곁에 걸린 허리띠'}
     ];
@@ -285,9 +285,25 @@
         s.seen |= 1 << i; s.mealLook = i; app.save(); reveal(i);
       }, 'po-pin');
       pin.style.left = 'clamp(24px,' + targets[i].x*100 + '%,calc(100% - 24px))';
-      pin.style.top = targets[i].y*100 + '%';
+      pin.style.top = (targets[i].pinY || targets[i].y)*100 + '%';
       pins.append(pin);
       chips.append(el('li', {}, '미발견'));
+    });
+    // 그림의 세 문 표시와 구운 양도 각각 해당 단서 핀과 같은 행동을 한다.
+    var pictureTargets = [
+      {clue:0, left:.05, top:.35, right:.12, bottom:.44},
+      {clue:0, left:.15, top:.17, right:.29, bottom:.24},
+      {clue:0, left:.32, top:.36, right:.38, bottom:.44},
+      {clue:1, left:.48, top:.585, right:.62, bottom:.69}
+    ];
+    pins.addEventListener('click', function (event) {
+      if (event.target !== pins) return;
+      var rect = pins.getBoundingClientRect();
+      var x = (event.clientX - rect.left) / rect.width, y = (event.clientY - rect.top) / rect.height;
+      var hit = pictureTargets.find(function (area) {
+        return x >= area.left && x <= area.right && y >= area.top && y <= area.bottom;
+      });
+      if (hit) pins.children[hit.clue].click();
     });
     land.append(pins);
     body.append(chips, detail, next);
