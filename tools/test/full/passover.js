@@ -74,14 +74,20 @@ async function play(browser, url, age) {
       const bounds = await pin.boundingBox();
       assert(bounds.width >= 44 && bounds.height >= 44);
     }
-    await tap('가운데 단서 살펴보기');
+    // 원본 그림의 좌표로 직접 누른다. 벽은 반응하지 않고 빵과 신발은 단서를 연다.
+    const room = await page.locator('.po-meal .po-picture').boundingBox();
+    assert(Math.abs(room.width / room.height - 1.5) < .02);
+    const touchPicture = (x,y) => page.touchscreen.tap(room.x + room.width*x, room.y + room.height*y);
+    await touchPicture(.62,.40);
+    assert.equal(await page.locator('.po-chips .found').count(), 0);
+    await touchPicture(.44,.72);
     await resume();
     assert(await button('식탁 단서 다시 보기').isVisible());
     assert.equal(await page.locator('.po-clue b').innerText(), '식탁');
     assert(await button('단서 2개 더 찾아보세요 · 1/3').isDisabled());
     await tap('식탁 단서 다시 보기');
     assert.equal(await page.locator('.po-chips .found').count(), 1);
-    await tap('오른쪽 단서 살펴보기');
+    await touchPicture(.81,.80);
     assert(await button('단서 1개 더 찾아보세요 · 2/3').isDisabled());
     await button('왼쪽 단서 살펴보기').focus();
     await page.keyboard.press('Enter');
