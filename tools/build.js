@@ -109,7 +109,7 @@ const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fontCss = require('./font-css');
 const scripts = [
   'js/content.js', 'js/icons.js', 'js/order-question.js', 'js/reference-input.js', 'js/art.js',
-  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/app.js',
+  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/passover.js', 'js/app.js',
 ];
 const page = [
   '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
