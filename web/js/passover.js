@@ -147,10 +147,17 @@
       app.narration.stop();
       var dialog = el('dialog', {class:'po-lens', 'aria-labelledby':'po-lens-title'});
       var frame = el('div', {class:'po-lens-frame'}, app.pic(art, '', img.alt));
+      frame.firstElementChild.draggable = false;
       var marker = el('span', {class:'po-lens-marker', 'aria-hidden':'true'});
       var map = el('button', {class:'po-lens-map', 'aria-label':'확대할 위치 선택', 'aria-describedby':'po-lens-help'},
         app.pic(art, '', ''), marker);
-      var x = .5, y = .5;
+      var x = .5, y = .5, drag;
+      var where = el('span', {id:'po-lens-position', class:'sr-only', role:'status'});
+      function announce() {
+        var column = x < .4 ? '왼쪽' : x > .6 ? '오른쪽' : '가운데';
+        var row = y < .4 ? '위쪽' : y > .6 ? '아래쪽' : '';
+        where.textContent = '확대한 곳 · ' + column + (row ? ' ' + row : '');
+      }
       function position(left, top) {
         // 두 배 확대하므로 가장자리에서도 원본의 1/2이 보이게 창을 안쪽에 둔다.
         x = Math.min(.75, Math.max(.25, left));
@@ -162,19 +169,36 @@
       function pick(event, bounds) {
         position((event.clientX-bounds.left)/bounds.width, (event.clientY-bounds.top)/bounds.height);
       }
+      frame.addEventListener('pointerdown', function (e) {
+        if (!e.isPrimary || e.button !== 0) return;
+        drag = {id:e.pointerId, left:e.clientX, top:e.clientY, x:x, y:y};
+        frame.setPointerCapture(e.pointerId);
+        frame.classList.add('panning');
+      });
+      frame.addEventListener('pointermove', function (e) {
+        if (!drag || e.pointerId !== drag.id) return;
+        var r = frame.getBoundingClientRect();
+        position(drag.x + (drag.left-e.clientX)/(2*r.width), drag.y + (drag.top-e.clientY)/(2*r.height));
+      });
+      frame.addEventListener('lostpointercapture', function () {
+        drag = null; frame.classList.remove('panning'); announce();
+      });
       if (event.detail) pick(event, trigger.getBoundingClientRect());
       else position(x,y);
+      announce();
       map.addEventListener('click', function (event) {
         if (event.detail) pick(event, map.getBoundingClientRect());
         else position(.5,.5);
+        announce();
       });
       map.addEventListener('keydown', function (event) {
         var delta = {ArrowLeft:[-.1,0],ArrowRight:[.1,0],ArrowUp:[0,-.1],ArrowDown:[0,.1]}[event.key];
-        if (delta) { event.preventDefault(); position(x+delta[0],y+delta[1]); }
+        if (delta) { event.preventDefault(); position(x+delta[0],y+delta[1]); announce(); }
       });
       var close = button('그림 닫기', function () { dialog.close(); }, 'pillbtn');
       dialog.append(el('div', {class:'po-lens-head'}, el('h2', {id:'po-lens-title'}, plagues[step][0]), close),
-        frame, el('p', {id:'po-lens-help'}, '작은 그림에서 보고 싶은 곳을 누르세요. 방향키로도 옮길 수 있어요.'), map);
+        frame, el('p', {id:'po-lens-help'}, '큰 그림을 끌거나 작은 그림을 눌러 옮겨 보세요. 방향키로도 옮길 수 있어요.',
+          el('span', {class:'sr-only'}, ' Enter로 가운데로 돌아갈 수 있어요.')), map, where);
       trigger.closest('.po-screen').append(dialog);
       dialog.addEventListener('close', function () { dialog.remove(); trigger.focus({preventScroll:true}); }, {once:true});
       dialog.showModal();

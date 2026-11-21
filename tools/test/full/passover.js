@@ -39,6 +39,12 @@ async function play(browser, url, age) {
       const origin = await offset();
       await page.keyboard.press('ArrowRight');
       assert.notEqual(await offset(), origin);
+      await page.keyboard.press('Enter');
+      assert.equal(await dialog.locator('#po-lens-position').innerText(), '확대한 곳 · 가운데');
+      const frame = await dialog.locator('.po-lens-frame').boundingBox();
+      await page.mouse.move(frame.x + frame.width*.75,frame.y + frame.height*.5);
+      await page.mouse.down(); await page.mouse.move(frame.x + frame.width*.15,frame.y + frame.height*.5,{steps:4}); await page.mouse.up();
+      assert.equal(await dialog.locator('#po-lens-position').innerText(), '확대한 곳 · 오른쪽');
       const bounds = await map.boundingBox();
       await page.touchscreen.tap(bounds.x + bounds.width*.95, bounds.y + bounds.height*.95);
       assert.equal(await offset(), 'translate(-50%, -50%)');
