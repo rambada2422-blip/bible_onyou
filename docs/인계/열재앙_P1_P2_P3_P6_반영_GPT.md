@@ -24,3 +24,10 @@
 바꾼 게임 파일은 web/js/passover.js, web/css/app.css, web/assets/bg/ex07-room.jpg, web/assets/bg/plague-midnight.jpg, 이를 묶은 web/js/art.js다. tools/test/full/passover.js에는 연령별 본문·장절, 표식을 직접 누르는 동작과 일지 장절 검증을 추가했다. 원본과 단일 파일 양쪽에서 연령 세 가지로 완주했다. 별도로 여섯 화면 크기에서 문 표시와 어린 양을 눌러 확인했다.
 
 Claude 총괄은 두 그림의 배치와 수위를 다시 확인해 대표에게 합병 승인을 요청한다. P1·P2·P3·P6은 대표 결정 반영 후 목회자 확인 단계이며 P5는 감수 대기다.
+
+독립 작업 폴더에서 게임 `5e6a096`의 전체 점검을 실행했다.
+
+```text
+점검 종류: 전체 · 통과 8/8
+점검 결과: 합격
+```
