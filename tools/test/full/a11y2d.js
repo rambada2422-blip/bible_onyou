@@ -18,7 +18,7 @@ const screens = [
 ];
 
 function inspectScreen() {
-  const screen = document.querySelector('#app > .screen');
+  const screen = document.querySelector('#app dialog[open]') || document.querySelector('#app > .screen');
   const errors = [];
   const lines = [];
   const controls = screen.querySelectorAll('button, input, textarea');
@@ -163,6 +163,27 @@ async function checkScreen(browser, { width, height, age, destination }) {
     await click('일지 0');
     await audit('05-journal');
     await click('돌아가기');
+    await click('열 가지 재앙과 유월절 · 감수용 미리보기');
+    await audit('passover-choices');
+    await click('강가');
+    await click('강물');
+    await click('다음 재앙 살펴보기');
+    await page.locator('.po-finding').scrollIntoViewIfNeeded();
+    await audit('passover-finding');
+    await click('개구리 그림 확대');
+    await audit('passover-lens');
+    await click('그림 닫기');
+    await click('다음 재앙 살펴보기');
+    await click('그림 순서 놓기');
+    await audit('passover-order');
+    await click('탐험으로 돌아가기');
+    await page.evaluate(() => {
+      BO.app2d.state.passover = {step:9,seen:7,mealLook:1,active:true};
+      BO.app2d.save();
+    });
+    await page.reload(); await click('이어서 탐험하기');
+    await audit('passover-room');
+    await click('← 시간표');
     await page.locator('.node.play').first().click();
     await click('둘러보기');
     await audit('06-scene');

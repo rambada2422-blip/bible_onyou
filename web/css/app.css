@@ -424,7 +424,7 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 }
 
 /* 재앙과 유월절 감수용 탐험 */
-.po-screen { color: var(--text); background: var(--paper); }
+.po-screen { --po-mark: #285f58; color: var(--text); background: var(--paper); }
 .po-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .po-screen .page-head { justify-content: space-between; }
 .po-land { position: relative; height: clamp(125px, 29vh, 270px); background: #483522; }
@@ -447,8 +447,8 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-spot { display: flex; flex-direction: column; align-items: stretch; overflow: hidden; padding: 0; border: 2px solid var(--paper-line); border-radius: 10px; color: var(--ink); background: #fff; }
 .po-spot span { margin: auto; padding: 4px; font-size: 15px; line-height: 1.25; }
 .po-spots .po-spot img { height: auto; aspect-ratio: 3 / 2; object-fit: contain; }
-.po-spot[aria-pressed="true"] { border-color: var(--teal); background: var(--paper-2); }
-.po-spot:focus-visible { outline: 3px solid var(--teal); outline-offset: 1px; }
+.po-spot[aria-pressed="true"] { border-color: var(--po-mark); background: var(--paper-2); }
+.po-spot:focus-visible { outline: 3px solid var(--po-mark); outline-offset: 1px; }
 .po-detail .po-picture { margin-top: 8px; }
 .po-detail .po-picture img { width: 100%; height: 100%; display: block; object-fit: contain; }
 @media (orientation: landscape) and (max-height: 500px) {
@@ -468,10 +468,10 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-segments { display: flex; flex: 1; gap: 3px; }
 .po-segments i { height: 8px; flex: 1; border-radius: 2px; background: var(--paper-line); }
 .po-segments i:nth-child(3n+1):not(:first-child) { margin-left: 5px; }
-.po-segments .filled { background: var(--teal); }
+.po-segments .filled { background: var(--po-mark); }
 .po-segments .current { outline: 1px solid var(--ink); outline-offset: 1px; }
-.po-finding { border-inline-start: 3px solid var(--teal); border-radius: 0 10px 10px 0; background: var(--paper-2); padding: 10px 14px; }
-.po-finding small { color: var(--teal); font-weight: 700; }
+.po-finding { border-inline-start: 3px solid var(--po-mark); border-radius: 0 10px 10px 0; background: var(--paper-2); padding: 10px 14px; }
+.po-finding small { color: var(--po-mark); font-weight: 700; }
 .po-finding p { margin-block: 3px; }
 .po-meal .po-land { height: auto; aspect-ratio: 3 / 2; }
 .po-meal .po-title { pointer-events: none; inset: 0 0 auto; padding: 8px 16px 15px; background: linear-gradient(#201a16d9, transparent); }
@@ -485,7 +485,7 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-meal .po-body { gap: 8px; padding-block: 10px 14px; align-content: start; }
 .po-chips { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; padding: 0; margin: 0; list-style: none; }
 .po-chips li { text-align: center; border: 1px dashed var(--paper-line); border-radius: 24px; color: var(--text-soft); font-size: 13px; padding: 3px; }
-.po-chips .found { border: 1px solid var(--teal); color: var(--ink); background: #e1ede4; }
+.po-chips .found { border: 1px solid var(--po-mark); color: var(--ink); background: #e1ede4; }
 .po-clue:not(:empty) { padding: 10px 12px; }
 .po-clue p { padding: 4px 0 0; line-height: 1.5; }
 .po-meal .btn:disabled { color: var(--text-soft); background: var(--paper-2); box-shadow: none; opacity: 1; }
@@ -633,3 +633,5 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-chips li { display: grid; align-items: center; padding: 0; }
 .po-clue-zoom { display: flex; justify-content: center; align-items: center; gap: 3px; min-height: 44px; padding: 2px; color: var(--ink); }
 .po-clue-zoom svg { width: 15px; height: 15px; }
+
+.po-screen :is(.po-clue-zoom, .po-lens-map, .po-recall .opt, .po-record summary):focus-visible { outline: 3px solid var(--po-mark); outline-offset: 1px; }
