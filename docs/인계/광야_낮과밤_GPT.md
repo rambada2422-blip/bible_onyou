@@ -16,3 +16,12 @@
 - 움직임을 켠 세로·가로 휴대폰과 데스크톱에서도 기둥의 위쪽과 아래쪽에 터치·마우스 입력을 번갈아 주어 낮과 밤이 전환되는 것을 확인했다. 예전 낮 대목과 밤 대목의 저장 기록은 해당 문장으로 복원됐다.
 
 장면 조작은 `web/js/app-scene.js`와 `web/css/app.css`에 있다. 직접 조작 시험은 `tools/test/full/pillar-preview.js`에 추가했고, `tools/test/full/save2d.js`와 `tools/test/full/motion2d.js`는 새 출발 단추 이름을 따라간다.
+
+## 전체 게임 점검
+
+`node tools/check.js --full`로 문법과 두 미리보기 빌드, 2D·사진 배경·3D 호렙·3D 요단 자동 플레이를 확인했다. 다음은 마지막 두 줄이다.
+
+```
+점검 종류: 전체 · 통과 8/8
+점검 결과: 합격
+```
