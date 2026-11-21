@@ -135,7 +135,7 @@ async function checkSize(browser, width, height) {
       const portrait = await flockPosition();
       await page.setViewportSize({ width: height, height: width });
       const rotated = await flockPosition();
-      await next.click();
+      await click('떨기나무 살펴보기');
       await click('이전');
       const reopened = await flockPosition();
       assert(rotated.every((coord, i) => Math.abs(coord - reopened[i]) < 1),

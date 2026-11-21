@@ -190,6 +190,26 @@
       ty_ = Math.min(py * (z - 1), Math.max(-(m.H - py) * (z - 1), ty_));
       svg.style.transformOrigin = px + 'px ' + py + 'px';
       svg.style.transform = 'translate(' + tx_ + 'px,' + ty_ + 'px) scale(' + z + ')';
+      followArt();
+    }
+    /* 이야기 중에 그림을 눌러 찾는 자리는 당겨진 그림과 함께 움직인다. */
+    function followArt() {
+      if (!svg || !hots.classList.contains('follow')) return;
+      hots.style.transformOrigin = svg.style.transformOrigin;
+      hots.style.transform = svg.style.transform;
+    }
+    function lookTarget(r, label, onFind) {
+      var target = el('button', { class: 'look-target', 'aria-label': label + ' 살펴보기', on: { click: onFind },
+        style: '--dx:' + (r.x + r.w / 2 - 450) + ';--dy:' + (r.y + r.h / 2 - 600) + ';--w:' + r.w + ';--h:' + r.h });
+      hots.appendChild(target);
+      /* 다른 곳을 누르면 찾을 곳에 고리를 띄워 알려 준다. 아무 반응 없는 화면을 남기지 않는다. */
+      artBox.onclick = function () { nudge(target); };
+      return target;
+    }
+    function nudge(target) {
+      target.classList.remove('nudge');
+      void target.offsetWidth;
+      target.classList.add('nudge');
     }
     if (svg && window.ResizeObserver) {
       var focusSize = new ResizeObserver(function () {
@@ -222,6 +242,8 @@
       stopReading();
       artBox.onclick = null;
       hots.replaceChildren();
+      hots.classList.remove('follow');
+      hots.style.transform = hots.style.transformOrigin = '';
       var st = steps[idx];
       remember(st);
       if (st.k === 'arrive') return stepArrive();
@@ -261,9 +283,7 @@
         hint = el('p', { class: 'look-prompt', text: arrivalPrompts[id] });
         var drawing = svg.querySelector('#' + sc.art + '-' + landmark.id);
         var bounds = drawing ? drawing.getBBox() : { x: landmark.x, y: landmark.y, width: landmark.w, height: landmark.h };
-        hots.appendChild(el('button', { class: 'look-target', 'aria-label': landmark.label + ' 살펴보기', on: { click: next },
-          style: '--dx:' + (bounds.x + bounds.width / 2 - 450) + ';--dy:' + (bounds.y + bounds.height / 2 - 600) +
-            ';--w:' + bounds.width + ';--h:' + bounds.height }));
+        lookTarget({ x: bounds.x, y: bounds.y, w: bounds.width, h: bounds.height }, landmark.label, next);
       } else if (svg && clueItems.length) {
         hint = questionBlock({ type: 'hotspots', items: clueItems, prompt: '그림의 표시를 눌러 단서를 찾아보세요.' });
         startLabel = '이야기 읽기';
@@ -292,6 +312,15 @@
       setFocus(b.focus);
       var text = tx(b.text), who = b.say && C.chars[b.say.who];
       var status = app.state.tier === 't1' && canSpeak ? el('p', { class: 'read-status', hidden: '', role: 'status' }) : null;
+      var ahead = sc.beats[i + 1], spot = ahead && ahead.look && svg ? region(ahead.focus) : null, forward;
+      if (spot) {
+        hots.classList.add('follow');
+        followArt();
+        var target = lookTarget(spot, spot.label, next);
+        /* 늘 누르던 아래 단추 자리에 찾을 것을 적는다. 누르면 그림의 찾을 곳에 고리가 뜨고 초점이 그리로 간다. */
+        forward = el('button', { class: 'btn look-help', on: { click: function () { nudge(target); target.focus({ preventScroll: true }); } } },
+          icon('lens'), el('span', { text: tx(ahead.look) }));
+      } else forward = nextBtn(i === sc.beats.length - 1 ? (sc.alt ? '단서를 찾아보자' : '다음으로 가는 관문') : '다음');
       fill([
         el('div', { class: 'narr-meta' }, refChip(b.ref),
           status ? readButton(text, status) : null),
@@ -301,8 +330,7 @@
           el('div', { class: 'bubble' }, el('b', { text: who.name, style: 'color:' + who.color }), b.say.text)) : null,
         b.open ? el('div', { class: 'openbible' }, icon('book'),
           el('span', {}, '하나님이 하신 말씀은 성경책에서 직접 읽어요. ', el('b', { text: bookName(b.open) }))) : null
-      ], [i > 0 ? el('button', { class: 'btn plain', on: { click: prev } }, '이전') : null,
-        nextBtn(i === sc.beats.length - 1 ? (sc.alt ? '단서를 찾아보자' : '다음으로 가는 관문') : '다음')]);
+      ], [i > 0 ? el('button', { class: 'btn plain', on: { click: prev } }, '이전') : null, forward]);
     }
 
     function questionBlock(q, onOk) {

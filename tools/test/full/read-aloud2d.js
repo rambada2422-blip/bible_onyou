@@ -41,8 +41,8 @@ async function play(browser, origin, entry, label) {
     await button('읽어 줘').tap();
     assert.equal(await current(), firstText);
     assert.equal(await page.evaluate(() => window.testVoice.current.lang), 'ko-KR');
-    await button('다음').tap();
-    assert.equal(await current(), null, '다음 대목으로 가면 이전 문장이 멈춘다');
+    await button('떨기나무 살펴보기').tap();
+    assert.equal(await current(), null, '그림을 눌러 다음 대목으로 가면 이전 문장이 멈춘다');
 
     const nextText = await page.locator('.narr').innerText();
     await button('읽어 줘').tap();

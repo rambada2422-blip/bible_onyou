@@ -121,7 +121,8 @@ async function checkReduced(browser, folder) {
         state = beat.state || state;
         await checkArtwork();
         await capture(id + '-' + String(index + 1).padStart(2, '0') + '-beat');
-        await next.click();
+        if (beats[index + 1]?.look) await page.locator('.hot-layer .look-target').click();
+        else await next.click();
       }
       if (alt) await page.locator('.hot').last().waitFor();
       else await page.locator('.q-kicker').waitFor();
