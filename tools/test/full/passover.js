@@ -111,7 +111,8 @@ async function play(browser, url, age) {
     const approved = [...review.matchAll(/^\| 재앙 \d 요약 \| ([^|]+?) \| [^|]+? \| "([^"]+)" \|$/gm)];
     assert.equal(approved.length, 9);
     const [, nightRef, nightText] = review.match(/^\| 열 번째 재앙 [^|]* \| ([^|]+?) \| [^|]+? \| "([^"]+)" \|$/m);
-    const nightChip = nightRef.replaceAll(', 12:', ', ');
+    const witnessRows = [...review.matchAll(/^\| 기록 \d \| ([^|]+?) \| [^|]+? \| "([^"]+)" \|$/gm)];
+    assert.equal(witnessRows.length, 9);
     await page.goto(url);
     await tap('탐험 시작');
     await page.locator('.tier').nth(age).tap();
@@ -238,14 +239,20 @@ async function play(browser, url, age) {
       assert(await next.isEnabled());
       assert.equal(await progress.innerText(), (i+1) + ' / 9 기록');
       assert.equal(await page.locator('.po-segments .filled').count(), i+1);
-      assert.equal(await page.locator('.po-finding').isVisible(), age !== 0 || ![0,2,3,5,7,8].includes(i));
+      const finding = page.locator('.po-finding');
+      const visible = age !== 0 || ![0,2,3,5].includes(i);
+      assert.equal(await finding.isVisible(), visible);
+      if (visible) {
+        assert.equal(await finding.locator('p').innerText(), witnessRows[i][2]);
+        assert.equal(await finding.locator('.ref').innerText(), witnessRows[i][1]);
+      }
       if (age === 0 && i === 6) await page.screenshot({path:path.join(output,'plague-trail.png')});
       await tap(i === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기');
     }
     assert(await checkArt());
     assert.deepEqual(await page.locator('.po-chips li').allTextContents(), ['미발견','미발견','미발견']);
     await assertArt('ex07-room');
-    assert((await page.locator('.po-picture img').getAttribute('alt')).includes('덮은 그릇'));
+    assert((await page.locator('.po-picture img').getAttribute('alt')).includes('통째로 구운 어린 양'));
     assert((await page.locator('.po-clue').innerText()).includes('그 밤 한밤중이 되기 전'));
     const pins = page.locator('.po-pins button');
     for (const pin of await pins.all()) {
@@ -258,6 +265,8 @@ async function play(browser, url, age) {
     const touchPicture = (x,y) => page.touchscreen.tap(room.x + room.width*x, room.y + room.height*y);
     await touchPicture(.62,.40);
     assert.equal(await page.locator('.po-chips .found').count(), 0);
+    await touchPicture(.55,.63);
+    assert.equal(await page.locator('.po-clue b').innerText(), '식탁');
     await touchPicture(.44,.72);
     await resume();
     assert.equal(await page.locator('.po-return-note').innerText(), '이어서 보는 단서 · 식탁');
@@ -284,6 +293,12 @@ async function play(browser, url, age) {
     await button('왼쪽 단서 살펴보기').focus();
     await page.keyboard.press('Enter');
     assert.deepEqual(await page.locator('.po-chips li').allTextContents(), ['✓ 문','✓ 식탁','✓ 떠날 차림']);
+    for (const [x,y] of [[.09,.39],[.22,.20],[.35,.39]]) {
+      await tap('식탁 단서 다시 보기');
+      await touchPicture(x,y);
+      assert.equal(await page.locator('.po-clue b').innerText(), '문');
+      assert.equal(await page.locator('.po-chips .found').count(), 3);
+    }
     assert.deepEqual(await page.evaluate(layoutIssues, '.po-screen'), []);
     const card = await page.locator('.po-clue').boundingBox();
     assert(card.y >= 0 && card.y + card.height <= height, '누른 단서 설명 전체가 화면 안에 들어야 한다');
@@ -306,9 +321,10 @@ async function play(browser, url, age) {
     assert(await checkArt());
     assert.equal(await page.locator('.po-body h3').innerText(), '열 번째 재앙');
     await assertArt('plague-midnight');
+    assert((await page.locator('.po-picture img').getAttribute('alt')).includes('양쪽 설주와 위 인방'));
     assert.equal(await button('본 재앙 보기').count(), 0);
     assert.equal(await page.locator('.po-body > p').first().innerText(), nightText);
-    assert.equal(await page.locator('.po-body .ref').first().innerText(), nightChip);
+    assert.equal(await page.locator('.po-body .ref').first().innerText(), nightRef);
     assert.equal(await page.locator('.po-trail, .po-chips, .po-pins, .po-finding').count(), 0);
     if (age === 0) await page.screenshot({path:path.join(output,'midnight.png')});
     await tap('바로의 소식 읽기');
@@ -326,13 +342,13 @@ async function play(browser, url, age) {
     const prepEntry = page.locator('.po-record').filter({has:page.getByText('식탁', {exact:true})});
     await prepEntry.locator('summary').click();
     await prepEntry.locator('img').waitFor();
-    assert((await prepEntry.locator('img').getAttribute('alt')).includes('덮은 그릇'));
+    assert((await prepEntry.locator('img').getAttribute('alt')).includes('통째로 구운 어린 양'));
     const nightRecord = page.locator('.po-record').filter({has:page.getByText('열 번째 재앙', {exact:true})});
     await nightRecord.locator('summary').click();
     await nightRecord.locator('img').waitFor();
     assert.equal(await prepEntry.getAttribute('open'), null);
     assert.equal(await nightRecord.locator('p').first().innerText(), nightText);
-    assert.equal(await nightRecord.locator('.ref').first().innerText(), nightChip);
+    assert.equal(await nightRecord.locator('.ref').first().innerText(), nightRef);
     await tap('시간표로 돌아가기');
     assert.equal(await page.locator('#passover-entry-hint').innerText(), '탐험 기록 다시 읽기');
     await tap('일지 1');
