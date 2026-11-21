@@ -71,8 +71,10 @@ for (const ext of ['.jpg', '.png']) {
       process.exit(1);
     }
     const sz = rasterSize(buf, ext);
-    if (!sz || sz.w !== 900 || sz.h !== 1200) {
-      console.error(`사진형 배경 그림 크기가 가로 900 × 세로 1200 픽셀이 아닙니다: ${f} (${sz ? sz.w + '×' + sz.h : '크기 확인 불가'})`);
+    const width = k === 'ex07-room' ? 1200 : 900;
+    const height = k === 'ex07-room' ? 800 : 1200;
+    if (!sz || sz.w !== width || sz.h !== height) {
+      console.error(`사진형 배경 그림 크기가 가로 ${width} × 세로 ${height} 픽셀이 아닙니다: ${f} (${sz ? sz.w + '×' + sz.h : '크기 확인 불가'})`);
       process.exit(1);
     }
     rasterTotal += buf.length;
@@ -80,7 +82,7 @@ for (const ext of ['.jpg', '.png']) {
       console.error(`사진형 배경 그림 파일을 모두 합친 크기가 1.5MB를 넘습니다 (${(rasterTotal / (1024 * 1024)).toFixed(2)}MB)`);
       process.exit(1);
     }
-    art[k] = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice"><g id="${k}-state-main"><image href="data:${mime};base64,${buf.toString('base64')}" x="0" y="0" width="900" height="1200" preserveAspectRatio="xMidYMid slice"/></g></svg>`;
+    art[k] = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid slice"><g id="${k}-state-main"><image href="data:${mime};base64,${buf.toString('base64')}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/></g></svg>`;
   }
 }
 
