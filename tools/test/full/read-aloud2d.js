@@ -99,6 +99,35 @@ async function play(browser, origin, entry, label) {
   } finally { await page.close(); }
 }
 
+async function passoverSpeech(browser, origin, entry) {
+  const page = await browser.newPage({viewport:{width:320,height:568},isMobile:true,hasTouch:true});
+  try {
+    await page.addInitScript(watchSpeech);
+    await page.goto(origin + entry);
+    const tap = name => page.getByRole('button',{name,exact:true}).tap();
+    const current = () => page.evaluate(() => window.testVoice.current?.text || null);
+    await tap('탐험 시작'); await page.locator('.tier').first().tap(); await tap('출발 준비 완료');
+    await tap('열 가지 재앙과 유월절 · 감수용 미리보기');
+    await tap('읽어 줘');
+    assert.equal(await current(), await page.locator('.po-detail > p').innerText());
+    await tap('강가'); assert.equal(await current(), null);
+    await tap('읽어 줘');
+    assert.equal(await current(), (await page.locator('.po-detail > p').allInnerTexts()).join(' '));
+    await tap('강물'); assert.equal(await current(), null);
+    await tap('읽어 줘'); await tap('본 재앙 보기'); assert.equal(await current(), null);
+    await tap('탐험으로 돌아가기'); await tap('다음 재앙 살펴보기');
+    await tap('읽어 줘'); await tap('개구리 그림 확대'); assert.equal(await current(), null);
+    await tap('그림 닫기'); await tap('읽어 줘'); await tap('← 시간표'); assert.equal(await current(), null);
+    await page.evaluate(() => { BO.app2d.state.passover={step:9,seen:0,active:true}; BO.app2d.save(); });
+    await page.reload(); await tap('이어서 탐험하기'); await tap('왼쪽 단서 살펴보기'); await tap('읽어 줘');
+    assert.equal(await current(),await page.locator('.po-clue > p').innerText());
+    await tap('가운데 단서 살펴보기'); assert.equal(await current(),null);
+    await tap('오른쪽 단서 살펴보기'); await tap('읽어 줘'); await tap('그 밤의 기록으로');
+    assert.equal(await current(),null); assert.equal(await page.locator('.readbtn').count(),0);
+    console.log(entry + ' · 재앙·유월절에서 선택한 본문 읽기, 장면·단서 이동과 마지막 밤의 음성 정지 확인');
+  } finally {await page.close();}
+}
+
 (async () => {
   const browser = await chromium.launch({ proxy });
   try {
@@ -106,5 +135,6 @@ async function play(browser, origin, entry, label) {
     const origin = await gameOrigin(browser);
     await play(browser, origin, '/preview.html', '2d-preview');
     await play(browser, origin, '/web/index.html', '2d-web');
+    for (const entry of ['/preview.html','/web/index.html']) await passoverSpeech(browser,origin,entry);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

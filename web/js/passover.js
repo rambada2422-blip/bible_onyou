@@ -80,12 +80,21 @@
   function button(label, action, cls) {
     return el('button', {class: cls || 'btn onpaper', on: {click: action}}, label);
   }
+  function readingLine(ref, text, title) {
+    var line = el('div', {class:'po-reading-line'}, title ? el('b', {}, title) : null, app.refChip(ref));
+    if (app.state.tier === 't1' && app.narration.available) {
+      var status = el('span', {class:'read-status', role:'status', hidden:''});
+      line.append(app.narration.button(text, status), status);
+    }
+    return line;
+  }
   function record(row) {
     var entry = el('details', {class:'po-record'}, el('summary', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
     if (row === night) entry.append(app.refChip('출 12:31-32'), el('p', {}, summons));
     return entry;
   }
   function showPlagueNotes(trigger, count) {
+    app.narration.stop();
     var dialog = el('dialog', {class:'po-notes', 'aria-labelledby':'po-notes-title'});
     var close = button('탐험으로 돌아가기', function () { dialog.close(); });
     var list = el('div', {class:'po-note-list'});
@@ -120,6 +129,7 @@
   function pictureLens(picture, art, step) {
     var img = picture.firstElementChild;
     var trigger = button(el('span', {}, '그림 확대'), function (event) {
+      app.narration.stop();
       var dialog = el('dialog', {class:'po-lens', 'aria-labelledby':'po-lens-title'});
       var frame = el('div', {class:'po-lens-frame'}, app.pic(art, '', img.alt));
       var marker = el('span', {class:'po-lens-marker', 'aria-hidden':'true'});
@@ -183,7 +193,7 @@
       });
       if (i >= 0) {
         var row = preparation[i];
-        detail.replaceChildren(el('b', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
+        detail.replaceChildren(readingLine(row[1], row[2], row[0]), el('p', {}, row[2]));
       } else {
         detail.textContent = '마지막 재앙이 예고되었어요. 그 밤 한밤중이 되기 전, 이스라엘 가정이 어떻게 준비했는지 세 가지 단서를 살펴보세요.';
       }
@@ -192,6 +202,7 @@
     }
     preparation.forEach(function (_, i) {
       var pin = button('✦', function () {
+        app.narration.stop();
         s.seen |= 1 << i; s.mealLook = i; app.save(); reveal(i);
       }, 'po-pin');
       pins.append(pin);
@@ -221,6 +232,7 @@
     if (!valid(s)) s = app.state.passover = {step:0, seen:0};
     if (!readOnly) { s.active = true; app.save(); }
     function leave() {
+      app.narration.stop();
       if (!readOnly) { s.active = false; app.save(); }
       back();
     }
@@ -230,6 +242,7 @@
     }
     function advance() { s.step++; delete s.matched; delete s.observed; delete s.lookingAt; delete s.summons; app.save(); render(true); }
     function render(focus) {
+      app.narration.stop();
       var step = readOnly ? end : s.step, river = step < 9, meal = step === 9;
       var spots = lookouts[step];
       var art = meal ? 'ex07-room' : step === 10 ? 'plague-midnight' : 'ex08-door';
@@ -278,10 +291,11 @@
         if (spots) {
           // 이전 판에서 이미 이름을 맞힌 기록도 다음 장면으로 곧바로 이어진다.
           var seen = s.matched === true ? 3 : (s.observed & 3);
-          var evidence = el('div', {class:'po-detail', role:'status'}, app.refChip(row[1]), el('p', {}, row[2]));
+          var evidence = el('div', {class:'po-detail', 'aria-live':'polite'}, readingLine(row[1], row[2]), el('p', {}, row[2]));
           var choices = el('div', {class:'po-spots', role:'group', 'aria-label':'관찰할 곳', 'aria-describedby':'po-spot-hint'});
           var hint = el('p', {class:'po-spot-hint', id:'po-spot-hint'}, '먼저 살펴보고 싶은 그림을 눌러 보세요.');
           function showSpot(i) {
+            app.narration.stop();
             var spot = spots[i];
             picture.replaceChildren(app.pic(spot.art, '', spot.alt));
             land.dataset.view = spot.art;
@@ -289,7 +303,7 @@
               control.setAttribute('aria-pressed', String(j === i));
               control.querySelector('span').textContent = (seen & (1 << j) ? '✓ ' : '') + spots[j].place;
             });
-            evidence.replaceChildren(el('b', {}, spot.place), app.refChip(spot.ref), el('p', {}, spot.text));
+            evidence.replaceChildren(readingLine(spot.ref, spot.text + ' ' + spot.guide, spot.place), el('p', {}, spot.text));
             if (app.state.tier === 't1') evidence.append(el('p', {class:'po-guide'}, spot.guide));
             hint.textContent = seen === 3 ? '두 곳을 살펴봤어요.' : '이제 ‘' + spots[1 - i].place + '’ 그림을 눌러 보세요.';
             evidence.append(picture);
@@ -314,7 +328,7 @@
           }
         } else {
           pictureLens(picture, art, step);
-          body.append(app.refChip(row[1]), el('p', {}, row[2]));
+          body.append(readingLine(row[1], row[2]), el('p', {}, row[2]));
         }
         if (app.state.tier !== 't1' || ![0, 2, 3, 5, 7, 8].includes(step)) body.append(finding);
       } else if (meal) {
