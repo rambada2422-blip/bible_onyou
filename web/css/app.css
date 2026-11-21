@@ -555,3 +555,6 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 @media (orientation: landscape) and (max-height: 500px) {
   .po-departure .po-scroll { display: grid; grid-template-columns: 43% minmax(0,1fr); align-content: start; }
 }
+
+.po-return-note { display: block; margin-top: 3px; color: #f9dfaa; font-size: 14px; line-height: 1.3; }
+.po-meal .po-title:has(.po-return-note) small { display: none; }

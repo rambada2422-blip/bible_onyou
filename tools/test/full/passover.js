@@ -130,10 +130,12 @@ async function play(browser, url, age) {
         const firstView = await page.locator('.po-land').getAttribute('data-view');
         assert(await next.isDisabled());
         await resume();
+        assert.equal(await page.locator('.po-return-note').innerText(), '이어서 보는 곳 · ' + first);
         assert.equal(await button('✓ '+first).getAttribute('aria-pressed'), 'true');
         assert.equal(await page.locator('.po-detail b').innerText(), first);
         assert.equal(await progress.innerText(), i + ' / 9 기록');
         await tap('✓ '+first);
+        assert.equal(await page.locator('.po-return-note').count(), 0);
         assert(await next.isDisabled());
         assert((await page.locator('.po-spot-hint').innerText()).includes(second));
         if (age === 0) {
@@ -160,7 +162,11 @@ async function play(browser, url, age) {
         await inspectPicture(name);
         assert((await page.locator('.po-picture img').getAttribute('alt')).length > 0);
         assert.equal(await page.locator('.po-spots').count(), 0);
-        if (i === 5) await resume();
+        if (i === 5) {
+          await resume();
+          assert.equal(await page.locator('.po-return-note').innerText(), '앞서 본 재앙 · 가축의 돌림병');
+          if (age === 0) await page.screenshot({path:path.join(output,'return-to-kiln.png')});
+        }
         assert(await checkArt());
       }
       assert(await next.isEnabled());
@@ -188,6 +194,7 @@ async function play(browser, url, age) {
     assert.equal(await page.locator('.po-chips .found').count(), 0);
     await touchPicture(.44,.72);
     await resume();
+    assert.equal(await page.locator('.po-return-note').innerText(), '이어서 보는 단서 · 식탁');
     assert(await button('식탁 단서 다시 보기').isVisible());
     assert.equal(await page.locator('.po-clue b').innerText(), '식탁');
     assert.equal(await page.locator('.po-clue .ref').innerText(), '출 12:8');

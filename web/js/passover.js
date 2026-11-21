@@ -159,6 +159,11 @@
     trigger.setAttribute('aria-haspopup', 'dialog');
     picture.append(trigger);
   }
+  function lastMealClue(s) {
+    var i = s.mealLook;
+    if (Number.isInteger(i) && i >= 0 && i < preparation.length && (s.seen & (1 << i))) return i;
+    return preparation.findIndex(function (_, j) { return s.seen & (1 << j); });
+  }
   function exploreRoom(s, land, body, advance) {
     var positions = ['왼쪽', '가운데', '오른쪽'];
     var pins = el('div', {class:'po-pins', role:'group', 'aria-label':'그림 속 세 단서'});
@@ -194,15 +199,25 @@
     });
     land.append(pins);
     body.append(chips, detail, next);
-    var last = s.mealLook;
-    if (!Number.isInteger(last) || last < 0 || last > 2 || !(s.seen & (1 << last))) {
-      last = preparation.findIndex(function (_, i) { return s.seen & (1 << i); });
+    reveal(lastMealClue(s));
+  }
+  function returnContext(s) {
+    if (!valid(s)) return '';
+    if (s.step === 9) {
+      var clue = preparation[lastMealClue(s)];
+      if (clue) return '이어서 보는 단서 · ' + clue[0];
+      return '이어서 보는 곳 · 유월절을 준비하는 집';
     }
-    reveal(last);
+    if (s.step > 8) return '';
+    var spots = lookouts[s.step], last = spots && spots[s.lookingAt];
+    if (last && Number.isInteger(s.lookingAt) && (s.observed & (1 << s.lookingAt))) return '이어서 보는 곳 · ' + last.place;
+    if (s.step > 0) return '앞서 본 재앙 · ' + plagues[s.step-1][0];
+    return '';
   }
   function open(back, returnTo, readOnly) {
     returnTo = returnTo || '시간표';
     var s = app.state.passover;
+    var resumeNote = readOnly ? '' : returnContext(s);
     if (!valid(s)) s = app.state.passover = {step:0, seen:0};
     if (!readOnly) { s.active = true; app.save(); }
     function leave() {
@@ -327,6 +342,20 @@
       var sceneClass = meal ? ' po-meal' : river ? ' po-river' : '';
       if (spots) sceneClass += ' po-compare';
       if (step === 11) sceneClass += ' po-departure';
+      if (resumeNote) {
+        var note = el('span', {class:'po-return-note', id:'po-return-note'}, resumeNote);
+        land.querySelector('.po-title').append(note);
+        h.setAttribute('aria-describedby', note.id);
+        // 이 안내는 저장 지점에 들어선 순간만 보여 준다.
+        land.addEventListener('click', function clearNote(event) {
+          if (!event.target.closest('button')) return;
+          note.remove();
+          h.removeAttribute('aria-describedby');
+          land.removeEventListener('click', clearNote);
+        });
+        resumeNote = '';
+        focus = true;
+      }
       app.show(el('div', {class:'screen po-screen' + sceneClass},
         el('div', {class:'page-head pad'}, button('← ' + returnTo, leave, 'pillbtn'), notesButton, el('span', {}, '감수용 미리보기')),
         el('main', {class:'po-scroll'}, land, body),
