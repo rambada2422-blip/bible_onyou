@@ -80,6 +80,8 @@ async function play(browser, url, age) {
     const review = (await fs.readFile(path.resolve('docs/인계/열재앙_배치재검토_Claude.md'), 'utf8')).split('## 6. 대표 결정 P1')[1];
     const approved = [...review.matchAll(/^\| 재앙 \d 요약 \| ([^|]+?) \| [^|]+? \| "([^"]+)" \|$/gm)];
     assert.equal(approved.length, 9);
+    const [, nightRef, nightText] = review.match(/^\| 열 번째 재앙 [^|]* \| ([^|]+?) \| [^|]+? \| "([^"]+)" \|$/m);
+    const nightChip = nightRef.replaceAll(', 12:', ', ');
     await page.goto(url);
     await tap('탐험 시작');
     await page.locator('.tier').nth(age).tap();
@@ -188,11 +190,13 @@ async function play(browser, url, age) {
     await resume();
     assert(await button('식탁 단서 다시 보기').isVisible());
     assert.equal(await page.locator('.po-clue b').innerText(), '식탁');
+    assert.equal(await page.locator('.po-clue .ref').innerText(), '출 12:8');
     assert(await button('단서 2개 더 찾아보세요 · 1/3').isDisabled());
     await reviewNotes(9, '9번째 · 흑암', false);
     await tap('식탁 단서 다시 보기');
     assert.equal(await page.locator('.po-chips .found').count(), 1);
     await touchPicture(.81,.80);
+    assert.equal(await page.locator('.po-clue .ref').innerText(), '출 12:11, 28');
     assert(await button('단서 1개 더 찾아보세요 · 2/3').isDisabled());
     await button('왼쪽 단서 살펴보기').focus();
     await page.keyboard.press('Enter');
@@ -206,7 +210,8 @@ async function play(browser, url, age) {
     assert.equal(await page.locator('.po-body h3').innerText(), '열 번째 재앙');
     await assertArt('plague-midnight');
     assert.equal(await button('본 재앙 보기').count(), 0);
-    assert((await page.locator('.po-body').innerText()).includes('밤중에 여호와께서 애굽 땅의 처음 난 것을 다 치셨어요. 바로의 맏아들부터 옥에 갇힌 사람의 맏아들까지, 그리고 가축의 처음 난 것까지였어요. 여호와께서는 피를 바른 이스라엘 자손의 집을 넘으셨어요. 애굽에 큰 부르짖음이 있었어요.'));
+    assert.equal(await page.locator('.po-body > p').first().innerText(), nightText);
+    assert.equal(await page.locator('.po-body .ref').first().innerText(), nightChip);
     assert.equal(await page.locator('.po-trail, .po-chips, .po-pins, .po-finding').count(), 0);
     if (age === 0) await page.screenshot({path:path.join(output,'midnight.png')});
     await tap('바로의 소식 읽기');
@@ -222,7 +227,8 @@ async function play(browser, url, age) {
     assert.equal(await page.locator('.po-record').count(), 14);
     const nightRecord = page.locator('.po-record').filter({has:page.getByText('열 번째 재앙', {exact:true})});
     await nightRecord.locator('summary').click();
-    assert((await nightRecord.innerText()).includes('밤중에 여호와께서 애굽 땅의 처음 난 것을 다 치셨어요. 바로의 맏아들부터 옥에 갇힌 사람의 맏아들까지, 그리고 가축의 처음 난 것까지였어요. 여호와께서는 피를 바른 이스라엘 자손의 집을 넘으셨어요. 애굽에 큰 부르짖음이 있었어요.'));
+    assert.equal(await nightRecord.locator('p').first().innerText(), nightText);
+    assert.equal(await nightRecord.locator('.ref').first().innerText(), nightChip);
     await tap('시간표로 돌아가기');
     await tap('일지 1');
     await tap('열 가지 재앙과 유월절 · 탐험 기록');
