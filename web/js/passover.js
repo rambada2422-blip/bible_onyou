@@ -38,6 +38,14 @@
     null, 'plague-frogs', 'plague-dust', null, 'plague-yard', 'plague-kiln',
     'plague-hail', 'plague-locusts', null
   ];
+  var shortDescriptions = {
+    1:'집 문턱과 마당에 앉아 있는 개구리들',
+    2:'마른 흙바닥 너머로 울타리와 들판이 보이는 마당',
+    4:'구유와 울타리가 보이는 빈 가축 우리',
+    5:'둥근 화덕과 그 옆에 쌓인 재',
+    6:'우박이 떨어지는 밭과 그 뒤편의 집들',
+    7:'곡식 이삭에 앉거나 밭 위를 날아다니는 메뚜기들'
+  };
   var acts = ['강과 땅', '애굽과 고센', '하늘과 어둠'];
   var findings = [
     ['요술사들도 같은 일을 했어요.', '출 7:22'],
@@ -103,6 +111,49 @@
     dialog.showModal();
     title.focus({preventScroll:true});
   }
+  function pictureLens(picture, art, step) {
+    var img = picture.firstElementChild;
+    img.alt = shortDescriptions[step];
+    var trigger = button(el('span', {}, '그림 확대'), function (event) {
+      var dialog = el('dialog', {class:'po-lens', 'aria-labelledby':'po-lens-title'});
+      var frame = el('div', {class:'po-lens-frame'}, app.pic(art, '', img.alt));
+      var marker = el('span', {class:'po-lens-marker', 'aria-hidden':'true'});
+      var map = el('button', {class:'po-lens-map', 'aria-label':'확대할 위치 선택', 'aria-describedby':'po-lens-help'},
+        app.pic(art, '', ''), marker);
+      var x = .5, y = .5;
+      function position(left, top) {
+        // 두 배 확대하므로 가장자리에서도 원본의 1/2이 보이게 창을 안쪽에 둔다.
+        x = Math.min(.75, Math.max(.25, left));
+        y = Math.min(.75, Math.max(.25, top));
+        frame.firstElementChild.style.transform = 'translate(' + (25-x*100) + '%, ' + (25-y*100) + '%)';
+        marker.style.left = (x-.25)*100 + '%';
+        marker.style.top = (y-.25)*100 + '%';
+      }
+      function pick(event, bounds) {
+        position((event.clientX-bounds.left)/bounds.width, (event.clientY-bounds.top)/bounds.height);
+      }
+      if (event.detail) pick(event, trigger.getBoundingClientRect());
+      else position(x,y);
+      map.addEventListener('click', function (event) {
+        if (event.detail) pick(event, map.getBoundingClientRect());
+        else position(.5,.5);
+      });
+      map.addEventListener('keydown', function (event) {
+        var delta = {ArrowLeft:[-.1,0],ArrowRight:[.1,0],ArrowUp:[0,-.1],ArrowDown:[0,.1]}[event.key];
+        if (delta) { event.preventDefault(); position(x+delta[0],y+delta[1]); }
+      });
+      var close = button('그림 닫기', function () { dialog.close(); }, 'pillbtn');
+      dialog.append(el('div', {class:'po-lens-head'}, el('h2', {id:'po-lens-title'}, plagues[step][0]), close),
+        frame, el('p', {id:'po-lens-help'}, '작은 그림에서 보고 싶은 곳을 누르세요. 방향키로도 옮길 수 있어요.'), map);
+      trigger.closest('.po-screen').append(dialog);
+      dialog.addEventListener('close', function () { dialog.remove(); trigger.focus({preventScroll:true}); }, {once:true});
+      dialog.showModal();
+      map.focus({preventScroll:true});
+    }, 'po-lens-open');
+    trigger.setAttribute('aria-label', plagues[step][0] + ' 그림 확대');
+    trigger.setAttribute('aria-haspopup', 'dialog');
+    picture.append(trigger);
+  }
   function exploreRoom(s, land, body, advance) {
     var positions = ['왼쪽', '가운데', '오른쪽'];
     var pins = el('div', {class:'po-pins', role:'group', 'aria-label':'그림 속 세 단서'});
@@ -162,6 +213,7 @@
       var step = readOnly ? end : s.step, river = step < 9, meal = step === 9;
       var spots = lookouts[step];
       var art = meal ? 'ex07-room' : step === 10 ? 'plague-midnight' : 'ex08-door';
+      if (step === 11) art = 'plague-departure';
       if (river) art = spots ? spots[0].art : shortViews[step];
       var act = Math.floor(step / 3);
       var chapter = river ? acts[act] : meal ? '유월절을 준비하다' : step < end ? '그 밤, 애굽에서 나오다' : '탐험 기록';
@@ -170,7 +222,8 @@
       if (spots) caption += ' · ' + chapter;
       var h = el('h2', {tabindex:'-1'}, spots ? plagueTitle : chapter);
       var body = el('div', {class:'po-body'}), foot = [];
-      var picture = el('div', {class:'po-picture'}, spots ? null : app.pic(art, '', step === 10 ? '한밤중 사람이 없는 집의 닫힌 문' : ''));
+      var alt = {10:'한밤중 사람이 없는 집의 닫힌 문', 11:'꾸러미를 멘 어른들과 아이가 양과 소와 함께 마을을 떠나는 뒷모습'};
+      var picture = el('div', {class:'po-picture'}, spots ? null : app.pic(art, '', alt[step] || ''));
       var land = el('div', {class:'po-land'}, spots ? null : picture,
         el('div', {class:'po-title'}, el('small', {}, caption), h));
       land.dataset.view = art;
@@ -241,6 +294,7 @@
             showSpot(lastSpot);
           }
         } else {
+          pictureLens(picture, art, step);
           body.append(app.refChip(row[1]), el('p', {}, row[2]));
         }
         if (app.state.tier !== 't1' || ![0, 2, 3, 7, 8].includes(step)) body.append(finding);
@@ -268,6 +322,7 @@
       }
       var sceneClass = meal ? ' po-meal' : river ? ' po-river' : '';
       if (spots) sceneClass += ' po-compare';
+      if (step === 11) sceneClass += ' po-departure';
       app.show(el('div', {class:'screen po-screen' + sceneClass},
         el('div', {class:'page-head pad'}, button('← ' + returnTo, leave, 'pillbtn'), notesButton, el('span', {}, '감수용 미리보기')),
         el('main', {class:'po-scroll'}, land, body),

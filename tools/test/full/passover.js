@@ -26,6 +26,36 @@ async function play(browser, url, age) {
       ['plague-hail'], ['plague-locusts'], ['plague-darkness','plague-light']
     ];
     const checkArt = () => page.locator('.po-picture img').evaluate(async img => { await img.decode(); return img.naturalWidth > 0; });
+    async function inspectPicture(name) {
+      const trigger = button(name + ' 그림 확대');
+      const progress = await page.locator('.po-trail strong').innerText();
+      const state = () => page.evaluate(() => JSON.stringify(BO.app2d.state.passover));
+      const before = await state();
+      await trigger.tap({position:{x:12,y:12}});
+      const dialog = page.getByRole('dialog', {name});
+      const map = dialog.getByRole('button', {name:'확대할 위치 선택'});
+      assert(await map.evaluate(el => document.activeElement === el));
+      const offset = () => dialog.locator('.po-lens-frame img').evaluate(el => el.style.transform);
+      const origin = await offset();
+      await page.keyboard.press('ArrowRight');
+      assert.notEqual(await offset(), origin);
+      const bounds = await map.boundingBox();
+      await page.touchscreen.tap(bounds.x + bounds.width*.95, bounds.y + bounds.height*.95);
+      assert.equal(await offset(), 'translate(-50%, -50%)');
+      if (age === 0 && name === '개구리') {
+        await page.touchscreen.tap(bounds.x + bounds.width*.32, bounds.y + bounds.height*.86);
+        await page.screenshot({path:path.join(output,'frog-lens.png')});
+      }
+      const close = button('그림 닫기');
+      assert(await close.evaluate(el => {
+        const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight;
+      }));
+      if (age === 1) await page.keyboard.press('Escape');
+      else await close.tap();
+      assert(await trigger.evaluate(el => document.activeElement === el));
+      assert.equal(await state(), before);
+      assert.equal(await page.locator('.po-trail strong').innerText(), progress);
+    }
     async function resume() { await page.reload(); await tap('이어서 탐험하기'); }
     async function reviewNotes(total, name, escape) {
       const before = await page.evaluate(() => JSON.stringify(BO.app2d.state.passover));
@@ -120,6 +150,7 @@ async function play(browser, url, age) {
         }
       } else {
         await assertArt(views[i][0]);
+        await inspectPicture(name);
         assert.equal(await page.locator('.po-spots').count(), 0);
         if (i === 5) await resume();
         assert(await checkArt());
@@ -176,6 +207,8 @@ async function play(browser, url, age) {
     await resume();
     assert(await page.locator('.po-summons').isVisible());
     await tap('떠나는 길 살펴보기');
+    await assertArt('plague-departure');
+    if (age === 0) await page.screenshot({path:path.join(output,'departure-road.png')});
     assert.equal(await page.locator('.po-trail, .po-chips, .po-pins, .po-finding').count(), 0);
     assert(!(await page.locator('.po-screen').innerText()).includes('✓'));
     await tap('탐험 기록 다시 읽기');
