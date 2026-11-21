@@ -71,6 +71,38 @@
   function record(row) {
     return el('details', {class:'po-record'}, el('summary', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
   }
+  function showPlagueNotes(trigger, count) {
+    var dialog = el('dialog', {class:'po-notes', 'aria-labelledby':'po-notes-title'});
+    var close = button('탐험으로 돌아가기', function () { dialog.close(); });
+    var list = el('div', {class:'po-note-list'});
+    plagues.slice(0, count).forEach(function (row, i) {
+      var entry = record(row);
+      entry.setAttribute('name', 'po-open-note');
+      entry.querySelector('summary').textContent = (i + 1) + '번째 · ' + row[0];
+      entry.addEventListener('toggle', function () {
+        if (!entry.open || entry.querySelector('.po-note-art')) return;
+        var pictures = el('div', {class:'po-note-art'});
+        if (lookouts[i]) {
+          lookouts[i].forEach(function (spot) {
+            pictures.append(el('figure', {}, app.pic(spot.art, '', spot.alt), el('figcaption', {}, spot.place)));
+          });
+        } else {
+          pictures.append(app.pic(shortViews[i], '', row[0]));
+        }
+        entry.append(pictures);
+      });
+      list.prepend(entry);
+    });
+    var title = el('h2', {id:'po-notes-title', tabindex:'-1'}, '지금까지 본 재앙');
+    dialog.append(title, list, close);
+    trigger.closest('.po-screen').append(dialog);
+    dialog.addEventListener('close', function () {
+      dialog.remove();
+      trigger.focus({preventScroll:true});
+    }, {once:true});
+    dialog.showModal();
+    title.focus({preventScroll:true});
+  }
   function exploreRoom(s, land, body, advance) {
     var positions = ['왼쪽', '가운데', '오른쪽'];
     var pins = el('div', {class:'po-pins', role:'group', 'aria-label':'그림 속 세 단서'});
@@ -138,6 +170,11 @@
       var land = el('div', {class:'po-land'}, picture,
         el('div', {class:'po-title'}, el('small', {}, river ? '아홉 가지 재앙 · ' + ['첫째', '둘째', '셋째'][act] + ' 묶음' : '출애굽기 11–12장'), h));
       land.dataset.view = art;
+      var availableNotes = meal ? plagues.length : 0;
+      var notesButton = button('본 재앙 보기', function (event) {
+        showPlagueNotes(event.currentTarget, availableNotes);
+      }, 'pillbtn po-notes-toggle');
+      notesButton.hidden = !availableNotes;
       if (river) {
         var row = plagues[step];
         land.dataset.act = String(act + 1);
@@ -148,6 +185,8 @@
           el('p', {}, findings[step][0]), app.refChip(findings[step][1]));
         function markRecorded(done) {
           var total = step + (done ? 1 : 0);
+          availableNotes = total;
+          notesButton.hidden = !total;
           count.textContent = total + ' / 9 기록';
           Array.from(segments.children).forEach(function (cell, i) {
             cell.classList.toggle('filled', i < total);
@@ -219,7 +258,7 @@
         foot.push(button(returnTo + '로 돌아가기', leave));
       }
       app.show(el('div', {class:'screen po-screen' + (meal ? ' po-meal' : river ? ' po-river' : '')},
-        el('div', {class:'page-head pad'}, button('← ' + returnTo, leave, 'pillbtn'), el('span', {}, '감수용 미리보기')),
+        el('div', {class:'page-head pad'}, button('← ' + returnTo, leave, 'pillbtn'), notesButton, el('span', {}, '감수용 미리보기')),
         el('main', {class:'po-scroll'}, land, body),
         foot.length ? el('div', {class:'sheet-foot pad'}, foot) : null));
       if (focus) h.focus({preventScroll:true});
