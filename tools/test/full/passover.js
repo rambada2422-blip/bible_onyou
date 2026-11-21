@@ -123,7 +123,7 @@ async function play(browser, url, age) {
     assert(await checkArt());
     assert.deepEqual(await page.locator('.po-chips li').allTextContents(), ['미발견','미발견','미발견']);
     await assertArt('ex07-room');
-    assert((await page.locator('.po-picture img').getAttribute('alt')).includes('덮은 그릇'));
+    assert((await page.locator('.po-picture img').getAttribute('alt')).includes('통째로 구운 어린 양'));
     assert((await page.locator('.po-clue').innerText()).includes('그 밤 한밤중이 되기 전'));
     const pins = page.locator('.po-pins button');
     for (const pin of await pins.all()) {
@@ -159,6 +159,7 @@ async function play(browser, url, age) {
     assert(await checkArt());
     assert.equal(await page.locator('.po-body h3').innerText(), '열 번째 재앙');
     await assertArt('plague-midnight');
+    assert((await page.locator('.po-picture img').getAttribute('alt')).includes('양쪽 설주와 위 인방'));
     assert.equal(await button('본 재앙 보기').count(), 0);
     assert.equal(await page.locator('.po-body > p').first().innerText(), nightText);
     assert.equal(await page.locator('.po-body .ref').first().innerText(), nightRef);
