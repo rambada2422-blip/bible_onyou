@@ -96,14 +96,17 @@
       if (!entry.open || entry.querySelector('.po-note-art')) return;
       var i = plagues.indexOf(row), pictures = el('div', {class:'po-note-art'});
       if (lookouts[i]) {
+        pictures.classList.add('po-note-places');
         lookouts[i].forEach(function (spot) {
-          pictures.append(el('figure', {}, app.pic(spot.art, '', spot.alt), el('figcaption', {}, spot.place)));
+          var caption = el('figcaption', {}, el('strong', {}, spot.place), app.refChip(spot.ref), el('p', {}, spot.text));
+          pictures.append(el('figure', {}, app.pic(spot.art, '', spot.alt), caption));
         });
+        entry.querySelector('summary').after(pictures);
       } else {
         var art = i >= 0 ? shortViews[i] : row === night ? 'plague-midnight' : row === departure ? 'plague-departure' : 'ex07-room';
         pictures.append(app.pic(art, '', pictureDescriptions[art]));
+        entry.append(pictures);
       }
-      entry.append(pictures);
     });
     return entry;
   }
@@ -369,9 +372,10 @@
         el('div', {class:'po-title'}, el('small', {}, caption), h));
       land.dataset.view = art;
       var availableNotes = meal ? plagues.length : 0;
-      var notesButton = button('본 재앙 보기', function (event) {
+      var notesButton = button([app.icon('bookline'), '본 재앙 보기'], function (event) {
         showPlagueNotes(event.currentTarget, availableNotes);
       }, 'pillbtn po-notes-toggle');
+      notesButton.setAttribute('aria-haspopup', 'dialog');
       notesButton.hidden = !availableNotes;
       if (river) {
         var row = plagues[step];
