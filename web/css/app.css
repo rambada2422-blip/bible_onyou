@@ -442,9 +442,19 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 @media (max-height: 440px) and (orientation: landscape) { .po-land { height: 112px; } }
 .po-picture { position: absolute; inset: 0; overflow: hidden; }
 .po-picture img { transition: filter .28s ease, transform .28s ease, object-position .28s ease; }
-.po-spots { display: flex; gap: 8px; flex-wrap: wrap; }
-.po-spots .po-spot { flex: 1 1 120px; width: auto; min-height: 48px; text-align: center; }
-.po-spot[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--teal); background: var(--paper-2); }
+.po-spot-hint { margin: 0; padding: 8px 12px; color: var(--ink); background: var(--paper); }
+.po-spots { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; padding: 0 12px 10px; background: var(--paper); }
+.po-spot { display: flex; flex-direction: column; align-items: stretch; overflow: hidden; padding: 0; border: 2px solid var(--paper-line); border-radius: 10px; color: var(--ink); background: #fff; }
+.po-spot span { margin: auto; padding: 4px; font-size: 15px; line-height: 1.25; }
+.po-spots .po-spot img { height: auto; aspect-ratio: 3 / 2; object-fit: contain; }
+.po-spot[aria-pressed="true"] { border-color: var(--teal); background: var(--paper-2); }
+.po-spot:focus-visible { outline: 3px solid var(--teal); outline-offset: 1px; }
+.po-detail .po-picture { margin-top: 8px; }
+.po-detail .po-picture img { width: 100%; height: 100%; display: block; object-fit: contain; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .po-spot-hint { font-size: 14px; padding-block: 4px; }
+  .po-spots { padding-inline: 8px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .po-picture img { transition: none; }
 }
@@ -492,6 +502,10 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 @media (orientation: landscape) and (max-height: 500px) {
   .po-river .po-scroll { display: grid; grid-template-columns: 43% minmax(0,1fr); align-content: start; }
   .po-river .po-land { height: auto; aspect-ratio: 3 / 2; align-self: start; }
+  .po-compare .po-land { display: contents; }
+  .po-compare .po-places { grid-column: 1; grid-row: 1 / 3; align-self: start; }
+  .po-compare .po-title, .po-compare .po-body { grid-column: 2; }
+  .po-compare .po-body { padding: 8px 12px; align-content: start; }
 }
 /* 관찰할 물고기와 손, 문이 제목 아래 가려지지 않게 그림과 제목을 분리한다. */
 .po-river .po-land { height: auto; aspect-ratio: auto; }

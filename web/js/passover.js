@@ -165,10 +165,14 @@
       if (river) art = spots ? spots[0].art : shortViews[step];
       var act = Math.floor(step / 3);
       var chapter = river ? acts[act] : meal ? '유월절을 준비하다' : step < end ? '그 밤, 애굽에서 나오다' : '탐험 기록';
-      var h = el('h2', {tabindex:'-1'}, chapter), body = el('div', {class:'po-body'}), foot = [];
-      var picture = el('div', {class:'po-picture'}, app.pic(art, '', spots ? spots[0].alt : step === 10 ? '한밤중 사람이 없는 집의 닫힌 문' : ''));
-      var land = el('div', {class:'po-land'}, picture,
-        el('div', {class:'po-title'}, el('small', {}, river ? '아홉 가지 재앙 · ' + ['첫째', '둘째', '셋째'][act] + ' 묶음' : '출애굽기 11–12장'), h));
+      var plagueTitle = river && (step + 1) + '번째 재앙 · ' + plagues[step][0];
+      var caption = river ? '아홉 가지 재앙 · ' + ['첫째', '둘째', '셋째'][act] + ' 묶음' : '출애굽기 11–12장';
+      if (spots) caption += ' · ' + chapter;
+      var h = el('h2', {tabindex:'-1'}, spots ? plagueTitle : chapter);
+      var body = el('div', {class:'po-body'}), foot = [];
+      var picture = el('div', {class:'po-picture'}, spots ? null : app.pic(art, '', step === 10 ? '한밤중 사람이 없는 집의 닫힌 문' : ''));
+      var land = el('div', {class:'po-land'}, spots ? null : picture,
+        el('div', {class:'po-title'}, el('small', {}, caption), h));
       land.dataset.view = art;
       var availableNotes = meal ? plagues.length : 0;
       var notesButton = button('본 재앙 보기', function (event) {
@@ -196,36 +200,41 @@
         }
         markRecorded(!spots);
         body.append(trail);
-        body.append(el('h3', {}, (step + 1) + '번째 재앙 · ' + row[0]));
+        if (!spots) body.append(el('h3', {}, plagueTitle));
         var nextPlague = button(step === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기', advance);
         foot.push(nextPlague);
         if (spots) {
           // 이전 판에서 이미 이름을 맞힌 기록도 다음 장면으로 곧바로 이어진다.
           var seen = s.matched === true ? 3 : (s.observed & 3);
-          var evidence = el('div', {class:'po-detail', role:'status'});
-          var choices = el('div', {class:'po-spots', role:'group', 'aria-label':'관찰할 곳'});
+          var evidence = el('div', {class:'po-detail', role:'status'}, app.refChip(row[1]), el('p', {}, row[2]));
+          var choices = el('div', {class:'po-spots', role:'group', 'aria-label':'관찰할 곳', 'aria-describedby':'po-spot-hint'});
+          var hint = el('p', {class:'po-spot-hint', id:'po-spot-hint'}, '먼저 살펴보고 싶은 그림을 눌러 보세요.');
           function showSpot(i) {
             var spot = spots[i];
             picture.replaceChildren(app.pic(spot.art, '', spot.alt));
             land.dataset.view = spot.art;
             Array.from(choices.children).forEach(function (control, j) {
               control.setAttribute('aria-pressed', String(j === i));
-              control.textContent = (seen & (1 << j) ? '✓ ' : '') + spots[j].place;
+              control.querySelector('span').textContent = (seen & (1 << j) ? '✓ ' : '') + spots[j].place;
             });
             evidence.replaceChildren(el('b', {}, spot.place), app.refChip(spot.ref), el('p', {}, spot.text));
             if (app.state.tier === 't1') evidence.append(el('p', {class:'po-guide'}, spot.guide));
+            hint.textContent = seen === 3 ? '두 곳을 살펴봤어요.' : '이제 ‘' + spots[1 - i].place + '’ 그림을 눌러 보세요.';
+            evidence.append(picture);
             nextPlague.disabled = seen !== 3;
             markRecorded(seen === 3);
           }
           spots.forEach(function (spot, i) {
-            var control = button(spot.place, function () {
+            var control = button(el('span', {}, spot.place), function () {
               seen |= 1 << i; s.observed = seen; s.lookingAt = i; app.save();
               showSpot(i);
-            }, 'opt po-spot');
+            }, 'po-spot');
+            control.prepend(app.pic(spot.art, '', ''));
             control.setAttribute('aria-pressed', 'false');
             choices.append(control);
           });
-          body.append(el('p', {}, '두 곳을 눌러 그곳에서 어떤 일이 있었는지 살펴보세요.'), choices, evidence);
+          land.append(el('div', {class:'po-places'}, hint, choices));
+          body.append(evidence);
           nextPlague.disabled = seen !== 3;
           if (seen) {
             var lastSpot = seen === 2 || (seen === 3 && s.lookingAt === 1) ? 1 : 0;
@@ -257,7 +266,9 @@
         if (!readOnly) body.append(button('처음부터 다시 둘러보기', replay));
         foot.push(button(returnTo + '로 돌아가기', leave));
       }
-      app.show(el('div', {class:'screen po-screen' + (meal ? ' po-meal' : river ? ' po-river' : '')},
+      var sceneClass = meal ? ' po-meal' : river ? ' po-river' : '';
+      if (spots) sceneClass += ' po-compare';
+      app.show(el('div', {class:'screen po-screen' + sceneClass},
         el('div', {class:'page-head pad'}, button('← ' + returnTo, leave, 'pillbtn'), notesButton, el('span', {}, '감수용 미리보기')),
         el('main', {class:'po-scroll'}, land, body),
         foot.length ? el('div', {class:'sheet-foot pad'}, foot) : null));

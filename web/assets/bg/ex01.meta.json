@@ -1,0 +1,10 @@
+{
+  "key": "ex01",
+  "states": ["approach", "hideface"],
+  "regions": [
+    { "id": "bush", "label": "떨기나무", "x": 420, "y": 440, "w": 320, "h": 440 },
+    { "id": "moses", "label": "모세", "x": 200, "y": 490, "w": 194, "h": 400 },
+    { "id": "sheep", "label": "양 떼", "x": 26, "y": 692, "w": 222, "h": 176 },
+    { "id": "mountain", "label": "호렙 산", "x": 292, "y": 150, "w": 608, "h": 420 }
+  ]
+}
