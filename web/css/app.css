@@ -422,3 +422,21 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
     box-shadow: -8px 0 24px rgba(0, 0, 0, .28);
   }
 }
+
+/* 재앙과 유월절 감수용 탐험 */
+.po-screen { color: var(--text); background: var(--paper); }
+.po-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.po-screen .page-head { justify-content: space-between; }
+.po-land { position: relative; height: clamp(125px, 29vh, 270px); background: #483522; }
+.po-land img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.po-title { position: absolute; inset: auto 0 0; padding: 38px 20px 14px; color: white; background: linear-gradient(transparent,rgba(24,20,27,.90)); }
+.po-title h2 { margin: 2px 0 0; font: 26px/1.2 var(--f-display); }
+.po-body { padding: 18px var(--gutter-r) 22px var(--gutter-l); display: grid; gap: 10px; }
+.po-body h3, .po-body p { margin: 0; }
+.po-body .ref { justify-self: start; }
+.po-body .po-match, .po-detail:not(:empty) { background: var(--paper-2); border-radius: 12px; padding: 14px; }
+.po-detail .ref { margin-left: 8px; }
+.po-record { border-bottom: 1px solid var(--paper-line); }
+.po-record summary { min-height: 44px; padding: 10px 2px; cursor: pointer; }
+.po-record p, .po-detail p { padding-block: 8px; }
+@media (max-height: 440px) and (orientation: landscape) { .po-land { height: 112px; } }
