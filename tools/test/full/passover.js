@@ -86,22 +86,14 @@ async function play(browser, url, age) {
     await tap('출발 준비 완료');
     await tap('열 가지 재앙과 유월절 · 감수용 미리보기');
     for (const [i, name] of names.entries()) {
-<<<<<<< HEAD
-=======
-      assert.equal(await page.locator('.po-body h3').innerText(), (i+1) + '번째 재앙 · ' + name);
       assert(await page.getByText(approved[i][1], {exact:true}).isVisible());
       assert(await page.getByText(approved[i][2], {exact:true}).isVisible());
->>>>>>> gpt/exodus-field-notes
       const places = {0:['강물','강가'], 3:['애굽의 집','고센 땅'], 8:['애굽 땅','이스라엘 자손이 사는 곳']}[i];
       const next = button(i === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기');
       const progress = page.locator('.po-trail strong');
       assert.equal(await page.locator('.po-segments i').count(), 9);
-<<<<<<< HEAD
       assert.equal(await page.locator(places ? '.po-title h2' : '.po-body h3').innerText(), (i+1) + '번째 재앙 · ' + name);
-      assert((await page.locator('.po-title').innerText()).includes(['강과 땅','애굽과 고센','하늘과 어둠'][Math.floor(i/3)]));
-=======
-      assert.equal(await page.locator('.po-title h2').innerText(), ['강과 땅','사람과 가축','하늘과 어둠'][Math.floor(i/3)]);
->>>>>>> gpt/exodus-field-notes
+      assert((await page.locator('.po-title').innerText()).includes(['강과 땅','사람과 가축','하늘과 어둠'][Math.floor(i/3)]));
       assert.equal(await progress.innerText(), (i + (places ? 0 : 1)) + ' / 9 기록');
       if (places) {
         assert(await next.isDisabled());
@@ -162,12 +154,9 @@ async function play(browser, url, age) {
           await page.screenshot({path:path.join(output,'light.png')});
         }
       } else {
-<<<<<<< HEAD
         await assertArt(views[i][0]);
         await inspectPicture(name);
-=======
         assert((await page.locator('.po-picture img').getAttribute('alt')).length > 0);
->>>>>>> gpt/exodus-field-notes
         assert.equal(await page.locator('.po-spots').count(), 0);
         if (i === 5) await resume();
         assert(await checkArt());
