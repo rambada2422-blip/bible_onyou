@@ -42,12 +42,15 @@ BO3D.gameModules.exploration = function (G) {
     G.flash.hidden = false; G.flash.classList.remove('go'); void G.flash.offsetWidth; G.flash.classList.add('go');
     setTimeout(function () { G.flash.hidden = true; }, 420);
     if (G.FX) G.FX.audio.shutter();
+    // 화면 안에는 있지만 멀어서 담기지 않았으면 거리를 알려 준다 (양 떼가 가운데에 있어도 멀면 담기지 않는다).
+    var farLine = '너무 멀어서 사진에 담기지 않았어요. 더 가까이 가서 찍어 보세요.';
     if (!found.length) {
-      // 화면 안에는 있지만 멀어서 담기지 않았으면 거리를 알려 준다 (양 떼가 가운데에 있어도 멀면 담기지 않는다).
       var far = G.DEX.some(function (d) { return photoPoint(d, true); });
-      G.toast(far ? '너무 멀어서 사진에 담기지 않았어요. 더 가까이 가서 찍어 보세요.' : '사진에 담긴 것이 없어요. 찍고 싶은 것을 화면 가운데에 놓고 다시 찍어 보세요.');
+      G.toast(far ? farLine : '사진에 담긴 것이 없어요. 찍고 싶은 것을 화면 가운데에 놓고 다시 찍어 보세요.');
       return;
     }
+    // 첫 사진을 찾는 동안 산은 담겼지만 움직이는 무리가 멀면 그것도 알려 준다.
+    var flockFar = lookingForFlock() && !found.some(function (f) { return f.d === flockEntry; }) && photoPoint(flockEntry, true);
     var fresh = found.filter(function (f) { return !(f.d.id in G.dex); });
     var missing = found.filter(function (f) { return !G.dex[f.d.id]; });
     missing.forEach(function (f) {
@@ -62,8 +65,9 @@ BO3D.gameModules.exploration = function (G) {
     if (fresh.length) {
       if (G.FX) G.FX.audio.chime();
       G.dexBtn.classList.remove('pulse'); void G.dexBtn.offsetWidth; G.dexBtn.classList.add('pulse');
-      G.toast('도감에 새로 담았어요: ' + fresh.map(function (f) { return f.d.name; }).join(', ') + (dexCount() === G.DEX.length ? '. 도감을 모두 채웠어요!' : ''));
-    } else G.toast('이미 도감에 있는 사진이에요: ' + best.d.name);
+      G.toast('도감에 새로 담았어요: ' + fresh.map(function (f) { return f.d.name; }).join(', ') + (dexCount() === G.DEX.length ? '. 도감을 모두 채웠어요!' : '') +
+        (flockFar ? '. 움직이는 무리는 ' + farLine : ''));
+    } else G.toast(flockFar ? '움직이는 무리는 ' + farLine : '이미 도감에 있는 사진이에요: ' + best.d.name);
     if (lookingForFlock() && found.some(function (f) { return f.d.id === 'sheep'; })) G.showDetector(0);
   }
   function openDex() {
@@ -108,7 +112,7 @@ BO3D.gameModules.exploration = function (G) {
     G.state = 'caption'; G.hint.hidden = true; G.camBtn.hidden = true; G.dexBtn.hidden = true;
     G.showPanel([G.el('div', { class: 'q-kicker', text: '도움말' }),
       G.el('p', { class: 'q-prompt', text: '왼쪽 아래를 누른 채 밀어서, 멀리 움직이는 무리 쪽으로 걸어가 보세요.' }),
-      G.el('p', { class: 'q-prompt', text: '가까이 가면 무리 위에 흰 모서리가 떠요. 그때 사진기 단추를 눌러 보세요.' })],
+      G.el('p', { class: 'q-prompt', text: '가까이 가면 무리 위에 흰 모서리가 떠요. 그때 사진기 버튼을 눌러 보세요.' })],
       G.btn('계속 탐험하기', function () {
         G.hidePanel(); G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false;
       }));

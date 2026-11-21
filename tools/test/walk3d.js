@@ -135,7 +135,7 @@ async function runTier(browser, tierIndex, url) {
         await waitState('explore');
         // 착륙한 자리에서 양 떼를 가운데에 두고 찍으면 거리를 알려 준다.
         await aim(P.flock[0], P.flock[1]); await snap('far-flock');
-        assert.equal(await p.locator('.toast3').innerText(), '너무 멀어서 사진에 담기지 않았어요. 더 가까이 가서 찍어 보세요.');
+        assert((await p.locator('.toast3').innerText()).endsWith('너무 멀어서 사진에 담기지 않았어요. 더 가까이 가서 찍어 보세요.'));
         assert.equal((await st()).state, 'explore', 'a far photo must not start the question');
         await aim(P.machine[0], P.machine[1]); await snap('before-flock');
         assert.equal((await st()).state, 'explore', 'a photo without sheep must not start the question');
