@@ -290,6 +290,10 @@ h1, h2, h3 { text-wrap: balance; }
 .found-list { display: flex; flex-direction: column; gap: 6px; }
 .found-list .it { display: flex; gap: 8px; align-items: flex-start; font-size: 15px; line-height: 1.45; padding: 8px 10px; border-radius: 12px; background: var(--ok-bg); color: #14432F; }
 .found-list .it.wait { background: var(--paper-2); color: var(--text-soft); }
+.arrive:has(.arrival-clues) { justify-content: safe center; }
+.arrival-clues { align-self: stretch; text-align: left; }
+.arrival-clues:empty { display: none; }
+.clue-notes > summary { min-height: 44px; padding: 10px 0; cursor: pointer; color: var(--ink-2); font-family: var(--f-display); }
 
 /* 말씀 카드 */
 .vcards { display: flex; flex-direction: column; gap: 10px; }

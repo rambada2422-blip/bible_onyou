@@ -43,7 +43,7 @@ async function checkSize(browser, width, height) {
 
   async function checkClues(destination, filename) {
     await click(destination);
-    await click('둘러보기');
+    await click('이야기 읽기');
     await advanceTo('.found-list');
     await page.locator('.hot').last().waitFor();
     await capture(filename);

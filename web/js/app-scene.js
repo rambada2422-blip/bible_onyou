@@ -108,9 +108,13 @@
     var sc = C.scenes[id], steps = sceneSteps(sc);
     var idx = journey ? steps.findIndex(function (st) { return stepName(st) === journey.step; }) : 0;
     var nightOnArrival = id === 'EX-09' && journey && journey.nightOnArrival === true;
-    function remember(st, found) {
+    var clueItems = sc.alt && sc.spot.t1.type === 'hotspots' ? sc.spot.t1.items : [];
+    var found = clueItems.map(function (item) { return item.region; }).filter(function (region) {
+      return journey && Array.isArray(journey.found) && journey.found.includes(region);
+    });
+    function remember(st) {
       var progress = { id: id, tier: app.state.tier, step: stepName(st) };
-      if (found && found.length) progress.found = found.slice();
+      if (found.length) progress.found = found.slice();
       if (st.k === 'arrive' && nightOnArrival) progress.nightOnArrival = true;
       rememberJourney(progress);
     }
@@ -187,16 +191,16 @@
     function next() { idx++; if (idx >= steps.length) finish(); else step(); }
     function prev() { if (idx > 0) { idx--; step(); } }
 
-    function step(found) {
+    function step() {
       stopReading();
       artBox.onclick = null;
       hots.replaceChildren();
       var st = steps[idx];
-      remember(st, found);
+      remember(st);
       if (st.k === 'arrive') return stepArrive();
       if (st.k === 'beat') return stepBeat(sc.beats[st.i], st.i);
       if (st.k === 'gate') return stepGate(st.g, st.i, sc.gates[app.state.tier].length);
-      if (st.k === 'spot') return stepSpot(found);
+      if (st.k === 'spot') return stepSpot();
       if (st.k === 'back') return stepBack();
       if (st.k === 'cards') return stepCards();
       if (st.k === 'close') return stepClose();
@@ -233,6 +237,9 @@
         hots.appendChild(el('button', { class: 'look-target', 'aria-label': landmark.label + ' 살펴보기', on: { click: next },
           style: '--dx:' + (bounds.x + bounds.width / 2 - 450) + ';--dy:' + (bounds.y + bounds.height / 2 - 600) +
             ';--w:' + bounds.width + ';--h:' + bounds.height }));
+      } else if (svg && clueItems.length) {
+        hint = questionBlock({ type: 'hotspots', items: clueItems, prompt: '그림의 표시를 눌러 단서를 찾아보세요.' });
+        startLabel = '이야기 읽기';
       } else if (id === 'EX-09' && svg) {
         var cloud = svg.querySelector('#ex09-cloud'), fire = svg.querySelector('#ex09-fire');
         if (cloud && fire) {
@@ -245,7 +252,7 @@
       fill([
         el('div', { class: 'kicker', text: sc.alt ? '타임머신이 멈춘 곳' : '도착했어요' }),
         el('h2', { text: sc.place }),
-        el('p', { text: sc.alt ? '어? 가려던 곳과 조금 달라 보여요. 먼저 둘러봐요.' : sc.title }),
+        sc.alt && hint ? null : el('p', { text: sc.alt ? '어? 가려던 곳과 조금 달라 보여요. 먼저 둘러봐요.' : sc.title }),
         hint,
         refChip(sc.ref)
       ], controls);
@@ -271,10 +278,10 @@
         nextBtn(i === sc.beats.length - 1 ? (sc.alt ? '단서를 찾아보자' : '다음으로 가는 관문') : '다음')]);
     }
 
-    function questionBlock(q, onOk, found) {
+    function questionBlock(q, onOk) {
       return questions.blockFor(q, onOk, {
-        inputSuffix: id + '-' + idx, hots: hots, region: region, found: found,
-        onFind: function (regions) { remember(steps[idx], regions); }
+        inputSuffix: id + '-' + idx, hots: hots, region: region, found: found, arrival: steps[idx].k === 'arrive',
+        onFind: function (regions) { found = regions.slice(); remember(steps[idx]); }
       });
     }
 
@@ -283,12 +290,13 @@
       var nb = nextBtn(i === n - 1 ? '관문 통과' : '다음 관문', true);
       fill([el('div', { class: 'q-kicker', text: '다음으로 가는 관문 ' + (i + 1) + ' / ' + n }), questionBlock(q, function () { solved(nb); })], nb);
     }
-    function stepSpot(found) {
+    function stepSpot() {
       var q = sc.spot[app.state.tier];
       var isHot = q.type === 'hotspots';
       compact(!isHot); setDots(0, 0); setFocus(null);
       var nb = nextBtn('성경에서 확인하기', true);
-      fill([el('div', { class: 'q-kicker', text: '어긋난 단서 찾기' }), questionBlock(q, function () { solved(nb); }, found)], nb);
+      var notes = isHot ? null : questions.clueNotes(clueItems.filter(function (item) { return found.includes(item.region); }));
+      fill([el('div', { class: 'q-kicker', text: '어긋난 단서 찾기' }), notes, questionBlock(q, function () { solved(nb); })], nb);
     }
     function stepBack() {
       compact(true); setDots(0, 0);
@@ -339,13 +347,7 @@
       // 단서나 관문에서 바로 열어도 직전에 본 그림의 상태가 맞아야 한다.
       steps.slice(0, idx).forEach(function (st) { if (st.k === 'beat') setState(sc.beats[st.i].state); });
     }
-    var found;
-    if (journey && steps[idx].k === 'spot' && Array.isArray(journey.found)) {
-      var spot = sc.spot[app.state.tier];
-      if (spot.type === 'hotspots') found = spot.items.map(function (item) { return item.region; })
-        .filter(function (region) { return journey.found.includes(region); });
-    }
-    step(found);
+    step();
   }
 
   function cardNode(c, sc, pop) {

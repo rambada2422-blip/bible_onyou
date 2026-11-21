@@ -130,7 +130,7 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
       await button(page, '요셉').click();
       await page.locator('.warp').waitFor();
       await resume();
-      await button(page, '둘러보기').click();
+      await button(page, '이야기 읽기').click();
       await button(page, '다음').click();
       const narration = await page.locator('.sheet .narr').innerText();
       await resume();
@@ -158,7 +158,7 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
       await startNew(page, 0);
       await button(page, '목적지 다시 고르기').click();
       await button(page, '요셉').click();
-      await button(page, '둘러보기').click();
+      await button(page, '이야기 읽기').click();
       const next = page.locator('.sheet-foot .btn.onpaper');
       while (await page.locator('.sheet .narr').count()) await next.click();
       await button(page, '단서 2').click();
@@ -201,7 +201,7 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
       await button(page, '시간표로 돌아가기').click();
       await button(page, '목적지 다시 고르기').click();
       await button(page, '여호수아').click();
-      await button(page, '둘러보기').click();
+      await button(page, '이야기 읽기').click();
       const next = page.locator('.sheet-foot .btn.onpaper');
       while (await page.locator('.narr').count()) await next.click();
       for (let i = 1; i <= 3; i++) await button(page, '단서 ' + i).click();

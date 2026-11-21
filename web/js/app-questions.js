@@ -70,16 +70,26 @@
     } } }, '확인');
     return [el('p', { class: 'q-prompt', text: q.prompt }), el('div', { class: 'opts' }, btns), check, noteBox];
   }
+  function clueRow(item) {
+    return el('div', { class: 'it fadein' }, el('span', { text: item.text }), refChip(item.ref));
+  }
+  function clueNotes(items) {
+    if (!items.length) return null;
+    return el('details', { class: 'clue-notes' },
+      el('summary', { text: '먼저 찾은 단서 ' + items.length + '개' }),
+      el('div', { class: 'found-list' }, items.map(clueRow)));
+  }
   function hotspotBlock(q, onOk, scene) {
     var hots = scene.hots;
     var found = [];
-    var list = el('div', { class: 'found-list' });
-    var rows = q.items.map(function (it, k) {
-      var row = el('div', { class: 'it wait' }, el('span', { text: '단서 ' + (k + 1) + ': 아직 못 찾았어요' }));
-      list.appendChild(row);
-      return row;
-    });
+    var prompt = el('p', { class: scene.arrival ? 'look-prompt' : 'q-prompt', text: q.prompt });
+    var list = el('div', { class: 'found-list' + (scene.arrival ? ' arrival-clues' : ''), 'aria-live': 'polite' });
     q.items.forEach(function (it, k) {
+      var row;
+      if (!scene.arrival) {
+        row = el('div', { class: 'it wait' }, el('span', { text: '단서 ' + (k + 1) + ': 아직 못 찾았어요' }));
+        list.appendChild(row);
+      }
       var r = scene.region(it.region) || { x: 150 + k * 250, y: 500, w: 160, h: 160 };
       var x = r.tap ? r.tap[0] : r.x + r.w / 2;
       var y = r.tap ? r.tap[1] : r.y + r.h / 2;
@@ -87,19 +97,21 @@
         style: '--dx:' + (x - 450) + ';--dy:' + (y - 600),
         on: { click: function () {
           reveal();
-          if (found.length === q.items.length) onOk();
-          else scene.onFind(found);
+          scene.onFind(found);
+          if (onOk && found.length === q.items.length) onOk();
         } } });
       function reveal() {
         b.disabled = true; b.classList.add('found'); found.push(it.region);
-        rows[k].className = 'it fadein';
-        rows[k].replaceChildren(el('span', {}, it.text + ' '), refChip(it.ref));
+        if (scene.arrival) {
+          list.prepend(clueRow(it));
+          prompt.textContent = found.length === q.items.length ? '단서를 모두 찾았어요.' : '찾은 단서 ' + found.length + ' / ' + q.items.length;
+        } else row.replaceWith(clueRow(it));
       }
       if (scene.found && scene.found.includes(it.region)) reveal();
       hots.appendChild(b);
     });
-    if (found.length === q.items.length) onOk();
-    return [el('p', { class: 'q-prompt', text: q.prompt }), list];
+    if (onOk && found.length === q.items.length) onOk();
+    return [prompt, list];
   }
   function blockFor(q, onOk, scene) {
     if (q.type === 'choice') return choiceBlock(q, q.ref, onOk);
@@ -111,5 +123,5 @@
     return [];
   }
 
-  app.questions = { blockFor: blockFor, findBlock: findBlock };
+  app.questions = { blockFor: blockFor, findBlock: findBlock, clueNotes: clueNotes };
 })();
