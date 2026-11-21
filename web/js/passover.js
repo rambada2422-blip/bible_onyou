@@ -33,6 +33,18 @@
     ['ex06-bank', 'clear'], ['ex08-door', 'clear'], ['ex06-bank', 'storm'],
     ['ex06-bank', 'field'], null
   ];
+  var acts = ['강과 땅', '애굽과 고센', '하늘과 어둠'];
+  var findings = [
+    ['요술사들도 같은 일을 했어요.', '출 7:22'],
+    ['개구리가 사라지자 바로는 백성을 보내겠다는 약속을 거두었어요.', '출 8:8, 15'],
+    ['요술사들은 바로에게 이것이 하나님의 권능이라고 말했어요.', '출 8:19'],
+    ['바로는 광야로 가더라도 너무 멀리 가지 말라고 했어요.', '출 8:28'],
+    ['바로는 사람을 보내 이스라엘의 가축이 살아 있는지 확인했어요.', '출 9:7'],
+    ['요술사들도 종기 때문에 모세 앞에 설 수 없었어요.', '출 9:11'],
+    ['우박이 그치자 바로는 또다시 백성을 보내지 않았어요.', '출 9:34-35'],
+    ['서풍이 불어 메뚜기 떼를 홍해로 몰아냈어요.', '출 10:19'],
+    ['바로는 가축을 두고 가라 했지만, 모세는 가축도 함께 가야 한다고 했어요.', '출 10:24-26']
+  ];
   var preparation = [
     ['문', '출 12:3-7, 12-13', '가족마다 어린 양을 준비했어요. 이스라엘 백성은 그 피를 문 양옆의 기둥과 위쪽 가로대에 발랐어요. 하나님은 그 표가 있는 집을 지나가겠다고 하셨어요.'],
     ['식탁', '출 12:8', '그 밤에 불에 구운 고기를 무교병과 쓴 나물과 함께 먹었어요. 무교병은 누룩을 넣지 않은 빵이에요.'],
@@ -54,6 +66,47 @@
   function record(row) {
     return el('details', {class:'po-record'}, el('summary', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
   }
+  function exploreRoom(s, land, body, advance) {
+    var positions = ['왼쪽', '가운데', '오른쪽'];
+    var pins = el('div', {class:'po-pins', role:'group', 'aria-label':'그림 속 세 단서'});
+    var chips = el('ul', {class:'po-chips', 'aria-label':'발견한 단서'});
+    var detail = el('div', {class:'po-detail po-clue', role:'status'});
+    var next = button('그 밤의 기록으로', advance);
+    function reveal(i) {
+      var found = 0;
+      preparation.forEach(function (row, j) {
+        var known = Boolean(s.seen & (1 << j)), pin = pins.children[j];
+        if (known) found++;
+        pin.textContent = known ? '✓' : '✦';
+        pin.setAttribute('aria-label', known ? row[0] + ' 단서 다시 보기' : positions[j] + ' 단서 살펴보기');
+        pin.setAttribute('aria-pressed', String(j === i));
+        chips.children[j].textContent = known ? '✓ ' + row[0] : '미발견';
+        chips.children[j].classList.toggle('found', known);
+      });
+      if (i >= 0) {
+        var row = preparation[i];
+        detail.replaceChildren(el('b', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
+      } else {
+        detail.textContent = '그림 속 반짝이는 곳을 눌러 보세요. 이 집에서는 밤을 어떻게 준비했을까요?';
+      }
+      next.disabled = found !== 3;
+      next.textContent = found === 3 ? '그 밤의 기록으로' : '단서 ' + (3-found) + '개 더 찾아보세요 · ' + found + '/3';
+    }
+    preparation.forEach(function (_, i) {
+      var pin = button('✦', function () {
+        s.seen |= 1 << i; s.mealLook = i; app.save(); reveal(i);
+      }, 'po-pin');
+      pins.append(pin);
+      chips.append(el('li'));
+    });
+    land.append(pins);
+    body.append(chips, detail, next);
+    var last = s.mealLook;
+    if (!Number.isInteger(last) || last < 0 || last > 2 || !(s.seen & (1 << last))) {
+      last = preparation.findIndex(function (_, i) { return s.seen & (1 << i); });
+    }
+    reveal(last);
+  }
   function open(back, returnTo, readOnly) {
     returnTo = returnTo || '시간표';
     var s = app.state.passover;
@@ -70,18 +123,36 @@
     function advance() { s.step++; delete s.matched; delete s.observed; delete s.lookingAt; delete s.summons; app.save(); render(true); }
     function render(focus) {
       var step = readOnly ? end : s.step, river = step < 9, meal = step === 9;
-      var art = river ? 'ex06-bank' : meal ? 'ex07-table' : 'ex08-door';
-      var chapter = river ? '아홉 가지 재앙' : meal ? '유월절을 준비하다' : step < end ? '그 밤, 애굽에서 나오다' : '탐험 기록';
+      var art = river ? 'ex06-bank' : meal ? 'ex07-room' : 'ex08-door';
+      var act = Math.floor(step / 3);
+      var chapter = river ? acts[act] : meal ? '유월절을 준비하다' : step < end ? '그 밤, 애굽에서 나오다' : '탐험 기록';
       var h = el('h2', {tabindex:'-1'}, chapter), body = el('div', {class:'po-body'}), foot = [];
       var picture = el('div', {class:'po-picture'}, app.pic(art, '', ''));
       var land = el('div', {class:'po-land'}, picture,
-        el('div', {class:'po-title'}, el('small', {}, river ? '출애굽기 7–10장' : '출애굽기 11–12장'), h));
+        el('div', {class:'po-title'}, el('small', {}, river ? '아홉 가지 재앙 · ' + ['첫째', '둘째', '셋째'][act] + ' 묶음' : '출애굽기 11–12장'), h));
       function setView(key, appearance) {
         if (key !== art) { art = key; picture.replaceChildren(app.pic(key, '', '')); }
         land.dataset.view = appearance;
       }
       if (river) {
         var row = plagues[step], spots = lookouts[step];
+        land.dataset.act = String(act + 1);
+        var segments = el('div', {class:'po-segments', 'aria-hidden':'true'});
+        plagues.forEach(function () { segments.append(el('i')); });
+        var count = el('strong'), trail = el('div', {class:'po-trail'}, segments, count);
+        var finding = el('aside', {class:'po-finding'}, el('small', {}, '목격 기록'),
+          el('p', {}, findings[step][0]), app.refChip(findings[step][1]));
+        function markRecorded(done) {
+          var total = step + (done ? 1 : 0);
+          count.textContent = total + ' / 9 기록';
+          Array.from(segments.children).forEach(function (cell, i) {
+            cell.classList.toggle('filled', i < total);
+            cell.classList.toggle('current', i === step);
+          });
+          finding.hidden = !done;
+        }
+        markRecorded(!spots);
+        body.append(trail);
         body.append(el('h3', {}, (step + 1) + '번째 재앙 · ' + row[0]));
         var nextPlague = button(step === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기', advance);
         foot.push(nextPlague);
@@ -99,6 +170,7 @@
             });
             evidence.replaceChildren(el('b', {}, spot[0]), app.refChip(spot[1]), el('p', {}, spot[2]));
             nextPlague.disabled = seen !== 3;
+            markRecorded(seen === 3);
           }
           spots.forEach(function (spot, i) {
             var control = button(spot[0], function () {
@@ -118,21 +190,9 @@
           setView(shortViews[step][0], shortViews[step][1]);
           body.append(app.refChip(row[1]), el('p', {}, row[2]));
         }
+        body.append(finding);
       } else if (meal) {
-        body.append(el('p', {}, '마지막 재앙이 예고되었어요. 그 밤이 오기 전, 이스라엘 가정이 어떻게 준비했는지 세 가지 단서를 살펴보세요.'), app.refChip('출 11:1, 12:1-13'));
-        var note = el('div', {class:'po-detail', role:'status'});
-        var next = button('그 밤의 기록으로', advance);
-        next.disabled = s.seen !== 7;
-        preparation.forEach(function (row, i) {
-          var mark = 1 << i;
-          var item = button((s.seen & mark ? '✓ ' : '') + row[0], function () {
-            s.seen |= mark; app.save(); item.textContent = '✓ ' + row[0];
-            note.replaceChildren(el('b', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
-            next.disabled = s.seen !== 7;
-          }, 'opt');
-          body.append(item);
-        });
-        body.append(note); foot.push(next);
+        exploreRoom(s, land, body, advance);
       } else if (step === 10) {
         body.append(el('h3', {}, night[0]), app.refChip('출 12:29-30'), el('p', {}, nightfall));
         if (s.summons === true) {
@@ -153,7 +213,7 @@
         if (!readOnly) body.append(button('처음부터 다시 둘러보기', replay));
         foot.push(button(returnTo + '로 돌아가기', leave));
       }
-      app.show(el('div', {class:'screen po-screen'},
+      app.show(el('div', {class:'screen po-screen' + (meal ? ' po-meal' : '')},
         el('div', {class:'page-head pad'}, button('← ' + returnTo, leave, 'pillbtn'), el('span', {}, '감수용 미리보기')),
         el('main', {class:'po-scroll'}, land, body),
         foot.length ? el('div', {class:'sheet-foot pad'}, foot) : null));

@@ -429,7 +429,7 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-screen .page-head { justify-content: space-between; }
 .po-land { position: relative; height: clamp(125px, 29vh, 270px); background: #483522; }
 .po-land img { width: 100%; height: 100%; display: block; object-fit: cover; }
-.po-title { position: absolute; inset: auto 0 0; padding: 38px 20px 14px; color: white; background: linear-gradient(transparent,rgba(24,20,27,.90)); }
+.po-title { z-index: 2; position: absolute; inset: auto 0 0; padding: 38px 20px 14px; color: white; background: linear-gradient(transparent,rgba(24,20,27,.90)); }
 .po-title h2 { margin: 2px 0 0; font: 26px/1.2 var(--f-display); }
 .po-body { padding: 18px var(--gutter-r) 22px var(--gutter-l); display: grid; gap: 10px; }
 .po-body h3, .po-body p { margin: 0; }
@@ -463,4 +463,49 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 @media (prefers-reduced-motion: reduce) {
   .po-picture img { transition: none; }
   .po-land[data-view="flies"] .po-picture::after { animation: none; }
+}
+.po-land[data-act="2"] .po-picture::before,
+.po-land[data-act="3"] .po-picture::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.po-land[data-act="2"] .po-picture::before { background: linear-gradient(125deg, #a469322c, transparent 70%); }
+.po-land[data-act="3"] .po-picture::before { background: linear-gradient(#213d5c3b, transparent 74%); }
+.po-land[data-view="storm"] .po-picture::after {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(ellipse 2px 3px at 17% 24%, #f0f5fff2 55%, transparent),
+    radial-gradient(ellipse 1.5px 2px at 58% 67%, #e0ecffdb 60%, transparent);
+  background-size: 53px 71px, 77px 43px;
+}
+.po-land[data-act="2"] .po-title { background: linear-gradient(transparent, #302411ed); }
+.po-land[data-act="3"] .po-title { background: linear-gradient(transparent, #172537ed); }
+.po-trail { display: flex; align-items: center; gap: 12px; color: var(--ink); font-size: 14px; }
+.po-segments { display: flex; flex: 1; gap: 3px; }
+.po-segments i { height: 8px; flex: 1; border-radius: 2px; background: var(--paper-line); }
+.po-segments i:nth-child(3n+1):not(:first-child) { margin-left: 5px; }
+.po-segments .filled { background: var(--teal); }
+.po-segments .current { outline: 1px solid var(--ink); outline-offset: 1px; }
+.po-finding { border-inline-start: 3px solid var(--teal); border-radius: 0 10px 10px 0; background: var(--paper-2); padding: 10px 14px; }
+.po-finding small { color: var(--teal); font-weight: 700; }
+.po-finding p { margin-block: 3px; }
+.po-meal .po-land { height: auto; aspect-ratio: 3 / 2; }
+.po-meal .po-title { pointer-events: none; inset: 0 0 auto; padding: 8px 16px 15px; background: linear-gradient(#201a16d9, transparent); }
+.po-meal .po-title small { font-size: 12px; }
+.po-meal .po-title h2 { font-size: 22px; }
+.po-pins { position: absolute; inset: 0; }
+.po-pin { position: absolute; border-radius: 50%; width: 48px; height: 48px; transform: translate(-50%, -50%); display: grid; place-content: center; isolation: isolate; color: #3c280b; font-size: 18px; }
+.po-pin::before { content: ''; position: absolute; z-index: -1; inset: 10px; background: #ffdf96; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 3px #745027a8, 0 0 10px 4px #ffd380a8; }
+.po-pin[aria-pressed="true"]::before { background: #153e38; }
+.po-pin[aria-pressed="true"] { color: white; }
+.po-pin:nth-child(1) { left: max(25px, 9%); top: 48%; }
+.po-pin:nth-child(2) { left: 44%; top: 72%; }
+.po-pin:nth-child(3) { left: 81%; top: 80%; }
+.po-meal .po-body { gap: 8px; padding-block: 10px 14px; align-content: start; }
+.po-chips { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; padding: 0; margin: 0; list-style: none; }
+.po-chips li { text-align: center; border: 1px dashed var(--paper-line); border-radius: 24px; color: var(--text-soft); font-size: 13px; padding: 3px; }
+.po-chips .found { border: 1px solid var(--teal); color: var(--ink); background: #e1ede4; }
+.po-clue:not(:empty) { padding: 10px 12px; }
+.po-clue p { padding: 4px 0 0; line-height: 1.5; }
+.po-meal .btn:disabled { color: var(--text-soft); background: var(--paper-2); box-shadow: none; opacity: 1; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .po-meal .po-scroll { display: grid; grid-template-columns: 43% minmax(0,1fr); align-content: start; }
+  .po-meal .po-body { padding: 6px 10px; gap: 6px; }
+  .po-meal .btn { min-height: 44px; }
 }

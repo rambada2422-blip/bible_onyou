@@ -29,6 +29,10 @@ async function play(browser, url, age) {
       assert.equal(await page.locator('.po-body h3').innerText(), (i+1) + '번째 재앙 · ' + name);
       const places = {0:['강물','강가'], 3:['애굽의 집','고센 땅'], 8:['애굽 땅','이스라엘 자손이 사는 곳']}[i];
       const next = button(i === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기');
+      const progress = page.locator('.po-trail strong');
+      assert.equal(await page.locator('.po-segments i').count(), 9);
+      assert.equal(await page.locator('.po-title h2').innerText(), ['강과 땅','애굽과 고센','하늘과 어둠'][Math.floor(i/3)]);
+      assert.equal(await progress.innerText(), (i + (places ? 0 : 1)) + ' / 9 기록');
       if (places) {
         assert(await next.isDisabled());
         const [first, second] = age % 2 ? places.slice().reverse() : places;
@@ -38,6 +42,7 @@ async function play(browser, url, age) {
         await resume();
         assert.equal(await button('✓ '+first).getAttribute('aria-pressed'), 'true');
         assert.equal(await page.locator('.po-detail b').innerText(), first);
+        assert.equal(await progress.innerText(), i + ' / 9 기록');
         await tap('✓ '+first);
         assert(await next.isDisabled());
         await tap(second);
@@ -56,16 +61,34 @@ async function play(browser, url, age) {
         assert(await checkArt());
       }
       assert(await next.isEnabled());
+      assert.equal(await progress.innerText(), (i+1) + ' / 9 기록');
+      assert.equal(await page.locator('.po-segments .filled').count(), i+1);
+      assert(await page.locator('.po-finding').isVisible());
+      if (age === 0 && i === 6) await page.screenshot({path:path.join(output,'plague-trail.png')});
       await tap(i === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기');
     }
     assert(await checkArt());
-    await tap('식탁');
+    assert.deepEqual(await page.locator('.po-chips li').allTextContents(), ['미발견','미발견','미발견']);
+    const pins = page.locator('.po-pins button');
+    for (const pin of await pins.all()) {
+      const bounds = await pin.boundingBox();
+      assert(bounds.width >= 44 && bounds.height >= 44);
+    }
+    await tap('가운데 단서 살펴보기');
     await resume();
-    assert(await button('✓ 식탁').isVisible());
-    assert(await button('그 밤의 기록으로').isDisabled());
-    await tap('떠날 차림');
-    await tap('문');
+    assert(await button('식탁 단서 다시 보기').isVisible());
+    assert.equal(await page.locator('.po-clue b').innerText(), '식탁');
+    assert(await button('단서 2개 더 찾아보세요 · 1/3').isDisabled());
+    await tap('식탁 단서 다시 보기');
+    assert.equal(await page.locator('.po-chips .found').count(), 1);
+    await tap('오른쪽 단서 살펴보기');
+    assert(await button('단서 1개 더 찾아보세요 · 2/3').isDisabled());
+    await button('왼쪽 단서 살펴보기').focus();
+    await page.keyboard.press('Enter');
+    assert.deepEqual(await page.locator('.po-chips li').allTextContents(), ['✓ 문','✓ 식탁','✓ 떠날 차림']);
     assert.deepEqual(await page.evaluate(layoutIssues, '.po-screen'), []);
+    const card = await page.locator('.po-clue').boundingBox();
+    assert(card.y >= 0 && card.y + card.height <= height, '누른 단서 설명 전체가 화면 안에 들어야 한다');
     if (age === 0) await page.screenshot({ path:path.join(output,'preparation.png') });
     await tap('그 밤의 기록으로');
     assert(await checkArt());
@@ -122,9 +145,20 @@ async function legacy(browser, url) {
       assert.equal(await next.isEnabled(), matched);
       if (matched) {
         await next.click();
-        assert(await page.getByRole('button', {name:'식탁', exact:true}).isVisible());
+        assert(await page.getByRole('button', {name:'가운데 단서 살펴보기', exact:true}).isVisible());
       }
     }
+    // 예전 식탁 화면에는 마지막으로 열어 둔 단서의 번호가 없었다.
+    await page.evaluate(() => {
+      BO.app2d.state.passover = {step:9, seen:5, active:true};
+      BO.app2d.save();
+    });
+    await page.reload();
+    await tap('이어서 탐험하기');
+    assert.deepEqual(await page.locator('.po-chips li').allTextContents(), ['✓ 문','미발견','✓ 떠날 차림']);
+    assert.equal(await page.locator('.po-clue b').innerText(), '문');
+    await tap('가운데 단서 살펴보기');
+    assert(await page.getByRole('button', {name:'그 밤의 기록으로',exact:true}).isEnabled());
   } finally { await page.close(); }
 }
 
