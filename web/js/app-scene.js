@@ -430,6 +430,7 @@
   restoreJournalClues();
   app.journalClues = journalClues;
   app.rememberArrival = rememberArrival;
+  app.narration = {available:canSpeak, button:readButton, stop:stopReading};
   app.runScene = runScene;
   app.savedJourney = savedJourney;
   app.cardNode = cardNode;

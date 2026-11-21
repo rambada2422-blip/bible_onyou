@@ -2,10 +2,12 @@
 (function () {
   'use strict';
   BO.orderQuestion = function (q, onOk, ui) {
-    var el = ui.el, picked = [], shuffled = [], i;
+    var el = ui.el, picked = [], shuffled = ui.order || [], i;
     var note = el('div', { role: 'status' });
-    for (i = 1; i < q.items.length; i += 2) shuffled.push(i);
-    for (i = q.items.length - 1 - ((q.items.length - 1) % 2); i >= 0; i -= 2) shuffled.push(i);
+    if (!ui.order) {
+      for (i = 1; i < q.items.length; i += 2) shuffled.push(i);
+      for (i = q.items.length - 1 - ((q.items.length - 1) % 2); i >= 0; i -= 2) shuffled.push(i);
+    }
 
     var numbers = q.items.map(function () { return el('span', { class: 'num' }); });
     var buttons = q.items.map(function (label, index) {
@@ -15,7 +17,7 @@
         else picked.splice(position, 1);
         render();
         if (picked.length === q.items.length) check();
-      } } }, numbers[index], el('span', { text: label }));
+      } } }, numbers[index], ui.label ? ui.label(label,index) : el('span', { text: label }));
     });
     var reset = el('button', { class: 'btn plain', on: { click: function () {
       picked = [];
@@ -34,6 +36,10 @@
       if (picked.every(function (value, index) { return value === index; })) {
         buttons.forEach(function (button) { button.classList.add('ok'); button.disabled = true; });
         reset.disabled = true;
+        if (ui.showInOrder) {
+          var list = buttons[0].parentNode;
+          buttons.forEach(function (button) { list.append(button); });
+        }
         note.replaceChildren(ui.goodNote(q.ref, '성경에 기록된 순서예요.'));
         onOk();
       } else {

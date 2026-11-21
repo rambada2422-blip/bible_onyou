@@ -80,82 +80,158 @@
   function button(label, action, cls) {
     return el('button', {class: cls || 'btn onpaper', on: {click: action}}, label);
   }
+  function readingLine(ref, text, title) {
+    var line = el('div', {class:'po-reading-line'}, title ? el('b', {}, title) : null, app.refChip(ref));
+    if (app.state.tier === 't1' && app.narration.available) {
+      var status = el('span', {class:'read-status', role:'status', hidden:''});
+      line.append(app.narration.button(text, status), status);
+    }
+    return line;
+  }
   function record(row) {
     var entry = el('details', {class:'po-record'}, el('summary', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
     if (row === night) entry.append(app.refChip('출 12:31-32'), el('p', {}, summons));
+    entry.setAttribute('name', 'po-open-note');
+    entry.addEventListener('toggle', function () {
+      if (!entry.open || entry.querySelector('.po-note-art')) return;
+      var i = plagues.indexOf(row), pictures = el('div', {class:'po-note-art'});
+      if (lookouts[i]) {
+        lookouts[i].forEach(function (spot) {
+          pictures.append(el('figure', {}, app.pic(spot.art, '', spot.alt), el('figcaption', {}, spot.place)));
+        });
+      } else {
+        var art = i >= 0 ? shortViews[i] : row === night ? 'plague-midnight' : row === departure ? 'plague-departure' : 'ex07-room';
+        pictures.append(app.pic(art, '', pictureDescriptions[art]));
+      }
+      entry.append(pictures);
+    });
     return entry;
   }
-  function showPlagueNotes(trigger, count) {
+  function openDialog(trigger, dialog, focus) {
+    app.narration.stop();
+    trigger.closest('.screen').append(dialog);
+    dialog.addEventListener('close', function () {
+      dialog.remove(); trigger.focus({preventScroll:true});
+    }, {once:true});
+    dialog.showModal();
+    focus.focus({preventScroll:true});
+  }
+  function recallFirstScenes(trigger) {
+    var rows = plagues.slice(0,3);
+    var art = [lookouts[0][0].art,shortViews[1],shortViews[2]];
+    var title = el('h2', {id:'po-recall-title',tabindex:'-1'}, '강과 땅 · 그림 순서');
+    var dialog = el('dialog', {class:'po-notes po-recall','aria-labelledby':title.id});
+    var orders = [[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+    function note(ref, text) { return el('div', {}, app.refChip(ref), el('p', {}, text)); }
+    var q = {items:rows.map(function (row) { return row[0]; }), ref:'출 7:19–8:19',
+      prompt:'첫째 묶음에서 본 차례대로 세 그림을 눌러 보세요.'};
+    var exercise = BO.orderQuestion(q, function () {
+      dialog.classList.add('po-ordered');
+      var feedback = dialog.querySelector('[role="status"]');
+      feedback.tabIndex = -1;
+      feedback.focus({preventScroll:true});
+    }, {
+      el:el, goodNote:note, lookNote:note, showInOrder:true, order:orders[Math.floor(Math.random()*orders.length)],
+      label:function (name, i) { return el('span', {class:'po-recall-card'}, app.pic(art[i], '', ''), el('span', {}, name)); }
+    });
+    var records = el('details', {class:'po-recall-reference'}, el('summary', {}, '기록 순서 펼쳐 보기'),
+      el('ol', {}, rows.map(function (row) { return el('li', {}, row[0], ' ', app.refChip(row[1])); })));
+    dialog.append(title, el('div', {class:'po-recall-body'}, exercise, records),
+      button('탐험으로 돌아가기', function () { dialog.close(); }));
+    openDialog(trigger,dialog,title);
+  }
+  function showPlagueNotes(trigger, count, returnLabel) {
     var dialog = el('dialog', {class:'po-notes', 'aria-labelledby':'po-notes-title'});
-    var close = button('탐험으로 돌아가기', function () { dialog.close(); });
+    var close = button(returnLabel || '탐험으로 돌아가기', function () { dialog.close(); });
     var list = el('div', {class:'po-note-list'});
     plagues.slice(0, count).forEach(function (row, i) {
       var entry = record(row);
-      entry.setAttribute('name', 'po-open-note');
       entry.querySelector('summary').textContent = (i + 1) + '번째 · ' + row[0];
-      entry.addEventListener('toggle', function () {
-        if (!entry.open || entry.querySelector('.po-note-art')) return;
-        var pictures = el('div', {class:'po-note-art'});
-        if (lookouts[i]) {
-          lookouts[i].forEach(function (spot) {
-            pictures.append(el('figure', {}, app.pic(spot.art, '', spot.alt), el('figcaption', {}, spot.place)));
-          });
-        } else {
-          pictures.append(app.pic(shortViews[i], '', pictureDescriptions[shortViews[i]]));
-        }
-        entry.append(pictures);
-      });
       list.prepend(entry);
     });
     var title = el('h2', {id:'po-notes-title', tabindex:'-1'}, '지금까지 본 재앙');
     dialog.append(title, list, close);
-    trigger.closest('.po-screen').append(dialog);
-    dialog.addEventListener('close', function () {
-      dialog.remove();
-      trigger.focus({preventScroll:true});
-    }, {once:true});
-    dialog.showModal();
-    title.focus({preventScroll:true});
+    openDialog(trigger,dialog,title);
   }
-  function pictureLens(picture, art, step) {
+  function availablePlagues() {
+    var s = app.state.passover;
+    if (!valid(s)) return 0;
+    if (s.step >= plagues.length) return plagues.length;
+    return s.step + (!lookouts[s.step] || s.matched === true || (s.observed & 3) === 3 ? 1 : 0);
+  }
+  function journalButton(back) {
+    if (completed()) return button('열 가지 재앙과 유월절 · 탐험 기록', function () { open(back, '일지', true); }, 'btn wide onpaper');
+    var count = availablePlagues();
+    if (!count) return null;
+    return button('지금까지 본 재앙 · ' + count + '개', function (event) {
+      showPlagueNotes(event.currentTarget, count, '일지로 돌아가기');
+    }, 'btn wide onpaper');
+  }
+  function openLens(trigger, art, alt, title, startX, startY) {
+    var dialog = el('dialog', {class:'po-lens', 'aria-labelledby':'po-lens-title'});
+    var frame = el('div', {class:'po-lens-frame'}, app.pic(art, '', alt));
+    frame.firstElementChild.draggable = false;
+    var marker = el('span', {class:'po-lens-marker', 'aria-hidden':'true'});
+    var map = el('button', {class:'po-lens-map', 'aria-label':'확대할 위치 선택', 'aria-describedby':'po-lens-help'},
+      app.pic(art, '', ''), marker);
+    var x = .5, y = .5, drag;
+    var where = el('span', {id:'po-lens-position', class:'sr-only', role:'status'});
+    function announce() {
+      var column = x < .4 ? '왼쪽' : x > .6 ? '오른쪽' : '가운데';
+      var row = y < .4 ? '위쪽' : y > .6 ? '아래쪽' : '';
+      where.textContent = '확대한 곳 · ' + column + (row ? ' ' + row : '');
+    }
+    function position(left, top) {
+      // 두 배 확대하므로 가장자리에서도 원본의 1/2이 보이게 창을 안쪽에 둔다.
+      x = Math.min(.75, Math.max(.25, left));
+      y = Math.min(.75, Math.max(.25, top));
+      frame.firstElementChild.style.transform = 'translate(' + (25-x*100) + '%, ' + (25-y*100) + '%)';
+      marker.style.left = (x-.25)*100 + '%';
+      marker.style.top = (y-.25)*100 + '%';
+    }
+    function pick(event, bounds) {
+      position((event.clientX-bounds.left)/bounds.width, (event.clientY-bounds.top)/bounds.height);
+    }
+    frame.addEventListener('pointerdown', function (e) {
+      if (!e.isPrimary || e.button !== 0) return;
+      drag = {id:e.pointerId, left:e.clientX, top:e.clientY, x:x, y:y};
+      frame.setPointerCapture(e.pointerId);
+      frame.classList.add('panning');
+    });
+    frame.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var r = frame.getBoundingClientRect();
+      position(drag.x + (drag.left-e.clientX)/(2*r.width), drag.y + (drag.top-e.clientY)/(2*r.height));
+    });
+    frame.addEventListener('lostpointercapture', function () {
+      drag = null; frame.classList.remove('panning'); announce();
+    });
+    position(startX,startY);
+    announce();
+    map.addEventListener('click', function (event) {
+      if (event.detail) pick(event, map.getBoundingClientRect());
+      else position(.5,.5);
+      announce();
+    });
+    map.addEventListener('keydown', function (event) {
+      var delta = {ArrowLeft:[-.1,0],ArrowRight:[.1,0],ArrowUp:[0,-.1],ArrowDown:[0,.1]}[event.key];
+      if (delta) { event.preventDefault(); position(x+delta[0],y+delta[1]); announce(); }
+    });
+    var close = button('그림 닫기', function () { dialog.close(); }, 'pillbtn');
+    dialog.append(el('div', {class:'po-lens-head'}, el('h2', {id:'po-lens-title'}, title), close),
+      frame, el('p', {id:'po-lens-help'}, '큰 그림을 끌거나 작은 그림을 눌러 옮겨 보세요. 방향키로도 옮길 수 있어요.',
+        el('span', {class:'sr-only'}, ' Enter로 가운데로 돌아갈 수 있어요.')), map, where);
+    openDialog(trigger,dialog,map);
+  }
+  function pictureLens(picture, art, title) {
     var img = picture.firstElementChild;
     var trigger = button(el('span', {}, '그림 확대'), function (event) {
-      var dialog = el('dialog', {class:'po-lens', 'aria-labelledby':'po-lens-title'});
-      var frame = el('div', {class:'po-lens-frame'}, app.pic(art, '', img.alt));
-      var marker = el('span', {class:'po-lens-marker', 'aria-hidden':'true'});
-      var map = el('button', {class:'po-lens-map', 'aria-label':'확대할 위치 선택', 'aria-describedby':'po-lens-help'},
-        app.pic(art, '', ''), marker);
-      var x = .5, y = .5;
-      function position(left, top) {
-        // 두 배 확대하므로 가장자리에서도 원본의 1/2이 보이게 창을 안쪽에 둔다.
-        x = Math.min(.75, Math.max(.25, left));
-        y = Math.min(.75, Math.max(.25, top));
-        frame.firstElementChild.style.transform = 'translate(' + (25-x*100) + '%, ' + (25-y*100) + '%)';
-        marker.style.left = (x-.25)*100 + '%';
-        marker.style.top = (y-.25)*100 + '%';
-      }
-      function pick(event, bounds) {
-        position((event.clientX-bounds.left)/bounds.width, (event.clientY-bounds.top)/bounds.height);
-      }
-      if (event.detail) pick(event, trigger.getBoundingClientRect());
-      else position(x,y);
-      map.addEventListener('click', function (event) {
-        if (event.detail) pick(event, map.getBoundingClientRect());
-        else position(.5,.5);
-      });
-      map.addEventListener('keydown', function (event) {
-        var delta = {ArrowLeft:[-.1,0],ArrowRight:[.1,0],ArrowUp:[0,-.1],ArrowDown:[0,.1]}[event.key];
-        if (delta) { event.preventDefault(); position(x+delta[0],y+delta[1]); }
-      });
-      var close = button('그림 닫기', function () { dialog.close(); }, 'pillbtn');
-      dialog.append(el('div', {class:'po-lens-head'}, el('h2', {id:'po-lens-title'}, plagues[step][0]), close),
-        frame, el('p', {id:'po-lens-help'}, '작은 그림에서 보고 싶은 곳을 누르세요. 방향키로도 옮길 수 있어요.'), map);
-      trigger.closest('.po-screen').append(dialog);
-      dialog.addEventListener('close', function () { dialog.remove(); trigger.focus({preventScroll:true}); }, {once:true});
-      dialog.showModal();
-      map.focus({preventScroll:true});
+      var r = trigger.getBoundingClientRect();
+      var x = event.detail ? (event.clientX-r.left)/r.width : .5;
+      var y = event.detail ? (event.clientY-r.top)/r.height : .5;
+      openLens(trigger, art, img.alt, title, x, y);
     }, 'po-lens-open');
-    trigger.setAttribute('aria-label', plagues[step][0] + ' 그림 확대');
+    trigger.setAttribute('aria-label', title + ' 그림 확대');
     trigger.setAttribute('aria-haspopup', 'dialog');
     picture.append(trigger);
   }
@@ -165,7 +241,11 @@
     return preparation.findIndex(function (_, j) { return s.seen & (1 << j); });
   }
   function exploreRoom(s, land, body, advance) {
-    var positions = ['왼쪽', '가운데', '오른쪽'];
+    var targets = [
+      {position:'왼쪽',x:.09,y:.48,alt:'나무 문기둥과 위쪽 가로대'},
+      {position:'가운데',x:.44,y:.72,alt:'덮은 그릇, 무교병, 쓴 나물이 놓인 식탁'},
+      {position:'오른쪽',x:.81,y:.80,alt:'지팡이 아래 놓인 신과 곁에 걸린 허리띠'}
+    ];
     var pins = el('div', {class:'po-pins', role:'group', 'aria-label':'그림 속 세 단서'});
     var chips = el('ul', {class:'po-chips', 'aria-label':'발견한 단서'});
     var detail = el('div', {class:'po-detail po-clue', role:'status'});
@@ -176,14 +256,23 @@
         var known = Boolean(s.seen & (1 << j)), pin = pins.children[j];
         if (known) found++;
         pin.textContent = known ? '✓' : '✦';
-        pin.setAttribute('aria-label', known ? row[0] + ' 단서 다시 보기' : positions[j] + ' 단서 살펴보기');
+        pin.setAttribute('aria-label', known ? row[0] + ' 단서 다시 보기' : targets[j].position + ' 단서 살펴보기');
         pin.setAttribute('aria-pressed', String(j === i));
-        chips.children[j].textContent = known ? '✓ ' + row[0] : '미발견';
-        chips.children[j].classList.toggle('found', known);
+        var chip = chips.children[j];
+        if (known && !chip.firstElementChild) {
+          var target = targets[j];
+          var zoom = button([el('span', {}, '✓ ' + row[0]), app.icon('lens')], function (event) {
+            openLens(event.currentTarget, 'ex07-room', target.alt, row[0], target.x, target.y);
+          }, 'po-clue-zoom');
+          zoom.setAttribute('aria-label', row[0] + ' 그림 확대');
+          zoom.setAttribute('aria-haspopup', 'dialog');
+          chip.replaceChildren(zoom);
+          chip.classList.add('found');
+        }
       });
       if (i >= 0) {
         var row = preparation[i];
-        detail.replaceChildren(el('b', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
+        detail.replaceChildren(readingLine(row[1], row[2], row[0]), el('p', {}, row[2]));
       } else {
         detail.textContent = '마지막 재앙이 예고되었어요. 그 밤 한밤중이 되기 전, 이스라엘 가정이 어떻게 준비했는지 세 가지 단서를 살펴보세요.';
       }
@@ -192,14 +281,29 @@
     }
     preparation.forEach(function (_, i) {
       var pin = button('✦', function () {
+        app.narration.stop();
         s.seen |= 1 << i; s.mealLook = i; app.save(); reveal(i);
       }, 'po-pin');
+      pin.style.left = 'clamp(24px,' + targets[i].x*100 + '%,calc(100% - 24px))';
+      pin.style.top = targets[i].y*100 + '%';
       pins.append(pin);
-      chips.append(el('li'));
+      chips.append(el('li', {}, '미발견'));
     });
     land.append(pins);
     body.append(chips, detail, next);
     reveal(lastMealClue(s));
+  }
+  function hubHint() {
+    var s = app.state.passover;
+    if (!valid(s) || (s.step === 0 && !s.observed && !s.matched)) return '';
+    if (s.step < 9) return '이어서 · ' + (s.step+1) + '번째 재앙 · ' + plagues[s.step][0];
+    if (s.step === 9) {
+      var remaining = preparation.filter(function (_, i) { return !(s.seen & (1 << i)); }).length;
+      return remaining ? '유월절 준비 · 남은 단서 ' + remaining + '개' : '유월절 준비 · 그 밤의 기록으로';
+    }
+    if (s.step === 10) return s.summons ? '이어서 읽기 · 바로의 부름' : '이어서 읽기 · 그 밤';
+    if (s.step === 11) return '이어서 읽기 · 애굽을 떠나다';
+    return '탐험 기록 다시 읽기';
   }
   function returnContext(s) {
     if (!valid(s)) return '';
@@ -221,6 +325,7 @@
     if (!valid(s)) s = app.state.passover = {step:0, seen:0};
     if (!readOnly) { s.active = true; app.save(); }
     function leave() {
+      app.narration.stop();
       if (!readOnly) { s.active = false; app.save(); }
       back();
     }
@@ -230,6 +335,7 @@
     }
     function advance() { s.step++; delete s.matched; delete s.observed; delete s.lookingAt; delete s.summons; app.save(); render(true); }
     function render(focus) {
+      app.narration.stop();
       var step = readOnly ? end : s.step, river = step < 9, meal = step === 9;
       var spots = lookouts[step];
       var art = meal ? 'ex07-room' : step === 10 ? 'plague-midnight' : 'ex08-door';
@@ -239,8 +345,8 @@
       var chapter = river ? acts[act] : meal ? '유월절을 준비하다' : step < end ? '그 밤, 애굽에서 나오다' : '탐험 기록';
       var plagueTitle = river && (step + 1) + '번째 재앙 · ' + plagues[step][0];
       var caption = river ? '아홉 가지 재앙 · ' + ['첫째', '둘째', '셋째'][act] + ' 묶음' : '출애굽기 11–12장';
-      if (spots) caption += ' · ' + chapter;
-      var h = el('h2', {tabindex:'-1'}, spots ? plagueTitle : chapter);
+      if (river) caption += ' · ' + chapter;
+      var h = el('h2', {tabindex:'-1'}, river ? plagueTitle : chapter);
       var body = el('div', {class:'po-body'}), foot = [];
       var picture = el('div', {class:'po-picture'}, spots ? null : app.pic(art, '', pictureDescriptions[art] || ''));
       var land = el('div', {class:'po-land'}, spots ? null : picture,
@@ -272,24 +378,28 @@
         }
         markRecorded(!spots);
         body.append(trail);
-        if (!spots) body.append(el('h3', {}, plagueTitle));
         var nextPlague = button(step === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기', advance);
+        if (step === 2) foot.push(button('그림 순서 놓기', function (event) {
+          recallFirstScenes(event.currentTarget);
+        }, 'btn plain po-order-open'));
         foot.push(nextPlague);
         if (spots) {
           // 이전 판에서 이미 이름을 맞힌 기록도 다음 장면으로 곧바로 이어진다.
           var seen = s.matched === true ? 3 : (s.observed & 3);
-          var evidence = el('div', {class:'po-detail', role:'status'}, app.refChip(row[1]), el('p', {}, row[2]));
+          var evidence = el('div', {class:'po-detail', 'aria-live':'polite'}, readingLine(row[1], row[2]), el('p', {}, row[2]));
           var choices = el('div', {class:'po-spots', role:'group', 'aria-label':'관찰할 곳', 'aria-describedby':'po-spot-hint'});
           var hint = el('p', {class:'po-spot-hint', id:'po-spot-hint'}, '먼저 살펴보고 싶은 그림을 눌러 보세요.');
           function showSpot(i) {
+            app.narration.stop();
             var spot = spots[i];
             picture.replaceChildren(app.pic(spot.art, '', spot.alt));
+            pictureLens(picture, spot.art, spot.place);
             land.dataset.view = spot.art;
             Array.from(choices.children).forEach(function (control, j) {
               control.setAttribute('aria-pressed', String(j === i));
               control.querySelector('span').textContent = (seen & (1 << j) ? '✓ ' : '') + spots[j].place;
             });
-            evidence.replaceChildren(el('b', {}, spot.place), app.refChip(spot.ref), el('p', {}, spot.text));
+            evidence.replaceChildren(readingLine(spot.ref, spot.text + ' ' + spot.guide, spot.place), el('p', {}, spot.text));
             if (app.state.tier === 't1') evidence.append(el('p', {class:'po-guide'}, spot.guide));
             hint.textContent = seen === 3 ? '두 곳을 살펴봤어요.' : '이제 ‘' + spots[1 - i].place + '’ 그림을 눌러 보세요.';
             evidence.append(picture);
@@ -313,8 +423,8 @@
             showSpot(lastSpot);
           }
         } else {
-          pictureLens(picture, art, step);
-          body.append(app.refChip(row[1]), el('p', {}, row[2]));
+          pictureLens(picture, art, row[0]);
+          body.append(readingLine(row[1], row[2]), el('p', {}, row[2]));
         }
         if (app.state.tier !== 't1' || ![0, 2, 3, 5, 7, 8].includes(step)) body.append(finding);
       } else if (meal) {
@@ -335,12 +445,17 @@
         foot.push(button('탐험 기록 다시 읽기', advance));
       } else {
         body.append(el('h3', {}, '열 가지 재앙과 유월절'), el('p', {}, '이름을 눌러 그때의 기록과 장절을 다시 읽어 보세요.'));
-        plagues.concat(preparation, [night, departure]).forEach(function (row) { body.append(record(row)); });
+        function shelf(title, rows) {
+          return el('section', {class:'po-shelf'}, el('h4', {}, title), rows.map(record));
+        }
+        acts.forEach(function (name, i) { body.append(shelf(name, plagues.slice(i*3,i*3+3))); });
+        body.append(shelf('유월절을 준비하다', preparation), shelf('그 밤과 출발', [night, departure]));
         if (!readOnly) body.append(button('처음부터 다시 둘러보기', replay));
         foot.push(button(returnTo + '로 돌아가기', leave));
       }
       var sceneClass = meal ? ' po-meal' : river ? ' po-river' : '';
-      if (spots) sceneClass += ' po-compare';
+      if (river) sceneClass += spots ? ' po-compare' : ' po-short';
+      if (step === 10) sceneClass += ' po-night';
       if (step === 11) sceneClass += ' po-departure';
       if (resumeNote) {
         var note = el('span', {class:'po-return-note', id:'po-return-note'}, resumeNote);
@@ -364,7 +479,7 @@
     }
     render(false);
   }
-  app.passover = {open:open, completed:completed, resuming:function () {
+  app.passover = {open:open, completed:completed, hubHint:hubHint, hasJournal:function () { return completed() || availablePlagues() > 0; }, journalButton:journalButton, resuming:function () {
     return valid(app.state.passover) && app.state.passover.active === true;
   }};
 })();
