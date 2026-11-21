@@ -332,7 +332,7 @@
       } else forward = nextBtn(i === sc.beats.length - 1 ? (sc.alt ? '단서를 찾아보자' : '다음으로 가는 관문') : '다음');
       fill([
         el('div', { class: 'narr-meta' }, refChip(b.ref),
-          status ? readButton(text, status) : null),
+          status ? readButton(spot ? text + ' ' + tx(ahead.look) : text, status) : null),
         status,
         el('p', { class: 'narr', text: text }),
         b.say ? el('div', { class: 'say' }, pic(b.say.who + '-avatar', 'avatar', ''),

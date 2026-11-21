@@ -1,4 +1,4 @@
-// 2D 떨기나무 이야기에서 '다음' 대신 그림을 눌러 다음 대목을 여는 곳 (출 3:3 떨기나무, 출 3:6 모세)을 시험한다.
+// 2D 떨기나무 이야기에서 '다음' 대신 그림의 떨기나무를 눌러 출 3:2-3 대목을 여는 곳 (출 3:3, 모세가 돌이켜 가서 봄)을 시험한다.
 // node tools/build.js && node tools/test/full/look-beats2d.js [화면 사진 폴더]
 const assert = require('node:assert/strict');
 const path = require('node:path');
@@ -49,7 +49,8 @@ async function play(browser, origin, entry, tier, size, label) {
   try {
     const beats = await (async () => { await page.goto(origin + entry); return page.evaluate(() => BO.content.scenes['EX-01'].beats); })();
     const looks = beats.map((beat, i) => (beat.look ? i : -1)).filter((i) => i > 0);
-    assert.deepEqual(looks, [1, 4], '그림을 눌러 여는 대목은 출 3:2-3과 출 3:6 둘이다');
+    assert.deepEqual(looks, [1], '그림을 눌러 여는 대목은 출 3:2-3 하나다');
+    assert.equal(beats[1].focus, 'bush', '성경 인물이 아니라 떨기나무를 찾는다');
     const shot = async (name) => {
       const issues = await page.evaluate(layoutIssues, '#app > .screen');
       assert.deepEqual(issues, [], `${label} ${name} 화면 배치`);
@@ -95,23 +96,9 @@ async function play(browser, origin, entry, tier, size, label) {
     // 관문까지 아래 단추를 이어서 누르는 횟수를 센다.
     let run = 0, longest = 0, guard = 0;
     while (guard++ < 20) {
-      const look = page.locator('.sheet-foot .look-help');
-      if (await look.count()) {
-        assert.deepEqual((await footButtons()).map((t) => t.trim()), ['이전', beats[4].look]);
-        await page.waitForTimeout(1400);
-        const moses = await targetCheck(page, null);
-        assert.equal(moses.label, '모세 살펴보기');
-        assert(moses.w >= 44 && moses.h >= 44, `모세를 누를 자리가 작다 ${moses.w}×${moses.h}`);
-        await shot('03-beat3');
-        await page.getByRole('button', { name: '모세 살펴보기', exact: true }).tap();
-        await page.locator('.narr', { hasText: beats[4].text[tier] }).waitFor();
-        const shown = await page.evaluate(() => [...document.querySelectorAll('[id^="ex01-state-"]')]
-          .filter((group) => getComputedStyle(group).display !== 'none').map((group) => group.id));
-        assert.deepEqual(shown, ['ex01-state-hideface'], '모세를 누르면 얼굴을 가린 모세가 보인다');
-        await shot('04-beat4');
-        run = 0;
-        continue;
-      }
+      // 하나님이 말씀하시는 대목 (출 3:4-12)은 그림을 눌러 열지 않는다.
+      assert.equal(await page.locator('.sheet-foot .look-help').count(), 0, '말씀 대목에서 그림 찾기가 나오면 안 된다');
+      if (guard === 3) await shot('03-beat2');
       const next = page.locator('.sheet-foot .btn.onpaper');
       const text = (await next.innerText()).trim();
       await next.click();
@@ -120,9 +107,9 @@ async function play(browser, origin, entry, tier, size, label) {
       await page.locator('.narr').waitFor();
     }
     await page.locator('.q-kicker', { hasText: '다음으로 가는 관문 1' }).waitFor();
-    assert(longest <= 3, `관문까지 아래 단추만 이어서 ${longest}번 눌렀다`);
+    assert.equal(longest, 6, `떨기나무를 찾은 뒤 관문까지 아래 단추 ${longest}번`);
     assert.deepEqual(errors, []);
-    return `${label} · 떨기나무와 모세를 그림에서 찾아 관문까지 (아래 단추 연속 최대 ${longest}번)`;
+    return `${label} · 떨기나무를 그림에서 찾아 관문까지 (떨기나무 뒤 관문까지 아래 단추 ${longest}번)`;
   } finally {
     await page.close();
   }
