@@ -492,7 +492,9 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 @media (orientation: portrait) and (max-height: 520px) {
   .po-meal .page-head { padding-block: 4px; }
   .po-meal .po-land { width: min(100%, 50vh); width: min(100%, 50dvh); margin-inline: auto; }
-  .po-meal .po-body { gap: 5px; padding-block: 6px 10px; }
+  .po-meal .po-reading-line { column-gap: 4px; }
+  .po-meal .po-body { gap: 4px; padding: 4px max(8px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left)); }
+  .po-meal .btn { min-height: 44px; }
 }
 @media (orientation: landscape) and (max-height: 500px) {
   .po-meal .po-scroll { display: grid; grid-template-columns: 43% minmax(0,1fr); align-content: start; }

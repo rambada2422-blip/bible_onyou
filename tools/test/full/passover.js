@@ -296,6 +296,8 @@ async function play(browser, url, age) {
         const area = await page.locator('.po-scroll').boundingBox();
         assert(text.y >= area.y && text.y + text.height <= area.y + area.height + 1,
           '320×480 화면에서 단서를 눌렀을 때 마지막 줄까지 바로 보여야 한다');
+        const action = await button('그 밤의 기록으로').boundingBox();
+        assert(action.y + action.height <= area.y + area.height + 1, '준비를 마친 뒤 이동 단추도 한눈에 보여야 한다');
       }
       await page.screenshot({path:path.join(output,'preparation-320x480.png')});
       await page.setViewportSize({width,height});
