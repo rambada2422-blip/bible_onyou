@@ -64,7 +64,7 @@ BO3D.gameModules.story = function (G) {
     if (G.hat) { G.hat.parent && G.hat.parent.remove(G.hat); }
     G.hatOn = false; G.sceneDone = false; G.partsFound = 0;
     if (record && record.hatOn === true && (record.stage === 'free' || record.stage === 'end')) G.setHat(true);
-    G.detectorPart = -1;
+    G.detectorPart = -1; G.namesAfterQuestion = null;
     G.partObjs.forEach(function (po) { po.taken = false; po.group.visible = false; });
     G.partCount.textContent = '부품 0 / ' + G.PARTS.length;
     for (var kk in G.kids) G.kids[kk].group.visible = true;
@@ -79,7 +79,8 @@ BO3D.gameModules.story = function (G) {
     G.hud.hidden = false; G.camBtn.hidden = false; G.dexBtn.hidden = false;
     G.hint.hidden = false;
     G.updateDexBtn();
-    G.setObjective('약한 신호가 잡혀요. 멀리 움직이는 무리를 사진에 담아 보세요.');
+    // 물음에 답하기 전에는 신호를 말하지 않는다 (docs/07 1절. 대표 결정 2026-11-21).
+    G.setObjective('멀리 움직이는 무리를 찾아 사진에 담아 보세요.');
     G.toast('시간 나침반의 부품 세 개가 튕겨 나갔어요!', G.S.ch === 'onwoo' ? 'hyu' : 'onwoo');
   }
 

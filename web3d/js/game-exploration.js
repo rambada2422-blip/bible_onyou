@@ -62,13 +62,17 @@ BO3D.gameModules.exploration = function (G) {
     });
     updateDexBtn();
     if (missing.length) G.checkpoint();
+    var names = fresh.map(function (f) { return f.d.name; }).join(', ');
+    // 첫 사진이 물음 1을 열면 사진의 이름 (물음 1의 답 '양 떼')은 물음 1을 맞힌 뒤에 알려 준다 (대표 결정 2026-11-21).
+    var opensQuestion = lookingForFlock() && found.some(function (f) { return f.d === flockEntry; });
     if (fresh.length) {
       if (G.FX) G.FX.audio.chime();
       G.dexBtn.classList.remove('pulse'); void G.dexBtn.offsetWidth; G.dexBtn.classList.add('pulse');
-      G.toast('도감에 새로 담았어요: ' + fresh.map(function (f) { return f.d.name; }).join(', ') + (dexCount() === G.DEX.length ? '. 도감을 모두 채웠어요!' : '') +
+      if (opensQuestion) { G.namesAfterQuestion = names; G.toast('도감에 새 사진을 담았어요.'); }
+      else G.toast('도감에 새로 담았어요: ' + names + (dexCount() === G.DEX.length ? '. 도감을 모두 채웠어요!' : '') +
         (flockFar ? '. 움직이는 무리는 ' + farLine : ''));
     } else G.toast(flockFar ? '움직이는 무리는 ' + farLine : '이미 도감에 있는 사진이에요: ' + best.d.name);
-    if (lookingForFlock() && found.some(function (f) { return f.d.id === 'sheep'; })) G.showDetector(0);
+    if (opensQuestion) G.showDetector(0);
   }
   function openDex() {
     var cells = G.DEX.map(function (d) {
@@ -130,7 +134,10 @@ BO3D.gameModules.exploration = function (G) {
     G.detectorPart = -1; G.state = 'detector';
     G.track.hidden = true; G.hint.hidden = true; G.hudRef.hidden = true;
     G.camBtn.hidden = true; G.dexBtn.hidden = true; G.denBtn.hidden = true;
-    G.detectorQuestion(item, i, function () { startPartSearch(i); }, savedPage);
+    G.detectorQuestion(item, i, function () {
+      startPartSearch(i);
+      if (i === 0 && G.namesAfterQuestion) { G.toast('도감에 새로 담았어요: ' + G.namesAfterQuestion); G.namesAfterQuestion = null; }
+    }, savedPage);
   }
   function takePart(i) {
     if (G.cur !== 'horeb' || G.state !== 'explore' || i !== G.detectorPart || G.partObjs[i].taken) return;

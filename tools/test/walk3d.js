@@ -123,6 +123,8 @@ async function runTier(browser, tierIndex, url) {
       assert.equal((await parts()).found, 0);
       if (checkHelp) {
         await sampleFrames('탐험 시작');
+        // 물음에 답하기 전에는 신호를 말하지 않는다 (docs/07 1절).
+        assert.equal(await p.locator('.hud3 .obj span').innerText(), '멀리 움직이는 무리를 찾아 사진에 담아 보세요.');
         await shot('landing');
         // 첫 사진을 찍는 방법은 화면 안내다. 샤론은 물음 1 앞에서 처음 나온다 (docs/11 4절, 7.1).
         await p.getByRole('button', { name: '어떻게 하나요?', exact: true }).click();
@@ -146,6 +148,8 @@ async function runTier(browser, tierIndex, url) {
       await p.getByRole('button', { name: '사진 찍기' }).click();
       await waitState('detector');
       assert((await p.evaluate(() => BO3D.debug.dex())).includes('sheep'));
+      // 물음 1의 답 ('양 떼')이 사진 알림에 먼저 보이지 않는다.
+      assert.equal(await p.locator('.toast3').innerText(), '도감에 새 사진을 담았어요.');
     }
 
     // 샤론이 처음 말할 때 자기소개를 한다 ('평소' 얼굴. 8~10세는 두 화면). 물음은 그다음이다.
@@ -302,7 +306,11 @@ async function runTier(browser, tierIndex, url) {
       await panelButton('계속 탐험하기');
       await waitState('explore');
       await p.locator('.track3').waitFor({ state: 'visible' });
-      if (index === 0) assert(!(await p.locator('#game').innerText()).includes('성경에서 확인했어요'), 'no mixed Bible-and-story toast');
+      if (index === 0) {
+        assert(!(await p.locator('#game').innerText()).includes('성경에서 확인했어요'), 'no mixed Bible-and-story toast');
+        // 사진의 이름은 물음 1을 맞힌 뒤에 알려 준다.
+        assert((await p.locator('.toast3').innerText()).startsWith('도감에 새로 담았어요: 양 떼'));
+      }
       const distance = await p.locator('.track3 span').innerText();
       assert(distance.startsWith(sharon.track) && /^\d+m$/.test(distance.slice(sharon.track.length)), distance);
       assert.equal(await p.locator('.hud3 .obj span').innerText(), item.objective);
