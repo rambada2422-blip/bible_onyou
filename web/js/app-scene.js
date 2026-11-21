@@ -180,16 +180,48 @@
       var s = Math.max(W / 900, H / 1200), ox = (W - 900 * s) / 2, oy = (H - 1200 * s) / 2;
       return { x: ox + r.x * s, y: oy + r.y * s, w: r.w * s, h: r.h * s, W: W, H: H };
     }
+    var view = null, lookSpot = null;
     function setFocus(rid) {
       if (!svg) return;
       var r = rid && region(rid);
-      if (!r) { svg.style.transform = 'none'; return; }
+      view = null;
+      if (!r) { svg.style.transform = 'none'; placeLook(); return; }
       var m = mapRect(r), px = m.x + m.w / 2, py = m.y + m.h / 2, z = 1.32;
       var tx_ = (m.W / 2 - px) * 0.7, ty_ = (m.H * 0.46 - py) * 0.7;
       tx_ = Math.min(px * (z - 1), Math.max(-(m.W - px) * (z - 1), tx_));
       ty_ = Math.min(py * (z - 1), Math.max(-(m.H - py) * (z - 1), ty_));
       svg.style.transformOrigin = px + 'px ' + py + 'px';
       svg.style.transform = 'translate(' + tx_ + 'px,' + ty_ + 'px) scale(' + z + ')';
+      view = { ox: px, oy: py, tx: tx_, ty: ty_, z: z };
+      placeLook();
+    }
+    /* 이야기 중에 그림을 눌러 찾는 자리는 당겨진 그림의 그 자리에 둔다. 그림 칸 밖으로 나간 부분은 잘라 낸다. */
+    function placeLook() {
+      if (!lookSpot) return;
+      var m = mapRect(lookSpot.r), v = view || { ox: 0, oy: 0, tx: 0, ty: 0, z: 1 };
+      function at(x, o, t) { return o + t + v.z * (x - o); }
+      var left = Math.max(0, at(m.x, v.ox, v.tx)), right = Math.min(m.W, at(m.x + m.w, v.ox, v.tx));
+      /* 위쪽의 장소 표시와 시간표 단추는 가리지 않는다. */
+      var hud = stage.querySelector('.hud .where'), roof = hud ? hud.getBoundingClientRect().bottom - stage.getBoundingClientRect().top + 4 : 0;
+      var top = Math.max(roof, at(m.y, v.oy, v.ty)), bottom = Math.min(m.H, at(m.y + m.h, v.oy, v.ty));
+      if (right - left < 44) { left = Math.max(0, Math.min(left, m.W - 44)); right = left + 44; }
+      if (bottom - top < 44) { top = Math.max(0, Math.min(top, m.H - 44)); bottom = top + 44; }
+      var st = lookSpot.target.style;
+      st.left = left + 'px'; st.top = top + 'px'; st.width = (right - left) + 'px'; st.height = (bottom - top) + 'px';
+    }
+    function lookTarget(r, label, onFind, inStory) {
+      var target = el('button', { class: 'look-target', 'aria-label': label + ' 살펴보기', on: { click: onFind },
+        style: '--dx:' + (r.x + r.w / 2 - 450) + ';--dy:' + (r.y + r.h / 2 - 600) + ';--w:' + r.w + ';--h:' + r.h });
+      hots.appendChild(target);
+      if (inStory) { lookSpot = { target: target, r: r }; placeLook(); }
+      /* 다른 곳을 누르면 찾을 곳에 고리를 띄워 알려 준다. 아무 반응 없는 화면을 남기지 않는다. */
+      artBox.onclick = function () { nudge(target); };
+      return target;
+    }
+    function nudge(target) {
+      target.classList.remove('nudge');
+      void target.offsetWidth;
+      target.classList.add('nudge');
     }
     if (svg && window.ResizeObserver) {
       var focusSize = new ResizeObserver(function () {
@@ -222,6 +254,7 @@
       stopReading();
       artBox.onclick = null;
       hots.replaceChildren();
+      lookSpot = null;
       var st = steps[idx];
       remember(st);
       if (st.k === 'arrive') return stepArrive();
@@ -261,9 +294,7 @@
         hint = el('p', { class: 'look-prompt', text: arrivalPrompts[id] });
         var drawing = svg.querySelector('#' + sc.art + '-' + landmark.id);
         var bounds = drawing ? drawing.getBBox() : { x: landmark.x, y: landmark.y, width: landmark.w, height: landmark.h };
-        hots.appendChild(el('button', { class: 'look-target', 'aria-label': landmark.label + ' 살펴보기', on: { click: next },
-          style: '--dx:' + (bounds.x + bounds.width / 2 - 450) + ';--dy:' + (bounds.y + bounds.height / 2 - 600) +
-            ';--w:' + bounds.width + ';--h:' + bounds.height }));
+        lookTarget({ x: bounds.x, y: bounds.y, w: bounds.width, h: bounds.height }, landmark.label, next);
       } else if (svg && clueItems.length) {
         hint = questionBlock({ type: 'hotspots', items: clueItems, prompt: '그림의 표시를 눌러 단서를 찾아보세요.' });
         startLabel = '이야기 읽기';
@@ -292,17 +323,23 @@
       setFocus(b.focus);
       var text = tx(b.text), who = b.say && C.chars[b.say.who];
       var status = app.state.tier === 't1' && canSpeak ? el('p', { class: 'read-status', hidden: '', role: 'status' }) : null;
+      var ahead = sc.beats[i + 1], spot = ahead && ahead.look && svg ? region(ahead.focus) : null, forward;
+      if (spot) {
+        var target = lookTarget(spot, spot.label, next, true);
+        /* 늘 누르던 아래 단추 자리에 찾을 것을 적는다. 누르면 그림의 찾을 곳에 고리가 뜨고 초점이 그리로 간다. */
+        forward = el('button', { class: 'btn look-help', on: { click: function () { nudge(target); target.focus({ preventScroll: true }); } } },
+          icon('lens'), el('span', { text: tx(ahead.look) }));
+      } else forward = nextBtn(i === sc.beats.length - 1 ? (sc.alt ? '단서를 찾아보자' : '다음으로 가는 관문') : '다음');
       fill([
         el('div', { class: 'narr-meta' }, refChip(b.ref),
-          status ? readButton(text, status) : null),
+          status ? readButton(spot ? text + ' ' + tx(ahead.look) : text, status) : null),
         status,
         el('p', { class: 'narr', text: text }),
         b.say ? el('div', { class: 'say' }, pic(b.say.who + '-avatar', 'avatar', ''),
           el('div', { class: 'bubble' }, el('b', { text: who.name, style: 'color:' + who.color }), b.say.text)) : null,
         b.open ? el('div', { class: 'openbible' }, icon('book'),
           el('span', {}, '하나님이 하신 말씀은 성경책에서 직접 읽어요. ', el('b', { text: bookName(b.open) }))) : null
-      ], [i > 0 ? el('button', { class: 'btn plain', on: { click: prev } }, '이전') : null,
-        nextBtn(i === sc.beats.length - 1 ? (sc.alt ? '단서를 찾아보자' : '다음으로 가는 관문') : '다음')]);
+      ], [i > 0 ? el('button', { class: 'btn plain', on: { click: prev } }, '이전') : null, forward]);
     }
 
     function questionBlock(q, onOk) {

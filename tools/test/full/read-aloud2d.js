@@ -38,11 +38,12 @@ async function play(browser, origin, entry, label) {
     const current = () => page.evaluate(() => window.testVoice.current?.text || null);
     await button('이어서 탐험하기').tap();
     const firstText = await page.locator('.narr').innerText();
+    const lookText = await page.locator('.sheet-foot .look-help').innerText();
     await button('읽어 줘').tap();
-    assert.equal(await current(), firstText);
+    assert.equal(await current(), firstText + ' ' + lookText.trim(), '8~10세는 그림에서 찾을 것까지 들려준다');
     assert.equal(await page.evaluate(() => window.testVoice.current.lang), 'ko-KR');
-    await button('다음').tap();
-    assert.equal(await current(), null, '다음 대목으로 가면 이전 문장이 멈춘다');
+    await button('떨기나무 살펴보기').tap();
+    assert.equal(await current(), null, '그림을 눌러 다음 대목으로 가면 이전 문장이 멈춘다');
 
     const nextText = await page.locator('.narr').innerText();
     await button('읽어 줘').tap();

@@ -100,6 +100,17 @@ fs.mkdirSync(out, { recursive: true });
     await p.waitForTimeout(700);
     for (let guard = 0; guard < 60; guard++) {
       if (!(await p.$('.screen.scene'))) return;
+      const look = await p.$('.sheet-foot .look-help');
+      if (look) {
+        // 아래 단추는 찾을 곳을 알려 주기만 한다. 그림의 그 자리를 눌러야 다음 대목이 열린다.
+        await p.waitForTimeout(1500);
+        await look.click();
+        await p.waitForSelector('.hot-layer .look-target.nudge');
+        await shot(label + '-look');
+        await p.click('.hot-layer .look-target');
+        await p.waitForTimeout(300);
+        continue;
+      }
       const btn = await p.$('.sheet-foot .btn.onpaper');
       const disabled = await btn.evaluate((x) => x.disabled);
       if (disabled) { await solve(); continue; }
