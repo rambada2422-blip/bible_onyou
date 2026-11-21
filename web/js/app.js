@@ -103,7 +103,7 @@
       el('div', { class: 'hub-head pad' },
         pic(app.state.char + '-avatar', 'avatar', ''),
         el('div', { class: 'who' }, el('b', { text: c.name + ' 탐험대원' }), el('span', { text: t.label + ' · ' + t.name })),
-        el('button', { class: 'pillbtn', on: { click: renderJournal } }, icon('journal'), '일지 ' + entryCount),
+        el('button', { class: 'pillbtn', on: { click: function () { renderJournal(renderHub); } } }, icon('journal'), '일지 ' + entryCount),
         el('button', { class: 'pillbtn', on: { click: renderSetup } }, '단계')),
       el('div', { class: 'hub-body pad' },
         el('div', { class: 'hub-hero' },
@@ -122,7 +122,14 @@
           el('button', { class: 'linkbtn', on: { click: function () { app.state = fresh(); save(); renderTitle(); } } }, '처음부터 다시')))));
   }
   function runScene(id, journey) {
-    app.runScene(id, renderHub, renderRoute, journey);
+    app.runScene(id, renderHub, renderRoute, journey, openClueJournal);
+  }
+  function openClueJournal(id) {
+    renderJournal(function () {
+      runScene(id, app.savedJourney(id));
+      var link = document.querySelector('.sheet-foot .journal-link');
+      if (link) link.focus();
+    }, id);
   }
   function travelTo(id, title, description) {
     var journey = app.rememberArrival(id);
@@ -153,23 +160,25 @@
   }
 
   /* ════════════ 탐험 일지 ════════════ */
-  function pageHead(title, back) {
+  function pageHead(title, back, backLabel) {
     return el('div', { class: 'page-head pad' },
-      el('button', { class: 'iconbtn', 'aria-label': '돌아가기', on: { click: back } }, icon('back')),
+      el('button', { class: 'iconbtn', 'aria-label': backLabel || '돌아가기', on: { click: back } }, icon('back')),
       el('h2', { text: title }));
   }
   function writtenNotes() {
     return Object.keys(app.state.notes).filter(function (k) { return app.state.notes[k].trim(); });
   }
-  function renderJournal() {
-    var notes = writtenNotes();
+  function renderJournal(back, sceneId) {
+    var notes = writtenNotes(), selected;
     var groups = C.route.options.map(function (option) {
       var items = app.journalClues(option.to);
       if (!items.length) return null;
-      return app.questions.clueNotes(items, [pic(C.scenes[option.to].art, 'clue-thumb', ''), option.label + ' · 단서 ' + items.length + '개']);
+      var group = app.questions.clueNotes(items, [pic(C.scenes[option.to].art, 'clue-thumb', ''), option.label + ' · 단서 ' + items.length + '개']);
+      if (option.to === sceneId) { group.open = true; selected = group; }
+      return group;
     }).filter(Boolean);
     show(el('div', { class: 'screen page' },
-      pageHead('탐험 일지', renderHub),
+      pageHead('탐험 일지', back, sceneId ? '말씀 카드로 돌아가기' : '돌아가기'),
       el('div', { class: 'page-body pad' },
         groups.length ? el('section', { class: 'journal-clues' }, el('h3', { text: '내가 찾은 단서' }), groups) : null,
         el('section', {}, el('h3', { text: '말씀 카드 ' + app.state.cards.length + '장' }),
@@ -178,6 +187,7 @@
         el('section', { class: 'notes' }, el('h3', { text: '내가 적은 기록' }),
           notes.length ? notes.map(function (k) { return el('div', { class: 'n' }, el('small', { text: C.scenes[k].ref }), el('p', { text: app.state.notes[k] })); })
             : el('p', { class: 'empty', text: '14~19세 단계에서 장면을 마치며 적은 글이 여기에 남아요.' })))));
+    if (selected) selected.querySelector('summary').focus();
   }
 
   /* ════════════ 구성 안내 (어른용) ════════════ */

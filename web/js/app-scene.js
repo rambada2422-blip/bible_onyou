@@ -131,7 +131,7 @@
     return collected ? pictureClues(C.scenes[id]).filter(function (item) { return collected.includes(item.region); }) : [];
   }
 
-  function runScene(id, renderHub, renderRoute, journey) {
+  function runScene(id, renderHub, renderRoute, journey, openClueJournal) {
     var sc = C.scenes[id], steps = sceneSteps(sc);
     var idx = journey ? steps.findIndex(function (st) { return stepName(st) === journey.step; }) : 0;
     var nightOnArrival = id === 'EX-09' && journey && journey.nightOnArrival === true;
@@ -342,7 +342,8 @@
         el('p', { class: 'q-prompt', text: found.length ? '찾은 단서 ' + found.length + '개와 말씀 카드를 탐험 일지에서 다시 볼 수 있어요.' :
           sc.alt ? '길을 잘못 들었지만, 성경의 다른 장면을 직접 보고 왔어요.' : '탐험 일지에 말씀 카드가 들어왔어요.' }),
         el('div', { class: 'vcards' }, sc.cards.map(function (c) { return cardNode(c, sc, true); }))
-      ], nextBtn(sc.alt ? '모세가 있는 곳으로' : '다음'));
+      ], [found.length ? el('button', { class: 'btn plain journal-link', on: { click: function () { openClueJournal(id); } } }, '단서 일지 보기') : null,
+        nextBtn(sc.alt ? '모세가 있는 곳으로' : '다음')]);
       sc.cards.forEach(function (c) {
         if (!app.state.cards.some(function (x) { return x.ref === c.ref; })) app.state.cards.push({ ref: c.ref, title: c.title, scene: sc.title, bonus: !!c.bonus });
       });
@@ -369,7 +370,7 @@
         app.state.routed = true;
         var destination = rememberArrival('EX-01');
         var to = C.scenes['EX-01'];
-        warp('목적지를 다시 맞췄어요', to.place, to.ref, function () { runScene('EX-01', renderHub, renderRoute, destination); });
+        warp('목적지를 다시 맞췄어요', to.place, to.ref, function () { runScene('EX-01', renderHub, renderRoute, destination, openClueJournal); });
         return;
       }
       app.state.done[id] = true; save();

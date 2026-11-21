@@ -27,11 +27,18 @@ async function play(browser, url, width, height) {
       await p.locator('.narr').waitFor();
       while (await p.locator('.narr').count()) await next.tap();
     }
-    async function returnToHoreb() {
+    async function returnToHoreb(name, count) {
       await button('성경에서 확인하기').tap();
       await button('찾아서 읽었어요').tap();
       await button('모세').tap();
       await next.tap();
+      await button('단서 일지 보기').tap();
+      assert.equal(await group(name).locator('.it:visible').count(),count);
+      assert(await group(name).locator('summary').evaluate(s=>s === document.activeElement));
+      await button('말씀 카드로 돌아가기').tap();
+      assert(await button('단서 일지 보기').evaluate(b=>b === document.activeElement));
+      assert.deepEqual(await p.evaluate(layoutIssues,'#app > .screen'),[]);
+      if (width === 390 && name === '요셉') await p.screenshot({path:path.join(out,'reward-journal.png')});
       await button('모세가 있는 곳으로').tap();
       await p.locator('#ex01-sheep').waitFor();
       await button('시간표로 돌아가기').tap();
@@ -46,7 +53,7 @@ async function play(browser, url, width, height) {
     const answers = await p.evaluate(() => BO.content.scenes['ALT-03'].spot.t2.options.filter(o=>o.ok).map(o=>o.label));
     for (const a of answers) await button(a).tap();
     await button('확인').tap();
-    await returnToHoreb();
+    await returnToHoreb('요셉',1);
     await journal();
     assert.equal(await group('요셉').count(), 1, '호렙으로 돌아와도 금 사슬은 일지에 남아야 한다');
     await group('요셉').locator('summary').tap();
@@ -65,7 +72,7 @@ async function play(browser, url, width, height) {
     await enter('여호수아');
     await readStory();
     for (const b of await p.locator('.hot').all()) await b.tap();
-    await returnToHoreb();
+    await returnToHoreb('여호수아',3);
     await p.reload();
     await button('이어서 탐험하기').tap();
     await button('시간표로 돌아가기').tap();
