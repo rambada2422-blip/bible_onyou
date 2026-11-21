@@ -9,3 +9,10 @@
 - 총괄에게 일곱 그림의 최종 배치 재대조를 인계한다. P1은 대표 결정 반영 후 목회자 확인 단계이고 P2·P5·P6은 감수 대기다.
 
 바뀐 게임 파일은 web/js/passover.js, web/js/art.js, web/assets/bg의 plague-frogs, plague-goshen, plague-hail, plague-locusts, plague-water, plague-flies, ex07-room 일곱 JPG다. tools/test/full/passover.js는 두 진입점에서 세 연령의 본문, 장절과 게임 진행을 확인한다.
+
+게임 커밋 `8e40944`에서 두 진입점과 세 연령으로 재앙을 완주했다. 전체 점검을 격리된 작업 폴더에서 차례대로 실행해 2D 시범판, 사진형 배경, 3D 호렙 산·요단 강을 확인했다. 함께 돌렸을 때 시간 제한을 넘긴 호렙 산도 이 실행에서 통과했다.
+
+```text
+점검 종류: 전체 · 통과 8/8
+점검 결과: 합격
+```
