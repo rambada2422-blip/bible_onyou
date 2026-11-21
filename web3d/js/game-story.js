@@ -36,6 +36,7 @@ BO3D.gameModules.story = function (G) {
 
   function begin() {
     if (G.stopAwe) G.stopAwe();
+    if (G.preloadAwe) G.preloadAwe();
     G.root.className = 'g3 app ' + G.S.tier;
     G.overlay.hidden = true;
     if (G.FX) { G.FX.audio.start(); G.FX.audio.pad(false); G.snd.hidden = false; }

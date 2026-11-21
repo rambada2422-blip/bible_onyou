@@ -5,11 +5,28 @@ BO3D.gameModules.awe = function (G) {
   'use strict';
   var IW = 1024, IH = 1536, NEAR_W = 703, BUSH_CY = 681, CAP_H = 150, SAFE_Y = 1300;
   var STEP_DURS = [3.5, 1.5, 5.0, 6.0, 8.0, 9.0, 1.5];
+  var PRELOAD_GRACE = 3, SEEN_KEY = 'bo3d.awe.bush.seen';
   var STEP_PAUSE_T = [3.5, 1.1, 0.0, 6.0, 4.0, 5.0, 0.35];
-  var rootEl, stageEl, skyEl, boardEl, img2, img3, capEl, textWrap, metaEl, lineEl, veilEl;
+  var rootEl, stageEl, skyEl, boardEl, img2, img3, capEl, textWrap, metaEl, lineEl, veilEl, skipEl;
+  var reducedMotion, stillView = false, suspended = false, seenThisSession = false, skippedFrom = null;
   var active = false, seqActive = false, seqStep = null, seqTime = 0, swapPhase = '', doneCb = null, rafId = 0, lastTick = 0;
   var reqView = 'near', curView = 'near', curPic = 2, curP = 0, curVeil = 0, shownText = '', shownRef = '';
-  var ready2 = false, ready3 = false;
+  var preloadStarted = false, ready2 = false, ready3 = false;
+
+  function picturesReady() { return ready2 && ready3; }
+  function preferStillView() {
+    return window.innerWidth > window.innerHeight || reducedMotion.matches || BO3D.debug.aweOverviewOnly;
+  }
+  function hasSeenAwe() {
+    if (seenThisSession) return true;
+    try { return window.localStorage.getItem(SEEN_KEY) === '1'; }
+    catch (e) { return false; }
+  }
+  function markAweSeen() {
+    seenThisSession = true;
+    try { window.localStorage.setItem(SEEN_KEY, '1'); }
+    catch (e) { /* 저장을 막은 기기에서도 장면은 이어진다. */ }
+  }
 
   function imgSrc(num) {
     var key = 'bush_' + num;
@@ -47,8 +64,28 @@ BO3D.gameModules.awe = function (G) {
         var pct = Math.round(i / (stops - 1) * 1000) / 10;
         grad.push('rgb(' + r + ',' + g + ',' + b + ') ' + pct + '%');
       }
-      skyEl.style.background = 'linear-gradient(90deg, ' + grad.join(', ') + ')';
+      rootEl.style.setProperty('--awe-sky', 'linear-gradient(90deg, ' + grad.join(', ') + ')');
     } catch (e) { /* 오프스크린 캔버스 실패 시 기본 하늘색 유지 */ }
+  }
+
+  function preloadAwe() {
+    if (preloadStarted) return;
+    preloadStarted = true;
+    img2.src = imgSrc(2);
+    img3.src = imgSrc(3);
+    img2.decode().then(function () { bakeSkyBand(img2); ready2 = true; }, function () {});
+    img3.decode().then(function () { ready3 = true; }, function () {});
+  }
+
+  function layoutSky(left, width, height) {
+    var visible = height > 0;
+    skyEl.hidden = !visible;
+    boardEl.classList.toggle('sky-blend', visible);
+    if (visible) {
+      skyEl.style.left = left + 'px';
+      skyEl.style.width = width + 'px';
+      skyEl.style.height = (Math.ceil(height) + 2) + 'px';
+    }
   }
 
   /* 10절의 식과 숫자로 배율과 자리를 계산한다 */
@@ -109,15 +146,7 @@ BO3D.gameModules.awe = function (G) {
       boardEl.style.top = L1.top + 'px';
       boardEl.style.width = dw1 + 'px';
       boardEl.style.height = dh1 + 'px';
-      if (L1.skyH > 0) {
-        skyEl.hidden = false;
-        skyEl.style.left = L1.left + 'px';
-        skyEl.style.top = '0px';
-        skyEl.style.width = dw1 + 'px';
-        skyEl.style.height = (Math.ceil(L1.skyH) + 2) + 'px';
-      } else {
-        skyEl.hidden = true;
-      }
+      layoutSky(L1.left, dw1, L1.skyH);
       return L1;
     }
     if (curP <= 0) {
@@ -127,15 +156,7 @@ BO3D.gameModules.awe = function (G) {
       boardEl.style.top = L0.top + 'px';
       boardEl.style.width = dw0 + 'px';
       boardEl.style.height = dh0 + 'px';
-      if (L0.skyH > 0) {
-        skyEl.hidden = false;
-        skyEl.style.left = L0.left + 'px';
-        skyEl.style.top = '0px';
-        skyEl.style.width = dw0 + 'px';
-        skyEl.style.height = (Math.ceil(L0.skyH) + 2) + 'px';
-      } else {
-        skyEl.hidden = true;
-      }
+      layoutSky(L0.left, dw0, L0.skyH);
       return L0;
     }
     curView = curP < 0.5 ? 'near' : 'wide';
@@ -148,21 +169,14 @@ BO3D.gameModules.awe = function (G) {
     boardEl.style.top = top + 'px';
     boardEl.style.width = dw + 'px';
     boardEl.style.height = dh + 'px';
-    if (skyH > 0) {
-      skyEl.hidden = false;
-      skyEl.style.left = left + 'px';
-      skyEl.style.top = '0px';
-      skyEl.style.width = dw + 'px';
-      skyEl.style.height = (Math.ceil(skyH) + 2) + 'px';
-    } else {
-      skyEl.hidden = true;
-    }
+    layoutSky(left, dw, skyH);
     return null;
   }
 
   function layoutAwe() {
     if (!rootEl || !G.root) return null;
     if (seqActive && seqStep !== null) {
+      stillView = stillView || preferStillView();
       applySeqState(seqStep, seqTime);
       return null;
     }
@@ -175,15 +189,7 @@ BO3D.gameModules.awe = function (G) {
     boardEl.style.top = L.top + 'px';
     boardEl.style.width = dw + 'px';
     boardEl.style.height = dh + 'px';
-    if (L.skyH > 0) {
-      skyEl.hidden = false;
-      skyEl.style.left = L.left + 'px';
-      skyEl.style.top = '0px';
-      skyEl.style.width = dw + 'px';
-      skyEl.style.height = (Math.ceil(L.skyH) + 2) + 'px';
-    } else {
-      skyEl.hidden = true;
-    }
+    layoutSky(L.left, dw, L.skyH);
     capEl.hidden = (curView !== 'wide');
     capEl.style.opacity = '1';
     return L;
@@ -311,9 +317,9 @@ BO3D.gameModules.awe = function (G) {
     if (step === 1) {
       /* 1. 넘어감(1.5초): 0.7초 동안 모래색으로 덮이고, 곧바로 0.8초 동안 가까이 보기 그림이 나타난다 */
       setPic(2);
-      reqView = 'near';
-      applyBoardProgress(0);
-      capEl.hidden = true;
+      applyBoardProgress(stillView ? 1 : 0);
+      capEl.hidden = !stillView;
+      capEl.style.opacity = '1';
       setCaptionText(null, 0);
       if (t < 0.7) {
         stageEl.hidden = true;
@@ -330,8 +336,9 @@ BO3D.gameModules.awe = function (G) {
       setVeil(0);
       setPic(2);
       var p2 = 0.05 * Math.max(0, Math.min(1, t / 5.0));
-      applyBoardProgress(p2);
+      applyBoardProgress(stillView ? 1 : p2);
       capEl.hidden = (curView !== 'wide');
+      capEl.style.opacity = '1';
       setCaptionText(null, 0);
       return;
     }
@@ -342,9 +349,9 @@ BO3D.gameModules.awe = function (G) {
       setPic(2);
       var u3 = Math.max(0, Math.min(1, t / 6.0));
       var p3 = 0.05 + 0.95 * (1 - Math.pow(1 - u3, 2.4));
-      applyBoardProgress(p3);
+      applyBoardProgress(stillView ? 1 : p3);
       capEl.hidden = false;
-      capEl.style.opacity = String(1 - Math.pow(1 - u3, 2));
+      capEl.style.opacity = stillView ? '1' : String(1 - Math.pow(1 - u3, 2));
       setCaptionText(null, 0);
       return;
     }
@@ -383,21 +390,19 @@ BO3D.gameModules.awe = function (G) {
     }
     if (step === 6) {
       /* 6. 돌아옴(1.5초): 0.7초 동안 글자와 그림이 함께 모래색에 덮이고, 0.8초 동안 인형풍 세계가 나타난다 */
-      if (t < 0.7) {
-        stageEl.hidden = false;
+      if (t < 0.7 && skippedFrom) {
+        applySeqState(skippedFrom.step, skippedFrom.time);
+      } else if (t < 0.7) {
+        stageEl.hidden = capEl.hidden = false;
         setPic(3);
-        reqView = 'wide';
         applyBoardProgress(1);
-        capEl.hidden = false;
         capEl.style.opacity = '1';
         setCaptionText(hideEntry, 1);
-        setVeil(easeInOut(t / 0.7));
       } else {
-        stageEl.hidden = true;
-        capEl.hidden = true;
+        stageEl.hidden = capEl.hidden = true;
         setCaptionText(null, 0);
-        setVeil(1 - easeInOut((t - 0.7) / 0.8));
       }
+      setVeil(t < 0.7 ? easeInOut(t / 0.7) : 1 - easeInOut((t - 0.7) / 0.8));
     }
   }
 
@@ -405,14 +410,17 @@ BO3D.gameModules.awe = function (G) {
     if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
     active = false;
     seqActive = false;
+    suspended = false;
     seqStep = null;
     seqTime = 0;
     swapPhase = '';
+    skippedFrom = null;
     doneCb = null;
     setCaptionText(null, 0);
     setVeil(0);
     releaseAudio();
     if (rootEl) rootEl.hidden = true;
+    if (skipEl) skipEl.hidden = true;
     if (G.root) G.root.classList.remove('awe-on');
   }
 
@@ -422,49 +430,86 @@ BO3D.gameModules.awe = function (G) {
     if (cb) cb();
   }
 
+  function enterStep(step, time) {
+    if (step === 6 && seqStep !== 6) {
+      markAweSeen();
+      skipEl.hidden = true;
+    }
+    seqStep = step;
+    seqTime = time;
+    applySeqState(step, time);
+    applyAudio(step, time);
+  }
+
   function tickAwe(now) {
-    if (!seqActive) return;
-    var dt = Math.min(0.1, Math.max(0, (now - lastTick) / 1000));
+    if (!seqActive || suspended) return;
+    var dt = Math.max(0, (now - lastTick) / 1000);
     lastTick = now;
     if (!window.BO3D_TEST) {
       seqTime += dt;
-      var dur = STEP_DURS[seqStep] || 1.5;
-      if (seqTime >= dur) {
-        if (seqStep < 6) {
-          seqStep++;
-          seqTime = 0;
-          applySeqState(seqStep, 0);
-          applyAudio(seqStep, 0);
-        } else {
-          finishAwe();
-          return;
-        }
-      } else {
+      var dur = STEP_DURS[seqStep];
+      if (seqStep === 0) {
+        if (seqTime >= dur && picturesReady()) enterStep(1, 0);
+        else if (seqTime >= dur + PRELOAD_GRACE) { finishAwe(); return; }
+      } else if (seqTime < dur) {
         applySeqState(seqStep, seqTime);
+      } else if (seqStep < 6) {
+        enterStep(seqStep + 1, 0);
+      } else {
+        finishAwe();
+        return;
       }
     }
-    if (seqActive) rafId = requestAnimationFrame(tickAwe);
+    rafId = requestAnimationFrame(tickAwe);
+  }
+
+  function skipAwe() {
+    if (!seqActive || suspended || skipEl.hidden) return;
+    skippedFrom = { step: seqStep, time: seqTime };
+    swapPhase = '';
+    enterStep(6, 0);
+    lastTick = performance.now();
+  }
+
+  function pauseAwe() {
+    if (!seqActive || suspended) return;
+    suspended = true;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    var A = audioApi();
+    if (A) { A.hold(true); A.glide('scene', 0, 0); }
+  }
+
+  function resumeAwe() {
+    if (!seqActive || !suspended || document.hidden) return;
+    suspended = false;
+    swapPhase = '';
+    stillView = stillView || preferStillView();
+    enterStep(seqStep, 0);
+    lastTick = performance.now();
+    rafId = requestAnimationFrame(tickAwe);
   }
 
   function startAwe(onDone) {
     stopAwe();
+    preloadAwe();
     active = true;
     seqActive = true;
-    seqStep = 0;
-    swapPhase = '';
+    stillView = preferStillView();
     doneCb = onDone || null;
-    seqTime = window.BO3D_TEST ? STEP_PAUSE_T[0] : 0;
+    reqView = stillView ? 'wide' : 'near';
     if (G.root) G.root.classList.add('awe-on');
     rootEl.hidden = false;
-    applySeqState(seqStep, seqTime);
-    applyAudio(seqStep, seqTime);
+    skipEl.hidden = !hasSeenAwe();
+    enterStep(0, window.BO3D_TEST ? STEP_PAUSE_T[0] : 0);
     lastTick = performance.now();
-    rafId = requestAnimationFrame(tickAwe);
+    if (document.hidden) pauseAwe();
+    else rafId = requestAnimationFrame(tickAwe);
     return aweState();
   }
 
   function aweNext(arg) {
-    if (!seqActive) return null;
+    if (!seqActive || suspended) return null;
+    if (!picturesReady() && seqStep === 0) return aweState();
     if (arg === 'beforeSwap') {
       seqStep = 4;
       seqTime = 8.0;
@@ -489,11 +534,9 @@ BO3D.gameModules.awe = function (G) {
       return aweState();
     }
     if (seqStep < 6) {
-      seqStep++;
+      var next = seqStep + 1;
       swapPhase = '';
-      seqTime = window.BO3D_TEST ? STEP_PAUSE_T[seqStep] : 0;
-      applySeqState(seqStep, seqTime);
-      applyAudio(seqStep, seqTime);
+      enterStep(next, window.BO3D_TEST ? STEP_PAUSE_T[next] : 0);
       return aweState();
     }
     finishAwe();
@@ -504,6 +547,8 @@ BO3D.gameModules.awe = function (G) {
     return {
       active: seqActive,
       step: seqActive ? seqStep : null,
+      ready: picturesReady(),
+      paused: suspended,
       text: shownText,
       ref: shownRef,
       pic: curPic,
@@ -518,8 +563,8 @@ BO3D.gameModules.awe = function (G) {
       stopAwe();
       return null;
     }
-    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
-    seqActive = false;
+    stopAwe();
+    preloadAwe();
     seqStep = null;
     active = true;
     reqView = (view === 'near') ? 'near' : 'wide';
@@ -564,7 +609,7 @@ BO3D.gameModules.awe = function (G) {
       top: rBoard.top - rRoot.top,
       width: rBoard.width,
       height: rBoard.height,
-      ready: ready2 && ready3
+      ready: picturesReady()
     };
   }
 
@@ -572,6 +617,7 @@ BO3D.gameModules.awe = function (G) {
   G.aweRect = aweRect;
   G.layoutAwe = layoutAwe;
   G.computeAweLayout = computeLayout;
+  G.preloadAwe = preloadAwe;
   G.startAwe = startAwe;
   G.stopAwe = stopAwe;
   G.aweNext = aweNext;
@@ -582,10 +628,6 @@ BO3D.gameModules.awe = function (G) {
     skyEl = el('div', { class: 'awe-sky', hidden: true });
     img2 = el('img', { alt: '', decoding: 'sync' });
     img3 = el('img', { alt: '', decoding: 'sync' });
-    img2.onload = function () { ready2 = true; bakeSkyBand(img2); };
-    img3.onload = function () { ready3 = true; };
-    img2.src = imgSrc(2);
-    img3.src = imgSrc(3);
     boardEl = el('div', { class: 'awe-board' }, img2, img3);
     metaEl = el('div', { class: 'awe-meta' });
     lineEl = el('p', { class: 'awe-line' });
@@ -593,9 +635,19 @@ BO3D.gameModules.awe = function (G) {
     capEl = el('div', { class: 'awe-cap', hidden: true }, textWrap);
     stageEl = el('div', { class: 'awe-stage' }, skyEl, boardEl, capEl);
     veilEl = el('div', { class: 'awe-veil' });
-    rootEl = el('div', { class: 'awe3', hidden: true }, stageEl, veilEl);
+    skipEl = el('button', { class: 'btn onpaper awe-skip', type: 'button', hidden: true, on: { click: skipAwe } }, '건너뛰기');
+    rootEl = el('div', { class: 'awe3', hidden: true }, stageEl, veilEl, skipEl);
     G.root.appendChild(rootEl);
     setPic(2);
-    window.addEventListener('resize', function () { if (active) layoutAwe(); });
+    reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function updateLayout() { if (active) layoutAwe(); }
+    window.addEventListener('resize', updateLayout);
+    if (reducedMotion.addEventListener) reducedMotion.addEventListener('change', updateLayout);
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) pauseAwe();
+      else resumeAwe();
+    });
+    window.addEventListener('pagehide', pauseAwe);
+    window.addEventListener('pageshow', resumeAwe);
   };
 };
