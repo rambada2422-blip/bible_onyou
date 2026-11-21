@@ -149,6 +149,22 @@
       pins.append(pin);
       chips.append(el('li'));
     });
+    // 그림의 세 문 표시와 구운 양도 각각 해당 단서 핀과 같은 행동을 한다.
+    var pictureTargets = [
+      {clue:0, left:.05, top:.35, right:.12, bottom:.44},
+      {clue:0, left:.15, top:.17, right:.29, bottom:.24},
+      {clue:0, left:.32, top:.36, right:.38, bottom:.44},
+      {clue:1, left:.48, top:.585, right:.62, bottom:.69}
+    ];
+    pins.addEventListener('click', function (event) {
+      if (event.target !== pins) return;
+      var rect = pins.getBoundingClientRect();
+      var x = (event.clientX - rect.left) / rect.width, y = (event.clientY - rect.top) / rect.height;
+      var hit = pictureTargets.find(function (area) {
+        return x >= area.left && x <= area.right && y >= area.top && y <= area.bottom;
+      });
+      if (hit) pins.children[hit.clue].click();
+    });
     land.append(pins);
     body.append(chips, detail, next);
     var last = s.mealLook;

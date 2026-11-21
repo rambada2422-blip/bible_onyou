@@ -464,7 +464,7 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-finding small { color: var(--teal); font-weight: 700; }
 .po-finding p { margin-block: 3px; }
 .po-meal .po-land { height: auto; aspect-ratio: 3 / 2; }
-.po-meal .po-title { pointer-events: none; inset: 0 0 auto; padding: 8px 16px 15px; background: linear-gradient(#201a16d9, transparent); }
+.po-meal .po-title { pointer-events: none; inset: 0 0 auto 42%; padding: 6px 8px 12px; text-align: right; background: linear-gradient(#201a16df, transparent); }
 .po-meal .po-title small { font-size: 12px; }
 .po-meal .po-title h2 { font-size: 22px; }
 .po-pins { position: absolute; inset: 0; }
@@ -472,7 +472,7 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-pin::before { content: ''; position: absolute; z-index: -1; inset: 10px; background: #ffdf96; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 3px #745027a8, 0 0 10px 4px #ffd380a8; }
 .po-pin[aria-pressed="true"]::before { background: #153e38; }
 .po-pin[aria-pressed="true"] { color: white; }
-.po-pin:nth-child(1) { left: max(25px, 9%); top: 48%; }
+.po-pin:nth-child(1) { left: max(25px, 9%); top: 63%; }
 .po-pin:nth-child(2) { left: 44%; top: 72%; }
 .po-pin:nth-child(3) { left: 81%; top: 80%; }
 .po-meal .po-body { gap: 8px; padding-block: 10px 14px; align-content: start; }
@@ -511,3 +511,13 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-note-art figure { flex: 1; min-width: 0; margin: 0; }
 .po-note-art img { display: block; width: 100%; border-radius: 6px; }
 .po-note-art figcaption { font-size: 14px; }
+
+
+/* 한밤중 문설주와 인방은 모든 화면에서 그림 안에 온전히 들어온다. */
+.po-land[data-view="plague-midnight"] { height: auto; background: var(--ink); }
+.po-land[data-view="plague-midnight"] .po-picture { position: relative; height: min(30vh, 66.667vw); }
+.po-land[data-view="plague-midnight"] img { object-fit: contain; }
+.po-land[data-view="plague-midnight"] .po-title { position: static; padding: 5px 12px; background: var(--ink); }
+@media (orientation: landscape) and (max-height: 500px) {
+  .po-land[data-view="plague-midnight"] .po-picture { height: clamp(104px, 35vh, 150px); }
+}
