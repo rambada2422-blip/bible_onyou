@@ -3,15 +3,15 @@
   'use strict';
   var app = BO.app2d, el = app.el;
   var plagues = [
-    ['물이 피가 됨', '출 7:14-25', '강물이 변해 물고기가 죽고 강물을 마실 수 없게 되었어요.'],
-    ['개구리', '출 8:1-15', '강에서 올라온 동물이 애굽 땅을 덮었어요. 집과 마당과 밭에도 있었어요.'],
-    ['이', '출 8:16-19', '땅의 티끌이 작은 벌레가 되어 사람과 가축에게 붙었어요. 요술사들은 같은 일을 할 수 없었어요.'],
-    ['파리', '출 8:20-32', '벌레 떼가 애굽 사람들의 집에 가득했어요. 이스라엘 백성이 사는 고센 땅은 구별되었어요.'],
-    ['가축의 돌림병', '출 9:1-7', '들에 있던 애굽의 가축은 심한 돌림병으로 죽었어요. 이스라엘 자손의 가축은 하나도 죽지 않았어요.'],
-    ['악성 종기', '출 9:8-12', '화덕의 재를 날린 뒤 사람과 가축의 피부에 종기가 생겼어요.'],
-    ['우박', '출 9:18-26', '하늘에서 무거운 우박이 내렸어요. 바로의 신하 가운데 여호와의 말씀을 두려워한 이들은 종과 가축을 집으로 피하게 했어요. 이스라엘 자손이 있는 고센 땅에는 우박이 없었어요.'],
-    ['메뚜기', '출 10:1-20', '동풍에 실려 온 곤충 떼가 우박 뒤에 남은 밭의 식물을 먹었어요.'],
-    ['흑암', '출 10:21-29', '사흘 동안 애굽에 어둠이 덮였지만 이스라엘 자손이 사는 곳에는 빛이 있었어요.']
+    ['물이 피가 됨', '출 7:19-21, 7:25', '여호와께서 명령하신 대로 모세와 아론이 지팡이를 들어 나일 강을 치자, 물이 다 피로 변했어요. 물고기가 죽고 애굽 사람들은 강물을 마시지 못했어요.'],
+    ['개구리', '출 8:2, 8:5-6', '여호와께서 명령하신 대로 아론이 애굽의 물 위에 손을 내밀자, 개구리가 올라와 애굽 땅을 덮었어요.'],
+    ['이', '출 8:16-18', '여호와께서 명령하신 대로 아론이 땅의 티끌을 치자, 티끌이 이가 되어 사람과 가축에게 올랐어요. 요술사들은 같은 일을 할 수 없었어요.'],
+    ['파리', '출 8:21-24', '여호와께서 말씀하신 대로 하시니, 수많은 파리가 바로의 궁과 신하들의 집과 애굽 온 땅에 이르렀어요. 여호와께서는 이스라엘 백성이 사는 고센 땅을 구별하여 파리가 없게 하셨어요.'],
+    ['가축의 돌림병', '출 9:3-6', '이튿날 여호와께서 말씀하신 일을 행하시니, 들에 있던 애굽의 가축이 심한 돌림병으로 죽었어요. 이스라엘 자손의 가축은 하나도 죽지 않았어요.'],
+    ['악성 종기', '출 9:8-10', '여호와께서 명령하신 대로 모세가 화덕의 재를 하늘로 날리자, 사람과 짐승에게 악성 종기가 생겼어요.'],
+    ['우박', '출 9:18-26', '바로의 신하 가운데 여호와의 말씀을 두려워한 이들은 종과 가축을 집으로 피하게 했어요. 여호와께서 명령하신 대로 모세가 하늘을 향해 지팡이를 들자, 여호와께서 우렛소리와 무거운 우박을 보내셨어요. 이스라엘 자손이 있는 고센 땅에는 우박이 없었어요.'],
+    ['메뚜기', '출 10:12-15', '여호와께서 명령하신 대로 모세가 애굽 땅 위에 지팡이를 들자, 여호와께서 동풍을 일으키셨어요. 동풍이 메뚜기를 불어 들였고, 메뚜기는 우박에 상하지 않은 밭의 채소와 나무 열매를 다 먹었어요.'],
+    ['흑암', '출 10:21-23', '여호와께서 명령하신 대로 모세가 하늘을 향해 손을 내밀자, 사흘 동안 애굽 온 땅에 캄캄한 어둠이 있었어요. 그러나 이스라엘 자손이 사는 곳에는 빛이 있었어요.']
   ];
   // EX-06에서 자세히 관찰할 세 사건. 장소별 설명은 일지의 요약과 별개로 보여 준다.
   var lookouts = {
@@ -38,26 +38,37 @@
     null, 'plague-frogs', 'plague-dust', null, 'plague-yard', 'plague-kiln',
     'plague-hail', 'plague-locusts', null
   ];
-  var acts = ['강과 땅', '애굽과 고센', '하늘과 어둠'];
+  var pictureDescriptions = {
+    'plague-frogs':'집 문턱과 마당에 앉은 개구리들',
+    'plague-dust':'흙바닥 너머로 울타리와 들판이 보이는 마당',
+    'plague-yard':'구유와 울타리가 보이는 빈 가축 우리',
+    'plague-kiln':'둥근 화덕과 곁에 쌓인 재',
+    'plague-hail':'이삭이 팬 보리와 꽃이 핀 삼 위로 떨어지는 우박',
+    'plague-locusts':'밭의 작물에 앉거나 날아다니는 메뚜기들',
+    'ex07-room':'문기둥과 인방, 덮은 그릇과 무교병과 쓴 나물이 있는 식탁, 지팡이와 신이 놓인 방',
+    'plague-midnight':'한밤중 사람이 없는 집의 닫힌 문'
+  };
+  var acts = ['강과 땅', '사람과 가축', '하늘과 어둠'];
   var findings = [
     ['요술사들도 같은 일을 했어요.', '출 7:22'],
-    ['개구리가 사라지자 바로는 백성을 보내겠다는 약속을 거두었어요.', '출 8:8, 15'],
+    ['바로는 백성을 보내겠다고 했지만, 숨을 쉴 수 있게 되자 모세와 아론의 말을 듣지 않았어요.', '출 8:8, 15'],
     ['요술사들은 바로에게 이것이 하나님의 권능이라고 말했어요.', '출 8:19'],
     ['바로는 광야로 가더라도 너무 멀리 가지 말라고 했어요.', '출 8:28'],
     ['바로는 사람을 보내 이스라엘의 가축이 살아 있는지 확인했어요.', '출 9:7'],
     ['요술사들도 종기 때문에 모세 앞에 설 수 없었어요.', '출 9:11'],
     ['우박이 그치자 바로는 또다시 백성을 보내지 않았어요.', '출 9:34-35'],
-    ['서풍이 불어 메뚜기 떼를 홍해로 몰아냈어요.', '출 10:19'],
+    ['여호와께서 강한 서풍을 불게 하셔서 메뚜기 떼를 홍해로 몰아넣으셨어요.', '출 10:19'],
     ['바로는 가축을 두고 가라 했지만, 모세는 가축도 함께 가야 한다고 했어요.', '출 10:24-26']
   ];
   var preparation = [
     ['문', '출 12:3-7, 13, 23, 28', '가족마다 어린 양을 준비했어요. 그 피를 문 양옆 기둥과 위쪽 가로대에 발랐어요. 하나님은 그 피를 보시면 그 집을 넘어가겠다고 하셨어요.'],
-    ['식탁', '출 12:8-9', '그 밤에 불에 구운 고기를 무교병과 쓴 나물과 함께 먹었어요. 무교병은 누룩을 넣지 않은 빵이에요.'],
-    ['떠날 차림', '출 12:11, 27-28', '허리띠를 띠고 신을 신고 손에 지팡이를 들도록 하셨어요. 백성은 하나님이 모세와 아론에게 명령하신 대로 행했어요.']
+    ['식탁', '출 12:8', '그 밤에 불에 구운 고기를 무교병과 쓴 나물과 함께 먹었어요. 무교병은 누룩을 넣지 않은 빵이에요.'],
+    ['떠날 차림', '출 12:11, 28', '허리띠를 띠고 신을 신고 손에 지팡이를 들도록 하셨어요. 백성은 하나님이 모세와 아론에게 명령하신 대로 행했어요.']
   ];
-  var nightfall = '그날 밤 애굽의 처음 난 자들과 가축의 처음 난 것들이 죽었어요. 피를 바른 이스라엘 자손의 집에는 재앙이 내려 멸하는 일이 없었어요. 애굽 사람들은 크게 울었어요.';
+  var nightRef = '출 12:7, 23, 27, 29-30';
+  var nightfall = '밤중에 여호와께서 애굽 땅의 처음 난 것을 다 치셨어요. 바로의 맏아들부터 옥에 갇힌 사람의 맏아들까지, 그리고 가축의 처음 난 것까지였어요. 여호와께서는 피를 바른 이스라엘 자손의 집을 넘으셨어요. 애굽에 큰 부르짖음이 있었어요.';
   var summons = '바로는 밤에 모세와 아론을 불러 이스라엘 백성에게 양과 소를 데리고 떠나라고 했어요.';
-  var night = ['열 번째 재앙', '출 12:13, 23, 27, 29-32', nightfall + ' ' + summons];
+  var night = ['열 번째 재앙', nightRef, nightfall];
   var departure = ['애굽을 떠나다', '출 12:34-39', '백성은 아직 부풀지 않은 반죽을 싸서 멨어요. 아이들과 여러 무리, 양과 소도 함께 라암셋을 떠나 숙곳으로 갔어요.'];
   var end = 12;
   function valid(s) {
@@ -69,7 +80,9 @@
     return el('button', {class: cls || 'btn onpaper', on: {click: action}}, label);
   }
   function record(row) {
-    return el('details', {class:'po-record'}, el('summary', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
+    var entry = el('details', {class:'po-record'}, el('summary', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
+    if (row === night) entry.append(app.refChip('출 12:31-32'), el('p', {}, summons));
+    return entry;
   }
   function showPlagueNotes(trigger, count) {
     var dialog = el('dialog', {class:'po-notes', 'aria-labelledby':'po-notes-title'});
@@ -87,7 +100,7 @@
             pictures.append(el('figure', {}, app.pic(spot.art, '', spot.alt), el('figcaption', {}, spot.place)));
           });
         } else {
-          pictures.append(app.pic(shortViews[i], '', row[0]));
+          pictures.append(app.pic(shortViews[i], '', pictureDescriptions[shortViews[i]]));
         }
         entry.append(pictures);
       });
@@ -166,7 +179,7 @@
       var act = Math.floor(step / 3);
       var chapter = river ? acts[act] : meal ? '유월절을 준비하다' : step < end ? '그 밤, 애굽에서 나오다' : '탐험 기록';
       var h = el('h2', {tabindex:'-1'}, chapter), body = el('div', {class:'po-body'}), foot = [];
-      var picture = el('div', {class:'po-picture'}, app.pic(art, '', spots ? spots[0].alt : step === 10 ? '한밤중 사람이 없는 집의 닫힌 문' : ''));
+      var picture = el('div', {class:'po-picture'}, app.pic(art, '', spots ? spots[0].alt : pictureDescriptions[art] || ''));
       var land = el('div', {class:'po-land'}, picture,
         el('div', {class:'po-title'}, el('small', {}, river ? '아홉 가지 재앙 · ' + ['첫째', '둘째', '셋째'][act] + ' 묶음' : '출애굽기 11–12장'), h));
       land.dataset.view = art;
@@ -202,7 +215,7 @@
         if (spots) {
           // 이전 판에서 이미 이름을 맞힌 기록도 다음 장면으로 곧바로 이어진다.
           var seen = s.matched === true ? 3 : (s.observed & 3);
-          var evidence = el('div', {class:'po-detail', role:'status'});
+          var evidence = el('div', {class:'po-detail', role:'status'}, app.refChip(row[1]), el('p', {}, row[2]));
           var choices = el('div', {class:'po-spots', role:'group', 'aria-label':'관찰할 곳'});
           function showSpot(i) {
             var spot = spots[i];
@@ -234,11 +247,11 @@
         } else {
           body.append(app.refChip(row[1]), el('p', {}, row[2]));
         }
-        if (app.state.tier !== 't1' || ![0, 2, 3, 7, 8].includes(step)) body.append(finding);
+        if (app.state.tier !== 't1' || ![0, 2, 3, 5, 7, 8].includes(step)) body.append(finding);
       } else if (meal) {
         exploreRoom(s, land, body, advance);
       } else if (step === 10) {
-        body.append(el('h3', {}, night[0]), app.refChip('출 12:13, 23, 27, 29-30'), el('p', {}, nightfall));
+        body.append(el('h3', {}, night[0]), app.refChip(nightRef), el('p', {}, nightfall));
         if (s.summons === true) {
           body.append(el('h3', {class:'po-summons', tabindex:'-1'}, '바로의 부름'), app.refChip('출 12:31-32'), el('p', {}, summons));
           foot.push(button('떠나는 길 살펴보기', advance));
