@@ -94,7 +94,7 @@ async function play(browser, url, age) {
       const next = button(i === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기');
       const progress = page.locator('.po-trail strong');
       assert.equal(await page.locator('.po-segments i').count(), 9);
-      assert.equal(await page.locator(places ? '.po-title h2' : '.po-body h3').innerText(), (i+1) + '번째 재앙 · ' + name);
+      assert.equal(await page.locator('.po-title h2').innerText(), (i+1) + '번째 재앙 · ' + name);
       assert((await page.locator('.po-title').innerText()).includes(['강과 땅','사람과 가축','하늘과 어둠'][Math.floor(i/3)]));
       assert.equal(await progress.innerText(), (i + (places ? 0 : 1)) + ' / 9 기록');
       if (places) {
@@ -171,6 +171,13 @@ async function play(browser, url, age) {
         }
       } else {
         await assertArt(views[i][0]);
+        if (height <= 568) {
+          const readable = await page.locator('.po-body > p').first().evaluate(p => {
+            const content = p.getBoundingClientRect(), pane = p.closest('.po-scroll').getBoundingClientRect();
+            return Math.min(content.bottom,pane.bottom) - Math.max(content.top,pane.top);
+          });
+          assert(readable >= 32, name + ' 본문의 첫 문장이 스크롤 전부터 보여야 한다');
+        }
         await inspectPicture(name);
         assert((await page.locator('.po-picture img').getAttribute('alt')).length > 0);
         assert.equal(await page.locator('.po-spots').count(), 0);

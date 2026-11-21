@@ -267,8 +267,8 @@
       var chapter = river ? acts[act] : meal ? '유월절을 준비하다' : step < end ? '그 밤, 애굽에서 나오다' : '탐험 기록';
       var plagueTitle = river && (step + 1) + '번째 재앙 · ' + plagues[step][0];
       var caption = river ? '아홉 가지 재앙 · ' + ['첫째', '둘째', '셋째'][act] + ' 묶음' : '출애굽기 11–12장';
-      if (spots) caption += ' · ' + chapter;
-      var h = el('h2', {tabindex:'-1'}, spots ? plagueTitle : chapter);
+      if (river) caption += ' · ' + chapter;
+      var h = el('h2', {tabindex:'-1'}, river ? plagueTitle : chapter);
       var body = el('div', {class:'po-body'}), foot = [];
       var picture = el('div', {class:'po-picture'}, spots ? null : app.pic(art, '', pictureDescriptions[art] || ''));
       var land = el('div', {class:'po-land'}, spots ? null : picture,
@@ -300,7 +300,6 @@
         }
         markRecorded(!spots);
         body.append(trail);
-        if (!spots) body.append(el('h3', {}, plagueTitle));
         var nextPlague = button(step === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기', advance);
         foot.push(nextPlague);
         if (spots) {
@@ -373,7 +372,8 @@
         foot.push(button(returnTo + '로 돌아가기', leave));
       }
       var sceneClass = meal ? ' po-meal' : river ? ' po-river' : '';
-      if (spots) sceneClass += ' po-compare';
+      if (river) sceneClass += spots ? ' po-compare' : ' po-short';
+      if (step === 10) sceneClass += ' po-night';
       if (step === 11) sceneClass += ' po-departure';
       if (resumeNote) {
         var note = el('span', {class:'po-return-note', id:'po-return-note'}, resumeNote);
