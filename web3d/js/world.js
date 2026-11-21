@@ -68,13 +68,16 @@ window.BO3D = window.BO3D || {};
     return r < 72 && mountain(x, z) < 3.2;
   }
 
+  // 양 떼 곁을 지나는 마른 물길. 자갈과 땅 빛이 같은 굽이를 따른다.
+  function washX(z) { return -5 + 4.8 * Math.sin(z * 0.085) + 1.7 * Math.sin(z * 0.20); }
+
   function terrain() {
     var size = 300, seg = 128;
     var g = new T.PlaneGeometry(size, size, seg, seg);
     g.rotateX(-Math.PI / 2);
     var pos = g.attributes.position, col = new Float32Array(pos.count * 3);
     var sand = new T.Color('#E6C182'), sand2 = new T.Color('#D9AC6B'), rock = new T.Color('#A06B47'), high = new T.Color('#86708F'), peak = new T.Color('#C9B4C0');
-    var c = new T.Color();
+    var c = new T.Color(), gravel = new T.Color('#AF9776'), pasture = new T.Color('#A7A16D');
     for (var i = 0; i < pos.count; i++) {
       var x = pos.getX(i), z = pos.getZ(i) + 8 - 0, y;
       pos.setZ(i, z);
@@ -83,6 +86,10 @@ window.BO3D = window.BO3D || {};
       var m = mountain(x, z);
       var n = noise(x * 0.09 + 5, z * 0.09 + 1);
       c.copy(sand).lerp(sand2, n * 0.8);
+      var wash = 1 - smooth(1.1, 4.7, Math.abs(x - washX(z)));
+      c.lerp(gravel, wash * (0.42 + 0.37 * n) * smooth(1, 15, z) * (1 - smooth(54, 72, z)));
+      var graze = 1 - smooth(4, 14, Math.hypot(x - P.flock[0], z - P.flock[1]));
+      c.lerp(pasture, graze * (0.32 + n * 0.54));
       if (m > 0.5) c.lerp(rock, smooth(0.5, 9, m));
       if (m > 12) c.lerp(high, smooth(12, 34, m));
       if (m > 40) c.lerp(peak, smooth(40, 60, m) * 0.7);
@@ -147,6 +154,92 @@ window.BO3D = window.BO3D || {};
     return grp;
   }
 
+  function sandstoneGeometry(r) {
+    var color = new T.Color();
+    // 한 덩어리의 단면에서 층이 이어져, 옆에서 봐도 지층 사이에 틈이 생기지 않는다.
+    var rockFaces = [], rockColors = [], sides = 9;
+    var rim = Array.from({ length: sides }, function (_, i) {
+      var a = (i + r() * 0.22) * Math.PI * 2 / sides;
+      return [Math.cos(a) * (0.84 + r() * 0.22), r() * 0.12, Math.sin(a) * (0.84 + r() * 0.22)];
+    });
+    var rings = [[-0.22, 1.08], [0.28, 1], [0.36, 0.92], [0.68, 0.82], [1, 0.52]].map(function (band) {
+      return rim.map(function (p) { return [p[0] * band[1] + band[0] * 0.15, band[0] + p[1] + p[0] * 0.12, p[2] * band[1]]; });
+    });
+    function face(a, b, c, tint) {
+      rockFaces.push.apply(rockFaces, a.concat(b, c)); color.set(tint);
+      for (var i = 0; i < 3; i++) rockColors.push(color.r, color.g, color.b);
+    }
+    ['#B27F60', '#CAA082', '#B78866', '#C19472'].forEach(function (tint, level) {
+      for (var i = 0; i < sides; i++) {
+        var j = (i + 1) % sides, low = rings[level], high = rings[level + 1];
+        face(low[i], high[i], low[j], tint); face(low[j], high[i], high[j], tint);
+      }
+    });
+    var top = rings[rings.length - 1];
+    for (var i = 0; i < sides; i++) face(top[i], [0.1, 1.09, 0], top[(i + 1)%sides], '#D5A884');
+    var rock = new T.BufferGeometry();
+    rock.setAttribute('position', new T.Float32BufferAttribute(rockFaces, 3));
+    rock.setAttribute('color', new T.Float32BufferAttribute(rockColors, 3)); rock.computeVertexNormals();
+    return rock;
+  }
+
+  function fieldEdges(scene) {
+    var r = rng(682), pose = new T.Object3D(), color = new T.Color();
+    var ledges = [[-20, 32, 1.1], [17, 26, 1.35], [-27, 9, 1.6], [25, -1, 1.5], [-21, 54, 1.25], [26, 51, 1.05]];
+    var bluffs = new T.InstancedMesh(sandstoneGeometry(r), new T.MeshStandardMaterial({ vertexColors: true, roughness: 1 }), ledges.length * 4);
+    bluffs.name = 'horeb-sandstone';
+    ledges.forEach(function (ledge, group) {
+      for (var i = 0; i < 4; i++) {
+        var x = ledge[0] + (i - 1.5) * 2.8, z = ledge[1] + 2.4 * Math.sin(i * 1.6);
+        var s = ledge[2] * (0.7 + r() * 0.55);
+        pose.position.set(x, height(x, z), z); pose.rotation.set(0, r() * Math.PI, 0);
+        pose.scale.set(3.6 * s, (1.25 + 1.45 * Math.sin(Math.PI * (i + 0.5) / 4)) * s, 2.35 * s);
+        pose.updateMatrix(); bluffs.setMatrixAt(group * 4 + i, pose.matrix);
+      }
+    });
+    bluffs.receiveShadow = true; scene.add(bluffs);
+
+    var stones = new T.InstancedMesh(new T.DodecahedronGeometry(1), new T.MeshStandardMaterial({ roughness: 1, flatShading: true }), 180);
+    stones.name = 'horeb-rock-banks';
+    var used = 0;
+    function stone(x, y, z, w, h, d, yaw, tint) {
+      pose.position.set(x, y, z); pose.rotation.set(0.035, yaw, -0.055); pose.scale.set(w, h, d); pose.updateMatrix();
+      stones.setMatrixAt(used, pose.matrix); stones.setColorAt(used++, color.set(tint));
+    }
+    // 자갈은 굽이의 한쪽에 패치로 쌓인다.
+    for (var bar = 0; bar < 15; bar++) {
+      var bz = 6 + bar * 3.6, side = bar % 2 ? 1 : -1;
+      for (var j = 0; j < 12; j++) {
+        var z = bz + (r() - 0.5) * 4, x = washX(z) + side * (0.8 + r() * 2.1);
+        var radius = 0.07 + r() * 0.24;
+        stone(x, height(x, z), z, radius * 1.4, radius * 0.60, radius, r() * Math.PI, j % 2 ? '#B29472' : '#967B60');
+      }
+    }
+    stones.receiveShadow = true; scene.add(stones);
+
+    var blades = [];
+    for (var blade = 0; blade < 9; blade++) {
+      var angle = blade * 2.4, dx = Math.cos(angle), dz = Math.sin(angle), reach = 0.2 + r() * 0.23;
+      blades.push(-dz * 0.06, 0, dx * 0.06, dz * 0.06, 0, -dx * 0.06, dx * reach, 0.24 + r() * 0.33, dz * reach);
+    }
+    var grass = new T.BufferGeometry();
+    grass.setAttribute('position', new T.Float32BufferAttribute(blades, 3)); grass.computeVertexNormals();
+    var tufts = new T.InstancedMesh(grass, new T.MeshStandardMaterial({ side: T.DoubleSide, roughness: 1 }), 240);
+    tufts.name = 'horeb-grazing-grass';
+    for (var i = 0; i < tufts.count; i++) {
+      var z = 7 + r() * 46, x = washX(z) + (i % 2 ? 1 : -1) * (3 + r() * 2.3);
+      if (i < 140) {
+        var a = r() * Math.PI * 2, spread = Math.sqrt(r()) * 8.2;
+        x = P.flock[0] + Math.cos(a) * spread; z = P.flock[1] + Math.sin(a) * spread;
+      }
+      pose.position.set(x, height(x, z) - 0.04, z); pose.rotation.set(0, r() * Math.PI, 0);
+      pose.scale.setScalar(0.58 + r() * 0.78); pose.updateMatrix();
+      tufts.setMatrixAt(i, pose.matrix);
+      tufts.setColorAt(i, color.set(i % 3 ? '#A09866' : '#BBA569'));
+    }
+    tufts.receiveShadow = true; scene.add(tufts);
+  }
+
   function build(scene) {
     var M = BO3D.models || {};
     scene.background = new T.Color('#F8DDAE');
@@ -155,6 +248,7 @@ window.BO3D = window.BO3D || {};
     scene.add(clouds());
     scene.add(farHills());
     scene.add(terrain());
+    fieldEdges(scene);
 
     var hemi = new T.HemisphereLight('#D9EEF2', '#B98A55', 0.62);
     scene.add(hemi);

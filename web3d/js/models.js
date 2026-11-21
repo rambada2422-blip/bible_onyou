@@ -61,7 +61,7 @@
     var m = _mats[name];
     if (m) return m;
     var S = T.MeshStandardMaterial;
-    if (name === 'smooth') m = new S({ vertexColors: true, roughness: 0.8, metalness: 0 });
+    if (name === 'smooth' || name === 'sheepWalk') m = new S({ vertexColors: true, roughness: 0.8, metalness: 0, morphTargets: name === 'sheepWalk' });
     else if (name === 'cloth') m = new S({ vertexColors: true, roughness: 0.9, metalness: 0, side: T.DoubleSide });
     else if (name === 'flat') m = new S({ vertexColors: true, roughness: 0.92, metalness: 0, flatShading: true });
     else if (name === 'leaf') m = new S({ vertexColors: true, roughness: 0.9, metalness: 0, flatShading: true, side: T.DoubleSide });
@@ -781,11 +781,26 @@
       b.add(ball(6, 4), WOOL, TR(Math.cos(az) * Math.cos(el) * 0.2, cy + Math.sin(el) * 0.175 - 0.01, cz + Math.sin(az) * Math.cos(el) * 0.31, R(), R(), 0, r, r * 0.86, r * 1.05), grad);
     }
     b.add(ball(6, 4), WOOL, TR(0, cy + 0.03, cz - 0.38, 0.5, 0, 0, 0.06, 0.075, 0.055), grad);        // 꼬리
+    var firstLeg = b.pos.length;
     [[1, 1], [-1, 1], [1, -1], [-1, -1]].forEach(function (q) {
       b.add(new T.CylinderGeometry(0.046, 0.034, 0.26, 6, 1, true), LEG, TR(q[0] * 0.115, 0.165, cz + q[1] * 0.2 + 0.01, q[1] * -0.05, 0, q[0] * -0.04));
       b.add(new T.CylinderGeometry(0.036, 0.04, 0.05, 6, 1), '#2E221B', TR(q[0] * 0.12, 0.025, cz + q[1] * 0.207 + 0.01));
     });
-    body.add(b.mesh(sm));
+    var fleece = b.mesh(mat('sheepWalk'));
+    // 발굽 쪽만 움직이는 두 걸음 자세. 몸과 다리를 한 번에 그린다.
+    fleece.geometry.morphTargetsRelative = true;
+    fleece.geometry.morphAttributes.position = [-1, 1].map(function (phase) {
+      var offsets = new Float32Array(b.pos.length);
+      for (var at = firstLeg; at < b.pos.length; at += 3) {
+        var weight = clamp((0.30 - b.pos[at + 1]) / 0.28, 0, 1);
+        var stride = Math.sign(b.pos[at] * (b.pos[at + 2] - cz)) * phase;
+        offsets[at + 1] = Math.max(0, stride) * weight * 0.055;
+        offsets[at + 2] = stride * weight * 0.12;
+      }
+      return new T.BufferAttribute(offsets, 3);
+    });
+    fleece.updateMorphTargets();
+    body.add(fleece);
 
     // 머리(목에서 숙인다)
     var neckO = [0, 0.5, 0.2];
@@ -810,16 +825,22 @@
     });
     neck.add(h.mesh(sm, neckO));
 
-    var st = { t: R() * 40, off: R(), flick: 0, mv: 0 };
-    function update(dt, spd) {
+    var st = { t: R() * 40, off: R(), stride: R() * TAU, mv: 0, alert: 0 };
+    function update(dt, spd, attention, turn) {
       dt = Math.min(Math.max(dt || 0, 0), 0.1);
       st.t += dt;
       st.mv = lerp(st.mv, clamp(spd || 0, 0, 1), Math.min(1, dt * 6));
       var t = st.t, mv = st.mv, cyc = (t * 0.07 + st.off) % 1;
       var g = smooth(0.0, 0.1, cyc) * (1 - smooth(0.66, 0.76, cyc)) * (1 - mv * 0.85); // 1: 풀을 뜯는 중
-      var step = Math.sin(t * 7.5 + st.off * TAU);
+      st.alert = lerp(st.alert, attention || 0, Math.min(1, dt * 4));
+      g *= 1 - st.alert;
+      st.stride += dt * st.mv * 9;
+      var step = Math.sin(st.stride);
+      fleece.morphTargetInfluences[0] = Math.max(0, -step) * st.mv;
+      fleece.morphTargetInfluences[1] = Math.max(0, step) * st.mv;
       neck.rotation.x = lerp(0.05, 0.98, g) + g * 0.06 * Math.sin(t * 6.5) + (1 - g) * (0.03 * Math.sin(t * 1.1) + mv * 0.06 * step);
-      neck.rotation.y = 0.12 * Math.sin(t * 0.43 + st.off * 9) * (1 - 0.6 * g);
+      var look = 0.12 * Math.sin(t * 0.43 + st.off * 9) * (1 - 0.6 * g);
+      neck.rotation.y = lerp(neck.rotation.y, lerp(look, clamp(turn || 0, -0.70, 0.70), st.alert), Math.min(1, dt * 6));
       body.position.y = Math.abs(step) * 0.025 * mv;
       body.rotation.x = g * 0.05;
       body.rotation.z = step * 0.032 * mv;

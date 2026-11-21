@@ -76,6 +76,7 @@ BO3D.gameModules.scene = function (G) {
 
   function updateSheep(dt) {
     var n = G.sheep ? G.sheep.length : 0, t = G.now || 0, fx = G.P.flock[0], fz = G.P.flock[1], bx = G.P.bush[0], bz = G.P.bush[1], i, j, s, o;
+    var visitor = G.canMove() && G.player ? G.player.group.position : null;
     var hcx = [], hcz = [];
     for (i = 0; i < 3; i++) {
       var ha = t * 0.09 + i * 2.094 + Math.sin(t * 0.05 + i) * 0.45, hr = 2.4 + Math.sin(t * 0.11 + i * 1.7) * 1.5;
@@ -103,6 +104,17 @@ BO3D.gameModules.scene = function (G) {
         ax += ((cx / cnt - s.x) * 0.18 + (vx / cnt) * 0.35) * walk;
         az += ((cz / cnt - s.z) * 0.18 + (vz / cnt) * 0.35) * walk;
       }
+      var attention = 0, turn = 0;
+      if (visitor) {
+        var toX = visitor.x - s.x, toZ = visitor.z - s.z, distance = Math.hypot(toX, toZ);
+        attention = Math.max(0, Math.min(1, (4.8 - distance) / 2.2));
+        var angle = Math.atan2(toX, toZ) - s.group.rotation.y;
+        turn = Math.atan2(Math.sin(angle), Math.cos(angle));
+        if (distance < 2.2 && distance > 0.01) {
+          var retreat = (2.2 - distance) * 1.65 / distance;
+          ax -= toX * retreat; az -= toZ * retreat;
+        }
+      }
       if (G.moses && G.moses.group) {
         var mdx = s.x - G.moses.group.position.x, mdz = s.z - G.moses.group.position.z, md = Math.sqrt(mdx * mdx + mdz * mdz);
         if (md < 1.4 && md > 1e-4) { ax += (mdx / md) * (1.4 - md) * 3.0; az += (mdz / md) * (1.4 - md) * 3.0; }
@@ -121,7 +133,7 @@ BO3D.gameModules.scene = function (G) {
       if (db < 15.5 && db > 1e-4) { s.x = bx + (dbx / db) * 15.5; s.z = bz + (dbz / db) * 15.5; }
       place(s.group, s.x, s.z);
       if (spd > 0.04) s.group.rotation.y = lerpAngle(s.group.rotation.y, Math.atan2(s.vx, s.vz), Math.min(1, dt * 4.2));
-      if (s.update) s.update(dt, spd / maxSpd);
+      if (s.update) s.update(dt, spd / maxSpd, attention, turn);
     }
   }
 

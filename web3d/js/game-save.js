@@ -5,6 +5,7 @@ BO3D.gameModules.save = function (G) {
   var key = 'bo3d.save.v1', previous = null;
   var stage = null, question = 0, signal = null, chosen = null;
   G.horebNote = '';
+  G.flockMarks = [];
   var stages = ['route', 'horeb', 'watch', 'gates', 'reward', 'free', 'end', 'jordan', 'deduce', 'return'];
 
   function photos(value, entries) {
@@ -31,6 +32,10 @@ BO3D.gameModules.save = function (G) {
       if (s.stage !== 'horeb' || !s.signal || s.signal.part !== s.parts ||
           !['reference', 'sharon', 'search'].includes(s.signal.step) || (s.parts === 0 && s.signal.step !== 'search')) delete s.signal;
       s.dex = photos(s.dex, G.DEX); s.clues = photos(s.clues, G.JD.clues);
+      s.flockMarks = s.dex.sheep && Array.isArray(s.flockMarks) ? s.flockMarks.slice(0, 32).filter(function (p) {
+        return Array.isArray(p) && p.length === 3 && p.every(Number.isInteger) &&
+          p[0] >= 0 && p[0] <= 1000 && p[1] >= 0 && p[1] <= 1000 && p[2] > 0 && p[2] <= 200;
+      }) : [];
       if (['deduce', 'return'].includes(s.stage) && Object.keys(s.clues).length < G.JD.need[s.tier]) s.stage = 'jordan';
       return s;
     } catch (e) { return null; }
@@ -62,6 +67,7 @@ BO3D.gameModules.save = function (G) {
     if (stage === 'gates' || stage === 'deduce') data.question = question;
     if (stage === 'horeb' && signal && signal.part === data.parts) data.signal = signal;
     if (G.horebNote) data.horebNote = G.horebNote;
+    if (G.dex.sheep && G.flockMarks.length && stage === 'horeb' && data.parts === 0) data.flockMarks = G.flockMarks;
     try {
       // 다른 탭에서 새로 시작했거나 더 진행했다면 이전 화면이 그 저장을 덮지 않는다.
       if (localStorage.getItem(key) !== previous) return;
@@ -79,11 +85,13 @@ BO3D.gameModules.save = function (G) {
           return kept;
         }
         data.dex = reduced(G.dex, old.dex); data.clues = reduced(G.clue, old.clues);
+        if (!data.dex.sheep) delete data.flockMarks;
         raw = JSON.stringify(data);
         try { localStorage.setItem(key, raw); }
         catch (again) {
           if (again.name !== 'QuotaExceededError') return;
           data.dex = reduced(G.dex); data.clues = reduced(G.clue);
+          delete data.flockMarks;
           raw = JSON.stringify(data); localStorage.setItem(key, raw);
         }
       }
@@ -92,6 +100,7 @@ BO3D.gameModules.save = function (G) {
   };
 
   G.restart = function () {
+    G.flockMarks = [];
     stage = null; question = 0; signal = null; chosen = null; previous = null; G.horebNote = ''; G.dex = {}; G.clue = {};
     G.setFlag(null); G.setHat(false);
     try { localStorage.removeItem(key); } catch (e) { /* 기기 저장이 꺼져 있다. */ }
@@ -103,6 +112,7 @@ BO3D.gameModules.save = function (G) {
     if (!s) { G.menu(); return; }
     stage = s.stage; chosen = s.route === 'ALT-02' ? 'ALT-02' : 'EX-01';
     G.S.tier = s.tier; G.S.ch = s.ch; G.dex = s.dex; G.clue = s.clues;
+    G.flockMarks = s.flockMarks;
     signal = s.signal || null;
     G.horebNote = typeof s.horebNote === 'string' ? s.horebNote : '';
     G.root.className = 'g3 app ' + G.S.tier;

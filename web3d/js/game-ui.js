@@ -53,6 +53,46 @@ BO3D.gameModules.ui = function (G) {
       G.el('div', { class: 'narr-meta' }, gloss.refs[tier].map(function (ref) { return G.refChip(ref); })));
   }
 
+  function fieldPhoto(onIdentify) {
+    if (!G.dex.sheep) return null;
+    var photo = G.el('img', { alt: '', src: G.dex.sheep });
+    if (!G.flockMarks.length) {
+      photo.alt = '광야에서 직접 찍은 동물 무리';
+      return G.el('figure', { class: 'field-observation' }, photo, G.el('figcaption', {},
+        G.el('b', { text: '내가 찍은 사진' }), '사진을 살펴보고 보기에서 골라요.'));
+    }
+    var young = G.S.tier === 't1', x = 0.5, y = 0.5;
+    var marker = G.el('i', { class: 'field-sight', hidden: true, 'aria-hidden': 'true' });
+    var message = G.el('span', { role: 'status', text: young ? '돌보던 동물을 사진에서 짚거나 보기에서 골라요.' : '사진 속 동물을 찾아보고, 성경에서 주인을 확인해요.' });
+    function aim(left, top) {
+      x = Math.max(0, Math.min(1, left)); y = Math.max(0, Math.min(1, top));
+      marker.style.left = (x * 100) + '%'; marker.style.top = (y * 100) + '%'; marker.hidden = false;
+    }
+    var picture = G.el('button', { type: 'button', class: 'field-photo', 'aria-label': '사진에서 동물 찾기',
+      'aria-describedby': 'field-photo-keys', on: {
+        keydown: function (e) {
+          var moves = { ArrowLeft: [-1,0], ArrowRight: [1,0], ArrowUp: [0,-1], ArrowDown: [0,1] };
+          var move = moves[e.key];
+          if (move) { e.preventDefault(); aim(x + 0.06 * move[0], y + 0.06 * move[1]); }
+        },
+        click: function (e) {
+          var rect = picture.getBoundingClientRect();
+          if (e.detail) aim((e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height);
+          else aim(x, y);
+          var hit = G.flockMarks.some(function (p) {
+            return Math.hypot(x - p[0] / 1000, y - p[1] / 1000) <= Math.max(p[2] / 1000, 12 / rect.width);
+          });
+          marker.classList.toggle('found', hit);
+          if (!hit) { message.textContent = '그곳에는 동물이 보이지 않아요. 다른 곳을 짚어 보세요.'; return; }
+          if (young) onIdentify();
+          else message.textContent = '양 떼를 찾았어요. 누구의 양 떼였는지 보기에서 골라요.';
+        }
+      } }, photo, marker);
+    return G.el('figure', { class: 'field-observation' }, picture, G.el('figcaption', {},
+      G.el('b', { text: '내가 찍은 사진' }), message,
+      G.el('small', { id: 'field-photo-keys', text: '키보드는 방향키로 조준하고 Enter로 확인해요.' })));
+  }
+
   /* 물음과 보기 순서는 승인된 horeb 자료에서 읽는다. */
   function detectorQuestion(item, index, onReady, savedPage) {
     var data = G.C3.horeb, sharon = G.C3.sharon, tier = G.S.tier, q = item.q[tier], solved = false;
@@ -72,13 +112,15 @@ BO3D.gameModules.ui = function (G) {
     }
     if (savedPage === 'reference') { showReference(); return; }
     if (savedPage === 'sharon') { showSharon(); return; }
+    function correct() {
+      if (solved) return;
+      solved = true;
+      if (index === 0) onReady(); else showReference();
+    }
     var opts = q.options.map(function (option) {
       var b = G.el('button', { class: 'opt', on: { click: function () {
         if (solved) return;
-        if (option.ok) {
-          solved = true;
-          if (index === 0) onReady(); else showReference();
-        }
+        if (option.ok) correct();
         else {
           b.classList.add('rest'); b.disabled = true;
           if (!noteBox.firstChild) {
@@ -96,7 +138,7 @@ BO3D.gameModules.ui = function (G) {
     showPanel([
       G.el('div', { class: 'q-kicker', 'data-detector-quiz': String(index), text: sharon.kicker + ' ' + (index + 1) + ' / ' + data.quiz.length }),
       G.el('div', { class: 'narr-meta' }, tier === 't2' ? G.refChip(item.ref) : G.el('span', { text: data.bookHint[tier] })),
-      speech, continuation, G.el('div', { class: 'opts' }, opts), noteBox
+      speech, continuation, index === 0 ? fieldPhoto(correct) : null, G.el('div', { class: 'opts' }, opts), noteBox
     ], []);
   }
 
