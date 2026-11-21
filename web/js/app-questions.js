@@ -73,10 +73,10 @@
   function clueRow(item) {
     return el('div', { class: 'it fadein' }, el('span', { text: item.text }), refChip(item.ref));
   }
-  function clueNotes(items) {
+  function clueNotes(items, heading) {
     if (!items.length) return null;
     return el('details', { class: 'clue-notes' },
-      el('summary', { text: '먼저 찾은 단서 ' + items.length + '개' }),
+      el('summary', {}, heading || ('먼저 찾은 단서 ' + items.length + '개')),
       el('div', { class: 'found-list' }, items.map(clueRow)));
   }
   function hotspotBlock(q, onOk, scene) {

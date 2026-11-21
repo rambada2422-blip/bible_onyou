@@ -97,11 +97,13 @@
         toggle.textContent = expand ? '갈 수 있는 장면만 보기' : '전체 여정 보기';
       } } }, '전체 여정 보기');
     var c = C.chars[app.state.char], t = tierInfo();
+    var entryCount = app.state.cards.length + writtenNotes().length;
+    C.route.options.forEach(function (option) { entryCount += app.journalClues(option.to).length; });
     show(el('div', { class: 'screen sky hub' },
       el('div', { class: 'hub-head pad' },
         pic(app.state.char + '-avatar', 'avatar', ''),
         el('div', { class: 'who' }, el('b', { text: c.name + ' 탐험대원' }), el('span', { text: t.label + ' · ' + t.name })),
-        el('button', { class: 'pillbtn', on: { click: renderJournal } }, icon('journal'), '일지 ' + app.state.cards.length),
+        el('button', { class: 'pillbtn', on: { click: renderJournal } }, icon('journal'), '일지 ' + entryCount),
         el('button', { class: 'pillbtn', on: { click: renderSetup } }, '단계')),
       el('div', { class: 'hub-body pad' },
         el('div', { class: 'hub-hero' },
@@ -156,11 +158,20 @@
       el('button', { class: 'iconbtn', 'aria-label': '돌아가기', on: { click: back } }, icon('back')),
       el('h2', { text: title }));
   }
+  function writtenNotes() {
+    return Object.keys(app.state.notes).filter(function (k) { return app.state.notes[k].trim(); });
+  }
   function renderJournal() {
-    var notes = Object.keys(app.state.notes).filter(function (k) { return app.state.notes[k] && app.state.notes[k].trim(); });
+    var notes = writtenNotes();
+    var groups = C.route.options.map(function (option) {
+      var items = app.journalClues(option.to);
+      if (!items.length) return null;
+      return app.questions.clueNotes(items, [pic(C.scenes[option.to].art, 'clue-thumb', ''), option.label + ' · 단서 ' + items.length + '개']);
+    }).filter(Boolean);
     show(el('div', { class: 'screen page' },
       pageHead('탐험 일지', renderHub),
       el('div', { class: 'page-body pad' },
+        groups.length ? el('section', { class: 'journal-clues' }, el('h3', { text: '내가 찾은 단서' }), groups) : null,
         el('section', {}, el('h3', { text: '말씀 카드 ' + app.state.cards.length + '장' }),
           app.state.cards.length ? el('div', { class: 'vcards' }, app.state.cards.map(function (c) { return cardNode(c, null, false); }))
             : el('p', { class: 'empty', text: '장면을 탐험하면 직접 찾은 말씀이 여기에 모여요.' })),

@@ -323,6 +323,10 @@ h1, h2, h3 { text-wrap: balance; }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* 일지·안내 */
+.journal-clues details { background: var(--paper-2); border-radius: 12px; }
+.journal-clues summary { padding: 8px 12px; }
+.journal-clues .clue-thumb { width: 46px; height: 46px; object-fit: cover; border-radius: 8px; vertical-align: middle; margin: 0 9px 0 4px; }
+.journal-clues .found-list { padding: 0 10px 10px; }
 .page { background: var(--paper); color: var(--text); }
 .page-head { flex: none; display: flex; align-items: center; gap: 10px; padding-top: 12px; padding-bottom: 12px; background: var(--ink); color: var(--paper); }
 .page-head h2 { font-family: var(--f-display); font-weight: 400; font-size: 20px; flex: 1; }

@@ -104,11 +104,38 @@
     return journey;
   }
 
+  function pictureClues(sc) {
+    return sc.alt && sc.spot.t1.type === 'hotspots' ? sc.spot.t1.items : [];
+  }
+  function recordJournalClues(id, regions) {
+    if (!Array.isArray(regions) || !regions.length) return;
+    var journal = app.state.clueJournal || {}, previous = journal[id] || [];
+    var collected = pictureClues(C.scenes[id]).map(function (item) { return item.region; })
+      .filter(function (region) { return previous.includes(region) || regions.includes(region); });
+    if (collected.length) {
+      journal[id] = collected;
+      app.state.clueJournal = journal;
+    }
+  }
+  function restoreJournalClues() {
+    var stored = app.state.clueJournal;
+    delete app.state.clueJournal;
+    C.route.options.forEach(function (option) {
+      var id = option.to, journey = savedJourney(id);
+      if (stored) recordJournalClues(id, stored[id]);
+      if (journey) recordJournalClues(id, journey.found);
+    });
+  }
+  function journalClues(id) {
+    var collected = app.state.clueJournal && app.state.clueJournal[id];
+    return collected ? pictureClues(C.scenes[id]).filter(function (item) { return collected.includes(item.region); }) : [];
+  }
+
   function runScene(id, renderHub, renderRoute, journey) {
     var sc = C.scenes[id], steps = sceneSteps(sc);
     var idx = journey ? steps.findIndex(function (st) { return stepName(st) === journey.step; }) : 0;
     var nightOnArrival = id === 'EX-09' && journey && journey.nightOnArrival === true;
-    var clueItems = sc.alt && sc.spot.t1.type === 'hotspots' ? sc.spot.t1.items : [];
+    var clueItems = pictureClues(sc);
     var found = clueItems.map(function (item) { return item.region; }).filter(function (region) {
       return journey && Array.isArray(journey.found) && journey.found.includes(region);
     });
@@ -281,7 +308,11 @@
     function questionBlock(q, onOk) {
       return questions.blockFor(q, onOk, {
         inputSuffix: id + '-' + idx, hots: hots, region: region, found: found, arrival: steps[idx].k === 'arrive',
-        onFind: function (regions) { found = regions.slice(); remember(steps[idx]); }
+        onFind: function (regions) {
+          found = regions.slice();
+          recordJournalClues(id, found);
+          remember(steps[idx]);
+        }
       });
     }
 
@@ -308,7 +339,8 @@
       compact(true); setDots(0, 0);
       fill([
         el('div', { class: 'q-kicker', text: sc.alt ? '돌아가는 길에 찾은 말씀' : '말씀 카드' }),
-        el('p', { class: 'q-prompt', text: sc.alt ? '길을 잘못 들었지만, 성경의 다른 장면을 직접 보고 왔어요.' : '탐험 일지에 말씀 카드가 들어왔어요.' }),
+        el('p', { class: 'q-prompt', text: found.length ? '찾은 단서 ' + found.length + '개와 말씀 카드를 탐험 일지에서 다시 볼 수 있어요.' :
+          sc.alt ? '길을 잘못 들었지만, 성경의 다른 장면을 직접 보고 왔어요.' : '탐험 일지에 말씀 카드가 들어왔어요.' }),
         el('div', { class: 'vcards' }, sc.cards.map(function (c) { return cardNode(c, sc, true); }))
       ], nextBtn(sc.alt ? '모세가 있는 곳으로' : '다음'));
       sc.cards.forEach(function (c) {
@@ -357,6 +389,8 @@
       c.bonus ? el('span', { class: 'tag', text: '돌아가는 길에 찾은 말씀' }) : null);
   }
 
+  restoreJournalClues();
+  app.journalClues = journalClues;
   app.rememberArrival = rememberArrival;
   app.runScene = runScene;
   app.savedJourney = savedJourney;

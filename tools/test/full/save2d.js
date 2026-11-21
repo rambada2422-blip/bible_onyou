@@ -255,7 +255,7 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
       await button(page, '이어서 탐험하기').click();
       await page.locator('.node.done').first().waitFor();
       await shot(page, 'resume-timeline');
-      await button(page, '일지 1').click();
+      await button(page, '일지 2').click();
       await page.getByText(note, { exact: true }).waitFor();
       await page.locator('.vcard').first().waitFor();
       await shot(page, 'resume-journal');
