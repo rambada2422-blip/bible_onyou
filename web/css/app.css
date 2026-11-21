@@ -489,6 +489,11 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-clue:not(:empty) { padding: 10px 12px; }
 .po-clue p { padding: 4px 0 0; line-height: 1.5; }
 .po-meal .btn:disabled { color: var(--text-soft); background: var(--paper-2); box-shadow: none; opacity: 1; }
+@media (orientation: portrait) and (max-height: 520px) {
+  .po-meal .page-head { padding-block: 4px; }
+  .po-meal .po-land { width: min(100%, 50vh); width: min(100%, 50dvh); margin-inline: auto; }
+  .po-meal .po-body { gap: 5px; padding-block: 6px 10px; }
+}
 @media (orientation: landscape) and (max-height: 500px) {
   .po-meal .po-scroll { display: grid; grid-template-columns: 43% minmax(0,1fr); align-content: start; }
   .po-meal .po-body { padding: 6px 10px; gap: 6px; }
