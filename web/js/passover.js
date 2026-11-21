@@ -4,34 +4,39 @@
   var app = BO.app2d, el = app.el;
   var plagues = [
     ['물이 피가 됨', '출 7:14-25', '강물이 변해 물고기가 죽고 강물을 마실 수 없게 되었어요.'],
-    ['개구리', '출 8:1-15', '강에서 올라온 동물이 집과 침실, 반죽 그릇까지 들어갔어요.'],
+    ['개구리', '출 8:1-15', '강에서 올라온 동물이 애굽 땅을 덮었어요. 집과 마당과 밭에도 있었어요.'],
     ['이', '출 8:16-19', '땅의 티끌이 작은 벌레가 되어 사람과 가축에게 붙었어요. 요술사들은 같은 일을 할 수 없었어요.'],
     ['파리', '출 8:20-32', '벌레 떼가 애굽 사람들의 집에 가득했어요. 이스라엘 백성이 사는 고센 땅은 구별되었어요.'],
-    ['가축의 돌림병', '출 9:1-7', '들에 있던 애굽의 가축에게 병이 닥쳤어요. 이스라엘 자손의 가축은 하나도 죽지 않았어요.'],
+    ['가축의 돌림병', '출 9:1-7', '들에 있던 애굽의 가축은 심한 돌림병으로 죽었어요. 이스라엘 자손의 가축은 하나도 죽지 않았어요.'],
     ['악성 종기', '출 9:8-12', '화덕의 재를 날린 뒤 사람과 가축의 피부에 종기가 생겼어요.'],
-    ['우박', '출 9:13-35', '하늘에서 얼음덩이가 내렸어요. 경고를 들은 바로의 신하들 가운데 종과 가축을 집으로 피하게 한 이들도 있었어요.'],
+    ['우박', '출 9:18-26', '하늘에서 무거운 우박이 내렸어요. 바로의 신하 가운데 여호와의 말씀을 두려워한 이들은 종과 가축을 집으로 피하게 했어요. 이스라엘 자손이 있는 고센 땅에는 우박이 없었어요.'],
     ['메뚜기', '출 10:1-20', '동풍에 실려 온 곤충 떼가 우박 뒤에 남은 밭의 식물을 먹었어요.'],
     ['흑암', '출 10:21-29', '사흘 동안 애굽에 어둠이 덮였지만 이스라엘 자손이 사는 곳에는 빛이 있었어요.']
   ];
   // EX-06에서 자세히 관찰할 세 사건. 장소별 설명은 일지의 요약과 별개로 보여 준다.
   var lookouts = {
     0: [
-      ['강물', '출 7:20-21', '나일강 물이 피로 변했어요. 사람들은 강물을 마실 수 없었어요.', 'ex06-bank', 'water'],
-      ['강가', '출 7:24', '애굽 사람들은 마실 물을 찾으려고 강 둘레를 팠어요.', 'ex06-bank', 'shore']
+      {place:'강물', ref:'출 7:20-21', text:'나일강 물이 피로 변했어요. 사람들은 강물을 마실 수 없었어요.',
+        art:'plague-water', alt:'검붉은 강물에 떠 있는 물고기', guide:'강물 색이 어떻게 달라졌는지, 물고기는 어떻게 되었는지 찾아보세요.'},
+      {place:'강가', ref:'출 7:24', text:'애굽 사람들은 마실 물을 찾으려고 강 둘레를 팠어요.',
+        art:'plague-digging', alt:'강가에 몸을 굽히고 땅을 파는 사람들', guide:'강물을 마실 수 없게 된 사람들이 강가에서 무엇을 하는지 찾아보세요.'}
     ],
     3: [
-      ['애굽의 집', '출 8:24', '바로의 궁과 신하들의 집에 파리 떼가 가득했어요.', 'ex08-door', 'flies'],
-      ['고센 땅', '출 8:22-23', '하나님은 자기 백성이 머무는 고센 땅에는 파리 떼가 없을 것이라고 하셨어요.', 'ex06-bank', 'clear']
+      {place:'애굽의 집', ref:'출 8:21, 24', text:'바로의 궁과 신하들의 집에 파리 떼가 가득했어요.',
+        art:'plague-flies', alt:'집과 그 너머 궁 둘레에 몰린 파리 떼', guide:'파리 떼가 어디에 가득한지 찾아보세요.'},
+      {place:'고센 땅', ref:'출 8:22-24', text:'하나님은 자기 백성이 머무는 고센 땅에는 파리 떼가 없을 것이라고 하셨어요.',
+        art:'plague-goshen', alt:'파리 떼가 없는 고센의 집들과 밭', guide:'하나님이 구별하신 고센 땅에도 파리 떼가 있는지 살펴보세요.'}
     ],
     8: [
-      ['애굽 땅', '출 10:22-23', '사흘 동안 어둠이 덮여 사람들이 서로 볼 수 없었어요.', 'ex08-door', 'dark'],
-      ['이스라엘 자손이 사는 곳', '출 10:23', '같은 때에 이스라엘 자손이 사는 곳에는 빛이 있었어요.', 'ex07-table', 'light']
+      {place:'애굽 땅', ref:'출 10:22-23', text:'사흘 동안 어둠이 덮여 사람들이 서로 볼 수 없었어요.',
+        art:'plague-darkness', alt:'불빛도 사람도 보이지 않는 어두운 골목', guide:'애굽 땅에서는 사람들이 서로 볼 수 있는지 살펴보세요.'},
+      {place:'이스라엘 자손이 사는 곳', ref:'출 10:23', text:'같은 때에 이스라엘 자손이 사는 곳에는 빛이 있었어요.',
+        art:'plague-light', alt:'집들 사이가 환한 빈 골목', guide:'같은 때에 이스라엘 자손이 사는 곳은 어떤지 살펴보세요.'}
     ]
   };
   var shortViews = [
-    null, ['ex07-table', 'table'], ['ex06-bank', 'shore'], null,
-    ['ex06-bank', 'clear'], ['ex08-door', 'clear'], ['ex06-bank', 'storm'],
-    ['ex06-bank', 'field'], null
+    null, 'plague-frogs', 'plague-dust', null, 'plague-yard', 'plague-kiln',
+    'plague-hail', 'plague-locusts', null
   ];
   var acts = ['강과 땅', '애굽과 고센', '하늘과 어둠'];
   var findings = [
@@ -46,13 +51,13 @@
     ['바로는 가축을 두고 가라 했지만, 모세는 가축도 함께 가야 한다고 했어요.', '출 10:24-26']
   ];
   var preparation = [
-    ['문', '출 12:3-7, 12-13', '가족마다 어린 양을 준비했어요. 이스라엘 백성은 그 피를 문 양옆의 기둥과 위쪽 가로대에 발랐어요. 하나님은 그 표가 있는 집을 지나가겠다고 하셨어요.'],
-    ['식탁', '출 12:8', '그 밤에 불에 구운 고기를 무교병과 쓴 나물과 함께 먹었어요. 무교병은 누룩을 넣지 않은 빵이에요.'],
+    ['문', '출 12:3-7, 13, 23, 28', '가족마다 어린 양을 준비했어요. 그 피를 문 양옆 기둥과 위쪽 가로대에 발랐어요. 하나님은 그 피를 보시면 그 집을 넘어가겠다고 하셨어요.'],
+    ['식탁', '출 12:8-9', '그 밤에 불에 구운 고기를 무교병과 쓴 나물과 함께 먹었어요. 무교병은 누룩을 넣지 않은 빵이에요.'],
     ['떠날 차림', '출 12:11, 27-28', '허리띠를 띠고 신을 신고 손에 지팡이를 들도록 하셨어요. 백성은 하나님이 모세와 아론에게 명령하신 대로 행했어요.']
   ];
-  var nightfall = '그날 밤 애굽의 처음 난 자들과 가축의 처음 난 것들이 죽었어요. 애굽 사람들은 크게 울었어요.';
+  var nightfall = '그날 밤 애굽의 처음 난 자들과 가축의 처음 난 것들이 죽었어요. 피를 바른 이스라엘 자손의 집에는 재앙이 내려 멸하는 일이 없었어요. 애굽 사람들은 크게 울었어요.';
   var summons = '바로는 밤에 모세와 아론을 불러 이스라엘 백성에게 양과 소를 데리고 떠나라고 했어요.';
-  var night = ['열 번째 재앙', '출 12:29-32', nightfall + ' ' + summons];
+  var night = ['열 번째 재앙', '출 12:13, 23, 27, 29-32', nightfall + ' ' + summons];
   var departure = ['애굽을 떠나다', '출 12:34-39', '백성은 아직 부풀지 않은 반죽을 싸서 멨어요. 아이들과 여러 무리, 양과 소도 함께 라암셋을 떠나 숙곳으로 갔어요.'];
   var end = 12;
   function valid(s) {
@@ -87,7 +92,7 @@
         var row = preparation[i];
         detail.replaceChildren(el('b', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
       } else {
-        detail.textContent = '그림 속 반짝이는 곳을 눌러 보세요. 이 집에서는 밤을 어떻게 준비했을까요?';
+        detail.textContent = '마지막 재앙이 예고되었어요. 그 밤 한밤중이 되기 전, 이스라엘 가정이 어떻게 준비했는지 세 가지 단서를 살펴보세요.';
       }
       next.disabled = found !== 3;
       next.textContent = found === 3 ? '그 밤의 기록으로' : '단서 ' + (3-found) + '개 더 찾아보세요 · ' + found + '/3';
@@ -123,19 +128,18 @@
     function advance() { s.step++; delete s.matched; delete s.observed; delete s.lookingAt; delete s.summons; app.save(); render(true); }
     function render(focus) {
       var step = readOnly ? end : s.step, river = step < 9, meal = step === 9;
-      var art = river ? 'ex06-bank' : meal ? 'ex07-room' : 'ex08-door';
+      var spots = lookouts[step];
+      var art = meal ? 'ex07-room' : step === 10 ? 'plague-midnight' : 'ex08-door';
+      if (river) art = spots ? spots[0].art : shortViews[step];
       var act = Math.floor(step / 3);
       var chapter = river ? acts[act] : meal ? '유월절을 준비하다' : step < end ? '그 밤, 애굽에서 나오다' : '탐험 기록';
       var h = el('h2', {tabindex:'-1'}, chapter), body = el('div', {class:'po-body'}), foot = [];
-      var picture = el('div', {class:'po-picture'}, app.pic(art, '', ''));
+      var picture = el('div', {class:'po-picture'}, app.pic(art, '', spots ? spots[0].alt : step === 10 ? '한밤중 사람이 없는 집의 닫힌 문' : ''));
       var land = el('div', {class:'po-land'}, picture,
         el('div', {class:'po-title'}, el('small', {}, river ? '아홉 가지 재앙 · ' + ['첫째', '둘째', '셋째'][act] + ' 묶음' : '출애굽기 11–12장'), h));
-      function setView(key, appearance) {
-        if (key !== art) { art = key; picture.replaceChildren(app.pic(key, '', '')); }
-        land.dataset.view = appearance;
-      }
+      land.dataset.view = art;
       if (river) {
-        var row = plagues[step], spots = lookouts[step];
+        var row = plagues[step];
         land.dataset.act = String(act + 1);
         var segments = el('div', {class:'po-segments', 'aria-hidden':'true'});
         plagues.forEach(function () { segments.append(el('i')); });
@@ -163,17 +167,19 @@
           var choices = el('div', {class:'po-spots', role:'group', 'aria-label':'관찰할 곳'});
           function showSpot(i) {
             var spot = spots[i];
-            setView(spot[3], spot[4]);
+            picture.replaceChildren(app.pic(spot.art, '', spot.alt));
+            land.dataset.view = spot.art;
             Array.from(choices.children).forEach(function (control, j) {
               control.setAttribute('aria-pressed', String(j === i));
-              control.textContent = (seen & (1 << j) ? '✓ ' : '') + spots[j][0];
+              control.textContent = (seen & (1 << j) ? '✓ ' : '') + spots[j].place;
             });
-            evidence.replaceChildren(el('b', {}, spot[0]), app.refChip(spot[1]), el('p', {}, spot[2]));
+            evidence.replaceChildren(el('b', {}, spot.place), app.refChip(spot.ref), el('p', {}, spot.text));
+            if (app.state.tier === 't1') evidence.append(el('p', {class:'po-guide'}, spot.guide));
             nextPlague.disabled = seen !== 3;
             markRecorded(seen === 3);
           }
           spots.forEach(function (spot, i) {
-            var control = button(spot[0], function () {
+            var control = button(spot.place, function () {
               seen |= 1 << i; s.observed = seen; s.lookingAt = i; app.save();
               showSpot(i);
             }, 'opt po-spot');
@@ -185,16 +191,15 @@
           if (seen) {
             var lastSpot = seen === 2 || (seen === 3 && s.lookingAt === 1) ? 1 : 0;
             showSpot(lastSpot);
-          } else setView(spots[0][3], 'overview');
+          }
         } else {
-          setView(shortViews[step][0], shortViews[step][1]);
           body.append(app.refChip(row[1]), el('p', {}, row[2]));
         }
-        body.append(finding);
+        if (app.state.tier !== 't1' || ![0, 2, 3, 7, 8].includes(step)) body.append(finding);
       } else if (meal) {
         exploreRoom(s, land, body, advance);
       } else if (step === 10) {
-        body.append(el('h3', {}, night[0]), app.refChip('출 12:29-30'), el('p', {}, nightfall));
+        body.append(el('h3', {}, night[0]), app.refChip('출 12:13, 23, 27, 29-30'), el('p', {}, nightfall));
         if (s.summons === true) {
           body.append(el('h3', {class:'po-summons', tabindex:'-1'}, '바로의 부름'), app.refChip('출 12:31-32'), el('p', {}, summons));
           foot.push(button('떠나는 길 살펴보기', advance));
@@ -206,14 +211,14 @@
         }
       } else if (step === 11) {
         body.append(el('h3', {}, departure[0]), el('p', {}, departure[2]), app.refChip(departure[1]));
-        foot.push(button('탐험 기록 모아보기', advance));
+        foot.push(button('탐험 기록 다시 읽기', advance));
       } else {
         body.append(el('h3', {}, '열 가지 재앙과 유월절'), el('p', {}, '이름을 눌러 그때의 기록과 장절을 다시 읽어 보세요.'));
         plagues.concat(preparation, [night, departure]).forEach(function (row) { body.append(record(row)); });
         if (!readOnly) body.append(button('처음부터 다시 둘러보기', replay));
         foot.push(button(returnTo + '로 돌아가기', leave));
       }
-      app.show(el('div', {class:'screen po-screen' + (meal ? ' po-meal' : '')},
+      app.show(el('div', {class:'screen po-screen' + (meal ? ' po-meal' : river ? ' po-river' : '')},
         el('div', {class:'page-head pad'}, button('← ' + returnTo, leave, 'pillbtn'), el('span', {}, '감수용 미리보기')),
         el('main', {class:'po-scroll'}, land, body),
         foot.length ? el('div', {class:'sheet-foot pad'}, foot) : null));

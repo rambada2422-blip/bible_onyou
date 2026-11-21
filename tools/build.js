@@ -71,8 +71,9 @@ for (const ext of ['.jpg', '.png']) {
       process.exit(1);
     }
     const sz = rasterSize(buf, ext);
-    const width = k === 'ex07-room' ? 1200 : 900;
-    const height = k === 'ex07-room' ? 800 : 1200;
+    // 재앙 관찰 그림과 유월절 방은 단서가 가로로 배치되어 있다.
+    const [width, height] = k.startsWith('plague-') ? [720, 480]
+      : k === 'ex07-room' ? [1200, 800] : [900, 1200];
     if (!sz || sz.w !== width || sz.h !== height) {
       console.error(`사진형 배경 그림 크기가 가로 ${width} × 세로 ${height} 픽셀이 아닙니다: ${f} (${sz ? sz.w + '×' + sz.h : '크기 확인 불가'})`);
       process.exit(1);
