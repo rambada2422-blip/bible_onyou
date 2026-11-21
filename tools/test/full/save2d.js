@@ -165,7 +165,7 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
       await button(page, '시간표로 돌아가기').click();
       const cloud = page.locator('.node.play').filter({ hasText: '구름 기둥과 불 기둥' });
       await cloud.click();
-      await button(page, '둘러보기').click();
+      await button(page, '광야 길 따라가기').click();
       await next.click();
       const narration = await page.locator('.sheet .narr').innerText();
       await page.reload();

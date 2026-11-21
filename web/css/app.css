@@ -211,6 +211,9 @@ h1, h2, h3 { text-wrap: balance; }
 }
 .look-target:focus-visible { outline: 3px solid var(--paper); box-shadow: 0 0 0 5px var(--ink); }
 .sheet-body.arrive .look-prompt { color: var(--ink-2); font-family: var(--f-display); }
+.scene:has(.pillar-switch) :is(#ex09-cloud, #ex09-fire) { cursor: pointer; pointer-events: bounding-box; }
+.scene:has(.pillar-switch) .hud { pointer-events: none; }
+.scene:has(.pillar-switch) .hud button { pointer-events: auto; }
 /* 좁은 가로 화면에서는 그림과 단서를 함께 확대해 손가락으로 각각 누를 자리를 확보한다. */
 .stage:has(#alt03-state-main):has(.hot) > :is(.art, .hot-layer) {
   left: 50%; right: auto; width: max(100%, 360px); transform: translateX(-50%);

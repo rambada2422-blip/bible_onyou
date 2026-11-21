@@ -107,9 +107,11 @@
   function runScene(id, renderHub, renderRoute, journey) {
     var sc = C.scenes[id], steps = sceneSteps(sc);
     var idx = journey ? steps.findIndex(function (st) { return stepName(st) === journey.step; }) : 0;
+    var nightOnArrival = id === 'EX-09' && journey && journey.nightOnArrival === true;
     function remember(st, found) {
       var progress = { id: id, tier: app.state.tier, step: stepName(st) };
       if (found && found.length) progress.found = found.slice();
+      if (st.k === 'arrive' && nightOnArrival) progress.nightOnArrival = true;
       rememberJourney(progress);
     }
     function solved(nextButton) {
@@ -187,6 +189,7 @@
 
     function step(found) {
       stopReading();
+      artBox.onclick = null;
       hots.replaceChildren();
       var st = steps[idx];
       remember(st, found);
@@ -199,24 +202,53 @@
       if (st.k === 'close') return stepClose();
     }
 
+    function pillarSwitch(hint, cloud, fire) {
+      var button = el('button', { class: 'btn plain pillar-switch', on: { click: toggle } });
+      function paint() {
+        setState(nightOnArrival ? 'night' : 'day');
+        hint.textContent = nightOnArrival ? '불 기둥을 누르면 낮의 광야가 보여요.' : '구름 기둥을 누르면 밤의 광야가 보여요.';
+        button.textContent = nightOnArrival ? '낮 풍경 보기' : '밤 풍경 보기';
+      }
+      function toggle() {
+        nightOnArrival = !nightOnArrival;
+        paint();
+        remember(steps[idx]);
+      }
+      artBox.onclick = function (event) {
+        if ((nightOnArrival ? fire : cloud).contains(event.target)) toggle();
+      };
+      paint();
+      return button;
+    }
+
     function stepArrive() {
       compact(false); setDots(0, 0); setFocus(null);
       if (sc.beats[0].state) setState(sc.beats[0].state);
       var landmark = svg && arrivalPrompts[id] && region(sc.beats[0].focus);
+      var hint = null, controls = [], startLabel = '둘러보기';
       if (landmark) {
+        hint = el('p', { class: 'look-prompt', text: arrivalPrompts[id] });
         var drawing = svg.querySelector('#' + sc.art + '-' + landmark.id);
         var bounds = drawing ? drawing.getBBox() : { x: landmark.x, y: landmark.y, width: landmark.w, height: landmark.h };
         hots.appendChild(el('button', { class: 'look-target', 'aria-label': landmark.label + ' 살펴보기', on: { click: next },
           style: '--dx:' + (bounds.x + bounds.width / 2 - 450) + ';--dy:' + (bounds.y + bounds.height / 2 - 600) +
             ';--w:' + bounds.width + ';--h:' + bounds.height }));
+      } else if (id === 'EX-09' && svg) {
+        var cloud = svg.querySelector('#ex09-cloud'), fire = svg.querySelector('#ex09-fire');
+        if (cloud && fire) {
+          hint = el('p', { class: 'look-prompt', 'aria-live': 'polite' });
+          controls.push(pillarSwitch(hint, cloud, fire));
+          startLabel = '광야 길 따라가기';
+        }
       }
+      controls.push(nextBtn(startLabel));
       fill([
         el('div', { class: 'kicker', text: sc.alt ? '타임머신이 멈춘 곳' : '도착했어요' }),
         el('h2', { text: sc.place }),
         el('p', { text: sc.alt ? '어? 가려던 곳과 조금 달라 보여요. 먼저 둘러봐요.' : sc.title }),
-        landmark ? el('p', { class: 'look-prompt', text: arrivalPrompts[id] }) : null,
+        hint,
         refChip(sc.ref)
-      ], nextBtn('둘러보기'));
+      ], controls);
       body.classList.add('arrive');
     }
 

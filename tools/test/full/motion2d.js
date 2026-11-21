@@ -116,7 +116,7 @@ async function checkReduced(browser, folder) {
 
       await checkArtwork();
       await capture(id + '-00-arrive');
-      await click('둘러보기');
+      await click(id === 'EX-09' ? '광야 길 따라가기' : '둘러보기');
       for (const [index, beat] of beats.entries()) {
         state = beat.state || state;
         await checkArtwork();
