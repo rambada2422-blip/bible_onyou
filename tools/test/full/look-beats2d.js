@@ -5,6 +5,7 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const { chromium } = require('playwright');
 const { gameOrigin, proxy } = require('../game-server');
+const layoutIssues = require('../layout-issues');
 
 const out = path.resolve(process.argv[2] || 'dist/check/look-beats2d');
 const key = 'bo_demo_v1';
@@ -49,7 +50,11 @@ async function play(browser, origin, entry, tier, size, label) {
     const beats = await (async () => { await page.goto(origin + entry); return page.evaluate(() => BO.content.scenes['EX-01'].beats); })();
     const looks = beats.map((beat, i) => (beat.look ? i : -1)).filter((i) => i > 0);
     assert.deepEqual(looks, [1, 4], '그림을 눌러 여는 대목은 출 3:2-3과 출 3:6 둘이다');
-    const shot = (name) => page.screenshot({ path: path.join(out, `${label}-${name}.png`) });
+    const shot = async (name) => {
+      const issues = await page.evaluate(layoutIssues, '#app > .screen');
+      assert.deepEqual(issues, [], `${label} ${name} 화면 배치`);
+      await page.screenshot({ path: path.join(out, `${label}-${name}.png`) });
+    };
     const footButtons = () => page.locator('.sheet-foot button').allInnerTexts();
 
     // 첫 대목: '다음'이 없고, 찾을 것이 아래 단추 자리에 적혀 있다.
