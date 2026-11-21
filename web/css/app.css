@@ -442,38 +442,16 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 @media (max-height: 440px) and (orientation: landscape) { .po-land { height: 112px; } }
 .po-picture { position: absolute; inset: 0; overflow: hidden; }
 .po-picture img { transition: filter .28s ease, transform .28s ease, object-position .28s ease; }
-.po-land[data-view="water"] img { object-position: 50% 71%; transform: scale(1.18); filter: sepia(.24) saturate(1.4); }
-.po-land[data-view="water"] .po-picture::after { content: ''; position: absolute; inset: 30% 0 0; background: linear-gradient(transparent, #832a28b8); mix-blend-mode: multiply; }
-.po-land[data-view="shore"] img { transform: scale(1.45); transform-origin: 9% 90%; object-position: 16% 81%; }
-.po-land[data-view="table"] img { object-position: 50% 78%; }
-.po-land[data-view="dark"] img { filter: brightness(.21) saturate(.38); }
-.po-land[data-view="light"] img { filter: brightness(1.16); }
-.po-land[data-view="storm"] img { filter: saturate(.48) brightness(.75); }
-.po-land[data-view="field"] img { object-position: 50% 37%; }
-.po-land[data-view="flies"] .po-picture::after {
-  content: ''; position: absolute; inset: 18% 16% 22%;
-  background-image: radial-gradient(ellipse 2px 1.7px at 20% 26%, #382719 75%, transparent),
-    radial-gradient(ellipse 1.4px 2px at 71% 60%, #463526 75%, transparent);
-  background-size: 37px 43px, 49px 31px; animation: po-flies .65s ease-in-out infinite alternate;
-}
-@keyframes po-flies { to { transform: translate(4px, -3px); } }
 .po-spots { display: flex; gap: 8px; flex-wrap: wrap; }
 .po-spots .po-spot { flex: 1 1 120px; width: auto; min-height: 48px; text-align: center; }
 .po-spot[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--teal); background: var(--paper-2); }
 @media (prefers-reduced-motion: reduce) {
   .po-picture img { transition: none; }
-  .po-land[data-view="flies"] .po-picture::after { animation: none; }
 }
 .po-land[data-act="2"] .po-picture::before,
 .po-land[data-act="3"] .po-picture::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .po-land[data-act="2"] .po-picture::before { background: linear-gradient(125deg, #a469322c, transparent 70%); }
 .po-land[data-act="3"] .po-picture::before { background: linear-gradient(#213d5c3b, transparent 74%); }
-.po-land[data-view="storm"] .po-picture::after {
-  content: ''; position: absolute; inset: 0;
-  background-image: radial-gradient(ellipse 2px 3px at 17% 24%, #f0f5fff2 55%, transparent),
-    radial-gradient(ellipse 1.5px 2px at 58% 67%, #e0ecffdb 60%, transparent);
-  background-size: 53px 71px, 77px 43px;
-}
 .po-land[data-act="2"] .po-title { background: linear-gradient(transparent, #302411ed); }
 .po-land[data-act="3"] .po-title { background: linear-gradient(transparent, #172537ed); }
 .po-trail { display: flex; align-items: center; gap: 12px; color: var(--ink); font-size: 14px; }
@@ -509,3 +487,15 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
   .po-meal .po-body { padding: 6px 10px; gap: 6px; }
   .po-meal .btn { min-height: 44px; }
 }
+
+.po-detail .po-guide { margin-top: 5px; padding: 6px 0 0; border-top: 1px solid var(--paper-line); }
+@media (orientation: landscape) and (max-height: 500px) {
+  .po-river .po-scroll { display: grid; grid-template-columns: 43% minmax(0,1fr); align-content: start; }
+  .po-river .po-land { height: auto; aspect-ratio: 3 / 2; align-self: start; }
+}
+/* 관찰할 물고기와 손, 문이 제목 아래 가려지지 않게 그림과 제목을 분리한다. */
+.po-river .po-land { height: auto; aspect-ratio: auto; }
+.po-river .po-picture { position: relative; aspect-ratio: 3 / 2; }
+.po-river .po-title { position: static; padding: 8px 16px 10px; background: var(--ink); }
+.po-river .po-title h2 { font-size: 22px; }
+.po-river .po-land[data-act] .po-title { background: var(--ink); }
