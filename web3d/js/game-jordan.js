@@ -5,21 +5,29 @@ BO3D.gameModules.jordan = function (G) {
   var dedReady;
 
   function clueN() { return Object.keys(G.clue).length; }
-  function enterJordan() {
+  function enterJordan(record) {
     if (!G.JL) { G.JL = BO3D.jordan.build(); G.loadJordanGlb(); }
-    G.cur = 'jordan'; G.overlay.hidden = true; G.clue = {}; dedReady = false;
+    G.cur = 'jordan'; G.overlay.hidden = true; G.clue = record ? record.clues : {}; dedReady = clueN() >= G.JD.need[G.S.tier];
     G.spawnKids(); G.hudMode();
     G.camYaw = Math.PI; G.snapCamera();
-    G.clueCount.textContent = '단서 0 / ' + G.JD.clues.length; G.dexLabel.textContent = '추리 수첩 0 / ' + G.JD.clues.length;
-    G.setObjective(G.JD.objective); G.hud.hidden = false; G.snd.hidden = false;
+    G.clueCount.textContent = '단서 ' + clueN() + ' / ' + G.JD.clues.length; G.dexLabel.textContent = '추리 수첩 ' + clueN() + ' / ' + G.JD.clues.length;
+    G.setObjective(dedReady ? G.JD.objectiveReady : G.JD.objective); G.hud.hidden = false; G.snd.hidden = false;
     G.state = 'caption';
+    function explore() {
+      G.hidePanel(); G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false; G.dedBtn.hidden = !dedReady; G.hint.hidden = false;
+      setTimeout(function () { G.hint.hidden = true; }, 9000);
+    }
+    if (record) {
+      explore();
+      if (record.stage === 'deduce') startDeduce(record.question);
+      else if (record.stage === 'return') { prepareDeduction(); conclude(); }
+      return;
+    }
+    G.checkpoint('jordan');
     var sy = G.JD.story.say, who = G.C.chars[sy.who];
     G.showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }), G.el('p', { class: 'narr', text: G.tx(G.JD.story.text) }),
       G.el('div', { class: 'say' }, G.avatar(sy.who), G.el('div', { class: 'bubble' }, G.el('b', { text: who.name, style: 'color:' + who.color }), sy.text))],
-      G.btn('둘러보자', function () {
-        G.hidePanel(); G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false; G.hint.hidden = false;
-        setTimeout(function () { G.hint.hidden = true; }, 9000);
-      }));
+      G.btn('둘러보자', explore));
   }
   function shutterFx() {
     G.flash.hidden = false; G.flash.classList.remove('go'); void G.flash.offsetWidth; G.flash.classList.add('go');
@@ -44,8 +52,10 @@ BO3D.gameModules.jordan = function (G) {
     shutterFx();
     if (!found.length) { G.toast('사진에 단서가 담기지 않았어요. 눈에 띄는 것을 화면 가운데에 놓고 찍어 보세요.'); return; }
     var fresh = found.filter(function (f) { return !(f.c.id in G.clue); });
-    fresh.forEach(function (f) { G.clue[f.c.id] = thumbAt(f.n, f.t.crop); });
+    var missing = found.filter(function (f) { return !G.clue[f.c.id]; });
+    missing.forEach(function (f) { G.clue[f.c.id] = thumbAt(f.n, f.t.crop); });
     G.clueCount.textContent = '단서 ' + clueN() + ' / ' + G.JD.clues.length; G.dexLabel.textContent = '추리 수첩 ' + clueN() + ' / ' + G.JD.clues.length;
+    if (missing.length) G.checkpoint('jordan');
     if (fresh.length) {
       if (G.FX) G.FX.audio.chime();
       G.clueCount.classList.remove('pulse'); void G.clueCount.offsetWidth; G.clueCount.classList.add('pulse');
@@ -63,7 +73,6 @@ BO3D.gameModules.jordan = function (G) {
       has && c.aside ? G.el('span', { class: 'aside', text: c.aside }) : null);
   }
   function openClues() {
-    G.stick.x = G.stick.y = 0; G.stick.id = null; G.base.hidden = true;
     G.sheetOverlay([G.el('div', { class: 'q-kicker', text: '추리 수첩 ' + clueN() + ' / ' + G.JD.clues.length }),
       G.el('p', { class: 'q-prompt', text: '찍은 사진이 단서예요. 장절을 성경책에서 찾아보면 더 알 수 있어요.' }),
       G.el('div', { class: 'dexgrid' }, G.JD.clues.map(clueCell))],
@@ -88,7 +97,7 @@ BO3D.gameModules.jordan = function (G) {
     } } }, '확인');
     return [G.el('p', { class: 'q-prompt', text: q.prompt }), G.el('div', { class: 'opts' }, btns), check, noteBox];
   }
-  function backToExplore() { G.overlay.hidden = true; G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false; G.dedBtn.hidden = false; }
+  function backToExplore() { G.checkpoint('jordan'); G.overlay.hidden = true; G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false; G.dedBtn.hidden = false; }
   function evidenceBlock(ev, onOk) {
     var noteBox = G.el('div', {}), have = G.JD.clues.filter(function (c) { return c.id in G.clue; });
     if (!have.some(function (c) { return ev.ok.indexOf(c.id) >= 0; })) {
@@ -116,22 +125,30 @@ BO3D.gameModules.jordan = function (G) {
     });
     return [G.el('p', { class: 'q-prompt', text: G.tx(ev.q) }), G.el('div', { class: 'evigrid' }, btns), noteBox];
   }
-  function startDeduce() {
-    G.state = 'deduce'; G.stick.x = G.stick.y = 0; G.stick.id = null; G.base.hidden = true;
+  function prepareDeduction() {
+    G.state = 'deduce';
     G.dedBtn.hidden = true; G.camBtn.hidden = true; G.dexBtn.hidden = true; G.hint.hidden = true;
+  }
+  function startDeduce(savedIndex) {
+    prepareDeduction();
     var evs = G.JD.evidence.filter(function (e) { return e.tiers.indexOf(G.S.tier) >= 0; }), steps = [];
     evs.forEach(function (e) { steps.push({ k: '증거 고르기', make: function (ok) { return evidenceBlock(e, ok); } }); });
     steps.push({ k: '성경에서 확인', make: function (ok) { return G.findBlock(G.JD.river, ok); } });
     if (G.S.tier === 't2') steps.push({ k: '마지막 추리', make: function (ok) { return multiBlock(G.ALT.spot.t2, ok); } });
     if (G.S.tier === 't3') steps.push({ k: '마지막 추리', make: function (ok) { return G.findrefBlock(G.ALT.spot.t3, ok, 'ded'); } });
-    var i = 0;
+    var i = Number.isInteger(savedIndex) && savedIndex >= 0 && savedIndex < steps.length ? savedIndex : 0;
     (function show() {
+      G.checkpoint('deduce', i);
       var st = steps[i], last = i === steps.length - 1;
       var nb = G.btn(last ? '추리 결과 보기' : '다음', function () { if (last) conclude(); else { i++; show(); } }); nb.disabled = true;
-      G.sheetOverlay([G.el('div', { class: 'q-kicker', text: '추리 ' + (i + 1) + ' / ' + steps.length + ' · ' + st.k }), st.make(function () { nb.disabled = false; })], nb);
+      G.sheetOverlay([G.el('div', { class: 'q-kicker', text: '추리 ' + (i + 1) + ' / ' + steps.length + ' · ' + st.k }), st.make(function () {
+        nb.disabled = false;
+        G.checkpoint(last ? 'return' : 'deduce', i + 1);
+      })], nb);
     })();
   }
   function conclude() {
+    G.checkpoint('return');
     var cc = G.JD.conclusion, who = G.C.chars[cc.say.who];
     G.sheetOverlay([G.el('div', { class: 'q-kicker', text: '추리 결과' }),
       G.el('p', { class: 'q-prompt', text: G.JD.place }),

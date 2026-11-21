@@ -1,6 +1,7 @@
 // 압도 장면 ① 그림판과 두 가지 보기(가까이 보기·전체 보기) 배치 자동 점검.
 // 사용: node tools/test/full/awe_layout.js [outDir]
 const { chromium } = require('playwright');
+const { gameOrigin, proxy } = require('../game-server');
 const fs = require('fs');
 const path = require('path');
 
@@ -33,7 +34,6 @@ function expectedRect(reqView, vw, vh) {
 }
 
 (async () => {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const b = await chromium.launch({
     proxy,
     args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl']
@@ -51,7 +51,7 @@ function expectedRect(reqView, vw, vh) {
     await p.screenshot({ path: path.join(out, String(n).padStart(2, '0') + '-' + label + '.png') });
   };
 
-  await p.goto(require('url').pathToFileURL(path.join(root, 'dist/preview3d.html')).href);
+  await p.goto((await gameOrigin(b)) + '/preview3d.html');
   await p.waitForFunction(() => window.BO3D && BO3D.debug && typeof BO3D.debug.awe === 'function');
   await p.evaluate(() => { BO3D.debug.awe('near', 2); });
   await p.waitForFunction(() => { const r = BO3D.debug.aweRect(); return r && r.ready; }, { timeout: 15000 });

@@ -4,6 +4,14 @@
 .g3 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 #ui { position: absolute; inset: 0; pointer-events: none; }
 #ui > * { pointer-events: auto; }
+#ui > .perf3 { position: absolute; z-index: 65; bottom: max(3px, env(safe-area-inset-bottom, 0px)); left: var(--gutter-l);
+  padding: 2px 5px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 11px/1.4 monospace;
+  pointer-events: none; }
+.webgl-notice { position: absolute; inset: 0; display: flex; overflow: auto; padding: 24px;
+  color: var(--paper); background: var(--ink); text-align: center; word-break: keep-all; touch-action: pan-y; }
+.webgl-notice > div { max-width: 24rem; margin: auto; }
+.webgl-notice h1 { font-family: var(--f-display); font-size: clamp(24px, 5vw, 32px); line-height: 1.35; }
+.webgl-notice p { margin-top: 12px; line-height: 1.6; }
 .touch3 { position: absolute; inset: 0; }
 
 .hud3 { position: absolute; left: 0; right: 0; top: 0; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; pointer-events: none !important; }
@@ -12,13 +20,21 @@
 .hud3 .count.pulse { animation: pulse3 .6s ease; }
 @keyframes pulse3 { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
 .hud3 .obj { align-self: flex-start; display: flex; align-items: center; gap: 8px; max-width: 100%; font-size: 15px; line-height: 1.35; color: var(--paper); background: rgba(14, 23, 48, .72); padding: 7px 13px; border-radius: 14px; backdrop-filter: blur(4px); }
+.hud3 .sharon-help { align-self: flex-start; pointer-events: auto; min-height: 44px; padding: 6px 14px; background: var(--paper); color: var(--ink); }
 .hud3 .obj svg { width: 20px; height: 20px; flex: none; color: var(--brass); }
 
 .stick { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; background: rgba(14, 23, 48, .28); box-shadow: inset 0 0 0 2px rgba(251, 247, 238, .55); pointer-events: none !important; }
 .stick i { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; border-radius: 50%; background: var(--brass); box-shadow: 0 3px 0 var(--brass-deep); transform: translate(-50%, -50%); }
 .hint { position: absolute; left: 50%; bottom: 218px; transform: translateX(-50%); width: max-content; max-width: 86%; text-align: center; font-size: 14px; line-height: 1.4; color: var(--paper); background: rgba(14, 23, 48, .72); padding: 8px 14px; border-radius: 14px; pointer-events: none !important; }
 
+/* 낮은 가로 화면에서 조작 안내와 탐험 목표가 서로 덮이지 않게 나란히 놓는다. */
+@media (orientation: landscape) and (max-height: 440px) {
+  .g3:has(.hint:not([hidden])) .hud3 { right: calc(39% + 8px); }
+  .g3 .hint { top: max(10px, env(safe-area-inset-top, 0px)); right: var(--gutter-r); bottom: auto; left: auto; width: 34%; max-width: none; transform: none; }
+}
+
 .toast3 { position: absolute; left: var(--gutter-l); right: var(--gutter-r); top: 138px; display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-radius: 16px; background: var(--paper); color: var(--text); font-size: 15px; line-height: 1.4; box-shadow: 0 8px 22px rgba(0, 0, 0, .28); pointer-events: none !important; }
+.hud3 .toast3 { position: static; }
 .toast3 b { font-family: var(--f-display); font-weight: 400; }
 .toast3.show { animation: toastin .3s ease both; }
 @keyframes toastin { from { transform: translateY(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -26,6 +42,9 @@
 .panel3.sheet { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; max-height: 50%; flex: none; animation: sheetup .28s ease both; }
 .panel3.sheet:has([data-detector-quiz]) { max-height: 64%; }
 .sharon-say .bubble:only-child { grid-column: 1 / -1; }
+/* 밝은 종이 위 인물 이름은 초상화 옆에서도 읽을 수 있게 한다. */
+.g3 .say .bubble b, .g3 .toast3 b { color: var(--ink-2) !important; }
+.g3 .sharon-say .bubble b { color: #175E93 !important; }
 @keyframes sheetup { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 
 .overlay3 { position: absolute; inset: 0; }
@@ -33,6 +52,7 @@
 .overlay3.menu3 h2 { font-family: var(--f-display); font-weight: 400; font-size: 19px; color: var(--brass); text-align: left; margin-top: 6px; }
 .overlay3.menu3 .game-title { font-size: clamp(34px, 11vw, 48px); }
 .overlay3.menu3 .tier { text-align: left; }
+.overlay3.menu3 .tier .age { color: #A1E8E0; }
 .overlay3.menu3 .char .avatar { width: 64px; height: 64px; }
 .overlay3.sheet3 { display: flex; flex-direction: column; justify-content: flex-end; background: rgba(14, 23, 48, .35); }
 .overlay3.sheet3 .sheet { margin: 0; flex: none; max-height: 82%; animation: sheetup .28s ease both; }
@@ -59,15 +79,26 @@
 .g3 [hidden] { display: none !important; }
 
 .snd3 { position: absolute; right: var(--gutter-r); bottom: 22px; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: rgba(14, 23, 48, .72); color: var(--paper); }
+/* 읽는 동안 지난 탐색 목표와 자막 뒤에 가려질 촬영 단추를 접는다. */
+.g3:not(.ev):has(.panel3:not([hidden])) :is(.hud3 .obj, .cam3, .dex3) { display: none; }
+/* 아래 자막과 선택지가 열려 있을 때도 소리 단추를 누를 수 있게 한다. */
+.g3:has(.panel3:not([hidden])) .snd3 { top: max(10px, env(safe-area-inset-top, 0px)); bottom: auto; }
+.g3:has(.panel3:not([hidden])) .hud3 .row { padding-right: 52px; }
 .snd3 svg { width: 22px; height: 22px; }
 .snd3[aria-pressed="true"] { color: #8FA0C8; background: rgba(14, 23, 48, .5); }
 .snd3[aria-pressed="true"]::after { content: ""; position: absolute; width: 30px; height: 3px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
 
 /* 사진과 도감 */
 .cam3 { position: absolute; right: var(--gutter-r); bottom: 80px; width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; background: var(--brass); color: var(--ink-3); box-shadow: 0 4px 0 var(--brass-deep); }
+/* 첫 발견 때 실제 사진에 담길 양 떼에만 초점 모서리를 보인다. */
+.photo-focus3 { position: absolute; width: 48px; height: 36px; transform: translate(-50%, -50%); pointer-events: none !important; filter: drop-shadow(0 1px 2px var(--ink)); }
+.photo-focus3::before, .photo-focus3::after { content: ""; position: absolute; width: 13px; height: 11px; border: solid var(--paper); }
+.photo-focus3::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0; }
+.photo-focus3::after { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px; }
+.cam3.focused { outline: 3px solid var(--paper); outline-offset: 3px; }
 .cam3:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--brass-deep); }
 .cam3 svg { width: 30px; height: 30px; }
-.dex3 { position: absolute; right: var(--gutter-r); bottom: 154px; min-height: 40px; padding: 0 13px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-display); font-size: 14px; background: rgba(14, 23, 48, .78); color: var(--paper); }
+.dex3 { position: absolute; right: var(--gutter-r); bottom: 154px; min-height: 44px; padding: 0 13px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-display); font-size: 14px; background: rgba(14, 23, 48, .78); color: var(--paper); }
 .dex3 svg { width: 18px; height: 18px; }
 .dex3.pulse { animation: pulse3 .6s ease; }
 .g3.ev .cam3 { bottom: calc(50% + 22px); }
@@ -112,12 +143,14 @@
 .frame span { font-size: 11px; line-height: 1.25; text-align: center; color: #C9D3EA; }
 .deco { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 14px; background: rgba(251, 247, 238, .06); font-size: 15px; }
 .sws { display: flex; gap: 8px; }
-.sw { width: 40px; height: 40px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(251, 247, 238, .5); font-size: 11px; color: var(--paper); }
+.sw { width: 44px; height: 44px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(251, 247, 238, .5); font-size: 11px; color: var(--paper); }
 .sw.none { background: transparent; }
 .sw[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink), 0 0 0 6px var(--brass); }
-.tog { min-height: 40px; padding: 0 16px; border-radius: 999px; font-family: var(--f-display); font-size: 14.5px; background: rgba(251, 247, 238, .12); color: var(--paper); }
+.tog { min-height: 44px; padding: 0 16px; border-radius: 999px; font-family: var(--f-display); font-size: 14.5px; background: rgba(251, 247, 238, .12); color: var(--paper); }
 .tog[aria-pressed="true"] { background: var(--brass); color: var(--ink-3); }
 .tog[disabled] { opacity: .45; }
+.journal-note summary, .panel3 details > summary { min-height: 44px; align-content: center; cursor: pointer; }
+.journal-note p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
 .den-foot { display: flex; gap: 8px; margin-top: 8px; }
 .den-foot .btn { flex: 1; }
 @media (prefers-reduced-motion: reduce) { .hud3 .count.teal.pulse { animation: none; } }
