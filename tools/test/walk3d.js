@@ -1,6 +1,7 @@
 // 3D 전체 자동 점검. 첫 tierIndex부터 나이 단계 셋을 모두 실행한다.
-// 사용: node tools/test/walk3d.js <firstTierIndex 0-2> <outDir> [dsf]
+// 사용: node tools/test/walk3d.js <firstTierIndex 0-2> <outDir> [dsf] [low]
 const { chromium } = require('playwright');
+const { gameOrigin, proxy } = require('./game-server');
 const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
@@ -15,13 +16,32 @@ const aweDoc = fs.readFileSync(path.resolve(__dirname, '../../docs/일감/가-2.
 const aweBlock = aweDoc.split('```js\n')[1].split('```')[0].trim();
 approved.awe = JSON.parse(JSON.stringify(vm.runInNewContext('({' + aweBlock + '}).awe')));
 
-async function runTier(browser, tierIndex) {
+async function runTier(browser, tierIndex, url) {
   const tierOut = path.join(out, 't' + (tierIndex + 1));
   fs.mkdirSync(tierOut, { recursive: true });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: dsf });
   try {
     const p = await ctx.newPage(), errs = [];
     await p.addInitScript(() => { window.BO3D_TEST = true; });
+    const requestedLow = new URL(url).searchParams.get('q') === 'low';
+    const exerciseAuto = !requestedLow && tierIndex === (ti + 1) % 3;
+    if (exerciseAuto) {
+      // 기본 주소에서 첫 화면만 느린 기기처럼 그린다. 전환 뒤에는 실제 속도로 끝까지 걷는다.
+      await p.addInitScript(() => {
+        const nativeFrame = window.requestAnimationFrame.bind(window);
+        window.requestAnimationFrame = function (callback) {
+          if (window.BO3D?.debug?.quality() === 'low') {
+            window.requestAnimationFrame = nativeFrame;
+            return nativeFrame(callback);
+          }
+          const due = performance.now() + 55;
+          return nativeFrame(function waitUntilDue(now) {
+            if (now < due) return nativeFrame(waitUntilDue);
+            callback(now);
+          });
+        };
+      });
+    }
     p.on('pageerror', e => errs.push('pageerror: ' + e.message));
     p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
     let n = 0, afterLastPart = false;
@@ -34,6 +54,17 @@ async function runTier(browser, tierIndex) {
       await p.screenshot({ path: path.join(tierOut, String(n).padStart(2, '0') + '-' + label + '.png') });
     };
     const st = () => p.evaluate(() => BO3D.debug.state());
+    const performanceRows = [];
+    async function sampleFrames(stage) {
+      const stats = await p.evaluate(async () => {
+        // 첫 프레임 전에 있던 조작·화면 사진 시간을 이 장면의 표에 섞지 않는다.
+        for (let i = 0; i < 13; i++) await new Promise(requestAnimationFrame);
+        return BO3D.debug.perf(12);
+      });
+      assert.equal(stats.samples, 12);
+      assert(stats.meanMs > 0 && stats.maxMs >= stats.meanMs && stats.drawCalls > 0);
+      performanceRows.push({ stage, ...stats });
+    }
     const parts = () => p.evaluate(() => BO3D.debug.parts());
     const panel = p.locator('.panel3');
     const panelButton = label => panel.getByRole('button', { name: label, exact: true }).click();
@@ -60,7 +91,15 @@ async function runTier(browser, tierIndex) {
     const lv = () => p.evaluate(() => BO3D.debug.audioLevels());
     const muteRun = tierIndex === 2;
     const near = (a, b, tol, msg) => assert(Math.abs(a - b) <= tol, msg + ': ' + a + ' vs ' + b);
-    await p.goto(require('url').pathToFileURL(path.resolve(__dirname, '../../dist/preview3d.html')).href);
+    await p.goto(url);
+    if (exerciseAuto) {
+      await p.waitForFunction(() => BO3D.debug.quality() === 'low', null, { timeout: 15000 });
+      assert.equal(await p.evaluate(() => BO3D.debug.quality('normal')), 'low');
+    }
+    if (requestedLow || exerciseAuto) {
+      assert.equal(await p.evaluate(() => BO3D.debug.quality()), 'low');
+      assert.equal(await p.evaluate(() => BO3D.debug.sheep()), 32);
+    }
     await p.evaluate(() => document.fonts.ready);
     const { C, H, P, sharon } = await p.evaluate(() => ({
       C: BO.content, H: BO.content3d.horeb, P: BO3D.world.P, sharon: BO.content3d.sharon
@@ -77,35 +116,31 @@ async function runTier(browser, tierIndex) {
     await p.locator('.tier').nth(tierIndex).click();
     await p.getByRole('button', { name: '탐험 시작', exact: true }).click();
     await p.locator('.route-opts .btn').filter({ hasText: '모세' }).click();
-    await panel.getByRole('button', { name: '다음', exact: true }).waitFor({ timeout: 40000 });
-    assert((await panel.innerText()).includes('타임머신이 모래 위에 거칠게 내려앉았어요.'));
-    assert((await panel.innerText()).includes(sharon.teamLine));
-    assert.equal(await p.locator('.hud3 .obj span').innerText(), sharon.objective);
-    await noSharon();
-    await shot('intro1');
-
-    async function passIntro(takePhotos) {
-      await panelButton('다음');
-      assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
-      const lines = panel.locator('.sharon-line');
-      const names = panel.locator('.sharon-say b');
-      const faces = panel.locator('img.avatar[data-sharon="avatar"]');
-      const firstLines = tier === 't1' ? [sharon.intro[tier][0]] : sharon.intro[tier];
-      assert.deepEqual(await lines.allTextContents(), firstLines);
-      assert.deepEqual(await names.allTextContents(), firstLines.map(() => sharon.name));
-      assert.equal(await faces.count(), firstLines.length);
-      assert(await faces.first().evaluate(async img => { await img.decode(); return img.naturalWidth === 192; }));
-      if (takePhotos) await shot('sharon-intro');
-      if (tier === 't1') {
-        assert.equal(await panel.getByRole('button', { name: '출발하자', exact: true }).count(), 0);
-        await panelButton('다음');
-        assert.deepEqual(await lines.allTextContents(), [sharon.intro[tier][1]]);
-        assert.equal(await faces.count(), 1);
-        if (takePhotos) await shot('sharon-intro2');
+    async function photographFlock(checkHelp) {
+      await waitState('explore');
+      await hiddenTracker();
+      assert.equal(await panel.isVisible(), false);
+      assert.equal((await parts()).found, 0);
+      if (checkHelp) {
+        await sampleFrames('탐험 시작');
+        await shot('landing');
+        await p.getByRole('button', { name: '샤론에게 물어보기' }).click();
+        assert((await panel.innerText()).includes('양 떼 쪽으로'));
+        await panel.locator('summary').click();
+        assert.deepEqual(await panel.locator('details p').allTextContents(), sharon.intro[tier]);
+        await panelButton('계속 탐험하기');
+        await waitState('explore');
+        await aim(P.machine[0], P.machine[1]); await snap('before-flock');
+        assert.equal((await st()).state, 'explore', 'a photo without sheep must not start the question');
       }
-      await panelButton('출발하자');
+      await walkTo(P.flock[0] + 6, P.flock[1] + 6);
+      await aim(P.flock[0], P.flock[1]);
+      if (checkHelp) await sampleFrames('양 떼 가까이');
+      await p.getByRole('button', { name: '사진 찍기' }).click();
+      await waitState('detector');
+      assert((await p.evaluate(() => BO3D.debug.dex())).includes('sheep'));
     }
-    await passIntro(true);
+    await photographFlock(true);
 
     async function assertGloss(container, entry) {
       const gloss = container.locator('[data-sharon-gloss]');
@@ -121,12 +156,13 @@ async function runTier(browser, tierIndex) {
       assert.equal(await gloss.locator('button, a').count(), 0, 'verse chips must be static');
     }
 
-    async function passWatching() {
+    async function passWatching(openReview) {
       for (let beat = 2; beat < scene.beats.length; beat++) {
         await noSharon();
         await noLegacyLabel();
         assert.equal(await panel.locator('.q-kicker').innerText(), '지켜보기 ' + (beat - 1) + ' / ' + (scene.beats.length - 2));
-        await panel.locator('.sheet-foot .btn.onpaper').click();
+        if (openReview && beat === scene.beats.length - 1) await panelButton(sharon.reviewTitle);
+        else await panel.locator('.sheet-foot .btn.onpaper').click();
       }
     }
 
@@ -175,6 +211,7 @@ async function runTier(browser, tierIndex) {
       await panel.locator('[data-detector-quiz="' + index + '"]').waitFor();
       assert.equal((await st()).state, 'detector');
       await hiddenTracker();
+      assert.equal(await p.locator('.hud3 .place').innerText(), index < 2 ? '광야' : scene.place);
       assert.equal(await p.locator('.hud3 .ref').isVisible(), false, 'HUD must not reveal verse hints during quiz');
       assert.equal(await panel.locator('.q-kicker').innerText(), sharon.kicker + ' ' + (index + 1) + ' / 3');
       const bubble = panel.locator('.sharon-say .bubble'), question = panel.locator('.sharon-line');
@@ -216,21 +253,27 @@ async function runTier(browser, tierIndex) {
       const after = await st();
       assert.deepEqual([after.x, after.z], [before.x, before.z], 'quiz must pause player movement');
       await panel.getByRole('button', { name: q.options.find(o => o.ok).label, exact: true }).click();
-      assert.equal(await panel.locator('.note.good b').innerText(), '성경에 그렇게 기록되어 있어요.');
-      assert.equal(await panel.locator('.note.good .ref').innerText(), item.okRef[tier]);
-      assert(!(await panel.innerText()).includes('탐험대 이야기'), 'Bible answer and guidance must be separate screens');
-      await noSharon();
-      await noLegacyLabel();
-      await panelButton('다음');
-      assert.equal(await panel.locator('.note.good').count(), 0);
-      assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
-      const found = sharon.found[index];
-      assert.equal(await question.textContent(), tier === 't1' && found.t1 ? found.t1 : found.text);
-      assert.equal(await panel.locator('img.avatar[data-sharon="joy"]').count(), 1);
-      if (index === 0) await shot('sharon-guidance');
-      await panelButton('계속 탐험하기');
+      if (index > 0) {
+        assert.equal(await panel.locator('.note.good b').innerText(), '성경에 그렇게 기록되어 있어요.');
+        assert.equal(await panel.locator('.note.good .ref').innerText(), item.okRef[tier]);
+        assert(!(await panel.innerText()).includes('탐험대 이야기'), 'Bible answer and guidance must be separate screens');
+        await noSharon();
+        await noLegacyLabel();
+        await panelButton('다음');
+        assert.equal(await panel.locator('.note.good').count(), 0);
+        assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
+        const found = sharon.found[index];
+        assert.equal(await question.textContent(), tier === 't1' && found.t1 ? found.t1 : found.text);
+        assert.equal(await panel.locator('img.avatar[data-sharon="joy"]').count(), 1);
+        await panelButton('계속 탐험하기');
+      }
       await waitState('explore');
       await p.locator('.track3').waitFor({ state: 'visible' });
+      if (index === 0) {
+        assert.equal(await panel.isVisible(), false);
+        assert((await p.locator('.toast3').innerText()).includes(item.okRef[tier]));
+        await shot('first-signal');
+      }
       const distance = await p.locator('.track3 span').innerText();
       assert(distance.startsWith(sharon.track) && /^\d+m$/.test(distance.slice(sharon.track.length)), distance);
       assert.equal(await p.locator('.hud3 .obj span').innerText(), item.objective);
@@ -254,7 +297,8 @@ async function runTier(browser, tierIndex) {
       if (i === 1) {
         assert.equal((await st()).mosesArrived, false, 'Moses must not have arrived before fragment 2');
         await walkTo(P.flock[0] + 6, P.flock[1] + 6);
-        await aim(P.flock[0], P.flock[1]); await snap('photo-sheep');
+        await aim(P.flock[0], P.flock[1]);
+        await snap('photo-sheep');
         assert((await p.evaluate(() => BO3D.debug.sheep())) >= 30, 'sheep < 30');
       }
       if (i === 2) {
@@ -270,6 +314,7 @@ async function runTier(browser, tierIndex) {
         const edge = await st();
         assert(Math.hypot(edge.x - P.bush[0], edge.z - P.bush[1]) >= P.witnessRadius - 0.1, 'crossed witness boundary');
         await shot('boundary');
+        await sampleFrames('언덕 아래');
         await p.evaluate(at => BO3D.debug.goto(at[0], at[1]), [before.x, before.z]);
       }
       await walkTo(H.quiz[i].at[0], H.quiz[i].at[1], 'part' + (i + 1));
@@ -306,6 +351,7 @@ async function runTier(browser, tierIndex) {
     }
     await p.waitForTimeout(1500);
     await shot('look-up');
+    await sampleFrames('압도 장면');
     // 소리 (docs/09 5절): 장면 동안 거리 계산을 멈추고, 순서마다 정한 크기를 따른다.
     const a0 = await lv();
     assert(a0, 'audio levels must be readable');
@@ -423,7 +469,8 @@ async function runTier(browser, tierIndex) {
     } else near(a6.total, a6.normal, 0.02, 'total must be normal after awe scene');
     console.log(tier, 'awe sound', muteRun ? '(muted)' : '', 'step1 fire', a1.fire.toFixed(3), 'step2 fire', a2.fire.toFixed(3), 'step4 total', a4.total.toFixed(4), 'step5 music', a5.music.toFixed(3), 'starts', a6.musicStarts);
     await snap('photo-event');
-    await passWatching();
+    await sampleFrames('지켜보기');
+    await passWatching(true);
     afterLastPart = false;
     await passReview(reviewPages, tier !== 't3', false);
     afterLastPart = true;
@@ -462,17 +509,19 @@ async function runTier(browser, tierIndex) {
     await p.getByRole('button', { name: '탐험 시작', exact: true }).click();
     await p.locator('.route-opts .btn').filter({ hasText: '모세' }).click();
     afterLastPart = false;
-    await passIntro(false);
+    await photographFlock(false);
     await panel.locator('[data-detector-quiz="0"]').waitFor();
     assert.equal((await parts()).found, 0);
     await hiddenTracker();
-    if (tier === 't2') {
+    if (tier !== 't1') {
       await p.evaluate(() => { BO3D.debug.includeReviewRequiredGloss = false; });
       for (const [index, item] of H.quiz.entries()) {
         await panel.locator('[data-detector-quiz="' + index + '"]').waitFor();
         await panelButton(item.q[tier].options.find(o => o.ok).label);
-        await panelButton('다음');
-        await panelButton('계속 탐험하기');
+        if (index > 0) {
+          await panelButton('다음');
+          await panelButton('계속 탐험하기');
+        }
         await waitState('explore');
         await p.evaluate(([x, z]) => BO3D.debug.goto(x, z), item.at);
         await waitState('caption');
@@ -488,19 +537,38 @@ async function runTier(browser, tierIndex) {
       await p.evaluate(() => {
         for (let step = 0; step <= 6; step++) BO3D.debug.aweNext();
       });
-      await passWatching();
-      const publicPages = reviewPages.filter(g => !g.review);
-      assert.equal(publicPages.length, reviewPages.length - 2);
-      await passReview(publicPages, false, true);
+      await passWatching(tier === 't2');
+      if (tier === 't2') {
+        const publicPages = reviewPages.filter(g => !g.review);
+        assert.equal(publicPages.length, reviewPages.length - 2);
+        await passReview(publicPages, false, true);
+      } else {
+        await waitState('gates');
+        assert.equal(await p.locator('.sharon-review').count(), 0);
+      }
     }
     assert.deepEqual(errs, [], 'browser errors');
+    const recent = await p.evaluate(() => BO3D.debug.perf());
+    assert.equal(recent.samples, 300, '전체 탐험 후에는 최근 300프레임만 남아야 한다');
+    assert(recent.maxMs >= recent.meanMs && recent.meanMs > 0);
+    assert.equal(await p.locator('.perf3').count(), new URL(url).searchParams.get('perf') === '1' ? 1 : 0);
+    assert.equal(performanceRows.length, 5);
+    fs.writeFileSync(path.join(tierOut, 'perf.json'), JSON.stringify(performanceRows, null, 2) + '\n');
+    console.table(performanceRows.map(row => ({ 구간: row.stage, 평균ms: +row.meanMs.toFixed(1),
+      최대ms: +row.maxMs.toFixed(1), 그리기: row.drawCalls })));
     console.log(tier, 'shots:', n, 'all three quizzes and full journey passed; restart resets progress; no errors');
   } finally { await ctx.close(); }
 }
 
 (async () => {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const browser = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
-  try { for (const index of [ti].concat([0, 1, 2].filter(i => i !== ti))) await runTier(browser, index); }
+  try {
+    const url = (await gameOrigin(browser)) + '/preview3d.html';
+    // 첫 연령은 명시적인 낮은 품질에서 끝까지, 나머지는 기본 주소로 자동 조정까지 조작한다.
+    for (const index of [ti].concat([0, 1, 2].filter(i => i !== ti))) {
+      const low = index === ti || process.argv[5] === 'low';
+      await runTier(browser, index, url + (low ? '?q=low' : ''));
+    }
+  }
   finally { await browser.close(); }
 })().catch(e => { console.error('FAIL', e.stack || e.message); process.exitCode = 1; });

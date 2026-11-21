@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { gameOrigin, proxy } = require('../game-server');
 
 const outputFolder = process.argv[2];
 if (!outputFolder) {
@@ -10,117 +10,14 @@ if (!outputFolder) {
 }
 
 const { chromium } = require('playwright');
-const sizes = [[320, 568], [360, 560], [390, 664], [844, 390]];
-const url = pathToFileURL(path.resolve(__dirname, '../../../web/index.html')).href;
-
-// 내용이 세로로 길면 읽을 수 있도록 움직인 뒤 살핀다. 가로 넘침은 허용하지 않는다.
-function layoutIssues() {
-  const problems = new Set();
-  const screen = document.querySelector('#app > .screen');
-  const controls = [...screen.querySelectorAll('button, input, textarea')];
-  const viewport = { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
-  const scrollValues = new Map();
-  const tolerance = 2;
-  const label = (el) => (el.getAttribute('aria-label') || el.textContent || el.className).trim().slice(0, 36);
-
-  function clipChain(el) {
-    const clips = [];
-    for (let parent = el.parentElement; parent; parent = parent.parentElement) {
-      const { overflowX, overflowY } = getComputedStyle(parent);
-      if (overflowX === 'visible' && overflowY === 'visible') continue;
-      const { x, y } = parent.getBoundingClientRect();
-      const left = x + parent.clientLeft;
-      const top = y + parent.clientTop;
-      clips.push({ parent, overflowX, overflowY, left, top,
-        right: left + parent.clientWidth, bottom: top + parent.clientHeight });
-    }
-    return clips;
-  }
-
-  function visibleBox(el) {
-    const r = el.getBoundingClientRect();
-    const box = { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
-    for (const clip of [...clipChain(el), viewport]) {
-      if (clip.overflowX !== 'visible') {
-        box.left = Math.max(box.left, clip.left);
-        box.right = Math.min(box.right, clip.right);
-      }
-      if (clip.overflowY !== 'visible') {
-        box.top = Math.max(box.top, clip.top);
-        box.bottom = Math.min(box.bottom, clip.bottom);
-      }
-    }
-    return box;
-  }
-
-  for (const control of controls) {
-    const box = control.getBoundingClientRect();
-    if (!box.width || !box.height) continue;
-    const scroll = clipChain(control).find(({ parent, overflowY }) =>
-      ['auto', 'scroll'].includes(overflowY) && parent.scrollHeight > parent.clientHeight + 1);
-    if (scroll) {
-      if (!scrollValues.has(scroll.parent)) scrollValues.set(scroll.parent, scroll.parent.scrollTop);
-      scroll.parent.scrollTop += (box.top + box.bottom - scroll.top - scroll.bottom) / 2;
-    }
-
-    const r = control.getBoundingClientRect();
-    const visible = visibleBox(control);
-    if (r.width - (visible.right - visible.left) > tolerance ||
-        r.height - (visible.bottom - visible.top) > tolerance) {
-      problems.add(`조작 항목이 잘림 · ${label(control)}`);
-    } else if (!control.disabled) {
-      // 원형 단서에서도 영역 안쪽의 중심과 네 방향을 실제로 누를 수 있어야 한다.
-      const uncovered = [[.5, .5], [.18, .5], [.82, .5], [.5, .18], [.5, .82]]
-        .every(([x, y]) => control.contains(document.elementFromPoint(r.left + r.width * x, r.top + r.height * y)));
-      if (!uncovered) problems.add(`조작 항목이 가려짐 · ${label(control)}`);
-    }
-
-    for (const other of controls) {
-      if (other === control) continue;
-      const v = visibleBox(other);
-      const overlapX = Math.min(visible.right, v.right) - Math.max(visible.left, v.left);
-      const overlapY = Math.min(visible.bottom, v.bottom) - Math.max(visible.top, v.top);
-      if (overlapX > tolerance && overlapY > tolerance) {
-        problems.add(`조작 항목이 겹침 · ${[label(control), label(other)].sort().join(' / ')}`);
-      }
-    }
-  }
-  for (const [element, top] of scrollValues) element.scrollTop = top;
-
-  const walker = document.createTreeWalker(screen, NodeFilter.SHOW_TEXT);
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const el = node.parentElement;
-    if (!node.textContent.trim() || el.closest('svg')) continue;
-    const range = document.createRange();
-    range.selectNodeContents(node);
-    const clips = [...clipChain(node), viewport];
-    for (const line of range.getClientRects()) {
-      for (const clip of clips) {
-        if (clip.overflowX !== 'visible' &&
-            (line.left < clip.left - tolerance || line.right > clip.right + tolerance)) {
-          problems.add(`글이 좌우로 잘림 · ${node.textContent.trim().slice(0, 36)}`);
-        }
-      }
-      for (const clip of clips) {
-        if (clip.overflowY === 'visible') continue;
-        const scrolls = ['auto', 'scroll'].includes(clip.overflowY);
-        const top = clip.top - (scrolls ? clip.parent.scrollTop : 0);
-        const bottom = scrolls ? top + clip.parent.scrollHeight : clip.bottom;
-        if (line.top < top - tolerance || line.bottom > bottom + tolerance ||
-            line.height > clip.bottom - clip.top + tolerance) {
-          problems.add(`글이 위아래로 잘림 · ${node.textContent.trim().slice(0, 36)}`);
-        }
-        if (scrolls) break;
-      }
-    }
-  }
-  return [...problems];
-}
+const layoutIssues = require('../layout-issues');
+const sizes = [[320, 568], [360, 560], [390, 664], [390, 844], [568, 320], [844, 390]];
+let url;
 
 async function checkSize(browser, width, height) {
   const size = `${width}x${height}`;
   const folder = path.resolve(outputFolder, size);
-  const context = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce' });
+  const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
   page.setDefaultNavigationTimeout(30000);
@@ -140,20 +37,30 @@ async function checkSize(browser, width, height) {
   }
 
   async function capture(name) {
-    for (const issue of await page.evaluate(layoutIssues)) issues.push(`${name} · ${issue}`);
+    for (const issue of await page.evaluate(layoutIssues, '#app > .screen')) issues.push(`${name} · ${issue}`);
     await page.screenshot({ path: path.join(folder, `${name}.png`), animations: 'disabled' });
   }
 
   async function checkClues(destination, filename) {
     await click(destination);
-    await click('둘러보기');
+    await click('이야기 읽기');
     await advanceTo('.found-list');
     await page.locator('.hot').last().waitFor();
     await capture(filename);
     const clues = await page.locator('.hot').all();
     assert.equal(clues.length, 3, `${destination} 경로의 단서가 세 개여야 합니다.`);
-    for (const clue of clues) await clue.click();
+    await clues[0].tap();
+    if (destination === '요셉' && width === 390 && height === 844) {
+      await page.setViewportSize({ width: height, height: width });
+      assert.equal(await page.locator('.hot').count(), 3);
+      assert(await clues[0].isDisabled(), '회전 후에도 이미 찾은 단서가 표시되어야 합니다.');
+      assert.equal(await next.isEnabled(), false);
+      await capture('10-joseph-rotated');
+    }
+    for (const clue of clues.slice(1)) await clue.tap();
     assert(await next.isEnabled(), `${destination} 경로에서 단서를 모두 눌렀으나 다음 화면이 열리지 않았습니다.`);
+    await next.click();
+    assert.equal(await page.locator('.hot').count(), 0, '이전 그림의 단서가 새 화면에 남아 있습니다.');
   }
 
   try {
@@ -165,9 +72,25 @@ async function checkSize(browser, width, height) {
     await page.locator('.tier').first().click();
     await capture('02-setup');
     await click('출발 준비 완료');
+    const rows = page.locator('#journey-list li:visible');
+    const playable = await page.locator('#journey-list .node.play').count();
+    assert.equal(await rows.count(), playable);
+    await page.getByRole('button', { name: '전체 여정 보기' }).click();
+    assert.equal(await rows.count(), await page.evaluate(() => BO.content.timeline.length));
+    await page.getByRole('button', { name: '갈 수 있는 장면만 보기' }).click();
+    assert.equal(await rows.count(), playable);
     await capture('03-timeline');
     await page.locator('.node.play').first().click();
-    await click('둘러보기');
+    await page.getByRole('button', { name: '짓고 있는 성 살펴보기' }).waitFor();
+    await capture('03-egypt-arrival');
+    // 성벽과 중앙 건물을 실제 그림 좌표로 눌러 본다.
+    const city = await page.locator('#ex00-city').evaluate(g => [[520, 555], [670, 563]].map(([x, y]) => {
+      const pt = new DOMPoint(x, y).matrixTransform(g.getScreenCTM());
+      return { x: pt.x, y: pt.y, canTap: !!document.elementFromPoint(pt.x, pt.y)?.closest('.look-target') };
+    }));
+    assert(city.every(p => p.canTap), '성벽과 중앙 건물을 모두 누를 수 있어야 한다');
+    await page.touchscreen.tap(city[0].x, city[0].y);
+    assert.match(await page.locator('.sheet .narr').innerText(), /새 왕/);
     await capture('04-scene');
     await advanceTo('.q-prompt');
     await capture('05-question');
@@ -182,6 +105,46 @@ async function checkSize(browser, width, height) {
     await click('시간표로 돌아가기');
     await click('목적지 다시 고르기');
     await checkClues('요셉', '09-joseph-clues');
+    await page.setViewportSize({ width, height });
+    await click('시간표로 돌아가기');
+    await click('목적지 다시 고르기');
+    await click('모세');
+    const target = page.getByRole('button', { name: '양 떼 살펴보기', exact: true });
+    await target.waitFor();
+    await capture('11-horeb-arrival');
+    const sheep = await page.locator('#ex01-sheep > g').evaluateAll(groups => groups.map(group => {
+      const box = group.getBoundingClientRect();
+      const x = box.x + box.width / 2, y = box.y + box.height / 2;
+      return { x, y, canTap: document.elementFromPoint(x, y)?.classList.contains('look-target') };
+    }));
+    assert(sheep.length > 1 && sheep.every(animal => animal.canTap), '그림에 보이는 양을 각각 누를 수 있어야 한다');
+    const animal = sheep[sheep.length - 1];
+    await page.touchscreen.tap(animal.x, animal.y);
+    assert.match(await page.locator('.sheet .narr').innerText(), /양 떼/);
+    assert.equal(await target.count(), 0);
+    await capture('12-horeb-first-discovery');
+    if (width === 390 && height === 844) {
+      async function flockPosition() {
+        return page.locator('#ex01-sheep').evaluate(async flock => {
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const windowBox = flock.closest('.stage').getBoundingClientRect();
+          const box = flock.getBoundingClientRect();
+          return [box.x - windowBox.x, box.y - windowBox.y];
+        });
+      }
+      const portrait = await flockPosition();
+      await page.setViewportSize({ width: height, height: width });
+      const rotated = await flockPosition();
+      await click('떨기나무 살펴보기');
+      await click('이전');
+      const reopened = await flockPosition();
+      assert(rotated.every((coord, i) => Math.abs(coord - reopened[i]) < 1),
+        '가로로 돌린 뒤에도 같은 대목을 처음 열었을 때와 양 떼의 위치가 같아야 합니다.');
+      await page.setViewportSize({ width, height });
+      const returned = await flockPosition();
+      assert(returned.every((coord, i) => Math.abs(coord - portrait[i]) < 1),
+        '세로로 돌려 놓으면 원래 양 떼의 위치로 돌아와야 합니다.');
+    }
   } catch (error) {
     issues.push(error.message);
   } finally {
@@ -190,14 +153,14 @@ async function checkSize(browser, width, height) {
   if (issues.length) {
     console.error(`실패 · ${size}\n${[...new Set(issues)].join('\n')}`);
   } else {
-    console.log(`${size} · 9화면 확인 · no errors`);
+    console.log(`${size} · 두 경로의 단서, 애굽의 성과 호렙의 양 떼 직접 발견 · no errors`);
   }
   return issues.length === 0;
 }
 
 (async () => {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const browser = await chromium.launch({ proxy });
+  url = (await gameOrigin(browser)) + '/index.html';
   try {
     const results = await Promise.all(sizes.map(([width, height]) => checkSize(browser, width, height)));
     if (results.includes(false)) process.exitCode = 1;

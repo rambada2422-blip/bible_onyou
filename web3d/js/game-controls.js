@@ -9,6 +9,14 @@ BO3D.gameModules.controls = function (G) {
     if (e.pointerId === G.drag.id) G.drag.id = null;
   }
 
+  function canMove() {
+    return G.overlay.hidden && (G.state === 'explore' || G.state === 'free');
+  }
+  function releaseControls() {
+    G.stick.x = G.stick.y = 0; G.stick.id = null;
+    G.drag.id = null; G.keys = {}; G.base.hidden = true;
+  }
+
   /* ── 매 프레임 ── */
   function snapCamera() {
     var p = G.player ? G.player.group.position : new G.T.Vector3(G.P.start[0], G.H(G.P.start[0], G.P.start[1]), G.P.start[1]);
@@ -122,6 +130,8 @@ BO3D.gameModules.controls = function (G) {
     }
   }
 
+  G.canMove = canMove;
+  G.releaseControls = releaseControls;
   G.snapCamera = snapCamera;
   G.movePlayer = movePlayer;
   G.moveFollowers = moveFollowers;
@@ -130,7 +140,7 @@ BO3D.gameModules.controls = function (G) {
   return function initControls() {
 
     G.touch.addEventListener('pointerdown', function (e) {
-      if (G.state !== 'explore' && G.state !== 'free') return;
+      if (!canMove()) return;
       var r = G.root.getBoundingClientRect();
       if (G.stick.id === null && zoneLeft(e)) {
         G.stick.id = e.pointerId; G.stick.bx = e.clientX - r.left; G.stick.by = e.clientY - r.top;
@@ -149,7 +159,12 @@ BO3D.gameModules.controls = function (G) {
       } else if (e.pointerId === G.drag.id) { G.camYaw -= (e.clientX - G.drag.x) * 0.008; G.drag.x = e.clientX; G.lastDrag = G.now; }
     });
     G.touch.addEventListener('pointerup', up); G.touch.addEventListener('pointercancel', up);
-    window.addEventListener('keydown', function (e) { G.keys[e.key.toLowerCase()] = true; });
+    G.touch.addEventListener('lostpointercapture', up);
+    window.addEventListener('blur', releaseControls);
+    document.addEventListener('visibilitychange', function () { if (document.hidden) releaseControls(); });
+    window.addEventListener('keydown', function (e) {
+      if (!e.repeat && canMove()) G.keys[e.key.toLowerCase()] = true;
+    });
     window.addEventListener('keyup', function (e) { G.keys[e.key.toLowerCase()] = false; });
   };
 };

@@ -1,12 +1,12 @@
 // 시대 추리(요단 강) 자동 점검. 사용: node walkJ.js <tierIndex> <outDir> [dsf] [url]
 const { chromium } = require('playwright');
+const { gameOrigin, proxy } = require('./game-server');
 const path = require('path');
 const fs = require('fs');
 const ti = process.argv[2] || '1', out = process.argv[3], dsf = Number(process.argv[4] || '1');
-const url = process.argv[5] || require('url').pathToFileURL(require('path').resolve(__dirname, '../../dist/preview3d.html')).href;
 fs.mkdirSync(out, { recursive: true });
 (async () => {
-  const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
+  const b = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: dsf });
   const p = await ctx.newPage();
   await p.addInitScript(() => { window.BO3D_TEST = true; });
@@ -15,6 +15,7 @@ fs.mkdirSync(out, { recursive: true });
   p.on('console', (m) => { if (m.type() === 'error' && !/ERR_FILE_NOT_FOUND|Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
   const shot = async (label) => { n++; await p.screenshot({ path: path.join(out, String(n).padStart(2, '0') + '-' + label + '.png') }); };
   const st = () => p.evaluate(() => BO3D.debug.state());
+  const url = process.argv[5] || (await gameOrigin(b)) + '/preview3d.html';
   await p.goto(url);
   await p.waitForTimeout(2500);
   await p.evaluate(() => document.fonts.ready);
@@ -86,11 +87,8 @@ fs.mkdirSync(out, { recursive: true });
   await shot('back');
   await next(); await shot('bonus-card');
   await next();
-  // 8~10세는 샤론의 도입을 두 화면에 나눠 본다.
-  const horebNext = p.locator('.panel3').getByRole('button', { name: '다음', exact: true });
-  await horebNext.waitFor({ timeout: 40000 }); await p.waitForTimeout(600); await horebNext.click();
-  if (tier === 't1') await horebNext.click();
-  await p.waitForSelector('text=출발하자', { timeout: 40000 }); await p.waitForTimeout(1500);
+  await p.waitForFunction(() => BO3D.debug.level() === 'horeb' && BO3D.debug.state().state === 'explore', null, { timeout: 40000 });
+  await p.getByRole('button', { name: '샤론에게 물어보기' }).waitFor();
   await shot('horeb');
   console.log(tier, 'shots:', n, 'level', await p.evaluate(() => BO3D.debug.level()), JSON.stringify(await st()), errs.length ? '\nERR ' + errs.slice(0, 8).join('\n') : 'no errors');
   await b.close();

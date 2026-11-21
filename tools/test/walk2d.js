@@ -1,15 +1,14 @@
 // 사용: node walk.js <tierIndex 0-2> <routeLabel> <outDir> [url] [dsf]
 const { chromium } = require('playwright');
+const { gameOrigin, proxy } = require('./game-server');
 const path = require('path');
 const fs = require('fs');
 const args = process.argv.slice(2);
 const ti = args[0], routeLabel = args[1], out = args[2];
-const url = args[3] || require('url').pathToFileURL(require('path').resolve(__dirname, '../../web/index.html')).href;
 const dsf = Number(args[4] || '1');
 fs.mkdirSync(out, { recursive: true });
 
 (async () => {
-  const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   const b = await chromium.launch({ proxy });
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: dsf });
   const p = await ctx.newPage();
@@ -24,6 +23,7 @@ fs.mkdirSync(out, { recursive: true });
     await p.screenshot({ path: path.join(out, f) });
     log.push(f);
   };
+  const url = args[3] || (await gameOrigin(b)) + '/index.html';
   await p.goto(url);
   await p.waitForTimeout(1200);
   await p.evaluate(() => document.fonts.ready);
@@ -100,6 +100,17 @@ fs.mkdirSync(out, { recursive: true });
     await p.waitForTimeout(700);
     for (let guard = 0; guard < 60; guard++) {
       if (!(await p.$('.screen.scene'))) return;
+      const look = await p.$('.sheet-foot .look-help');
+      if (look) {
+        // 아래 단추는 찾을 곳을 알려 주기만 한다. 그림의 그 자리를 눌러야 다음 대목이 열린다.
+        await p.waitForTimeout(1500);
+        await look.click();
+        await p.waitForSelector('.hot-layer .look-target.nudge');
+        await shot(label + '-look');
+        await p.click('.hot-layer .look-target');
+        await p.waitForTimeout(300);
+        continue;
+      }
       const btn = await p.$('.sheet-foot .btn.onpaper');
       const disabled = await btn.evaluate((x) => x.disabled);
       if (disabled) { await solve(); continue; }
