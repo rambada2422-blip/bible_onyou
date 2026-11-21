@@ -128,7 +128,13 @@ async function run(output) {
     }
     await audit('menu');
     await button('탐험 시작').tap(); await audit('route');
-    await button('모세').tap(); await button('샤론에게 물어보기').waitFor(); await audit('horeb-landing');
+    await button('모세').tap(); await button('샤론에게 물어보기').waitFor();
+    // 글과 배경을 따로 찍는 동안 4.2초 알림이 사라지면, 글자 뒤의 땅을 배경색으로 읽게 된다.
+    const notice = page.locator('.toast3');
+    await notice.waitFor({ state: 'visible' });
+    await notice.evaluate(el => el.style.setProperty('display', getComputedStyle(el).display, 'important'));
+    try { await audit('horeb-landing'); }
+    finally { await notice.evaluate(el => el.style.removeProperty('display')); }
     await button('샤론에게 물어보기').tap(); await audit('sharon-help');
     await page.locator('summary').filter({ hasText: '샤론 소개' }).tap(); await audit('sharon-help-open');
     await resume('route');
