@@ -287,7 +287,21 @@ async function play(browser, url, age) {
     assert.deepEqual(await page.evaluate(layoutIssues, '.po-screen'), []);
     const card = await page.locator('.po-clue').boundingBox();
     assert(card.y >= 0 && card.y + card.height <= height, '누른 단서 설명 전체가 화면 안에 들어야 한다');
-    if (age === 0) await page.screenshot({ path:path.join(output,'preparation.png') });
+    if (age === 0) {
+      await page.screenshot({ path:path.join(output,'preparation.png') });
+      await page.setViewportSize({width:320,height:480});
+      for (const pin of await pins.all()) {
+        await pin.tap();
+        const text = await page.locator('.po-clue p').boundingBox();
+        const area = await page.locator('.po-scroll').boundingBox();
+        assert(text.y >= area.y && text.y + text.height <= area.y + area.height + 1,
+          '320×480 화면에서 단서를 눌렀을 때 마지막 줄까지 바로 보여야 한다');
+        const action = await button('그 밤의 기록으로').boundingBox();
+        assert(action.y + action.height <= area.y + area.height + 1, '준비를 마친 뒤 이동 단추도 한눈에 보여야 한다');
+      }
+      await page.screenshot({path:path.join(output,'preparation-320x480.png')});
+      await page.setViewportSize({width,height});
+    }
     await tap('그 밤의 기록으로');
     assert(await checkArt());
     assert.equal(await page.locator('.po-body h3').innerText(), '열 번째 재앙');
