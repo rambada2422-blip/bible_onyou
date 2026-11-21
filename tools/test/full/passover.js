@@ -51,7 +51,8 @@ async function play(browser, url, age) {
     const approved = [...review.matchAll(/^\| 재앙 \d 요약 \| ([^|]+?) \| [^|]+? \| "([^"]+)" \|$/gm)];
     assert.equal(approved.length, 9);
     const [, nightRef, nightText] = review.match(/^\| 열 번째 재앙 [^|]* \| ([^|]+?) \| [^|]+? \| "([^"]+)" \|$/m);
-    const nightChip = nightRef.replaceAll(', 12:', ', ');
+    const witnessRows = [...review.matchAll(/^\| 기록 \d \| ([^|]+?) \| [^|]+? \| "([^"]+)" \|$/gm)];
+    assert.equal(witnessRows.length, 9);
     await page.goto(url);
     await tap('탐험 시작');
     await page.locator('.tier').nth(age).tap();
@@ -109,7 +110,13 @@ async function play(browser, url, age) {
       assert(await next.isEnabled());
       assert.equal(await progress.innerText(), (i+1) + ' / 9 기록');
       assert.equal(await page.locator('.po-segments .filled').count(), i+1);
-      assert.equal(await page.locator('.po-finding').isVisible(), age !== 0 || ![0,2,3,5,7,8].includes(i));
+      const finding = page.locator('.po-finding');
+      const visible = age !== 0 || ![0,2,3,5].includes(i);
+      assert.equal(await finding.isVisible(), visible);
+      if (visible) {
+        assert.equal(await finding.locator('p').innerText(), witnessRows[i][2]);
+        assert.equal(await finding.locator('.ref').innerText(), witnessRows[i][1]);
+      }
       if (age === 0 && i === 6) await page.screenshot({path:path.join(output,'plague-trail.png')});
       await tap(i === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기');
     }
@@ -154,7 +161,7 @@ async function play(browser, url, age) {
     await assertArt('plague-midnight');
     assert.equal(await button('본 재앙 보기').count(), 0);
     assert.equal(await page.locator('.po-body > p').first().innerText(), nightText);
-    assert.equal(await page.locator('.po-body .ref').first().innerText(), nightChip);
+    assert.equal(await page.locator('.po-body .ref').first().innerText(), nightRef);
     assert.equal(await page.locator('.po-trail, .po-chips, .po-pins, .po-finding').count(), 0);
     if (age === 0) await page.screenshot({path:path.join(output,'midnight.png')});
     await tap('바로의 소식 읽기');
@@ -169,7 +176,7 @@ async function play(browser, url, age) {
     const nightRecord = page.locator('.po-record').filter({has:page.getByText('열 번째 재앙', {exact:true})});
     await nightRecord.locator('summary').click();
     assert.equal(await nightRecord.locator('p').first().innerText(), nightText);
-    assert.equal(await nightRecord.locator('.ref').first().innerText(), nightChip);
+    assert.equal(await nightRecord.locator('.ref').first().innerText(), nightRef);
     await tap('시간표로 돌아가기');
     await tap('일지 1');
     await tap('열 가지 재앙과 유월절 · 탐험 기록');
