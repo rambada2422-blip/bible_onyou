@@ -91,40 +91,55 @@
   function record(row) {
     var entry = el('details', {class:'po-record'}, el('summary', {}, row[0]), app.refChip(row[1]), el('p', {}, row[2]));
     if (row === night) entry.append(app.refChip('출 12:31-32'), el('p', {}, summons));
+    entry.setAttribute('name', 'po-open-note');
+    entry.addEventListener('toggle', function () {
+      if (!entry.open || entry.querySelector('.po-note-art')) return;
+      var i = plagues.indexOf(row), pictures = el('div', {class:'po-note-art'});
+      if (lookouts[i]) {
+        lookouts[i].forEach(function (spot) {
+          pictures.append(el('figure', {}, app.pic(spot.art, '', spot.alt), el('figcaption', {}, spot.place)));
+        });
+      } else {
+        var art = i >= 0 ? shortViews[i] : row === night ? 'plague-midnight' : row === departure ? 'plague-departure' : 'ex07-room';
+        pictures.append(app.pic(art, '', pictureDescriptions[art]));
+      }
+      entry.append(pictures);
+    });
     return entry;
   }
-  function showPlagueNotes(trigger, count) {
+  function showPlagueNotes(trigger, count, returnLabel) {
     app.narration.stop();
     var dialog = el('dialog', {class:'po-notes', 'aria-labelledby':'po-notes-title'});
-    var close = button('탐험으로 돌아가기', function () { dialog.close(); });
+    var close = button(returnLabel || '탐험으로 돌아가기', function () { dialog.close(); });
     var list = el('div', {class:'po-note-list'});
     plagues.slice(0, count).forEach(function (row, i) {
       var entry = record(row);
-      entry.setAttribute('name', 'po-open-note');
       entry.querySelector('summary').textContent = (i + 1) + '번째 · ' + row[0];
-      entry.addEventListener('toggle', function () {
-        if (!entry.open || entry.querySelector('.po-note-art')) return;
-        var pictures = el('div', {class:'po-note-art'});
-        if (lookouts[i]) {
-          lookouts[i].forEach(function (spot) {
-            pictures.append(el('figure', {}, app.pic(spot.art, '', spot.alt), el('figcaption', {}, spot.place)));
-          });
-        } else {
-          pictures.append(app.pic(shortViews[i], '', pictureDescriptions[shortViews[i]]));
-        }
-        entry.append(pictures);
-      });
       list.prepend(entry);
     });
     var title = el('h2', {id:'po-notes-title', tabindex:'-1'}, '지금까지 본 재앙');
     dialog.append(title, list, close);
-    trigger.closest('.po-screen').append(dialog);
+    trigger.closest('.screen').append(dialog);
     dialog.addEventListener('close', function () {
       dialog.remove();
       trigger.focus({preventScroll:true});
     }, {once:true});
     dialog.showModal();
     title.focus({preventScroll:true});
+  }
+  function availablePlagues() {
+    var s = app.state.passover;
+    if (!valid(s)) return 0;
+    if (s.step >= plagues.length) return plagues.length;
+    return s.step + (!lookouts[s.step] || s.matched === true || (s.observed & 3) === 3 ? 1 : 0);
+  }
+  function journalButton(back) {
+    if (completed()) return button('열 가지 재앙과 유월절 · 탐험 기록', function () { open(back, '일지', true); }, 'btn wide onpaper');
+    var count = availablePlagues();
+    if (!count) return null;
+    return button('지금까지 본 재앙 · ' + count + '개', function (event) {
+      showPlagueNotes(event.currentTarget, count, '일지로 돌아가기');
+    }, 'btn wide onpaper');
   }
   function pictureLens(picture, art, step) {
     var img = picture.firstElementChild;
@@ -349,7 +364,11 @@
         foot.push(button('탐험 기록 다시 읽기', advance));
       } else {
         body.append(el('h3', {}, '열 가지 재앙과 유월절'), el('p', {}, '이름을 눌러 그때의 기록과 장절을 다시 읽어 보세요.'));
-        plagues.concat(preparation, [night, departure]).forEach(function (row) { body.append(record(row)); });
+        function shelf(title, rows) {
+          return el('section', {class:'po-shelf'}, el('h4', {}, title), rows.map(record));
+        }
+        acts.forEach(function (name, i) { body.append(shelf(name, plagues.slice(i*3,i*3+3))); });
+        body.append(shelf('유월절을 준비하다', preparation), shelf('그 밤과 출발', [night, departure]));
         if (!readOnly) body.append(button('처음부터 다시 둘러보기', replay));
         foot.push(button(returnTo + '로 돌아가기', leave));
       }
@@ -378,7 +397,7 @@
     }
     render(false);
   }
-  app.passover = {open:open, completed:completed, resuming:function () {
+  app.passover = {open:open, completed:completed, hasJournal:function () { return completed() || availablePlagues() > 0; }, journalButton:journalButton, resuming:function () {
     return valid(app.state.passover) && app.state.passover.active === true;
   }};
 })();

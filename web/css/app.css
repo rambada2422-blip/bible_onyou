@@ -563,3 +563,7 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-reading-line .ref { margin: 0; }
 .po-reading-line .readbtn { margin-left: auto; }
 .po-reading-line .read-status:not([hidden]) { flex-basis: 100%; font-size: 14px; }
+
+.po-shelf { border: 1px solid var(--paper-line); border-radius: 12px; padding: 10px 12px 0; }
+.po-shelf h4 { margin: 0; font-size: 15px; color: var(--text-soft); }
+.po-shelf .po-record:last-child { border: 0; }

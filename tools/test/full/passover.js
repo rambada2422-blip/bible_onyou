@@ -126,7 +126,19 @@ async function play(browser, url, age) {
         }), '한 곳을 본 뒤에도 남은 그림과 이름이 전부 보여야 한다');
         await assertArt(views[i][places.indexOf(first)]);
         assert.equal(await page.locator('.po-guide').count(), age === 0 ? 1 : 0);
-        if (i === 3) await reviewNotes(3, '1번째 · 물이 피가 됨', true);
+        if (i === 3) {
+          await reviewNotes(3, '1번째 · 물이 피가 됨', true);
+          await tap('← 시간표');
+          const saved = await page.evaluate(() => JSON.stringify(BO.app2d.state.passover));
+          await tap('일지 1'); await tap('지금까지 본 재앙 · 3개');
+          assert.equal(await page.getByRole('dialog').locator('summary').count(), 3);
+          await tap('일지로 돌아가기');
+          assert.equal(await page.evaluate(() => JSON.stringify(BO.app2d.state.passover)), saved);
+          assert(await button('지금까지 본 재앙 · 3개').evaluate(el => el === document.activeElement));
+          await page.locator('.page-head button').first().tap();
+          await tap('열 가지 재앙과 유월절 · 감수용 미리보기');
+          assert.equal(await page.locator('.po-detail b').innerText(), first);
+        }
         const firstView = await page.locator('.po-land').getAttribute('data-view');
         assert(await next.isDisabled());
         await resume();
@@ -232,8 +244,15 @@ async function play(browser, url, age) {
     assert(!(await page.locator('.po-screen').innerText()).includes('✓'));
     await tap('탐험 기록 다시 읽기');
     assert.equal(await page.locator('.po-record').count(), 14);
+    assert.equal(await page.locator('.po-shelf').count(), 5);
+    const prepEntry = page.locator('.po-record').filter({has:page.getByText('식탁', {exact:true})});
+    await prepEntry.locator('summary').click();
+    await prepEntry.locator('img').waitFor();
+    assert((await prepEntry.locator('img').getAttribute('alt')).includes('덮은 그릇'));
     const nightRecord = page.locator('.po-record').filter({has:page.getByText('열 번째 재앙', {exact:true})});
     await nightRecord.locator('summary').click();
+    await nightRecord.locator('img').waitFor();
+    assert.equal(await prepEntry.getAttribute('open'), null);
     assert.equal(await nightRecord.locator('p').first().innerText(), nightText);
     assert.equal(await nightRecord.locator('.ref').first().innerText(), nightChip);
     await tap('시간표로 돌아가기');
