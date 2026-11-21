@@ -26,6 +26,36 @@ async function play(browser, url, age) {
       ['plague-hail'], ['plague-locusts'], ['plague-darkness','plague-light']
     ];
     const checkArt = () => page.locator('.po-picture img').evaluate(async img => { await img.decode(); return img.naturalWidth > 0; });
+    async function inspectPicture(name) {
+      const trigger = button(name + ' 그림 확대');
+      const progress = await page.locator('.po-trail strong').innerText();
+      const state = () => page.evaluate(() => JSON.stringify(BO.app2d.state.passover));
+      const before = await state();
+      await trigger.tap({position:{x:12,y:12}});
+      const dialog = page.getByRole('dialog', {name});
+      const map = dialog.getByRole('button', {name:'확대할 위치 선택'});
+      assert(await map.evaluate(el => document.activeElement === el));
+      const offset = () => dialog.locator('.po-lens-frame img').evaluate(el => el.style.transform);
+      const origin = await offset();
+      await page.keyboard.press('ArrowRight');
+      assert.notEqual(await offset(), origin);
+      const bounds = await map.boundingBox();
+      await page.touchscreen.tap(bounds.x + bounds.width*.95, bounds.y + bounds.height*.95);
+      assert.equal(await offset(), 'translate(-50%, -50%)');
+      if (age === 0 && name === '개구리') {
+        await page.touchscreen.tap(bounds.x + bounds.width*.32, bounds.y + bounds.height*.86);
+        await page.screenshot({path:path.join(output,'frog-lens.png')});
+      }
+      const close = button('그림 닫기');
+      assert(await close.evaluate(el => {
+        const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight;
+      }));
+      if (age === 1) await page.keyboard.press('Escape');
+      else await close.tap();
+      assert(await trigger.evaluate(el => document.activeElement === el));
+      assert.equal(await state(), before);
+      assert.equal(await page.locator('.po-trail strong').innerText(), progress);
+    }
     async function resume() { await page.reload(); await tap('이어서 탐험하기'); }
     async function reviewNotes(total, name, escape) {
       const before = await page.evaluate(() => JSON.stringify(BO.app2d.state.passover));
@@ -47,18 +77,25 @@ async function play(browser, url, age) {
       assert(await button('본 재앙 보기').evaluate(el => el === document.activeElement));
       assert.equal(await page.evaluate(() => JSON.stringify(BO.app2d.state.passover)), before);
     }
+    const review = (await fs.readFile(path.resolve('docs/인계/열재앙_배치재검토_Claude.md'), 'utf8')).split('## 6. 대표 결정 P1')[1];
+    const approved = [...review.matchAll(/^\| 재앙 \d 요약 \| ([^|]+?) \| [^|]+? \| "([^"]+)" \|$/gm)];
+    assert.equal(approved.length, 9);
+    const [, nightRef, nightText] = review.match(/^\| 열 번째 재앙 [^|]* \| ([^|]+?) \| [^|]+? \| "([^"]+)" \|$/m);
+    const nightChip = nightRef.replaceAll(', 12:', ', ');
     await page.goto(url);
     await tap('탐험 시작');
     await page.locator('.tier').nth(age).tap();
     await tap('출발 준비 완료');
     await tap('열 가지 재앙과 유월절 · 감수용 미리보기');
     for (const [i, name] of names.entries()) {
+      assert(await page.getByText(approved[i][1], {exact:true}).isVisible());
+      assert(await page.getByText(approved[i][2], {exact:true}).isVisible());
       const places = {0:['강물','강가'], 3:['애굽의 집','고센 땅'], 8:['애굽 땅','이스라엘 자손이 사는 곳']}[i];
       const next = button(i === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기');
       const progress = page.locator('.po-trail strong');
       assert.equal(await page.locator('.po-segments i').count(), 9);
       assert.equal(await page.locator(places ? '.po-title h2' : '.po-body h3').innerText(), (i+1) + '번째 재앙 · ' + name);
-      assert((await page.locator('.po-title').innerText()).includes(['강과 땅','애굽과 고센','하늘과 어둠'][Math.floor(i/3)]));
+      assert((await page.locator('.po-title').innerText()).includes(['강과 땅','사람과 가축','하늘과 어둠'][Math.floor(i/3)]));
       assert.equal(await progress.innerText(), (i + (places ? 0 : 1)) + ' / 9 기록');
       if (places) {
         assert(await next.isDisabled());
@@ -93,10 +130,12 @@ async function play(browser, url, age) {
         const firstView = await page.locator('.po-land').getAttribute('data-view');
         assert(await next.isDisabled());
         await resume();
+        assert.equal(await page.locator('.po-return-note').innerText(), '이어서 보는 곳 · ' + first);
         assert.equal(await button('✓ '+first).getAttribute('aria-pressed'), 'true');
         assert.equal(await page.locator('.po-detail b').innerText(), first);
         assert.equal(await progress.innerText(), i + ' / 9 기록');
         await tap('✓ '+first);
+        assert.equal(await page.locator('.po-return-note').count(), 0);
         assert(await next.isDisabled());
         assert((await page.locator('.po-spot-hint').innerText()).includes(second));
         if (age === 0) {
@@ -120,20 +159,27 @@ async function play(browser, url, age) {
         }
       } else {
         await assertArt(views[i][0]);
+        await inspectPicture(name);
+        assert((await page.locator('.po-picture img').getAttribute('alt')).length > 0);
         assert.equal(await page.locator('.po-spots').count(), 0);
-        if (i === 5) await resume();
+        if (i === 5) {
+          await resume();
+          assert.equal(await page.locator('.po-return-note').innerText(), '앞서 본 재앙 · 가축의 돌림병');
+          if (age === 0) await page.screenshot({path:path.join(output,'return-to-kiln.png')});
+        }
         assert(await checkArt());
       }
       assert(await next.isEnabled());
       assert.equal(await progress.innerText(), (i+1) + ' / 9 기록');
       assert.equal(await page.locator('.po-segments .filled').count(), i+1);
-      assert.equal(await page.locator('.po-finding').isVisible(), age !== 0 || ![0,2,3,7,8].includes(i));
+      assert.equal(await page.locator('.po-finding').isVisible(), age !== 0 || ![0,2,3,5,7,8].includes(i));
       if (age === 0 && i === 6) await page.screenshot({path:path.join(output,'plague-trail.png')});
       await tap(i === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기');
     }
     assert(await checkArt());
     assert.deepEqual(await page.locator('.po-chips li').allTextContents(), ['미발견','미발견','미발견']);
     await assertArt('ex07-room');
+    assert((await page.locator('.po-picture img').getAttribute('alt')).includes('덮은 그릇'));
     assert((await page.locator('.po-clue').innerText()).includes('그 밤 한밤중이 되기 전'));
     const pins = page.locator('.po-pins button');
     for (const pin of await pins.all()) {
@@ -148,13 +194,16 @@ async function play(browser, url, age) {
     assert.equal(await page.locator('.po-chips .found').count(), 0);
     await touchPicture(.44,.72);
     await resume();
+    assert.equal(await page.locator('.po-return-note').innerText(), '이어서 보는 단서 · 식탁');
     assert(await button('식탁 단서 다시 보기').isVisible());
     assert.equal(await page.locator('.po-clue b').innerText(), '식탁');
+    assert.equal(await page.locator('.po-clue .ref').innerText(), '출 12:8');
     assert(await button('단서 2개 더 찾아보세요 · 1/3').isDisabled());
     await reviewNotes(9, '9번째 · 흑암', false);
     await tap('식탁 단서 다시 보기');
     assert.equal(await page.locator('.po-chips .found').count(), 1);
     await touchPicture(.81,.80);
+    assert.equal(await page.locator('.po-clue .ref').innerText(), '출 12:11, 28');
     assert(await button('단서 1개 더 찾아보세요 · 2/3').isDisabled());
     await button('왼쪽 단서 살펴보기').focus();
     await page.keyboard.press('Enter');
@@ -168,7 +217,8 @@ async function play(browser, url, age) {
     assert.equal(await page.locator('.po-body h3').innerText(), '열 번째 재앙');
     await assertArt('plague-midnight');
     assert.equal(await button('본 재앙 보기').count(), 0);
-    assert((await page.locator('.po-body').innerText()).includes('피를 바른 이스라엘 자손의 집에는 재앙이 내려 멸하는 일이 없었어요.'));
+    assert.equal(await page.locator('.po-body > p').first().innerText(), nightText);
+    assert.equal(await page.locator('.po-body .ref').first().innerText(), nightChip);
     assert.equal(await page.locator('.po-trail, .po-chips, .po-pins, .po-finding').count(), 0);
     if (age === 0) await page.screenshot({path:path.join(output,'midnight.png')});
     await tap('바로의 소식 읽기');
@@ -176,18 +226,21 @@ async function play(browser, url, age) {
     await resume();
     assert(await page.locator('.po-summons').isVisible());
     await tap('떠나는 길 살펴보기');
+    await assertArt('plague-departure');
+    if (age === 0) await page.screenshot({path:path.join(output,'departure-road.png')});
     assert.equal(await page.locator('.po-trail, .po-chips, .po-pins, .po-finding').count(), 0);
     assert(!(await page.locator('.po-screen').innerText()).includes('✓'));
     await tap('탐험 기록 다시 읽기');
     assert.equal(await page.locator('.po-record').count(), 14);
     const nightRecord = page.locator('.po-record').filter({has:page.getByText('열 번째 재앙', {exact:true})});
     await nightRecord.locator('summary').click();
-    assert((await nightRecord.innerText()).includes('피를 바른 이스라엘 자손의 집에는 재앙이 내려 멸하는 일이 없었어요.'));
+    assert.equal(await nightRecord.locator('p').first().innerText(), nightText);
+    assert.equal(await nightRecord.locator('.ref').first().innerText(), nightChip);
     await tap('시간표로 돌아가기');
     await tap('일지 1');
     await tap('열 가지 재앙과 유월절 · 탐험 기록');
     await page.getByText('흑암', { exact:true }).tap();
-    assert(await page.getByText('출 10:21-29', { exact:true }).isVisible());
+    assert(await page.getByText('출 10:21-23', { exact:true }).isVisible());
     await tap('일지로 돌아가기');
     assert(await page.getByText('탐험 일지', {exact:true}).isVisible());
     await page.locator('.page-head button').first().click();
