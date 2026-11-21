@@ -182,7 +182,7 @@
     show(el('div', { class: 'screen page' },
       pageHead('탐험 일지', back, sceneId ? '말씀 카드로 돌아가기' : '돌아가기'),
       el('div', { class: 'page-body pad' },
-        app.passover.completed() ? el('button', { class: 'btn wide onpaper', on: { click: function () { app.passover.open(function () { renderJournal(back, sceneId); }, '일지'); } } }, '열 가지 재앙과 유월절 · 탐험 기록') : null,
+        app.passover.completed() ? el('button', { class: 'btn wide onpaper', on: { click: function () { app.passover.open(function () { renderJournal(back, sceneId); }, '일지', true); } } }, '열 가지 재앙과 유월절 · 탐험 기록') : null,
         groups.length ? el('section', { class: 'journal-clues' }, el('h3', { text: '내가 찾은 단서' }), groups) : null,
         el('section', {}, el('h3', { text: '말씀 카드 ' + app.state.cards.length + '장' }),
           app.state.cards.length ? el('div', { class: 'vcards' }, app.state.cards.map(function (c) { return cardNode(c, null, false); }))
