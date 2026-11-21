@@ -180,10 +180,10 @@ BO3D.gameModules.story = function (G) {
     var bx = G.P.bush[0], bz = G.P.bush[1], mx = G.P.mosesEnd[0], mz = G.P.mosesEnd[1];
     if (b.focus === 'moses') G.camLookT.set(mx * 0.75 + bx * 0.25, G.H(mx, mz) + 1.3, mz * 0.75 + bz * 0.25);
     else G.camLookT.set(bx * 0.7 + mx * 0.3, G.H(bx, bz) + 1.2, bz * 0.7 + mz * 0.3);
-    G.showPanel([G.el('div', { class: 'q-kicker', text: '지켜보기 ' + (G.evIdx - 1) + ' / ' + (G.SC.beats.length - 2) }), G.beatNodes(b),
-      last ? G.btn(G.C3.sharon.reviewTitle, startSharonReview, 'plain') : null],
+    // 지켜보는 화면에는 샤론이 나오지 않는다. 다 지켜본 뒤 늘 '샤론과 돌아보기'로 간다 ('건너뛰기' 있음. docs/11 4절, 7.1).
+    G.showPanel([G.el('div', { class: 'q-kicker', text: '지켜보기 ' + (G.evIdx - 1) + ' / ' + (G.SC.beats.length - 2) }), G.beatNodes(b)],
       [G.evIdx > 2 ? G.btn('이전', function () { G.evIdx--; showBeat(); }, 'plain') : null,
-        G.btn(last ? '다음으로 가는 관문' : '다음', function () { if (last) startGates(); else { G.evIdx++; showBeat(); } })]);
+        G.btn(last ? '다음으로 가는 관문' : '다음', function () { if (last) startSharonReview(); else { G.evIdx++; showBeat(); } })]);
   }
 
   function startSharonReview() {

@@ -1,6 +1,7 @@
 // 호렙의 첫 부품을 실제로 얻은 다음 다시 열어 복원한다. 그 저장으로 나머지 구간과 예외도 확인한다.
 const { chromium } = require('playwright');
 const { gameOrigin, proxy } = require('../game-server');
+const { passSharonIntro } = require('../photograph-flock');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -43,10 +44,18 @@ async function checkJourney(page, url) {
     await sheepPhoto();
     await resume();
   }
+  // 자기소개를 다 보기 전에 닫았으면 다시 연다. 물음까지 본 뒤에는 바로 물음으로 돌아온다.
+  await passSharonIntro(page);
+  assert.deepEqual((await snapshot()).signal, { part: 0, step: 'question' });
+  await resume();
   await page.locator('[data-detector-quiz="0"]').waitFor();
+  assert.equal(await page.locator('[data-sharon-intro]').count(), 0, '본 자기소개는 다시 나오지 않는다');
   const first = await page.evaluate(() => BO.content3d.horeb.quiz[0]);
-  await button(first.q.t2.options.find(o => o.ok).label).click();
-  if (await button('다음').isVisible()) { await button('다음').click(); await button('계속 탐험하기').click(); }
+  await button(first.q.t2.options.find(o => o.ok).label).click(); await resume();
+  assert.equal((await snapshot()).signal.step, 'reference');
+  await button('다음').click(); await resume();
+  assert.equal((await snapshot()).signal.step, 'sharon');
+  await button('계속 탐험하기').click();
   await state('explore');
   if (!(await page.evaluate(() => BO3D.debug.dex())).includes('sheep')) await sheepPhoto();
   await resume(); await state('explore');

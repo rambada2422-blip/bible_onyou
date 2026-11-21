@@ -20,7 +20,7 @@
 .hud3 .count.pulse { animation: pulse3 .6s ease; }
 @keyframes pulse3 { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
 .hud3 .obj { align-self: flex-start; display: flex; align-items: center; gap: 8px; max-width: 100%; font-size: 15px; line-height: 1.35; color: var(--paper); background: rgba(14, 23, 48, .72); padding: 7px 13px; border-radius: 14px; backdrop-filter: blur(4px); }
-.hud3 .sharon-help { align-self: flex-start; pointer-events: auto; min-height: 44px; padding: 6px 14px; background: var(--paper); color: var(--ink); }
+.hud3 .flock-help { align-self: flex-start; pointer-events: auto; min-height: 44px; padding: 6px 14px; background: var(--paper); color: var(--ink); }
 .hud3 .obj svg { width: 20px; height: 20px; flex: none; color: var(--brass); }
 
 .stick { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; background: rgba(14, 23, 48, .28); box-shadow: inset 0 0 0 2px rgba(251, 247, 238, .55); pointer-events: none !important; }

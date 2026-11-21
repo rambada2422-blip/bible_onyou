@@ -39,7 +39,7 @@ async function enterAwe(page, tier) {
   })), tier);
   for (const [index, { at, correct }] of quiz.entries()) {
     await click(correct);
-    if (index > 0) { await click('다음'); await click('계속 탐험하기'); }
+    await click('다음'); await click('계속 탐험하기');
     await page.waitForFunction(() => BO3D.debug.state().state === 'explore');
     await page.evaluate(([x, z]) => BO3D.debug.goto(x, z), at);
     await page.waitForFunction(() => BO3D.debug.state().state === 'caption');
