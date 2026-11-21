@@ -188,6 +188,12 @@ async function play(browser, url, age) {
         } else await tap(second);
         assert.equal(await page.locator('.po-spot-hint').innerText(), '두 곳을 살펴봤어요.');
         await assertArt(views[i][places.indexOf(second)]);
+        if (i === 0) {
+          await tap(second + ' 그림 확대');
+          assert.equal(await page.getByRole('dialog',{name:second,exact:true}).locator('.po-lens-frame img').count(),1);
+          await tap('그림 닫기');
+          await page.locator('.po-scroll').evaluate(pane=>pane.scrollTop=0);
+        }
         assert.notEqual(await page.locator('.po-land').getAttribute('data-view'), firstView);
         if (height <= 568) {
           assert(await page.locator('.po-detail > p').first().evaluate(p => {
@@ -260,6 +266,16 @@ async function play(browser, url, age) {
     assert.equal(await page.locator('.po-clue .ref').innerText(), '출 12:8');
     assert(await button('단서 2개 더 찾아보세요 · 1/3').isDisabled());
     await reviewNotes(9, '9번째 · 흑암', false);
+    const beforeZoom = await page.evaluate(() => JSON.stringify(BO.app2d.state.passover));
+    await tap('식탁 그림 확대');
+    const mealLens = page.getByRole('dialog',{name:'식탁',exact:true});
+    assert((await mealLens.locator('.po-lens-frame img').getAttribute('alt')).includes('무교병'));
+    const marker = await mealLens.locator('.po-lens-marker').evaluate(el => [parseFloat(el.style.left),parseFloat(el.style.top)]);
+    assert(Math.abs(marker[0]-19)<.1 && Math.abs(marker[1]-47)<.1);
+    if (age === 0) await page.screenshot({path:path.join(output,'table-detail.png')});
+    await tap('그림 닫기');
+    assert.equal(await page.evaluate(() => JSON.stringify(BO.app2d.state.passover)),beforeZoom);
+    assert.equal(await page.locator('.po-clue b').innerText(),'식탁');
     await tap('식탁 단서 다시 보기');
     assert.equal(await page.locator('.po-chips .found').count(), 1);
     await touchPicture(.81,.80);

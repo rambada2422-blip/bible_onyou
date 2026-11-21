@@ -482,9 +482,6 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-pin::before { content: ''; position: absolute; z-index: -1; inset: 10px; background: #ffdf96; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 3px #745027a8, 0 0 10px 4px #ffd380a8; }
 .po-pin[aria-pressed="true"]::before { background: #153e38; }
 .po-pin[aria-pressed="true"] { color: white; }
-.po-pin:nth-child(1) { left: max(25px, 9%); top: 48%; }
-.po-pin:nth-child(2) { left: 44%; top: 72%; }
-.po-pin:nth-child(3) { left: 81%; top: 80%; }
 .po-meal .po-body { gap: 8px; padding-block: 10px 14px; align-content: start; }
 .po-chips { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; padding: 0; margin: 0; list-style: none; }
 .po-chips li { text-align: center; border: 1px dashed var(--paper-line); border-radius: 24px; color: var(--text-soft); font-size: 13px; padding: 3px; }
@@ -632,3 +629,7 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 
 .po-hub-entry { flex-direction: column; gap: 3px; }
 .po-hub-entry small { font: 14px/1.4 var(--f-body); }
+
+.po-chips li { display: grid; align-items: center; padding: 0; }
+.po-clue-zoom { display: flex; justify-content: center; align-items: center; gap: 3px; min-height: 44px; padding: 2px; color: var(--ink); }
+.po-clue-zoom svg { width: 15px; height: 15px; }
