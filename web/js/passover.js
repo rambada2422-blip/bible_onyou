@@ -107,8 +107,40 @@
     });
     return entry;
   }
-  function showPlagueNotes(trigger, count, returnLabel) {
+  function openDialog(trigger, dialog, focus) {
     app.narration.stop();
+    trigger.closest('.screen').append(dialog);
+    dialog.addEventListener('close', function () {
+      dialog.remove(); trigger.focus({preventScroll:true});
+    }, {once:true});
+    dialog.showModal();
+    focus.focus({preventScroll:true});
+  }
+  function recallFirstScenes(trigger) {
+    var rows = plagues.slice(0,3);
+    var art = [lookouts[0][0].art,shortViews[1],shortViews[2]];
+    var title = el('h2', {id:'po-recall-title',tabindex:'-1'}, '강과 땅 · 그림 순서');
+    var dialog = el('dialog', {class:'po-notes po-recall','aria-labelledby':title.id});
+    var orders = [[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+    function note(ref, text) { return el('div', {}, app.refChip(ref), el('p', {}, text)); }
+    var q = {items:rows.map(function (row) { return row[0]; }), ref:'출 7:19–8:19',
+      prompt:'첫째 묶음에서 본 차례대로 세 그림을 눌러 보세요.'};
+    var exercise = BO.orderQuestion(q, function () {
+      dialog.classList.add('po-ordered');
+      var feedback = dialog.querySelector('[role="status"]');
+      feedback.tabIndex = -1;
+      feedback.focus({preventScroll:true});
+    }, {
+      el:el, goodNote:note, lookNote:note, showInOrder:true, order:orders[Math.floor(Math.random()*orders.length)],
+      label:function (name, i) { return el('span', {class:'po-recall-card'}, app.pic(art[i], '', ''), el('span', {}, name)); }
+    });
+    var records = el('details', {class:'po-recall-reference'}, el('summary', {}, '기록 순서 펼쳐 보기'),
+      el('ol', {}, rows.map(function (row) { return el('li', {}, row[0], ' ', app.refChip(row[1])); })));
+    dialog.append(title, el('div', {class:'po-recall-body'}, exercise, records),
+      button('탐험으로 돌아가기', function () { dialog.close(); }));
+    openDialog(trigger,dialog,title);
+  }
+  function showPlagueNotes(trigger, count, returnLabel) {
     var dialog = el('dialog', {class:'po-notes', 'aria-labelledby':'po-notes-title'});
     var close = button(returnLabel || '탐험으로 돌아가기', function () { dialog.close(); });
     var list = el('div', {class:'po-note-list'});
@@ -119,13 +151,7 @@
     });
     var title = el('h2', {id:'po-notes-title', tabindex:'-1'}, '지금까지 본 재앙');
     dialog.append(title, list, close);
-    trigger.closest('.screen').append(dialog);
-    dialog.addEventListener('close', function () {
-      dialog.remove();
-      trigger.focus({preventScroll:true});
-    }, {once:true});
-    dialog.showModal();
-    title.focus({preventScroll:true});
+    openDialog(trigger,dialog,title);
   }
   function availablePlagues() {
     var s = app.state.passover;
@@ -144,7 +170,6 @@
   function pictureLens(picture, art, step) {
     var img = picture.firstElementChild;
     var trigger = button(el('span', {}, '그림 확대'), function (event) {
-      app.narration.stop();
       var dialog = el('dialog', {class:'po-lens', 'aria-labelledby':'po-lens-title'});
       var frame = el('div', {class:'po-lens-frame'}, app.pic(art, '', img.alt));
       frame.firstElementChild.draggable = false;
@@ -199,10 +224,7 @@
       dialog.append(el('div', {class:'po-lens-head'}, el('h2', {id:'po-lens-title'}, plagues[step][0]), close),
         frame, el('p', {id:'po-lens-help'}, '큰 그림을 끌거나 작은 그림을 눌러 옮겨 보세요. 방향키로도 옮길 수 있어요.',
           el('span', {class:'sr-only'}, ' Enter로 가운데로 돌아갈 수 있어요.')), map, where);
-      trigger.closest('.po-screen').append(dialog);
-      dialog.addEventListener('close', function () { dialog.remove(); trigger.focus({preventScroll:true}); }, {once:true});
-      dialog.showModal();
-      map.focus({preventScroll:true});
+      openDialog(trigger,dialog,map);
     }, 'po-lens-open');
     trigger.setAttribute('aria-label', plagues[step][0] + ' 그림 확대');
     trigger.setAttribute('aria-haspopup', 'dialog');
@@ -325,6 +347,9 @@
         markRecorded(!spots);
         body.append(trail);
         var nextPlague = button(step === 8 ? '유월절을 준비하는 집으로' : '다음 재앙 살펴보기', advance);
+        if (step === 2) foot.push(button('그림 순서 놓기', function (event) {
+          recallFirstScenes(event.currentTarget);
+        }, 'btn plain po-order-open'));
         foot.push(nextPlague);
         if (spots) {
           // 이전 판에서 이미 이름을 맞힌 기록도 다음 장면으로 곧바로 이어진다.

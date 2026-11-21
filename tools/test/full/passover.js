@@ -26,6 +26,30 @@ async function play(browser, url, age) {
       ['plague-hail'], ['plague-locusts'], ['plague-darkness','plague-light']
     ];
     const checkArt = () => page.locator('.po-picture img').evaluate(async img => { await img.decode(); return img.naturalWidth > 0; });
+    async function tryPictureOrder() {
+      const before = await page.evaluate(() => JSON.stringify(BO.app2d.state.passover));
+      await tap('그림 순서 놓기');
+      const dialog = page.getByRole('dialog', {name:'강과 땅 · 그림 순서'});
+      const cards = dialog.locator('.opt');
+      const labels = await cards.locator('.po-recall-card > span').allTextContents();
+      assert.notDeepEqual(labels,names.slice(0,3));
+      const choose = name => cards.filter({has:page.getByText(name,{exact:true})}).tap();
+      for (const name of [names[1],names[0],names[2]]) await choose(name);
+      assert((await dialog.getByRole('status').innerText()).includes('다시 눌러 보세요.'));
+      assert.equal(await cards.locator('img').count(),3);
+      await dialog.locator('summary').tap();
+      assert.deepEqual(await dialog.locator('li .ref').allInnerTexts(), approved.slice(0,3).map(row => row[1]));
+      await tap('다시 놓기');
+      for (const name of names.slice(0,3)) await choose(name);
+      assert((await dialog.getByRole('status').innerText()).includes('성경에 기록된 순서예요.'));
+      assert.deepEqual(await cards.locator('.po-recall-card > span').allTextContents(),names.slice(0,3));
+      if (age === 0) await page.screenshot({path:path.join(output,'three-scene-recall.png')});
+      await tap('탐험으로 돌아가기');
+      assert(await button('그림 순서 놓기').evaluate(el => document.activeElement === el));
+      await tap('그림 순서 놓기'); await choose(names[1]); await page.keyboard.press('Escape');
+      assert(await button('다음 재앙 살펴보기').isEnabled());
+      assert.equal(await page.evaluate(() => JSON.stringify(BO.app2d.state.passover)), before);
+    }
     async function inspectPicture(name) {
       const trigger = button(name + ' 그림 확대');
       const progress = await page.locator('.po-trail strong').innerText();
@@ -163,6 +187,13 @@ async function play(browser, url, age) {
         assert.equal(await page.locator('.po-spot-hint').innerText(), '두 곳을 살펴봤어요.');
         await assertArt(views[i][places.indexOf(second)]);
         assert.notEqual(await page.locator('.po-land').getAttribute('data-view'), firstView);
+        if (height <= 568) {
+          assert(await page.locator('.po-detail > p').first().evaluate(p => {
+            const range = document.createRange(); range.selectNodeContents(p);
+            const line = range.getClientRects()[0], pane = p.closest('.po-scroll').getBoundingClientRect();
+            return line.top >= pane.top - 1 && line.bottom <= pane.bottom + 1;
+          }), '고른 장소의 첫 문장이 화면에 보여야 한다');
+        }
         assert(await checkArt());
         if (age === 0) {
           assert((await page.locator('.po-guide').innerText()).endsWith('세요.'));
@@ -194,6 +225,8 @@ async function play(browser, url, age) {
         }
         assert(await checkArt());
       }
+      if (i === 2) await tryPictureOrder();
+      else assert.equal(await button('그림 순서 놓기').count(), 0);
       assert(await next.isEnabled());
       assert.equal(await progress.innerText(), (i+1) + ' / 9 기록');
       assert.equal(await page.locator('.po-segments .filled').count(), i+1);
