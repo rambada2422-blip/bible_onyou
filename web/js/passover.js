@@ -222,7 +222,7 @@
       if (spots) caption += ' · ' + chapter;
       var h = el('h2', {tabindex:'-1'}, spots ? plagueTitle : chapter);
       var body = el('div', {class:'po-body'}), foot = [];
-      var alt = {10:'한밤중 사람이 없는 집의 닫힌 문', 11:'꾸러미를 멘 어른들과 아이가 양과 소와 함께 마을을 떠나는 뒷모습'};
+      var alt = {10:'한밤중 사람이 없는 집의 닫힌 문', 11:'밤길에 꾸러미를 멘 어른들과 아이가 양과 소와 함께 마을을 떠나는 뒷모습'};
       var picture = el('div', {class:'po-picture'}, spots ? null : app.pic(art, '', alt[step] || ''));
       var land = el('div', {class:'po-land'}, spots ? null : picture,
         el('div', {class:'po-title'}, el('small', {}, caption), h));
