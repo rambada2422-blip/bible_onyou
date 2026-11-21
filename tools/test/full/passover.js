@@ -89,6 +89,7 @@ async function play(browser, url, age) {
     async function resume() { await page.reload(); await tap('이어서 탐험하기'); }
     async function reviewNotes(total, name, escape) {
       const before = await page.evaluate(() => JSON.stringify(BO.app2d.state.passover));
+      assert.equal(await button('본 재앙 보기').getAttribute('aria-haspopup'),'dialog');
       await tap('본 재앙 보기');
       const dialog = page.getByRole('dialog', {name:'지금까지 본 재앙'});
       assert.equal(await dialog.locator('summary').count(), total);
@@ -100,7 +101,14 @@ async function play(browser, url, age) {
       assert(await entry.locator('img').evaluateAll(async images => {
         await Promise.all(images.map(img => img.decode())); return images.every(img => img.naturalWidth);
       }));
-      if (age === 0 && total === 3) await page.screenshot({path:path.join(output,'field-notes.png')});
+      if (total === 3) {
+        const bank = entry.locator('figure').filter({has:page.getByText('강가',{exact:true})});
+        assert.equal(await bank.locator('p').innerText(), '애굽 사람들은 마실 물을 찾으려고 강 둘레를 팠어요.');
+        assert.equal(await bank.locator('.ref').innerText(), '출 7:24');
+        assert.equal(await entry.locator('summary + .po-note-places').count(), 1);
+        await bank.scrollIntoViewIfNeeded();
+        if (age === 0) await page.screenshot({path:path.join(output,'field-notes.png')});
+      }
       if (escape) await page.keyboard.press('Escape');
       else await tap('탐험으로 돌아가기');
       await dialog.waitFor({state:'detached'});
