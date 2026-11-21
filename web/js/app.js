@@ -11,7 +11,7 @@
 
   /* ════════════ 처음 화면 ════════════ */
   function continueJourney() {
-    if (app.passover.resuming()) { app.passover.open(renderHub); return; }
+    if (app.passover.resuming()) { openPassover(); return; }
     var journey = app.savedJourney();
     if (journey) runScene(journey.id, journey);
     else renderHub();
@@ -71,6 +71,14 @@
   }
 
   /* ════════════ 시간표 ════════════ */
+  function openPassover(offset) {
+    app.passover.open(function () {
+      renderHub();
+      var entry = document.getElementById('passover-entry');
+      if (offset !== undefined) entry.closest('.hub-body').scrollTop = offset;
+      entry.focus({preventScroll:offset !== undefined});
+    });
+  }
   function renderHub() {
     var nextId = null;
     var detours = C.route.options.filter(function (option) {
@@ -98,6 +106,11 @@
         toggle.textContent = expand ? '갈 수 있는 장면만 보기' : '전체 여정 보기';
       } } }, '전체 여정 보기');
     var c = C.chars[app.state.char], t = tierInfo();
+    var previewLabel = '열 가지 재앙과 유월절 · 감수용 미리보기', hint = app.passover.hubHint();
+    var preview = el('button', {id:'passover-entry', class:'btn wide po-hub-entry',
+      'aria-labelledby':'passover-entry-label', 'aria-describedby':hint ? 'passover-entry-hint' : null,
+      on:{click:function () { openPassover(preview.closest('.hub-body').scrollTop); }}}, el('span', {id:'passover-entry-label'}, previewLabel),
+      hint ? el('small', {id:'passover-entry-hint'}, hint) : null);
     var entryCount = app.state.cards.length + writtenNotes().length + (app.passover.hasJournal() ? 1 : 0);
     C.route.options.forEach(function (option) { entryCount += app.journalClues(option.to).length; });
     show(el('div', { class: 'screen sky hub' },
@@ -114,7 +127,7 @@
         detours.map(function (option) {
           return el('button', { class: 'btn wide', on: { click: function () { depart(option.to); } } }, option.label + ' · 이어서 탐험하기');
         }),
-        el('button', { class: 'btn wide', on: { click: function () { app.passover.open(renderHub); } } }, '열 가지 재앙과 유월절 · 감수용 미리보기'),
+        preview,
         locked.length ? toggle : null,
         el('ol', { class: 'tl', id: 'journey-list' }, items),
         el('p', { class: 'hub-note', text: '본편 세 장면을 탐험할 수 있어요. 재앙과 유월절은 감수용 미리보기에서 살펴보세요.' }),

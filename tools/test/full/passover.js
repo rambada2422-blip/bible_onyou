@@ -159,6 +159,8 @@ async function play(browser, url, age) {
         if (i === 3) {
           await reviewNotes(3, '1번째 · 물이 피가 됨', true);
           await tap('← 시간표');
+          assert.equal(await page.locator('#passover-entry-hint').innerText(), '이어서 · 4번째 재앙 · 파리');
+          assert(await page.locator('#passover-entry').evaluate(el => el === document.activeElement));
           const saved = await page.evaluate(() => JSON.stringify(BO.app2d.state.passover));
           await tap('일지 1'); await tap('지금까지 본 재앙 · 3개');
           assert.equal(await page.getByRole('dialog').locator('summary').count(), 3);
@@ -302,6 +304,7 @@ async function play(browser, url, age) {
     assert.equal(await nightRecord.locator('p').first().innerText(), nightText);
     assert.equal(await nightRecord.locator('.ref').first().innerText(), nightChip);
     await tap('시간표로 돌아가기');
+    assert.equal(await page.locator('#passover-entry-hint').innerText(), '탐험 기록 다시 읽기');
     await tap('일지 1');
     await tap('열 가지 재앙과 유월절 · 탐험 기록');
     await page.getByText('흑암', { exact:true }).tap();

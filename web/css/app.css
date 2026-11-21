@@ -629,3 +629,6 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 }
 
 .po-recall.po-ordered .q-prompt, .po-recall.po-ordered .order-hint, .po-recall.po-ordered .btn.plain { display: none; }
+
+.po-hub-entry { flex-direction: column; gap: 3px; }
+.po-hub-entry small { font: 14px/1.4 var(--f-body); }

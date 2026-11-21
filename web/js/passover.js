@@ -273,6 +273,18 @@
     body.append(chips, detail, next);
     reveal(lastMealClue(s));
   }
+  function hubHint() {
+    var s = app.state.passover;
+    if (!valid(s) || (s.step === 0 && !s.observed && !s.matched)) return '';
+    if (s.step < 9) return '이어서 · ' + (s.step+1) + '번째 재앙 · ' + plagues[s.step][0];
+    if (s.step === 9) {
+      var remaining = preparation.filter(function (_, i) { return !(s.seen & (1 << i)); }).length;
+      return remaining ? '유월절 준비 · 남은 단서 ' + remaining + '개' : '유월절 준비 · 그 밤의 기록으로';
+    }
+    if (s.step === 10) return s.summons ? '이어서 읽기 · 바로의 부름' : '이어서 읽기 · 그 밤';
+    if (s.step === 11) return '이어서 읽기 · 애굽을 떠나다';
+    return '탐험 기록 다시 읽기';
+  }
   function returnContext(s) {
     if (!valid(s)) return '';
     if (s.step === 9) {
@@ -446,7 +458,7 @@
     }
     render(false);
   }
-  app.passover = {open:open, completed:completed, hasJournal:function () { return completed() || availablePlagues() > 0; }, journalButton:journalButton, resuming:function () {
+  app.passover = {open:open, completed:completed, hubHint:hubHint, hasJournal:function () { return completed() || availablePlagues() > 0; }, journalButton:journalButton, resuming:function () {
     return valid(app.state.passover) && app.state.passover.active === true;
   }};
 })();
