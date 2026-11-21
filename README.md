@@ -1,3 +1,3 @@
 # Gemini 플레이테스트 자료
 
-게임 브랜치 gpt/exodus-scripture-review의 e4a604b에서 가져온 검토 자료입니다. docs/인계/열재앙_본문검토반영_GPT.md와 그 문서에 연결된 그림·화면 사진을 먼저 확인하세요. docs/인계/사진/본문검토_흑암과마지막밤.jpg는 흑암의 두 장소와 마지막 밤 화면입니다. 실제 기기에서 첫 화면을 누르는 방법은 web/js/passover.js에서 확인할 수 있습니다. 이 묶음에는 게임 실행용 빌드 도구가 들어 있지 않습니다.
+GPT 게임 브랜치 gpt/exodus-field-notes의 c3b676e 검토본이다. Claude의 본문 검토를 반영한 e4a604b를 포함한다. docs/인계/열재앙_본문검토반영_GPT.md, docs/인계/재앙_탐험중_다시보기_GPT.md와 docs/인계/사진의 실제 화면을 확인한다. 관찰 자료와 코드에서 추론한 점을 구분한다. 전체 실행용 게임은 gpt/exodus-field-notes 브랜치에 있다.

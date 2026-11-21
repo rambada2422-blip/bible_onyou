@@ -499,3 +499,15 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .po-river .po-title { position: static; padding: 8px 16px 10px; background: var(--ink); }
 .po-river .po-title h2 { font-size: 22px; }
 .po-river .po-land[data-act] .po-title { background: var(--ink); }
+
+.po-notes-toggle[hidden] { display: none; }
+.po-notes { box-sizing: border-box; width: min(430px, calc(100% - 24px)); max-height: 86vh; max-height: 86dvh; padding: 16px; color: var(--ink); background: var(--paper); border: 1px solid var(--paper-line); border-radius: 16px; }
+.po-notes[open] { display: flex; flex-direction: column; gap: 10px; }
+.po-notes::backdrop { background: rgb(12 21 37 / .72); }
+.po-notes h2 { font: 22px/1.3 var(--f-display); margin: 0; }
+.po-note-list { overflow: auto; min-height: 0; overscroll-behavior: contain; }
+.po-notes .btn { flex: none; }
+.po-note-art { display: flex; gap: 6px; margin-bottom: 8px; }
+.po-note-art figure { flex: 1; min-width: 0; margin: 0; }
+.po-note-art img { display: block; width: 100%; border-radius: 6px; }
+.po-note-art figcaption { font-size: 14px; }
