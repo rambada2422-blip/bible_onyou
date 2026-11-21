@@ -29,7 +29,7 @@ BO3D.gameModules.save = function (G) {
       if (s.stage === 'horeb' && s.parts === G.PARTS.length) return null;
       if (['watch', 'gates', 'reward', 'free', 'end'].includes(s.stage) && s.parts !== G.PARTS.length) return null;
       if (s.stage !== 'horeb' || !s.signal || s.signal.part !== s.parts ||
-          !['reference', 'sharon', 'search'].includes(s.signal.step) || (s.parts === 0 && s.signal.step !== 'search')) delete s.signal;
+          !['question', 'reference', 'sharon', 'search'].includes(s.signal.step) || (s.parts > 0 && s.signal.step === 'question')) delete s.signal;
       s.dex = photos(s.dex, G.DEX); s.clues = photos(s.clues, G.JD.clues);
       if (['deduce', 'return'].includes(s.stage) && Object.keys(s.clues).length < G.JD.need[s.tier]) s.stage = 'jordan';
       return s;

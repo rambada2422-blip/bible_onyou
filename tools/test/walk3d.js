@@ -124,12 +124,19 @@ async function runTier(browser, tierIndex, url) {
       if (checkHelp) {
         await sampleFrames('탐험 시작');
         await shot('landing');
-        await p.getByRole('button', { name: '샤론에게 물어보기' }).click();
-        assert((await panel.innerText()).includes('양 떼 쪽으로'));
-        await panel.locator('summary').click();
-        assert.deepEqual(await panel.locator('details p').allTextContents(), sharon.intro[tier]);
+        // 첫 사진을 찍는 방법은 화면 안내다. 샤론은 물음 1 앞에서 처음 나온다 (docs/11 4절, 7.1).
+        await p.getByRole('button', { name: '어떻게 하나요?', exact: true }).click();
+        assert.equal(await panel.locator('.q-kicker').innerText(), '도움말');
+        assert((await panel.innerText()).includes('흰 모서리'));
+        assert(!(await panel.innerText()).includes('양 떼'), 'help must not give the answer of question 1');
+        await noSharon();
+        await shot('flock-help');
         await panelButton('계속 탐험하기');
         await waitState('explore');
+        // 착륙한 자리에서 양 떼를 가운데에 두고 찍으면 거리를 알려 준다.
+        await aim(P.flock[0], P.flock[1]); await snap('far-flock');
+        assert((await p.locator('.toast3').innerText()).endsWith('너무 멀어서 사진에 담기지 않았어요. 더 가까이 가서 찍어 보세요.'));
+        assert.equal((await st()).state, 'explore', 'a far photo must not start the question');
         await aim(P.machine[0], P.machine[1]); await snap('before-flock');
         assert.equal((await st()).state, 'explore', 'a photo without sheep must not start the question');
       }
@@ -140,7 +147,32 @@ async function runTier(browser, tierIndex, url) {
       await waitState('detector');
       assert((await p.evaluate(() => BO3D.debug.dex())).includes('sheep'));
     }
+
+    // 샤론이 처음 말할 때 자기소개를 한다 ('평소' 얼굴. 8~10세는 두 화면). 물음은 그다음이다.
+    async function passIntro(takePhotos) {
+      await panel.locator('[data-sharon-intro]').waitFor();
+      assert.equal(await panel.locator('[data-detector-quiz]').count(), 0);
+      assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
+      const lines = panel.locator('.sharon-line');
+      const names = panel.locator('.sharon-say b');
+      const faces = panel.locator('img.avatar[data-sharon="avatar"]');
+      const firstLines = tier === 't1' ? [sharon.intro[tier][0]] : sharon.intro[tier];
+      assert.deepEqual(await lines.allTextContents(), firstLines);
+      assert.deepEqual(await names.allTextContents(), firstLines.map(() => sharon.name));
+      assert.equal(await faces.count(), firstLines.length);
+      assert(await faces.first().evaluate(async img => { await img.decode(); return img.naturalWidth === 192; }));
+      if (takePhotos) await shot('sharon-intro');
+      if (tier === 't1') {
+        await panelButton('다음');
+        assert.deepEqual(await lines.allTextContents(), [sharon.intro[tier][1]]);
+        assert.equal(await faces.count(), 1);
+        if (takePhotos) await shot('sharon-intro2');
+      }
+      await panelButton('다음');
+      await panel.locator('[data-detector-quiz="0"]').waitFor();
+    }
     await photographFlock(true);
+    await passIntro(true);
 
     async function assertGloss(container, entry) {
       const gloss = container.locator('[data-sharon-gloss]');
@@ -156,13 +188,13 @@ async function runTier(browser, tierIndex, url) {
       assert.equal(await gloss.locator('button, a').count(), 0, 'verse chips must be static');
     }
 
-    async function passWatching(openReview) {
+    async function passWatching() {
       for (let beat = 2; beat < scene.beats.length; beat++) {
         await noSharon();
         await noLegacyLabel();
         assert.equal(await panel.locator('.q-kicker').innerText(), '지켜보기 ' + (beat - 1) + ' / ' + (scene.beats.length - 2));
-        if (openReview && beat === scene.beats.length - 1) await panelButton(sharon.reviewTitle);
-        else await panel.locator('.sheet-foot .btn.onpaper').click();
+        assert.equal(await panel.getByRole('button', { name: sharon.reviewTitle }).count(), 0, 'watching screens must not show Sharon');
+        await panel.locator('.sheet-foot .btn.onpaper').click();
       }
     }
 
@@ -253,27 +285,24 @@ async function runTier(browser, tierIndex, url) {
       const after = await st();
       assert.deepEqual([after.x, after.z], [before.x, before.z], 'quiz must pause player movement');
       await panel.getByRole('button', { name: q.options.find(o => o.ok).label, exact: true }).click();
-      if (index > 0) {
-        assert.equal(await panel.locator('.note.good b').innerText(), '성경에 그렇게 기록되어 있어요.');
-        assert.equal(await panel.locator('.note.good .ref').innerText(), item.okRef[tier]);
-        assert(!(await panel.innerText()).includes('탐험대 이야기'), 'Bible answer and guidance must be separate screens');
-        await noSharon();
-        await noLegacyLabel();
-        await panelButton('다음');
-        assert.equal(await panel.locator('.note.good').count(), 0);
-        assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
-        const found = sharon.found[index];
-        assert.equal(await question.textContent(), tier === 't1' && found.t1 ? found.t1 : found.text);
-        assert.equal(await panel.locator('img.avatar[data-sharon="joy"]').count(), 1);
-        await panelButton('계속 탐험하기');
-      }
+      // 세 물음 모두 성경 표시와 샤론의 안내를 두 화면으로 나눈다 (docs/11 7.3).
+      assert.equal(await panel.locator('.note.good b').innerText(), '성경에 그렇게 기록되어 있어요.');
+      assert.equal(await panel.locator('.note.good .ref').innerText(), item.okRef[tier]);
+      assert(!(await panel.innerText()).includes('탐험대 이야기'), 'Bible answer and guidance must be separate screens');
+      await noSharon();
+      await noLegacyLabel();
+      if (index === 0) await shot('first-answer');
+      await panelButton('다음');
+      assert.equal(await panel.locator('.note.good').count(), 0);
+      assert.equal(await panel.locator('.q-kicker').innerText(), '탐험대 이야기');
+      const found = sharon.found[index];
+      assert.equal(await question.textContent(), tier === 't1' && found.t1 ? found.t1 : found.text);
+      assert.equal(await panel.locator('img.avatar[data-sharon="joy"]').count(), 1);
+      if (index === 0) await shot('sharon-guidance');
+      await panelButton('계속 탐험하기');
       await waitState('explore');
       await p.locator('.track3').waitFor({ state: 'visible' });
-      if (index === 0) {
-        assert.equal(await panel.isVisible(), false);
-        assert((await p.locator('.toast3').innerText()).includes(item.okRef[tier]));
-        await shot('first-signal');
-      }
+      if (index === 0) assert(!(await p.locator('#game').innerText()).includes('성경에서 확인했어요'), 'no mixed Bible-and-story toast');
       const distance = await p.locator('.track3 span').innerText();
       assert(distance.startsWith(sharon.track) && /^\d+m$/.test(distance.slice(sharon.track.length)), distance);
       assert.equal(await p.locator('.hud3 .obj span').innerText(), item.objective);
@@ -470,7 +499,7 @@ async function runTier(browser, tierIndex, url) {
     console.log(tier, 'awe sound', muteRun ? '(muted)' : '', 'step1 fire', a1.fire.toFixed(3), 'step2 fire', a2.fire.toFixed(3), 'step4 total', a4.total.toFixed(4), 'step5 music', a5.music.toFixed(3), 'starts', a6.musicStarts);
     await snap('photo-event');
     await sampleFrames('지켜보기');
-    await passWatching(true);
+    await passWatching();
     afterLastPart = false;
     await passReview(reviewPages, tier !== 't3', false);
     afterLastPart = true;
@@ -510,7 +539,7 @@ async function runTier(browser, tierIndex, url) {
     await p.locator('.route-opts .btn').filter({ hasText: '모세' }).click();
     afterLastPart = false;
     await photographFlock(false);
-    await panel.locator('[data-detector-quiz="0"]').waitFor();
+    await passIntro(false);
     assert.equal((await parts()).found, 0);
     await hiddenTracker();
     if (tier !== 't1') {
@@ -518,10 +547,8 @@ async function runTier(browser, tierIndex, url) {
       for (const [index, item] of H.quiz.entries()) {
         await panel.locator('[data-detector-quiz="' + index + '"]').waitFor();
         await panelButton(item.q[tier].options.find(o => o.ok).label);
-        if (index > 0) {
-          await panelButton('다음');
-          await panelButton('계속 탐험하기');
-        }
+        await panelButton('다음');
+        await panelButton('계속 탐험하기');
         await waitState('explore');
         await p.evaluate(([x, z]) => BO3D.debug.goto(x, z), item.at);
         await waitState('caption');
@@ -537,15 +564,11 @@ async function runTier(browser, tierIndex, url) {
       await p.evaluate(() => {
         for (let step = 0; step <= 6; step++) BO3D.debug.aweNext();
       });
-      await passWatching(tier === 't2');
-      if (tier === 't2') {
-        const publicPages = reviewPages.filter(g => !g.review);
-        assert.equal(publicPages.length, reviewPages.length - 2);
-        await passReview(publicPages, false, true);
-      } else {
-        await waitState('gates');
-        assert.equal(await p.locator('.sharon-review').count(), 0);
-      }
+      await passWatching();
+      // 돌아보기는 늘 나온다. 11~13세는 '건너뛰기'로, 14~19세는 끝까지 읽고 관문으로 간다.
+      const publicPages = reviewPages.filter(g => !g.review);
+      assert.equal(publicPages.length, reviewPages.length - 2);
+      await passReview(publicPages, false, tier === 't2');
     }
     assert.deepEqual(errs, [], 'browser errors');
     const recent = await p.evaluate(() => BO3D.debug.perf());

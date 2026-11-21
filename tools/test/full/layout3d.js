@@ -6,6 +6,7 @@ const path = require('node:path');
 const { chromium } = require('playwright');
 const { gameOrigin, proxy } = require('../game-server');
 const layoutIssues = require('../layout-issues');
+const { passSharonIntro } = require('../photograph-flock');
 
 const output = path.resolve(process.argv[2] || 'dist/check/layout3d');
 const sizes = [[390, 844], [320, 568], [360, 560], [390, 664], [844, 390], [568, 320]];
@@ -59,13 +60,16 @@ async function inspectHoreb(page) {
   const firstPhoto = await page.evaluate(() => BO3D.debug.state().state === 'explore');
   if (firstPhoto) {
     await capture('landing');
-    await button('샤론에게 물어보기').tap();
-    await capture('introduction');
-    await page.locator('summary').filter({ hasText: '샤론 소개' }).tap();
-    await capture('introduction-open');
+    await button('어떻게 하나요?').tap();
+    await capture('help');
     await button('계속 탐험하기').tap();
     await inspectDex();
     await resume('horeb', 0);
+    await page.locator('[data-sharon-intro]').waitFor();
+    await capture('introduction');
+    await button('다음').tap();
+    await capture('introduction2');
+    await passSharonIntro(page);
   } else {
     await capture('introduction');
     await button('다음').tap();
@@ -77,10 +81,9 @@ async function inspectHoreb(page) {
   await capture('detector');
   const correct = await page.evaluate(() => BO.content3d.horeb.quiz[0].q.t1.options.find(option => option.ok).label);
   await button(correct).tap();
-  if (!firstPhoto) {
-    await button('다음').tap(); await button('계속 탐험하기').tap();
-    await capture('landing'); await inspectDex();
-  }
+  await capture('answer');
+  await button('다음').tap(); await capture('guidance'); await button('계속 탐험하기').tap();
+  if (!firstPhoto) { await capture('landing'); await inspectDex(); }
   await page.evaluate(() => BO3D.debug.goto(...BO.content3d.horeb.quiz[0].at));
   await page.waitForFunction(() => BO3D.debug.parts().found === 1);
   await capture('piece');

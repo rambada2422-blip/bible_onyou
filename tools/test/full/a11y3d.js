@@ -128,12 +128,13 @@ async function run(output) {
     }
     await audit('menu');
     await button('탐험 시작').tap(); await audit('route');
-    await button('모세').tap(); await button('샤론에게 물어보기').waitFor(); await audit('horeb-landing');
-    await button('샤론에게 물어보기').tap(); await audit('sharon-help');
-    await page.locator('summary').filter({ hasText: '샤론 소개' }).tap(); await audit('sharon-help-open');
+    await button('모세').tap(); await button('어떻게 하나요?').waitFor(); await audit('horeb-landing');
+    await button('어떻게 하나요?').tap(); await audit('flock-help');
     await resume('route');
     await button('여호수아').tap(); await button('둘러보자').waitFor(); await audit('jordan-arrival');
-    await resume('horeb'); await page.locator('[data-detector-quiz]').waitFor(); await audit('horeb-question');
+    await resume('horeb'); await page.locator('[data-sharon-intro]').waitFor(); await audit('sharon-intro');
+    await button('다음').tap(); await audit('sharon-intro2');
+    await button('다음').tap(); await page.locator('[data-detector-quiz]').waitFor(); await audit('horeb-question');
     await resume('gates'); await page.locator('.overlay3 .q-kicker').first().waitFor(); await audit('horeb-gate');
     await resume('free'); await page.locator('.dex3').waitFor(); await audit('horeb-hud');
     await button('소리 켜기').tap();

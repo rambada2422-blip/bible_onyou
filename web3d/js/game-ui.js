@@ -53,7 +53,9 @@ BO3D.gameModules.ui = function (G) {
       G.el('div', { class: 'narr-meta' }, gloss.refs[tier].map(function (ref) { return G.refChip(ref); })));
   }
 
-  /* 물음과 보기 순서는 승인된 horeb 자료에서 읽는다. */
+  /* 물음과 보기 순서는 승인된 horeb 자료에서 읽는다.
+   * 샤론이 처음 말하는 물음 1 앞에서 자기소개를 한다 (docs/11 7.1, 7.2의 2·3번 글. 8~10세는 두 화면).
+   * 세 물음 모두 맞힌 뒤에는 성경 표시와 샤론의 안내를 두 화면으로 나눈다 (docs/11 7.3). */
   function detectorQuestion(item, index, onReady, savedPage) {
     var data = G.C3.horeb, sharon = G.C3.sharon, tier = G.S.tier, q = item.q[tier], solved = false;
     var split = q.prompt.search(/[.?] /);
@@ -77,7 +79,7 @@ BO3D.gameModules.ui = function (G) {
         if (solved) return;
         if (option.ok) {
           solved = true;
-          if (index === 0) onReady(); else showReference();
+          showReference();
         }
         else {
           b.classList.add('rest'); b.disabled = true;
@@ -93,11 +95,22 @@ BO3D.gameModules.ui = function (G) {
       } } }, G.el('span', { text: option.label }));
       return b;
     });
-    showPanel([
-      G.el('div', { class: 'q-kicker', 'data-detector-quiz': String(index), text: sharon.kicker + ' ' + (index + 1) + ' / ' + data.quiz.length }),
-      G.el('div', { class: 'narr-meta' }, tier === 't2' ? G.refChip(item.ref) : G.el('span', { text: data.bookHint[tier] })),
-      speech, continuation, G.el('div', { class: 'opts' }, opts), noteBox
-    ], []);
+    function showQuestion() {
+      if (index === 0) G.rememberDetectorAnswer(index, 'question');
+      showPanel([
+        G.el('div', { class: 'q-kicker', 'data-detector-quiz': String(index), text: sharon.kicker + ' ' + (index + 1) + ' / ' + data.quiz.length }),
+        G.el('div', { class: 'narr-meta' }, tier === 't2' ? G.refChip(item.ref) : G.el('span', { text: data.bookHint[tier] })),
+        speech, continuation, G.el('div', { class: 'opts' }, opts), noteBox
+      ], []);
+    }
+    function introPage(lines, next) {
+      showPanel([G.el('div', { class: 'q-kicker', 'data-sharon-intro': '', text: '탐험대 이야기' }),
+        lines.map(function (line) { return sharonSay('avatar', line); })], btn('다음', next));
+    }
+    var intro = sharon.intro[tier];
+    if (index !== 0 || savedPage === 'question') showQuestion();
+    else if (tier === 't1') introPage([intro[0]], function () { introPage([intro[1]], showQuestion); });
+    else introPage(intro, showQuestion);
   }
 
   function beatNodes(b) {
@@ -137,12 +150,12 @@ BO3D.gameModules.ui = function (G) {
     G.trackArrow = G.el('i', {}, G.icon('arrow')), G.trackText = G.el('span', { text: '' });
     G.track = G.el('div', { class: 'track3', hidden: '' }, G.trackArrow, G.trackText);
     G.hudRef = G.refChip(G.SC.ref, true), G.clueCount = G.el('span', { class: 'count teal', hidden: '', text: '단서 0 / 5' });
-    G.sharonHelp = btn('샤론에게 물어보기', G.askSharon, 'sharon-help');
-    G.sharonHelp.hidden = true;
+    G.flockHelp = btn('어떻게 하나요?', G.showFlockHelp, 'flock-help');
+    G.flockHelp.hidden = true;
     G.hud = G.el('div', { class: 'hud3 pad', hidden: '' },
       G.el('div', { class: 'row' }, G.place_, G.hudRef),
       G.el('div', { class: 'row' }, G.count, G.partCount, G.clueCount),
-      G.el('div', { class: 'obj' }, G.icon('compass'), objText), G.sharonHelp, G.track);
+      G.el('div', { class: 'obj' }, G.icon('compass'), objText), G.flockHelp, G.track);
     G.knob = G.el('i', {}), G.base = G.el('div', { class: 'stick', hidden: '' }, G.knob);
     G.hint = G.el('div', { class: 'hint', hidden: '' }, '왼쪽 아래를 누른 채 밀면 걸어요. 오른쪽을 밀면 둘러봐요. 사진기 버튼으로 본 것을 찍어 도감에 담아요.');
     toastEl = G.el('div', { class: 'toast3', hidden: '' });

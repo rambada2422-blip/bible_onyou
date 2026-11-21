@@ -5,6 +5,7 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const { chromium } = require('playwright');
 const { gameOrigin, proxy } = require('../game-server');
+const { passSharonIntro } = require('../photograph-flock');
 
 function waitFrames(page, frames) {
   return page.evaluate(count => new Promise(resolve => {
@@ -38,7 +39,7 @@ async function walkToFirstPhoto(page, output) {
   await page.getByRole('button', { name: '닫기' }).tap();
   await frame.waitFor({ state: 'visible' });
   await camera.tap();
-  await page.locator('[data-detector-quiz="0"]').waitFor();
+  await passSharonIntro(page);
   await frame.waitFor({ state: 'hidden' });
   assert((await page.evaluate(() => BO3D.debug.dex())).includes('sheep'));
 }

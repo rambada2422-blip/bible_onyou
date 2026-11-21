@@ -7,9 +7,9 @@ BO3D.gameModules.exploration = function (G) {
    * 세 아이는 목격자다. 본 것을 사진으로 담아 도감을 채운다. 설명은 본문에 있는 사실만 적는다. */
   function v3(x, y, z) { return new G.T.Vector3(x, y, z); }
   var flockEntry, focusFrame;
-  function photoPoint(entry) {
+  function photoPoint(entry, anyDistance) {
     var point = entry.pos();
-    if (point.distanceTo(G.camera.position) > entry.range) return null;
+    if (!anyDistance && point.distanceTo(G.camera.position) > entry.range) return null;
     point.applyMatrix4(G.camera.matrixWorldInverse);
     if (point.z > -0.5) return null;
     point.applyMatrix4(G.camera.projectionMatrix);
@@ -42,7 +42,15 @@ BO3D.gameModules.exploration = function (G) {
     G.flash.hidden = false; G.flash.classList.remove('go'); void G.flash.offsetWidth; G.flash.classList.add('go');
     setTimeout(function () { G.flash.hidden = true; }, 420);
     if (G.FX) G.FX.audio.shutter();
-    if (!found.length) { G.toast('사진에 담긴 것이 없어요. 찍고 싶은 것을 화면 가운데에 놓고 다시 찍어 보세요.'); return; }
+    // 화면 안에는 있지만 멀어서 담기지 않았으면 거리를 알려 준다 (양 떼가 가운데에 있어도 멀면 담기지 않는다).
+    var farLine = '너무 멀어서 사진에 담기지 않았어요. 더 가까이 가서 찍어 보세요.';
+    if (!found.length) {
+      var far = G.DEX.some(function (d) { return photoPoint(d, true); });
+      G.toast(far ? farLine : '사진에 담긴 것이 없어요. 찍고 싶은 것을 화면 가운데에 놓고 다시 찍어 보세요.');
+      return;
+    }
+    // 첫 사진을 찾는 동안 산은 담겼지만 움직이는 무리가 멀면 그것도 알려 준다.
+    var flockFar = lookingForFlock() && !found.some(function (f) { return f.d === flockEntry; }) && photoPoint(flockEntry, true);
     var fresh = found.filter(function (f) { return !(f.d.id in G.dex); });
     var missing = found.filter(function (f) { return !G.dex[f.d.id]; });
     missing.forEach(function (f) {
@@ -57,8 +65,9 @@ BO3D.gameModules.exploration = function (G) {
     if (fresh.length) {
       if (G.FX) G.FX.audio.chime();
       G.dexBtn.classList.remove('pulse'); void G.dexBtn.offsetWidth; G.dexBtn.classList.add('pulse');
-      G.toast('도감에 새로 담았어요: ' + fresh.map(function (f) { return f.d.name; }).join(', ') + (dexCount() === G.DEX.length ? '. 도감을 모두 채웠어요!' : ''));
-    } else G.toast('이미 도감에 있는 사진이에요: ' + best.d.name);
+      G.toast('도감에 새로 담았어요: ' + fresh.map(function (f) { return f.d.name; }).join(', ') + (dexCount() === G.DEX.length ? '. 도감을 모두 채웠어요!' : '') +
+        (flockFar ? '. 움직이는 무리는 ' + farLine : ''));
+    } else G.toast(flockFar ? '움직이는 무리는 ' + farLine : '이미 도감에 있는 사진이에요: ' + best.d.name);
     if (lookingForFlock() && found.some(function (f) { return f.d.id === 'sheep'; })) G.showDetector(0);
   }
   function openDex() {
@@ -96,14 +105,15 @@ BO3D.gameModules.exploration = function (G) {
     return G.cur === 'horeb' && G.state === 'explore' && G.step === 0 &&
       G.detectorPart === -1 && !G.partObjs[0].taken;
   }
-  function askSharon() {
+  /* 첫 사진을 찍는 방법은 화면 안내로 알려 준다. 샤론은 길을 이끌지 않는다 (docs/11 4절).
+   * 샤론은 양 떼를 찍은 뒤 물음 1 앞에서 처음 나와 자기소개를 한다. */
+  function showFlockHelp() {
     if (!lookingForFlock()) return;
     G.state = 'caption'; G.hint.hidden = true; G.camBtn.hidden = true; G.dexBtn.hidden = true;
-    G.showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
-      G.sharonSay('avatar', '양 떼 쪽으로 걸어가요. 양들을 화면 가운데에 놓고 사진기 버튼을 눌러 보세요.'),
-      G.el('details', {}, G.el('summary', { text: '샤론 소개' }), G.C3.sharon.intro[G.S.tier].map(function (line) {
-        return G.el('p', { text: line });
-      }))], G.btn('계속 탐험하기', function () {
+    G.showPanel([G.el('div', { class: 'q-kicker', text: '도움말' }),
+      G.el('p', { class: 'q-prompt', text: '왼쪽 아래를 누른 채 밀어서, 멀리 움직이는 무리 쪽으로 걸어가 보세요.' }),
+      G.el('p', { class: 'q-prompt', text: '가까이 가면 무리 위에 흰 모서리가 떠요. 그때 사진기 버튼을 눌러 보세요.' })],
+      G.btn('계속 탐험하기', function () {
         G.hidePanel(); G.state = 'explore'; G.camBtn.hidden = false; G.dexBtn.hidden = false;
       }));
   }
@@ -120,10 +130,7 @@ BO3D.gameModules.exploration = function (G) {
     G.detectorPart = -1; G.state = 'detector';
     G.track.hidden = true; G.hint.hidden = true; G.hudRef.hidden = true;
     G.camBtn.hidden = true; G.dexBtn.hidden = true; G.denBtn.hidden = true;
-    G.detectorQuestion(item, i, function () {
-      startPartSearch(i);
-      if (i === 0) G.toast('성경에서 확인했어요. ' + item.okRef[G.S.tier] + ' · 부품 신호가 선명해졌어요.');
-    }, savedPage);
+    G.detectorQuestion(item, i, function () { startPartSearch(i); }, savedPage);
   }
   function takePart(i) {
     if (G.cur !== 'horeb' || G.state !== 'explore' || i !== G.detectorPart || G.partObjs[i].taken) return;
@@ -141,7 +148,7 @@ BO3D.gameModules.exploration = function (G) {
     var p = G.player.group.position;
     var best = G.detectorPart >= 0 && !G.partObjs[G.detectorPart].taken ? G.PARTS[G.detectorPart] : null;
     var show = (G.state === 'explore' || G.state === 'free');
-    G.sharonHelp.hidden = !lookingForFlock();
+    G.flockHelp.hidden = !lookingForFlock();
     G.denBtn.hidden = !(show && G.dist2(p.x, p.z, G.P.machine[0], G.P.machine[1]) < 6.5);
     var target = best ? best.at : (G.sceneDone ? G.P.machine : null);
     if (!show || !target) { G.track.hidden = true; return; }
@@ -159,7 +166,7 @@ BO3D.gameModules.exploration = function (G) {
   G.openDex = openDex;
   G.showDetector = showDetector;
   G.startPartSearch = startPartSearch;
-  G.askSharon = askSharon;
+  G.showFlockHelp = showFlockHelp;
   G.takePart = takePart;
   G.updateTracker = updateTracker;
   G.updatePhotoFocus = updatePhotoFocus;
