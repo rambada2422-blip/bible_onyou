@@ -183,3 +183,9 @@
 .awe-veil { position: absolute; inset: 0; background: #E4BE7E; opacity: 0; pointer-events: none; }
 .awe-skip { position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); right: var(--gutter-r); min-height: 44px; padding: 0 14px; font-size: 16px; }
 .g3.awe-on .hud3, .g3.awe-on .stick, .g3.awe-on .cam3, .g3.awe-on .dex3, .g3.awe-on .snd3, .g3.awe-on .hint, .g3.awe-on .toast3, .g3.awe-on .panel3, .g3.awe-on .overlay3, .g3.awe-on .den3 { display: none !important; }
+
+/* 여는 동안 불러오는 중 안내 */
+.loading3 { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--ink, #0E1730); color: var(--paper, #FBF7EE); font-family: var(--f-display, sans-serif); font-size: 18px; line-height: 1.4; }
+.loading3-dot { width: 28px; height: 28px; border-radius: 50%; border: 3px solid rgba(251, 247, 238, .25); border-top-color: var(--brass, #E6B84C); animation: loading3-spin 1s linear infinite; }
+@keyframes loading3-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .loading3-dot { animation: none; } }

@@ -4,7 +4,13 @@ BO3D.gameModules.ui = function (G) {
   'use strict';
   var objText, toastEl, panelBody, panelFoot, panel;
 
+  function hideLoading() {
+    var ld = document.getElementById('loading3');
+    if (ld) ld.remove();
+  }
+
   G.showWebGLNotice = function () {
+    hideLoading();
     G.canvas.hidden = true;
     G.ui.replaceChildren(G.el('main', { class: 'webgl-notice', 'aria-labelledby': 'webgl-title' },
       G.el('div', {},
@@ -173,5 +179,6 @@ BO3D.gameModules.ui = function (G) {
     G.denBtn = G.el('button', { class: 'den3', hidden: '', on: { click: function () { G.openDen(); } } }, '타임머신에 타기');
     G.dedBtn = G.el('button', { class: 'den3', hidden: '', on: { click: function () { G.startDeduce(); } } }, '추리하기');
     G.add(G.ui, [G.touch, G.hud, G.base, G.hint, toastEl, G.dexBtn, G.camBtn, G.denBtn, G.dedBtn, G.snd, G.flash, panel, G.overlay]);
+    hideLoading();
   };
 };
