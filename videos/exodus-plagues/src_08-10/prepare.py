@@ -12,6 +12,15 @@ os.makedirs(os.path.join(HERE, 'out'), exist_ok=True)
 for name in ['plague-locusts', 'plague-darkness', 'plague-light', 'plague-midnight', 'ex07-room']:
     shutil.copy(os.path.join(REPO, 'web', 'assets', 'bg', name + '.jpg'), os.path.join(WORK, name + '.jpg'))
 
+# 10의 방 그림은 대표 지시 (2026-11-22)로 GPT가 어린 양을 머리를 낮춘 통구이로 다시 그린 판을 쓴다.
+# 게임 폴더는 바꾸지 않고, GPT 커밋에서 그 그림을 꺼내 SHA-256이 인계 기록과 같은지 확인한다.
+import hashlib, subprocess
+ROOM_COMMIT = '78a75d4ec6cb2e91349f388fdb7dc074077f0c81'   # gpt/passover-roast-lamb
+ROOM_SHA256 = 'bd80673f711faf4bc8caf35480dceae66d8efebfc2318b22cb19603eaad9f378'
+room = subprocess.run(['git', '-C', REPO, 'show', ROOM_COMMIT + ':web/assets/bg/ex07-room.jpg'], capture_output=True, check=True).stdout
+assert hashlib.sha256(room).hexdigest() == ROOM_SHA256, '어린 양을 다시 그린 방 그림이 아니다'
+open(os.path.join(WORK, 'ex07-room.jpg'), 'wb').write(room)
+
 im = np.asarray(Image.open(os.path.join(WORK, 'plague-locusts.jpg')).convert('RGB')).copy()
 H, W, _ = im.shape
 
