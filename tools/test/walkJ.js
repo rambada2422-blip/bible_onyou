@@ -7,13 +7,35 @@ const ti = process.argv[2] || '1', out = process.argv[3], dsf = Number(process.a
 fs.mkdirSync(out, { recursive: true });
 (async () => {
   const b = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
-  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: dsf });
+  const vp = (process.env.BO_VIEWPORT || '390x844').split('x').map(Number);
+  const ctx = await b.newContext({ viewport: { width: vp[0] || 390, height: vp[1] || 844 }, deviceScaleFactor: dsf });
   const p = await ctx.newPage();
   await p.addInitScript(() => { window.BO3D_TEST = true; });
   const errs = []; let n = 0;
   p.on('pageerror', (e) => errs.push('pageerror: ' + e.message));
   p.on('console', (m) => { if (m.type() === 'error' && !/ERR_FILE_NOT_FOUND|Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
-  const shot = async (label) => { n++; await p.screenshot({ path: path.join(out, String(n).padStart(2, '0') + '-' + label + '.png') }); };
+  const checkLayout = process.env.BO_CHECK_LAYOUT === '1';
+  const shot = async (label) => {
+    n++;
+    if (checkLayout) {
+      const issues = await p.evaluate(() => {
+        const out = [];
+        const W = window.innerWidth, H = window.innerHeight;
+        if (document.documentElement.scrollWidth > W + 1) out.push(`overflowX:${document.documentElement.scrollWidth}>${W}`);
+        const vis = (el) => { const s = getComputedStyle(el); const r = el.getBoundingClientRect(); return s.display !== 'none' && s.visibility !== 'hidden' && Number(s.opacity) > 0 && r.width > 0 && r.height > 0; };
+        for (const el of document.querySelectorAll('.overlay3 .sheet-foot button, .cam3, .dex3, .hud3 button')) {
+          if (!vis(el)) continue;
+          const r = el.getBoundingClientRect();
+          if (r.left < -1 || r.right > W + 1 || r.top < -1 || r.bottom > H + 1) {
+            out.push(`clip(${(el.textContent || el.className).trim().slice(0, 16)}:${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.right)},${Math.round(r.bottom)})`);
+          }
+        }
+        return out;
+      });
+      if (issues.length) errs.push(`layout(${label}): ${issues.join('; ')}`);
+    }
+    await p.screenshot({ path: path.join(out, String(n).padStart(2, '0') + '-' + label + '.png') });
+  };
   const st = () => p.evaluate(() => BO3D.debug.state());
   const url = process.argv[5] || (await gameOrigin(b)) + '/preview3d.html';
   await p.goto(url);
