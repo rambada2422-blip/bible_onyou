@@ -561,7 +561,8 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 .palace-king { border-color:#a16b33; }
 .palace-words { font:clamp(18px,4.9vw,22px)/1.55 var(--f-body); color:#29251e; }
 .palace-sources { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
-.palace-sources .readbtn { min-height:44px; }
+.palace-screen .readbtn { min-height:44px; }
+.palace-screen .readbtn[aria-pressed=true] { color:white; background:#31534c; }
 .palace-status,.palace-feedback { font-size:15px; color:#564b39; }
 .palace-status:not(:empty),.palace-feedback:not(:empty) { margin-top:10px; }
 .palace-options { display:grid; gap:8px; margin-top:12px; }

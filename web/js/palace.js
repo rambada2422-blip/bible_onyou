@@ -13,8 +13,47 @@
     s.active = true;
     s.from = from;
     app.save();
-    let video;
+    let video, narration;
+    function stopNarration() {
+      if (!narration) return;
+      const {player, button, caption, label} = narration;
+      narration = null;
+      player.pause();
+      caption.textContent = label;
+      button.setAttribute('aria-pressed', 'false');
+    }
+    function listenButton(clip, label, status) {
+      const caption = el('span', {}, label);
+      const button = el('button', {class:'readbtn', 'aria-pressed':'false', on:{click:function () {
+        const wasPlaying = narration && narration.button === button;
+        stopNarration();
+        if (wasPlaying) return;
+        if (video) video.pause();
+        status.hidden = true;
+        const url = BO.palaceAudio ? BO.palaceAudio[clip] : 'assets/audio/palace/' + clip + '.mp3';
+        const player = new Audio(url);
+        narration = {player, button, caption, label};
+        caption.textContent = '그만 듣기';
+        button.setAttribute('aria-pressed', 'true');
+        function finish(failed) {
+          if (!narration || narration.player !== player) return;
+          stopNarration();
+          if (failed) {
+            status.textContent = '목소리를 불러오지 못했어요. 듣기 단추를 다시 눌러 주세요.';
+            status.hidden = false;
+          }
+        }
+        player.addEventListener('ended', () => finish(false), {once:true});
+        player.addEventListener('error', () => finish(true), {once:true});
+        player.play().catch(() => finish(true));
+      }}}, app.icon('speaker'), caption);
+      return button;
+    }
+    function hide() { if (document.hidden) stopNarration(); }
+    document.addEventListener('visibilitychange', hide);
+    window.addEventListener('pagehide', stopNarration);
     function stop() {
+      stopNarration();
       app.stopReading();
       if (video) {
         video.pause();
@@ -33,6 +72,8 @@
     }
     function exit() {
       stop();
+      document.removeEventListener('visibilitychange', hide);
+      window.removeEventListener('pagehide', stopNarration);
       s.active = false;
       app.save();
       leave();
@@ -55,7 +96,8 @@
       panel.append(kind, words);
       const readStatus = el('p', {role:'status', class:'palace-status', hidden:true});
       const sources = el('div', {class:'palace-sources'}, app.refChip(beat.ref));
-      if (app.canReadAloud) sources.append(app.readButton(role + '. ' + beat.words, readStatus));
+      const clip = [s.chapter + 1, s.beat + 1].map(n => String(n).padStart(2, '0')).join('-');
+      sources.append(listenButton(clip, '읽어 줘', readStatus));
       panel.append(sources, readStatus);
 
       function advance() {
@@ -69,27 +111,35 @@
       if (beat.options) {
         const options = el('div', {class:'palace-options', role:'group', 'aria-label':beat.words});
         const answer = el('p', {class:'palace-feedback', role:'status'});
+        const listenToAnswer = el('div', {class:'palace-answer-listen'});
         function showChoice() {
           const chosen = Number.isInteger(s.choice) && s.choice >= 0 && s.choice < beat.options.length;
           Array.from(options.children).forEach((b, i) => b.setAttribute('aria-pressed', String(chosen && i === s.choice)));
           next.disabled = !chosen || s.choice !== beat.answer;
           answer.textContent = chosen ? s.choice === beat.answer ? beat.evidence : beat.hint : '';
+          listenToAnswer.replaceChildren();
+          if (chosen) {
+            const kind = s.choice === beat.answer ? 'evidence' : 'hint';
+            listenToAnswer.append(listenButton(clip + '-' + kind, '풀이 듣기', readStatus));
+          }
         }
         beat.options.forEach((label, i) => options.append(el('button', {class:'palace-option', on:{click:function () {
-          s.choice = i; app.save(); showChoice();
+          stopNarration(); s.choice = i; app.save(); showChoice();
           answer.scrollIntoView({block:'nearest'});
         }}}, label)));
-        panel.append(options, answer);
+        panel.append(options, answer, listenToAnswer);
         showChoice();
       }
       if (beat.film) {
         // 동의한 장면 한 편만 요청한다. 영상이 막혀도 위의 글로 계속할 수 있다.
         const notice = el('p', {class:'palace-status', role:'status'});
         function play() {
+          stopNarration();
           app.stopReading();
           if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
           const player = el('video', {controls:true, playsinline:true, preload:'none', tabindex:'0', 'aria-label':chapter.title + ' 영상'});
           video = player;
+          player.addEventListener('play', stopNarration);
           hero.replaceChildren(player);
           player.addEventListener('error', function () {
             if (video !== player || !player.hasAttribute('src')) return;

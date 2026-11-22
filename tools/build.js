@@ -114,6 +114,12 @@ const scripts = [
   'js/content.js', 'js/icons.js', 'js/order-question.js', 'js/reference-input.js', 'js/art.js',
   'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/palace.js', 'js/passover.js', 'js/app.js',
 ];
+// 단일 HTML에서도 본문 음성을 인터넷 연결 없이 재생한다.
+const palaceAudio = {};
+for (const file of list('audio/palace', '.mp3')) {
+  const audio = fs.readFileSync(path.join(web, 'assets/audio/palace', file));
+  palaceAudio[path.basename(file, '.mp3')] = 'data:audio/mpeg;base64,' + audio.toString('base64');
+}
 const page = [
   '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
@@ -123,6 +129,7 @@ const page = [
   '<style>\n' + read('css/app.css') + '\n</style>',
   '</head><body>',
   '<div id="app" class="app"></div>',
+  '<script>window.BO = window.BO || {}; BO.palaceAudio = ' + JSON.stringify(palaceAudio) + ';</script>',
   ...scripts.map((p) => '<script>\n' + esc(read(p)) + '\n</script>'),
   '<style>\n' + fontCss() + '\n</style>',
   '</body></html>'
