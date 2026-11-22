@@ -92,6 +92,9 @@ async function runTier(browser, tierIndex, url) {
     const muteRun = tierIndex === 2;
     const near = (a, b, tol, msg) => assert(Math.abs(a - b) <= tol, msg + ': ' + a + ' vs ' + b);
     await p.goto(url);
+    assert.equal(await p.locator('#loading3').count(), 0, 'loading notice must disappear once the first screen is ready');
+    assert(!(await p.locator('#game').innerText()).includes('불러오는 중이에요'), 'loading text must not remain on the first screen');
+    await p.getByRole('button', { name: '탐험 시작', exact: true }).waitFor();
     if (exerciseAuto) {
       await p.waitForFunction(() => BO3D.debug.quality() === 'low', null, { timeout: 15000 });
       assert.equal(await p.evaluate(() => BO3D.debug.quality('normal')), 'low');

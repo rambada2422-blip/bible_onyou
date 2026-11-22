@@ -46,7 +46,7 @@ const page = [
   '<meta name="claude:viewport-fit-sides" content="cover">',
   '<style>\n' + read('web/css/app.css') + '\n' + read('web3d/css/game.css') + '\n</style>',
   '</head><body>',
-  '<div id="game" class="g3 app"><canvas id="c"></canvas><div id="ui"></div></div>',
+  '<div id="game" class="g3 app"><div id="loading3" class="loading3" role="status" aria-live="polite"><span class="loading3-dot" aria-hidden="true"></span><span>불러오는 중이에요</span></div><canvas id="c"></canvas><div id="ui"></div></div>',
   '<script>\n' + esc(read('web3d/vendor/three.min.js')) + '\n</script>',
   '<script>\n' + esc(read('web3d/vendor/GLTFLoader.js')) + '\n</script>',
   ...scripts.filter((p) => fs.existsSync(path.join(root, p))).map((p) => '<script>\n' + esc(read(p)) + '\n</script>'),
