@@ -11,6 +11,7 @@
 
   /* ════════════ 처음 화면 ════════════ */
   function continueJourney() {
+    if (app.passover.resuming()) { app.passover.open(renderHub); return; }
     var journey = app.savedJourney();
     if (journey) runScene(journey.id, journey);
     else renderHub();
@@ -97,7 +98,7 @@
         toggle.textContent = expand ? '갈 수 있는 장면만 보기' : '전체 여정 보기';
       } } }, '전체 여정 보기');
     var c = C.chars[app.state.char], t = tierInfo();
-    var entryCount = app.state.cards.length + writtenNotes().length;
+    var entryCount = app.state.cards.length + writtenNotes().length + (app.passover.completed() ? 1 : 0);
     C.route.options.forEach(function (option) { entryCount += app.journalClues(option.to).length; });
     show(el('div', { class: 'screen sky hub' },
       el('div', { class: 'hub-head pad' },
@@ -113,9 +114,10 @@
         detours.map(function (option) {
           return el('button', { class: 'btn wide', on: { click: function () { depart(option.to); } } }, option.label + ' · 이어서 탐험하기');
         }),
+        el('button', { class: 'btn wide', on: { click: function () { app.passover.open(renderHub); } } }, '열 가지 재앙과 유월절 · 감수용 미리보기'),
         locked.length ? toggle : null,
         el('ol', { class: 'tl', id: 'journey-list' }, items),
-        el('p', { class: 'hub-note', text: '시범판에는 목사님 감수가 필요 없는 세 장면만 열려 있습니다.' }),
+        el('p', { class: 'hub-note', text: '본편 세 장면을 탐험할 수 있어요. 재앙과 유월절은 감수용 미리보기에서 살펴보세요.' }),
         el('div', {},
           el('button', { class: 'linkbtn', on: { click: function () { app.state.routed = false; save(); renderRoute(); } } }, '목적지 다시 고르기'), ' · ',
           el('button', { class: 'linkbtn', on: { click: renderGuide } }, '구성 안내'), ' · ',
@@ -180,6 +182,7 @@
     show(el('div', { class: 'screen page' },
       pageHead('탐험 일지', back, sceneId ? '말씀 카드로 돌아가기' : '돌아가기'),
       el('div', { class: 'page-body pad' },
+        app.passover.completed() ? el('button', { class: 'btn wide onpaper', on: { click: function () { app.passover.open(function () { renderJournal(back, sceneId); }, '일지', true); } } }, '열 가지 재앙과 유월절 · 탐험 기록') : null,
         groups.length ? el('section', { class: 'journal-clues' }, el('h3', { text: '내가 찾은 단서' }), groups) : null,
         el('section', {}, el('h3', { text: '말씀 카드 ' + app.state.cards.length + '장' }),
           app.state.cards.length ? el('div', { class: 'vcards' }, app.state.cards.map(function (c) { return cardNode(c, null, false); }))
@@ -238,7 +241,7 @@
           table(['장면', '본문', '상태'], C.timeline.map(function (n) {
             return [n.title, n.ref, el('span', { class: 'badge ' + (n.playable ? 'go' : 'hold'), text: n.playable ? '시범 화면 있음' : '감수 대기' })];
           })),
-          el('p', { text: '열세 장면 가운데 열 장면은 하나님의 주권, 재앙과 심판, 유월절의 의미 같은 주제가 있어 감수를 마친 뒤 만듭니다.' })))));
+          el('p', { text: '재앙과 유월절의 세 장면은 시간표의 감수용 미리보기에서 살펴볼 수 있습니다. 본편 공개는 목회자 감수 뒤에 진행합니다.' })))));
   }
 
   renderTitle();

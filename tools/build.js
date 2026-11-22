@@ -71,8 +71,11 @@ for (const ext of ['.jpg', '.png']) {
       process.exit(1);
     }
     const sz = rasterSize(buf, ext);
-    if (!sz || sz.w !== 900 || sz.h !== 1200) {
-      console.error(`사진형 배경 그림 크기가 가로 900 × 세로 1200 픽셀이 아닙니다: ${f} (${sz ? sz.w + '×' + sz.h : '크기 확인 불가'})`);
+    // 재앙 관찰 그림과 유월절 방은 단서가 가로로 배치되어 있다.
+    const [width, height] = k.startsWith('plague-') ? [720, 480]
+      : k === 'ex07-room' ? [1200, 800] : [900, 1200];
+    if (!sz || sz.w !== width || sz.h !== height) {
+      console.error(`사진형 배경 그림 크기가 가로 ${width} × 세로 ${height} 픽셀이 아닙니다: ${f} (${sz ? sz.w + '×' + sz.h : '크기 확인 불가'})`);
       process.exit(1);
     }
     rasterTotal += buf.length;
@@ -80,7 +83,7 @@ for (const ext of ['.jpg', '.png']) {
       console.error(`사진형 배경 그림 파일을 모두 합친 크기가 1.5MB를 넘습니다 (${(rasterTotal / (1024 * 1024)).toFixed(2)}MB)`);
       process.exit(1);
     }
-    art[k] = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice"><g id="${k}-state-main"><image href="data:${mime};base64,${buf.toString('base64')}" x="0" y="0" width="900" height="1200" preserveAspectRatio="xMidYMid slice"/></g></svg>`;
+    art[k] = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid slice"><g id="${k}-state-main"><image href="data:${mime};base64,${buf.toString('base64')}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/></g></svg>`;
   }
 }
 
@@ -109,7 +112,7 @@ const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fontCss = require('./font-css');
 const scripts = [
   'js/content.js', 'js/icons.js', 'js/order-question.js', 'js/reference-input.js', 'js/art.js',
-  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/app.js',
+  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/passover.js', 'js/app.js',
 ];
 const page = [
   '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
