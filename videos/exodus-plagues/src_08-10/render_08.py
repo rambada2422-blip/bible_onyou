@@ -22,7 +22,9 @@ def flying_like(s):
     return r > g * 1.05 and g > b * 0.95 and s.size[0] >= s.size[1] * 1.4
 sky = [s.transpose(Image.FLIP_LEFT_RIGHT) for s in sky_all if flying_like(s)][:24]   # 오른쪽을 보고 난다
 big = max(sky, key=lambda s: s.size[0])                       # 날개를 편 큰 메뚜기: 날아오는 모습에 쓴다
-fly = big.resize((int(big.width * 3.0), int(big.height * 3.0)), Image.LANCZOS)
+def fly_at(scale):   # 다가올수록 커진다 (멀리서는 작고 덜 흐리다)
+    f = big.resize((max(1, int(big.width * scale)), max(1, int(big.height * scale))), Image.LANCZOS)
+    return f.filter(ImageFilter.UnsharpMask(radius=1.2, percent=60, threshold=1))
 
 # ── 하늘: 원화에 그려진 떼도 바람 쪽으로 아주 조금 흐른다. 나무, 신전, 이삭, 앉은 메뚜기는 그대로 둔다.
 HZ = 190
@@ -51,6 +53,7 @@ def sway(t):
     return 1.7 * sway_w * (0.55 + 0.45 * np.sin(2 * math.pi * 0.45 * t + 0.025 * gx + 0.04 * gy))
 
 FEET = (92, 67)                     # 오려 낸 메뚜기 그림 안의 발 자리
+BODY = (55, 60)                     # 같은 그림 안의 몸통 한가운데 (더듬이를 뺀)
 LAND = (472.0, 368.0)               # 근대 잎 위 (구멍 난 잎. 원화의 메뚜기가 없는 곳)
 CLOSE = (270.0, 135.0, 230.0)       # 가까이 보기 창: 잎 높이. 하늘의 떼와 원화의 다른 메뚜기가 들어오지 않는다
 WIDE = (310.0, 0.0, 320.0)          # 물러난 창: 하늘의 떼, 들, 내려앉은 메뚜기, 들 안쪽의 다른 메뚜기
@@ -81,16 +84,21 @@ def frame(t):
         fx = LAND[0] + float(d[int(LAND[1]), int(LAND[0])])        # 앉은 뒤에는 잎과 함께 흔들린다
         if t < T_DOWN:
             u = (t - T_IN) / (T_DOWN - T_IN); e = 1 - (1 - u) ** 2.2
-            cx = 170 + (LAND[0] - 40 - 170) * e
-            cy = 230 + (LAND[1] - 40 - 230) * e - 35 * math.sin(math.pi * e) * (1 - e)
-            spr = fly.rotate(10 * (1 - e), resample=Image.BICUBIC, expand=True)
+            tx = fx - FEET[0] + BODY[0]                     # 앉을 메뚜기의 몸통 한가운데에 정확히 도착한다
+            ty = LAND[1] - FEET[1] + BODY[1]
+            cx = 170 + (tx - 170) * e
+            cy = 230 + (ty - 230) * e - 35 * math.sin(math.pi * e) * (1 - e)
+            spr = fly_at(1.3 + 1.0 * e).rotate(10 * (1 - e), resample=Image.BICUBIC, expand=True)
+            gone = min(1.0, max(0.0, (t - (T_DOWN - 0.125)) / 0.125))   # 같은 자리에서 3프레임 안에 바뀐다
+            if gone > 0:
+                aa = np.asarray(spr).copy(); aa[..., 3] = (aa[..., 3] * (1 - gone)).astype(np.uint8); spr = Image.fromarray(aa, 'RGBA')
             a = np.asarray(spr).astype(np.float32)
             k = np.zeros((1, 3), np.float32); k[0, :] = 1 / 3                # 날 때만 가볍게 흐리게
             spr = Image.fromarray(np.clip(cv2.filter2D(a, -1, k), 0, 255).astype(np.uint8), 'RGBA')
             img.alpha_composite(spr, (int(cx - spr.width / 2), int(cy - spr.height / 2)))
-        fold = min(1.0, max(0.0, (t - (T_DOWN - 0.2)) / 0.2))      # 내려앉으며 날개를 접는다 (0.2초)
+        fold = min(1.0, max(0.0, (t - (T_DOWN - 0.125)) / 0.125))  # 내려앉으며 날개를 접는다 (같은 자리, 3프레임)
         if fold > 0:
-            dy = 2.0 * math.exp(-(t - T_DOWN) * 9) * math.sin((t - T_DOWN) * 30) if t >= T_DOWN else -4 * (1 - fold)
+            dy = 2.0 * math.exp(-(t - T_DOWN) * 9) * math.sin((t - T_DOWN) * 30) if t >= T_DOWN else 0.0
             l2 = land.copy()
             if fold < 1:
                 a = np.asarray(l2).copy(); a[..., 3] = (a[..., 3] * fold).astype(np.uint8); l2 = Image.fromarray(a, 'RGBA')

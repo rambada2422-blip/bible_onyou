@@ -80,8 +80,8 @@ Image.fromarray(np.dstack([unmixed, alpha]).astype(np.uint8), 'RGBA').save(os.pa
 bgr = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
 src_patch = bgr[378:472, 195:315]
 mask = np.zeros(src_patch.shape[:2], np.uint8)
-cv2.ellipse(mask, (60, 50), (54, 40), 0, 0, 360, 255, -1)
+cv2.ellipse(mask, (60, 52), (56, 42), 0, 0, 360, 255, -1)
 mask[:, 108:] = 0
-fixed = cv2.seamlessClone(src_patch, bgr, mask, (572, 427), cv2.NORMAL_CLONE)
+fixed = cv2.seamlessClone(src_patch, bgr, mask, (573, 433), cv2.NORMAL_CLONE)   # 옛 양배추 밑동까지 덮는다
 Image.fromarray(cv2.cvtColor(fixed, cv2.COLOR_BGR2RGB)).save(os.path.join(WORK, 'plague-locusts-film.png'))
 print('준비 끝:', WORK, '하늘 메뚜기', len(sprites))

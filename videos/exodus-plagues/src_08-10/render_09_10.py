@@ -12,7 +12,7 @@ def film09():
     # "더듬을 만한 흑암" (10:21): 윤곽만 겨우 보이게. 달밤처럼 푸르게 밝히지 않는다. 밝히기 전에 JPEG의 네모 얼룩을 고른다.
     import cv2
     src = cv2.fastNlMeansDenoisingColored(np.asarray(load('plague-darkness')), None, 3, 3, 7, 21)
-    d = np.asarray(gain(Image.fromarray(src), 1.25), dtype=np.float32)
+    d = np.asarray(gain(Image.fromarray(src), 1.4), dtype=np.float32)
     lum = d.mean(axis=2, keepdims=True)
     d = d * 0.6 + lum * 0.4                                         # 푸른 기를 덜어 낸다
     dark = view(Image.fromarray(np.clip(d, 0, 255).astype(np.uint8)), 40, 0, 320)   # 왼쪽 닫힌 문, 오른쪽으로 이어지는 골목
