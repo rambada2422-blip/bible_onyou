@@ -246,6 +246,25 @@ h1, h2, h3 { text-wrap: balance; }
 .sheet-foot .btn { flex: 1; }
 .sheet-foot .btn.plain { flex: none; }
 
+/* 좁은 세로 화면의 요단 강 추리에서는 답이 필요한 높이만큼 그림이 자리를 내 준다. */
+@media (orientation: portrait) and (max-width: 430px) {
+  .scene:has(#alt02-state-main):has(.sheet-body > .q-prompt + .found-list) {
+    --jordan-overlap: clamp(0px, calc(100dvh - 640px), 20px);
+    /* 가장 낮은 고리의 중심과 파동이 아래 글 상자 위에 남도록 한다. */
+    --jordan-stage-min: min(58%, calc(57vw + 58px + 2 * var(--jordan-overlap)));
+  }
+  .scene:has(#alt02-state-main):has(.sheet-body > .q-prompt + .found-list) > .stage {
+    flex-shrink: 1;
+    min-height: var(--jordan-stage-min);
+  }
+  .scene:has(#alt02-state-main):has(.sheet-body > .q-prompt + .found-list) > .sheet {
+    flex: 1 0 auto;
+    max-height: calc(100% - var(--jordan-stage-min) + var(--jordan-overlap));
+    margin-top: calc(-1 * var(--jordan-overlap));
+  }
+  .scene:has(#alt02-state-main) .sheet-body:has(> .q-prompt + .found-list) { padding-bottom: 0; }
+}
+
 .narr { font-size: 17px; line-height: 1.65; }
 .t1 .narr { font-size: 20px; line-height: 1.6; }
 .t3 .narr { font-size: 16px; line-height: 1.7; }
