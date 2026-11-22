@@ -8,6 +8,7 @@ const { test } = require('node:test');
 const { setTimeout: delay } = require('node:timers/promises');
 
 const watch = path.resolve(__dirname, '../watch-plague-deliveries.js');
+const check = path.resolve(__dirname, '../check-plague-films.js');
 
 test('새 접수만 검사하고 원격 오류와 실행 중단 뒤에 이어서 확인', async (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'plague-poll-test-'));
@@ -69,6 +70,16 @@ test('새 접수만 검사하고 원격 오류와 실행 중단 뒤에 이어서
   assert.match(poll().stdout, new RegExp(`변경 없음  05-07 · ${delivered}`));
   assert.deepEqual(events().filter((event) => event.status === 'checked').map(({ sha }) => sha), [partial, delivered]);
 
+  const legacy = state();
+  delete legacy.teams['05-07'].lastCheck.checkerVersion;
+  legacy.teams['05-07'].lastCheck.result = 'review-needed';
+  fs.writeFileSync(path.join(stateDir, 'state.json'), JSON.stringify(legacy));
+  assert.match(poll().stdout, new RegExp(`판정 방식 변경 재검사  05-07 · ${delivered}`));
+  assert.equal(state().teams['05-07'].lastCheck.result, 'pass');
+  assert.equal(state().teams['05-07'].lastCheck.checkerVersion, 2);
+  assert.match(poll().stdout, new RegExp(`변경 없음  05-07 · ${delivered}`));
+  assert.deepEqual(events().filter((event) => event.status === 'checked').map(({ sha }) => sha), [partial, delivered, delivered]);
+
   const offlineRemote = path.join(dir, 'offline.git');
   fs.renameSync(remote, offlineRemote);
   const offline = poll(2);
@@ -93,6 +104,26 @@ test('새 접수만 검사하고 원격 오류와 실행 중단 뒤에 이어서
 
   assert.match(poll().stdout, new RegExp(`새 납품  05-07 · ${updated}`));
   assert.equal(state().teams['05-07'].lastCheck.sha, updated);
-  assert.deepEqual(events().filter((event) => event.status === 'checked').map(({ sha }) => sha), [partial, delivered, updated]);
+  assert.deepEqual(events().filter((event) => event.status === 'checked').map(({ sha }) => sha), [partial, delivered, delivered, updated]);
+
+  const unexpected = path.join(dir, 'unexpected.mp4');
+  command('ffmpeg', [
+    '-v', 'error', '-f', 'lavfi', '-i', 'color=yellow:size=720x1080:rate=24:duration=6',
+    '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-threads', '2', unexpected,
+  ]);
+  fs.writeFileSync(playlist, [clip, unexpected, clip].map((file) => `file '${file}'\n`).join(''));
+  command('ffmpeg', [
+    '-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', playlist, '-vf', 'eq=brightness=0.01',
+    '-c:v', 'libx264', '-preset', 'ultrafast', '-threads', '2', path.join(clips, 'plague-05-07-review.mp4'),
+  ]);
+  const needsReview = commit('합본을 다시 압축하면서 다른 장면을 삽입');
+  const direct = command(process.execPath, [check, '--strict', '--group', '05-07', '--dir', clips, '--review'], work, 3);
+  const hold = /결과  합격 3 · 미도착 0 · 불합격 0 · 육안 대조 필요 1/;
+  assert.match(direct.stdout, hold);
+  assert.match(poll().stdout, hold);
+  assert.equal(state().teams['05-07'].lastCheck.sha, needsReview);
+  assert.equal(state().teams['05-07'].lastCheck.exitCode, 3);
+  assert.equal(state().teams['05-07'].lastCheck.result, 'review-needed');
+  assert.equal(events().at(-1).check.result, 'review-needed');
   assert.equal(git('status', '--porcelain'), '');
 });

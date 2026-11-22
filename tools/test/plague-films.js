@@ -48,7 +48,7 @@ test('정해진 파일명과 기술 규격으로 납품 검사', (t) => {
   const mixed = check([...args, '--strict'], 1);
   assert.match(mixed, /합격  plague-05\.mp4/);
   assert.match(mixed, /불합격  plague-06\.mp4[^\n]*고정 24fps 위반/);
-  assert.doesNotMatch(mixed, /plague-06\.mp4[^\n]*(?:전체 프레임 수|파일 길이)/);
+  assert.doesNotMatch(mixed, /plague-06\.mp4[^\n]*(?:전체 프레임 수|파일 길이|영상 트랙 길이)/);
   assert.match(mixed, /불합격  plague-07\.mp4[^\n]*전체 프레임 수 143개/);
 
   ffmpeg([
@@ -85,12 +85,17 @@ test('같은 길이의 합본에서 프레임 순서와 반복을 대조', (t) =
   const repeated = bundle('repeated.mp4', ['05', '05', '07']);
   assert.match(check([...args, '--review-file', `05-07=${repeated}`], 1), /합본 순서 또는 반복 오류[^\n]*05\.mp4 → plague-05\.mp4/);
 
-  const reencoded = bundle('reencoded.mp4', numbers, [
+  const reencode = [
     '-c:v', 'libx264', '-threads', '2', '-preset', 'ultrafast', '-vf', 'eq=brightness=0.01',
-  ]);
+  ];
+  const reencoded = bundle('reencoded.mp4', numbers, reencode);
   assert.match(check([...args, '--review-file', `05-07=${reencoded}`], 0), /화면 유사도로 구간 순서 일치 · 원본과 일부 프레임 해시 다름/);
 
   smallFilm(path.join(dir, clip('00')), 'yellow');
-  const unknown = bundle('unknown.mp4', ['05', '00', '07']);
-  assert.match(check([...args, '--review-file', `05-07=${unknown}`], 0), /육안 대조 필요 1/);
+  const unknown = bundle('unknown.mp4', ['05', '00', '07'], reencode);
+  const strictUnknown = check([...args, '--review-file', `05-07=${unknown}`], 3);
+  assert.match(strictUnknown, /^육안 대조 필요  안티그래비티 합본/m);
+  assert.match(strictUnknown, /결과  합격 3 · 미도착 0 · 불합격 0 · 육안 대조 필요 1/);
+  const progress = check([...args.filter((arg) => arg !== '--strict'), '--progress', '--review-file', `05-07=${unknown}`], 0);
+  assert.match(progress, /결과  합격 3 · 미도착 0 · 불합격 0 · 육안 대조 필요 1/);
 });

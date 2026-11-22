@@ -22,7 +22,7 @@ const help = `열 가지 재앙 영상 납품 점검 (Node.js 18 이상, ffprobe
 사용법  node tools/check-plague-films.js [옵션]
 
   --progress               접수 현황과 기술 검사 결과를 출력 (기본값)
-  --strict                 미도착 또는 기술 불합격이 있으면 종료 코드 1
+  --strict                 미도착 또는 불합격이면 코드 1, 육안 대조가 필요하면 코드 3
   --group all|01-04|05-07|08-10
                            전체(기본값), GPT, 안티그래비티, Claude 중 선택
   --dir 폴더               개별 영상 폴더 (기본값은 저장소의 videos/exodus-plagues)
@@ -35,8 +35,8 @@ const help = `열 가지 재앙 영상 납품 점검 (Node.js 18 이상, ffprobe
 직접 지정한 팀 합본은 --review 없이도 검사하며, 상대 경로는 현재 폴더를 기준으로 합니다.
 합본과 개별 영상이 모두 기술 검사에 합격하면 ffmpeg로 디코딩한 프레임의 해시를 대조합니다.
 해시가 다르면 구간별 화면 유사도로 순서를 확인합니다. 순서를 확인하기 어려우면 육안 대조가 필요합니다.
-육안 대조가 필요한 합본은 기술 검사 합격으로 표시됩니다. 그 항목만으로 종료 코드가 바뀌지 않습니다.
-진척 확인은 파일별 불합격과 미도착을 표시한 뒤 코드 0으로 끝납니다.
+엄격 검사에서 미도착이나 불합격이 함께 있으면 코드 1이 우선합니다.
+진척 확인은 파일별 상태를 표시하고 조회가 끝나면 코드 0으로 끝납니다.
 명령 사용이나 실행 환경에 문제가 있으면 두 모드 모두 코드 2로 끝납니다.
 검사 중 파일을 읽기만 합니다.`;
 
@@ -226,29 +226,25 @@ function compareReview(films, dir, file, seconds) {
     return { references, review };
   };
 
-  try {
-    const { references, review } = read('hash');
-    const expectedFrames = references.flatMap(({ frames }) => frames);
-    if (expectedFrames.every((hash, index) => hash === review[index])) {
-      return { status: '합격', issues: [`원본과 동일한 순서 · 전체 ${review.length}프레임 해시 일치`] };
-    }
-    const hashOrder = identifyOrder(references, review, (frames, combined, offset) => {
-      return frames.every((hash, index) => hash === combined[offset + index]);
-    });
-    if (hashOrder && hashOrder !== expected) {
-      return { status: '불합격', issues: [`합본 순서 또는 반복 오류 (프레임 해시로 확인: ${hashOrder})`] };
-    }
-
-    const thumbnails = read('thumbnail');
-    const similarOrder = identifyOrder(thumbnails.references, thumbnails.review, compareThumbnails);
-    if (similarOrder === expected) {
-      return { status: '합격', issues: ['화면 유사도로 구간 순서 일치 · 원본과 일부 프레임 해시 다름'] };
-    }
-    const detail = similarOrder ? `화면 유사도상 순서 불일치 의심: ${similarOrder}` : '프레임 해시 불일치 · 화면 유사도로 구간 순서 확인 불가';
-    return { status: '합격', issues: [`육안 대조 필요 (${detail})`], needsReview: true };
-  } catch (error) {
-    return { status: '합격', issues: [`육안 대조 필요 (${error.message})`], needsReview: true };
+  const { references, review } = read('hash');
+  const expectedFrames = references.flatMap(({ frames }) => frames);
+  if (expectedFrames.every((hash, index) => hash === review[index])) {
+    return { status: '합격', issues: [`원본과 동일한 순서 · 전체 ${review.length}프레임 해시 일치`] };
   }
+  const hashOrder = identifyOrder(references, review, (frames, combined, offset) => {
+    return frames.every((hash, index) => hash === combined[offset + index]);
+  });
+  if (hashOrder && hashOrder !== expected) {
+    return { status: '불합격', issues: [`합본 순서 또는 반복 오류 (프레임 해시로 확인: ${hashOrder})`] };
+  }
+
+  const thumbnails = read('thumbnail');
+  const similarOrder = identifyOrder(thumbnails.references, thumbnails.review, compareThumbnails);
+  if (similarOrder === expected) {
+    return { status: '합격', issues: ['화면 유사도로 구간 순서 일치 · 원본과 일부 프레임 해시 다름'] };
+  }
+  const detail = similarOrder ? `화면 유사도상 순서 불일치 의심: ${similarOrder}` : '프레임 해시 불일치 · 화면 유사도로 구간 순서 확인 불가';
+  return { status: '육안 대조 필요', issues: [detail] };
 }
 
 function run(args) {
@@ -257,8 +253,7 @@ function run(args) {
     console.log(help);
     return 0;
   }
-  const counts = { 합격: 0, 미도착: 0, 불합격: 0 };
-  let needsReview = 0;
+  const counts = { 합격: 0, 미도착: 0, 불합격: 0, '육안 대조 필요': 0 };
   const filmStatus = new Map();
   function show(label, seconds, { status, issues }) {
     counts[status]++;
@@ -284,16 +279,17 @@ function run(args) {
     if (result.status === '합격') {
       if (group.films.every(({ name }) => filmStatus.get(name) === '합격')) {
         result = compareReview(group.films, options.dir, file, seconds);
-        if (result.needsReview) needsReview++;
       } else {
         result.issues.push('순서 대조 보류 · 개별 영상 미도착 또는 기술 불합격');
       }
     }
     show(`${group.team} 합본 ${reviewFile ?? group.review}`, seconds, result);
   }
-  const reviewSummary = needsReview ? ` · 육안 대조 필요 ${needsReview}` : '';
-  console.log(`결과  합격 ${counts.합격} · 미도착 ${counts.미도착} · 불합격 ${counts.불합격}${reviewSummary}`);
-  return options.strict && (counts.미도착 || counts.불합격) ? 1 : 0;
+  const summary = Object.entries(counts).map(([status, count]) => `${status} ${count}`).join(' · ');
+  console.log(`결과  ${summary}`);
+  if (!options.strict) return 0;
+  if (counts.미도착 || counts.불합격) return 1;
+  return counts['육안 대조 필요'] ? 3 : 0;
 }
 
 try {

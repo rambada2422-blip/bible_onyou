@@ -7,6 +7,8 @@ const path = require('node:path');
 const { parseArgs } = require('node:util');
 
 const filmFolder = 'videos/exodus-plagues';
+// 검사 결과의 의미가 바뀌면 기존 SHA를 한 번 다시 확인합니다.
+const checkerVersion = 2;
 const teams = {
   '01-04': 'gpt/plague-films-01-04',
   '05-07': 'antigravity/plague-films-05-07',
@@ -24,6 +26,8 @@ const help = `열재앙 영상 새 납품 확인 (Node.js 18 이상, Git, ffprob
 팀 브랜치 ${Object.values(teams).join(', ')}를 조회합니다.
 새 커밋의 ${filmFolder} 바로 아래 MP4를 임시 폴더에 받아 기술 검사합니다.
 원격과 현재 저장소는 읽기만 합니다. 기술 검사 결과와 마지막 접수 상태를 기록합니다.
+육안 대조가 필요한 납품은 review-needed로 기록하여 합격과 구분합니다.
+기술 검사 결과의 판정 방식이 바뀌면 같은 커밋도 한 번 다시 검사합니다.
 원격 또는 실행 오류가 있으면 코드 2, 이번 조회를 마치면 코드 0으로 끝납니다.`;
 
 function git(args, options = {}) {
@@ -170,11 +174,11 @@ function check(group, dir) {
     encoding: 'utf8', timeout: 300_000, maxBuffer: 1024 * 1024,
   });
   const { status: exitCode, stdout, stderr } = result;
-  if (result.error || ![0, 1].includes(exitCode)) {
+  const statuses = { 0: 'pass', 1: 'fail', 3: 'review-needed' };
+  if (result.error || !statuses[exitCode]) {
     throw new Error(`기술 검사 실행 실패 (${result.error?.message ?? stderr.trim()})`);
   }
-  const reviewNeeded = /^결과 .+육안 대조 필요 \d+/m.test(stdout);
-  return { exitCode, result: exitCode === 1 ? 'fail' : reviewNeeded ? 'review-needed' : 'pass', stdout, stderr };
+  return { exitCode, result: statuses[exitCode], stdout, stderr };
 }
 
 function poll(remote, dir) {
@@ -202,7 +206,8 @@ function poll(remote, dir) {
         console.log(`미도착  ${group} · ${branch}`);
         continue;
       }
-      if (team.lastCheck?.sha === sha) {
+      const sameSha = team.lastCheck?.sha === sha;
+      if (sameSha && team.lastCheck.checkerVersion === checkerVersion) {
         team.lastObserved = { at, status: 'unchanged', sha };
         console.log(`변경 없음  ${group} · ${sha}`);
         continue;
@@ -211,10 +216,10 @@ function poll(remote, dir) {
       try {
         staging ??= createStaging(remote);
         const result = check(group, staging.receive(group, sha));
-        team.lastCheck = { sha, checkedAt: new Date().toISOString(), ...result };
+        team.lastCheck = { sha, checkedAt: new Date().toISOString(), checkerVersion, ...result };
         team.lastObserved = { at, status: 'checked', sha };
         save({ ...team.lastObserved, group, branch, check: team.lastCheck });
-        console.log(`새 납품  ${group} · ${sha}\n${result.stdout.trimEnd()}`);
+        console.log(`${sameSha ? '판정 방식 변경 재검사' : '새 납품'}  ${group} · ${sha}\n${result.stdout.trimEnd()}`);
       } catch (error) {
         failed = true;
         team.lastObserved = { at, status: 'error', sha, detail: error.message };
