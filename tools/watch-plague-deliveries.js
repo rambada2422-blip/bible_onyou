@@ -14,7 +14,7 @@ const teams = {
   '05-07': 'antigravity/plague-films-05-07',
   '08-10': 'claude/plague-films-08-10',
 };
-const help = `열재앙 영상 새 납품 확인 (Node.js 18 이상, Git, ffprobe 필요)
+const help = `열재앙 영상 새 납품 확인 (Node.js 18 이상, Git, ffprobe, ffmpeg 필요)
 
 사용법  node tools/watch-plague-deliveries.js --once --state-dir 폴더 [--remote 원격]
 
@@ -24,16 +24,27 @@ const help = `열재앙 영상 새 납품 확인 (Node.js 18 이상, Git, ffprob
   --help           이 도움말 표시
 
 팀 브랜치 ${Object.values(teams).join(', ')}를 조회합니다.
-새 커밋의 ${filmFolder} 바로 아래 MP4를 임시 폴더에 받아 기술 검사합니다.
+조회한 커밋의 ${filmFolder} 바로 아래 MP4를 임시 폴더에 복사해 검사합니다.
+같은 Git 객체가 현재 저장소에 있으면 재사용하고, 없으면 원격에서 가져옵니다.
 원격과 현재 저장소는 읽기만 합니다. 기술 검사 결과와 마지막 접수 상태를 기록합니다.
 육안 대조가 필요한 납품은 review-needed로 기록하여 합격과 구분합니다.
 기술 검사 결과의 판정 방식이 바뀌면 같은 커밋도 한 번 다시 검사합니다.
 원격 또는 실행 오류가 있으면 코드 2, 이번 조회를 마치면 코드 0으로 끝납니다.`;
 
-function git(args, options = {}) {
+function git(args, { localOnly = false, isolated = false, ...options } = {}) {
+  const env = {
+    ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_NO_REPLACE_OBJECTS: '1',
+    ...(localOnly ? { GIT_NO_LAZY_FETCH: '1', GIT_ALLOW_PROTOCOL: '' } : {}),
+  };
+  if (isolated) {
+    for (const name of [
+      'GIT_DIR', 'GIT_COMMON_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY',
+      'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_SHALLOW_FILE', 'GIT_CONFIG',
+    ]) delete env[name];
+  }
   return spawnSync('git', args, {
     encoding: 'utf8', timeout: 60_000, maxBuffer: 4 * 1024 * 1024,
-    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }, ...options,
+    env, ...options,
   });
 }
 
@@ -134,36 +145,48 @@ function remoteHeads(remote) {
 function createStaging(remote) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'plague-poll-'));
   const repo = path.join(dir, 'objects.git');
-  const run = (args, options) => git([`--git-dir=${repo}`, ...args], options);
+  const run = (args, options) => git([`--git-dir=${repo}`, ...args], { ...options, isolated: true });
+  const local = (args, options) => git(args, { ...options, localOnly: true });
   const cleanup = () => fs.rmSync(dir, { recursive: true, force: true });
-  try {
-    gitOutput(git(['init', '--quiet', '--bare', repo]), '임시 Git 저장소 초기화 실패');
-    gitOutput(run(['remote', 'add', 'delivery', remote]), '임시 원격 등록 실패', remote);
-  } catch (error) {
-    cleanup();
-    throw error;
-  }
+  let remoteReady = false;
 
-  function receive(group, sha) {
-    // 트리만 먼저 받아 최상위 MP4에 해당하는 블롭만 따로 읽습니다.
-    gitOutput(run(['fetch', '--quiet', '--depth=1', '--no-tags', '--filter=blob:none', 'delivery', sha]), '새 납품 커밋 받기 실패', remote);
-    const treeEntry = gitOutput(run(['ls-tree', sha, '--', filmFolder]), '영상 폴더 조회 실패');
+  function copyFilms(read, sha, folder) {
+    const treeEntry = gitOutput(read(['ls-tree', sha, '--', filmFolder]), '영상 폴더 조회 실패');
     const tree = /^040000 tree ([a-f0-9]+)\t/.exec(treeEntry)?.[1];
-    const folder = fs.mkdtempSync(path.join(dir, `${group}-`));
-    if (!tree) return folder;
-    const files = gitOutput(run(['ls-tree', '-z', tree]), '영상 파일 목록 조회 실패');
+    if (!tree) return;
+    const files = gitOutput(read(['ls-tree', '-z', tree]), '영상 파일 목록 조회 실패');
     for (const entry of files.split('\0')) {
       const match = /^100(?:644|755) blob ([a-f0-9]+)\t([^/\\]+\.mp4)$/s.exec(entry);
       if (!match) continue;
       const [, oid, name] = match;
       const fd = fs.openSync(path.join(folder, name), 'wx', 0o600);
       try {
-        gitOutput(run(['cat-file', 'blob', oid], { stdio: ['ignore', fd, 'pipe'] }), `영상 읽기 실패 (${name})`, remote);
+        gitOutput(read(['cat-file', 'blob', oid], { stdio: ['ignore', fd, 'pipe'] }), `영상 읽기 실패 (${name})`, remote);
       } finally {
         fs.closeSync(fd);
       }
     }
-    return folder;
+  }
+
+  function receive(group, sha) {
+    const localFolder = fs.mkdtempSync(path.join(dir, `${group}-`));
+    try {
+      copyFilms(local, sha, localFolder);
+      return { folder: localFolder, source: 'local' };
+    } catch {
+      fs.rmSync(localFolder, { recursive: true, force: true });
+    }
+
+    if (!remoteReady) {
+      gitOutput(git(['init', '--quiet', '--bare', repo], { isolated: true }), '임시 Git 저장소 초기화 실패');
+      gitOutput(run(['config', '--local', 'remote.delivery.url', remote]), '임시 원격 등록 실패', remote);
+      remoteReady = true;
+    }
+    // 트리만 먼저 받아 최상위 MP4에 해당하는 블롭만 따로 읽습니다.
+    gitOutput(run(['fetch', '--quiet', '--depth=1', '--no-tags', '--filter=blob:none', 'delivery', sha]), '새 납품 커밋 받기 실패', remote);
+    const folder = fs.mkdtempSync(path.join(dir, `${group}-`));
+    copyFilms(run, sha, folder);
+    return { folder, source: 'remote' };
   }
   return { receive, cleanup };
 }
@@ -215,11 +238,13 @@ function poll(remote, dir) {
 
       try {
         staging ??= createStaging(remote);
-        const result = check(group, staging.receive(group, sha));
-        team.lastCheck = { sha, checkedAt: new Date().toISOString(), checkerVersion, ...result };
+        const { folder, source } = staging.receive(group, sha);
+        const result = check(group, folder);
+        team.lastCheck = { sha, checkedAt: new Date().toISOString(), checkerVersion, source, ...result };
         team.lastObserved = { at, status: 'checked', sha };
         save({ ...team.lastObserved, group, branch, check: team.lastCheck });
-        console.log(`${sameSha ? '판정 방식 변경 재검사' : '새 납품'}  ${group} · ${sha}\n${result.stdout.trimEnd()}`);
+        const sourceLabel = source === 'local' ? '로컬 Git 객체' : '원격 Git 객체';
+        console.log(`${sameSha ? '판정 방식 변경 재검사' : '새 납품'}  ${group} · ${sha}\n영상 읽기  ${sourceLabel}\n${result.stdout.trimEnd()}`);
       } catch (error) {
         failed = true;
         team.lastObserved = { at, status: 'error', sha, detail: error.message };

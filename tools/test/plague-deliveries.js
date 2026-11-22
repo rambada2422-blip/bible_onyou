@@ -15,19 +15,30 @@ test('새 접수만 검사하고 원격 오류와 실행 중단 뒤에 이어서
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const work = path.join(dir, 'work');
   const remote = path.join(dir, 'remote.git');
+  const observer = path.join(dir, 'observer.git');
   const stateDir = path.join(dir, 'state');
   const clips = path.join(work, 'videos/exodus-plagues');
   const args = [watch, '--once', '--state-dir', stateDir];
 
-  function command(exe, argv, cwd = dir, status = 0) {
-    const result = spawnSync(exe, argv, { cwd, encoding: 'utf8', timeout: 90_000 });
+  function command(exe, argv, cwd = dir, status = 0, env = process.env) {
+    const result = spawnSync(exe, argv, { cwd, env, encoding: 'utf8', timeout: 90_000 });
     assert.equal(result.status, status, result.stderr || result.stdout || result.error?.message);
     return result;
   }
   const poll = (status = 0) => command(process.execPath, args, work, status);
-  const state = () => JSON.parse(fs.readFileSync(path.join(stateDir, 'state.json'), 'utf8'));
+  const state = (folder = stateDir) => JSON.parse(fs.readFileSync(path.join(folder, 'state.json'), 'utf8'));
   const events = () => fs.readFileSync(path.join(stateDir, 'events.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
   const git = (...gitArgs) => command('git', gitArgs, work).stdout.trim();
+  function tracedPoll(cwd, folder, label, gitEnv = {}) {
+    const trace = path.join(dir, `${label}.trace`);
+    const result = command(process.execPath, [watch, '--once', '--state-dir', folder], cwd, 0, {
+      ...process.env, ...gitEnv, GIT_TRACE2_EVENT: trace,
+    });
+    const gitCommands = fs.readFileSync(trace, 'utf8').trim().split('\n').map(JSON.parse)
+      .filter((entry) => entry.event === 'cmd_name').map((entry) => entry.name);
+    assert.equal(gitCommands.filter((name) => name === 'ls-remote').length, 1);
+    return { stdout: result.stdout, gitCommands };
+  }
   const commit = (message) => {
     git('add', '.');
     git('commit', '--quiet', '-m', message);
@@ -38,6 +49,8 @@ test('새 접수만 검사하고 원격 오류와 실행 중단 뒤에 이어서
   command('git', ['init', '--quiet', '--bare', remote]);
   command('git', ['-C', remote, 'config', 'uploadpack.allowFilter', 'true']);
   command('git', ['-C', remote, 'config', 'uploadpack.allowReachableSHA1InWant', 'true']);
+  command('git', ['init', '--quiet', '--bare', observer]);
+  command('git', ['remote', 'add', 'origin', remote], observer);
   command('git', ['init', '--quiet', '--initial-branch=antigravity/plague-films-05-07', work]);
   git('config', 'user.name', 'Film QA test');
   git('config', 'user.email', 'film-qa@example.invalid');
@@ -50,9 +63,12 @@ test('새 접수만 검사하고 원격 오류와 실행 중단 뒤에 이어서
   fs.mkdirSync(path.join(clips, 'nested'), { recursive: true });
   fs.writeFileSync(path.join(clips, 'nested/plague-05.mp4'), '이 위치의 파일은 접수하지 않음');
   const partial = commit('하위 폴더의 파일만 추가');
-  assert.match(poll().stdout, /미도착  plague-05\.mp4/);
+  const missingCommit = tracedPoll(observer, stateDir, 'missing-commit');
+  assert.match(missingCommit.stdout, /미도착  plague-05\.mp4/);
+  assert.ok(missingCommit.gitCommands.includes('fetch'));
   assert.equal(state().teams['05-07'].lastCheck.result, 'fail');
   assert.equal(state().teams['05-07'].lastCheck.sha, partial);
+  assert.equal(state().teams['05-07'].lastCheck.source, 'remote');
 
   const clip = path.join(clips, 'plague-05.mp4');
   command('ffmpeg', [
@@ -64,9 +80,38 @@ test('새 접수만 검사하고 원격 오류와 실행 중단 뒤에 이어서
   fs.writeFileSync(playlist, `file '${clip}'\n`.repeat(3));
   command('ffmpeg', ['-v', 'error', '-f', 'concat', '-safe', '0', '-i', playlist, '-c:v', 'copy', path.join(clips, 'plague-05-07-review.mp4')]);
   const delivered = commit('팀 개별 파일과 합본 납품');
-  assert.match(poll().stdout, /새 납품  05-07[\s\S]*합격 4 · 미도착 0 · 불합격 0/);
-  assert.equal(state().teams['05-07'].lastCheck.result, 'pass');
-  assert.equal(state().teams['05-07'].lastCheck.sha, delivered);
+  const original = fs.readFileSync(clip);
+  fs.writeFileSync(clip, '작업 트리에만 있는 미커밋 파일');
+  const refs = git('show-ref');
+  const localDelivery = tracedPoll(work, stateDir, 'local');
+  assert.match(localDelivery.stdout, /새 납품  05-07[\s\S]*합격 4 · 미도착 0 · 불합격 0/);
+  assert.ok(!localDelivery.gitCommands.includes('fetch'));
+  assert.equal(fs.readFileSync(clip, 'utf8'), '작업 트리에만 있는 미커밋 파일');
+  assert.equal(git('show-ref'), refs);
+  fs.writeFileSync(clip, original);
+  const localCheck = state().teams['05-07'].lastCheck;
+  assert.equal(localCheck.source, 'local');
+  assert.equal(localCheck.result, 'pass');
+  assert.equal(localCheck.sha, delivered);
+
+  command('git', ['fetch', '--quiet', '--depth=1', '--no-tags', '--filter=blob:none', 'origin', delivered], observer);
+  const blob = git('rev-parse', `${delivered}:videos/exodus-plagues/plague-05.mp4`);
+  const offlineGit = { ...process.env, GIT_NO_LAZY_FETCH: '1', GIT_ALLOW_PROTOCOL: '' };
+  command('git', ['cat-file', '-e', `${delivered}^{commit}`], observer, 0, offlineGit);
+  command('git', ['cat-file', '-e', blob], observer, 1, offlineGit);
+  const fallbackState = path.join(dir, 'fallback-state');
+  const observerConfig = fs.readFileSync(path.join(observer, 'config'), 'utf8');
+  const remoteDelivery = tracedPoll(observer, fallbackState, 'missing-blob', { GIT_DIR: observer, GIT_COMMON_DIR: observer });
+  assert.ok(remoteDelivery.gitCommands.includes('fetch'));
+  const remoteCheck = state(fallbackState).teams['05-07'].lastCheck;
+  assert.equal(remoteCheck.source, 'remote');
+  assert.equal(remoteCheck.sha, delivered);
+  assert.equal(remoteCheck.result, localCheck.result);
+  const removeTempPath = (stdout) => stdout.replace(/^개별 영상 폴더 .*\n/m, '');
+  assert.equal(removeTempPath(remoteCheck.stdout), removeTempPath(localCheck.stdout));
+  command('git', ['cat-file', '-e', blob], observer, 1, offlineGit);
+  assert.equal(fs.readFileSync(path.join(observer, 'config'), 'utf8'), observerConfig);
+
   assert.match(poll().stdout, new RegExp(`변경 없음  05-07 · ${delivered}`));
   assert.deepEqual(events().filter((event) => event.status === 'checked').map(({ sha }) => sha), [partial, delivered]);
 
