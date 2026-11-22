@@ -55,4 +55,33 @@ for i in range(1, n):
         d = np.clip((bg[y0:y1, x0:x1] - lum[y0:y1, x0:x1] - 10) / 35, 0, 1)
         sprites.append(np.dstack([im[y0:y1, x0:x1].astype(np.float32), d * 255]).astype(np.uint8))
 np.save(os.path.join(WORK, 'sky_sprites.npy'), np.array(sprites, dtype=object), allow_pickle=True)
+
+# 3) 내려앉을 메뚜기: 왼쪽 위, 하늘을 배경으로 이삭에 앉은 메뚜기 (오른쪽을 본다. 더듬이와 다리가 온전하다).
+#    08의 처음과 마지막 화면에는 이 메뚜기의 원래 자리가 들어오지 않아 두 번 보이지 않는다.
+imf = im.astype(np.float32)
+poly = np.array([(62,80),(66,74),(72,62),(78,55),(80,46),(90,44),(110,43),(128,38),(137,36),(140,30),(150,10),(156,8),(167,12),
+                 (152,30),(147,36),(148,48),(145,56),(151,62),(153,71),(146,73),(140,67),(128,65),(118,68),(106,72),(92,75),(80,80),(70,84)], np.int32)
+m = np.zeros((H, W), np.uint8); cv2.fillPoly(m, [poly], 255); m = cv2.dilate(m, np.ones((3, 3), np.uint8))
+x0, y0, x1, y1 = 55, 4, 172, 90
+reg = imf[y0:y1, x0:x1]; inside = m[y0:y1, x0:x1] > 0
+cand = reg[~inside & (reg[..., 2] > reg[..., 1]) & (reg.mean(axis=2) > 170)]
+skyc = np.median(cand, axis=0)
+alpha = np.clip((np.sqrt(((reg - skyc) ** 2).sum(axis=2)) - 22) / 30, 0, 1) * inside
+gold = (reg[..., 0] > 165) & (reg[..., 1] > 135) & (reg[..., 2] < 120) & (np.arange(y1 - y0)[:, None] > 58)
+alpha[gold] = 0                                                  # 발 아래 이삭 조각을 걷어 낸다
+alpha = cv2.erode((alpha * 255).astype(np.uint8), np.ones((2, 2), np.uint8)).astype(np.float32) / 255
+a3 = np.clip(alpha, 0.25, 1)[..., None]
+unmixed = np.clip((reg - (1 - a3) * skyc) / a3, 0, 255)          # 가장자리에 남은 하늘빛을 걷어 낸다
+alpha = cv2.GaussianBlur((alpha * 255).astype(np.uint8), (3, 3), 0)
+Image.fromarray(np.dstack([unmixed, alpha]).astype(np.uint8), 'RGBA').save(os.path.join(WORK, 'locust_land2.png'))
+
+# 4) 오른쪽 아래의 결구 양배추는 이 시대 애굽의 작물로 보기 어렵다. 같은 그림 왼쪽의 상추 (잎이 벌어진 것)를 옮겨 덮는다.
+#    옮겨 온 상추의 원래 자리는 08의 마지막 화면에 들어오지 않는다.
+bgr = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
+src_patch = bgr[378:472, 195:315]
+mask = np.zeros(src_patch.shape[:2], np.uint8)
+cv2.ellipse(mask, (60, 50), (54, 40), 0, 0, 360, 255, -1)
+mask[:, 108:] = 0
+fixed = cv2.seamlessClone(src_patch, bgr, mask, (572, 427), cv2.NORMAL_CLONE)
+Image.fromarray(cv2.cvtColor(fixed, cv2.COLOR_BGR2RGB)).save(os.path.join(WORK, 'plague-locusts-film.png'))
 print('준비 끝:', WORK, '하늘 메뚜기', len(sprites))

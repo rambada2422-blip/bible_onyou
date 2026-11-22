@@ -99,3 +99,33 @@ def extend_fill(img, top, bottom, darken=0.45, seed=7):
         f = 1 - darken * ((j + 1) / bottom) ** 1.3
         filled[i] = filled[i] * f + grain[i]
     return Image.fromarray(np.clip(filled, 0, 255).astype(np.uint8))
+
+
+def brush_side_marks(img, seed=3):
+    """한밤중 문의 좌우 설주 자국에 인방 자국처럼 세로 붓질 결을 준다 (자리와 빛깔은 그대로, 새로 그리지 않는다).
+    흐릿한 둥근 자국이 어둠 속에서 빛나는 눈처럼 보이지 않게 하려는 것이다. 자국 밖은 원화 그대로다."""
+    import cv2
+    a = np.asarray(img, dtype=np.float32).copy()
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    red = ((r > g * 1.5) & (r > b * 1.15) & (r > 40)).astype(np.uint8)
+    red = cv2.morphologyEx(red, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    n, lab, st, _ = cv2.connectedComponentsWithStats(red)
+    rng = np.random.default_rng(seed)
+    for i in range(1, n):
+        x, y, w, h, area = st[i]
+        if area < 60 or h < w * 1.3:      # 세로로 긴 덩어리 = 좌우 설주의 자국 (인방 자국은 가로로 길다)
+            continue
+        x0, x1, y0, y1 = max(0, x - 3), min(a.shape[1], x + w + 3), max(0, y - 3), min(a.shape[0], y + h + 3)
+        patch = a[y0:y1, x0:x1].copy()
+        redness = np.clip((patch[..., 0] - (patch[..., 1] + patch[..., 2]) / 2) / 40, 0, 1)
+        wood = patch[redness < 0.12]
+        base = np.median(wood, axis=0) if len(wood) else patch.reshape(-1, 3).min(axis=0)
+        streak = rng.uniform(0.35, 1.3, (patch.shape[0] // 5 + 2, patch.shape[1])).astype(np.float32)
+        streak = cv2.resize(streak, (patch.shape[1], patch.shape[0]), interpolation=cv2.INTER_CUBIC)
+        textured = base + (patch - base) * streak[..., None]
+        wgt = np.clip((redness - 0.15) / 0.3, 0, 1)[..., None]           # 자국 안에만
+        halo = (np.clip((0.3 - redness) / 0.25, 0, 1) * (redness > 0.04))[..., None] * 0.5   # 자국 둘레의 번진 붉은 빛을 줄인다
+        out = patch * (1 - wgt) + textured * wgt
+        out = out * (1 - halo) + base * halo
+        a[y0:y1, x0:x1] = out
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
