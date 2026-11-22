@@ -11,7 +11,7 @@ if (!outputFolder) {
 
 const { chromium } = require('playwright');
 const layoutIssues = require('../layout-issues');
-const sizes = [[320, 568], [360, 560], [390, 664], [390, 844], [568, 320], [844, 390]];
+const sizes = [[320, 568], [360, 560], [360, 640], [360, 701], [390, 664], [390, 844], [568, 320], [844, 390]];
 let url;
 
 async function checkSize(browser, width, height) {
@@ -41,6 +41,50 @@ async function checkSize(browser, width, height) {
     await page.screenshot({ path: path.join(folder, `${name}.png`), animations: 'disabled' });
   }
 
+  async function jordanRings() {
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const rings = await page.locator('.hot').evaluateAll(buttons => {
+      const art = document.querySelector('#alt02-state-main').ownerSVGElement;
+      const sheet = document.querySelector('.scene > .sheet').getBoundingClientRect();
+      const clues = BO.content.scenes['ALT-02'].spot.t1.items;
+      return buttons.map((button, i) => {
+        const region = BO.artMeta.alt02.regions.find(region => region.id === clues[i].region);
+        const [stageX, stageY] = region.tap || [region.x + region.w / 2, region.y + region.h / 2];
+        const target = new DOMPoint(stageX, stageY).matrixTransform(art.getScreenCTM());
+        const box = button.getBoundingClientRect(), x = box.x + box.width / 2, y = box.y + box.height / 2;
+        return { x, y, width: box.width, height: box.height, clearOfSheet: box.bottom <= sheet.top || box.right <= sheet.left,
+          aligned: Math.hypot(x - target.x, y - target.y) < 1,
+          tapTarget: document.elementFromPoint(x, y)?.closest('.hot') === button };
+      });
+    });
+    assert.equal(rings.length, 3);
+    for (const [i, ring] of rings.entries()) {
+      assert(ring.aligned && ring.tapTarget && ring.clearOfSheet, `요단 단서 ${i + 1} 그림 정렬과 터치`);
+      assert(ring.width >= 44 && ring.height >= 44, `요단 단서 ${i + 1} 터치 영역`);
+      for (const other of rings.slice(i + 1)) {
+        const reach = (Math.max(ring.width, ring.height) + Math.max(other.width, other.height)) / 2;
+        assert(Math.hypot(ring.x - other.x, ring.y - other.y) >= reach, '요단 단서끼리 겹치지 않아야 합니다.');
+      }
+    }
+    return rings.map(({ x, y }) => [x, y]);
+  }
+
+  async function checkJordanAnswers() {
+    const measured = await page.locator('.sheet-body').evaluate(body => {
+      const visible = body.getBoundingClientRect();
+      const answers = Array.from(body.querySelectorAll('.found-list > .it:not(.wait)'), row => {
+        const above = row.getBoundingClientRect();
+        return { visible: above.top >= visible.top && above.bottom <= visible.bottom,
+          ref: !!row.querySelector('.ref'), font: parseFloat(getComputedStyle(row).fontSize) };
+      });
+      return { scrollTop: body.scrollTop, prompt: parseFloat(getComputedStyle(body.querySelector('.q-prompt')).fontSize), answers };
+    });
+    assert.equal(measured.scrollTop, 0);
+    assert(measured.prompt >= 20);
+    assert.equal(measured.answers.length, 3);
+    assert(measured.answers.every(answer => answer.visible && answer.ref && answer.font >= 15), '요단 강 답변과 장절이 잘림 없이 보여야 합니다.');
+  }
+
   async function checkClues(destination, filename) {
     await click(destination);
     await click('이야기 읽기');
@@ -49,7 +93,21 @@ async function checkSize(browser, width, height) {
     await capture(filename);
     const clues = await page.locator('.hot').all();
     assert.equal(clues.length, 3, `${destination} 경로의 단서가 세 개여야 합니다.`);
+    const jordan = destination === '여호수아' && ((width === 360 && [640, 701].includes(height)) || (width === 390 && height === 844));
+    if (jordan) await jordanRings();
     await clues[0].tap();
+    if (jordan && height === 640) {
+      const portrait = await jordanRings();
+      await page.reload();
+      await click('이어서 탐험하기');
+      await clues[0].waitFor();
+      assert(await clues[0].isDisabled(), '새로고침 후에도 찾은 요단 강 단서가 남아야 합니다.');
+      assert.deepEqual(await jordanRings(), portrait);
+      await page.setViewportSize({ width: height, height: width });
+      await jordanRings();
+      await page.setViewportSize({ width, height });
+      assert.deepEqual(await jordanRings(), portrait);
+    }
     if (destination === '요셉' && width === 390 && height === 844) {
       await page.setViewportSize({ width: height, height: width });
       assert.equal(await page.locator('.hot').count(), 3);
@@ -58,6 +116,11 @@ async function checkSize(browser, width, height) {
       await capture('10-joseph-rotated');
     }
     for (const clue of clues.slice(1)) await clue.tap();
+    if (jordan) {
+      await jordanRings();
+      await checkJordanAnswers();
+      await capture('08-jordan-answers');
+    }
     assert(await next.isEnabled(), `${destination} 경로에서 단서를 모두 눌렀으나 다음 화면이 열리지 않았습니다.`);
     await next.click();
     assert.equal(await page.locator('.hot').count(), 0, '이전 그림의 단서가 새 화면에 남아 있습니다.');
