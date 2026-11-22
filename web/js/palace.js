@@ -40,7 +40,9 @@
     function draw(focus) {
       const chapter = chapters[s.chapter], beat = chapter.beats[s.beat];
       const final = s.chapter === chapters.length - 1 && s.beat === chapter.beats.length - 1;
-      const image = beat.who || s.chapter === 0 && !beat.film ? palaceArt : chapter.art;
+      // 한밤중의 부름에는 빛이 드는 낮 왕궁 대신 닫힌 문을 보여 준다.
+      const showAudience = s.chapter !== 9 && (beat.who || s.chapter === 0 && !beat.film);
+      const image = showAudience ? palaceArt : chapter.art;
       const heading = el('h1', {tabindex:'-1'}, chapter.title);
       const hero = el('div', {class:'palace-picture'}, app.pic(image, '', image === palaceArt ?
         '왕 앞에 선 모세와 아론. 왼쪽의 두 형제와 오른쪽의 바로가 마주 보고 있어요.' : chapter.title));
