@@ -1,0 +1,486 @@
+/* 바이블 온유 · 다윗 탐험 (8~10세 독립 실행형)
+ * 360x640 세로와 640x360 가로 화면 모두에서 질문·장절·단추가 가려지지 않게 배치한다.
+ */
+:root {
+  --ink: #16233F;
+  --ink-2: #22345B;
+  --ink-3: #0E1730;
+  --brass: #E9B44C;
+  --brass-deep: #A8741F;
+  --teal: #1D6E68;
+  --teal-soft: #E1F2EF;
+  --paper: #FBF7EE;
+  --paper-2: #F0E8D6;
+  --paper-line: #D5C7AA;
+  --text: #1B2540;
+  --text-soft: #4B5670;
+  --ok: #1E6B4F;
+  --ok-bg: #DFF1E8;
+  --warm: #9B431E;
+  --warm-bg: #FBE9DC;
+  --f-local-sans: 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', 'Noto Sans KR', sans-serif;
+  --f-display: 'Jua', var(--f-local-sans), sans-serif;
+  --f-body: 'Gowun Dodum', var(--f-local-sans), sans-serif;
+  --gutter-l: max(14px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(14px, env(safe-area-inset-right, 0px));
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--ink-3);
+  color: var(--text);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
+button:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+h1, h2, h3, p { margin: 0; }
+
+.app {
+  position: relative;
+  height: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 0 48px rgba(0, 0, 0, .45);
+}
+
+/* ── 상단 바 ── */
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: max(8px, env(safe-area-inset-top, 0px)) var(--gutter-r) 8px var(--gutter-l);
+  background: var(--ink);
+  color: var(--paper);
+}
+.topbar-title {
+  font-family: var(--f-display);
+  font-size: 17px;
+  line-height: 1.25;
+  color: var(--paper);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-family: var(--f-display);
+  font-size: 14px;
+  background: rgba(251, 247, 238, .14);
+  color: var(--paper);
+  white-space: nowrap;
+}
+.topbtn:active { background: rgba(251, 247, 238, .24); }
+.topbtn.brass { background: var(--brass); color: var(--ink-3); }
+
+/* ── 공통 장절 칩 & 단추 ── */
+.ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: var(--f-display);
+  font-size: 13.5px;
+  background: var(--teal-soft);
+  color: var(--teal);
+  border: 1px solid rgba(29, 110, 104, .28);
+}
+.ref.warm {
+  background: var(--warm-bg);
+  color: var(--warm);
+  border-color: rgba(155, 67, 30, .28);
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-family: var(--f-display);
+  font-size: 13px;
+  background: var(--paper-2);
+  color: var(--ink);
+  border: 1px solid var(--paper-line);
+}
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 14px;
+  font-family: var(--f-display);
+  font-size: 17px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 3px 0 var(--ink-3);
+}
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink-3); }
+.btn.brass { background: var(--brass); color: var(--ink-3); box-shadow: 0 3px 0 var(--brass-deep); }
+.btn.brass:active { box-shadow: 0 1px 0 var(--brass-deep); }
+.btn.plain { background: #fff; color: var(--ink); border: 2px solid var(--paper-line); box-shadow: none; }
+.btn.plain:active { transform: none; background: var(--paper-2); }
+.btn[disabled] { opacity: .45; pointer-events: none; }
+
+/* ── 첫 화면 (장면 고르기) ── */
+.home-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px var(--gutter-r) 20px var(--gutter-l);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.hero {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hero-kicker { font-family: var(--f-display); font-size: 13px; color: var(--brass); }
+.hero h1 { font-family: var(--f-display); font-size: 22px; line-height: 1.25; }
+.hero p { font-size: 14.5px; color: #E4ECFA; line-height: 1.45; }
+.progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+.progress-pill {
+  font-family: var(--f-display);
+  font-size: 13.5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(251, 247, 238, .16);
+  color: var(--paper);
+}
+.scene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.scene-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 68px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: #fff;
+  border: 2px solid var(--paper-line);
+  text-align: left;
+}
+.scene-card:active { background: var(--paper-2); }
+.scene-card.done { border-color: var(--ok); background: var(--ok-bg); }
+.scene-badge {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--brass);
+  font-family: var(--f-display);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scene-card.done .scene-badge { background: var(--ok); color: #fff; }
+.scene-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.scene-name { font-family: var(--f-display); font-size: 16.5px; color: var(--text); }
+.scene-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; color: var(--text-soft); }
+.scene-state { font-family: var(--f-display); font-size: 13px; color: var(--ok); }
+
+/* ── 장면 플레이 화면 ── */
+.play-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.stage {
+  flex: none;
+  position: relative;
+  height: 180px;
+  background: #233354;
+  overflow: hidden;
+  border-bottom: 2px solid var(--paper-line);
+}
+.stage > div:first-child { width: 100%; height: 100%; }
+.stage svg { width: 100%; height: 100%; display: block; }
+.stage-chips {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  pointer-events: none;
+}
+.stage-chips .ref, .stage-chips .tag {
+  background: rgba(251, 247, 238, .95);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+}
+
+.sheet {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px var(--gutter-r) 16px var(--gutter-l);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.meta-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.question {
+  font-family: var(--f-display);
+  font-size: 19px;
+  line-height: 1.38;
+  color: var(--ink);
+}
+.subnote {
+  font-size: 14.5px;
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
+/* ── 선택 단서 카드 ── */
+.choices {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.choice-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: #fff;
+  border: 2px solid var(--paper-line);
+  text-align: left;
+  box-shadow: 0 2px 0 var(--paper-line);
+}
+.choice-card:active { background: var(--paper-2); transform: translateY(1px); }
+.choice-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--paper-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.choice-icon svg { width: 34px; height: 34px; display: block; }
+.choice-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.choice-label { font-family: var(--f-display); font-size: 17px; color: var(--ink); }
+.choice-sub { font-size: 13.5px; color: var(--text-soft); }
+
+/* ── 보충 장면 (다른 단서) ── */
+.detour-box {
+  background: var(--warm-bg);
+  border: 2px solid rgba(155, 67, 30, .3);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.detour-kicker { font-family: var(--f-display); font-size: 14px; color: var(--warm); }
+.detour-fact { font-family: var(--f-display); font-size: 17.5px; color: var(--ink); line-height: 1.4; }
+.detour-diff { font-size: 14.5px; color: var(--text); line-height: 1.48; }
+.detour-backref {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--paper-line);
+  font-size: 14px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── 발견 카드 ── */
+.discovery-box {
+  background: var(--ok-bg);
+  border: 2px solid var(--ok);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.discovery-kicker { font-family: var(--f-display); font-size: 14px; color: var(--ok); }
+.discovery-text { font-family: var(--f-display); font-size: 17.5px; color: var(--ink); line-height: 1.45; }
+.discovery-note { font-size: 14px; color: var(--text-soft); }
+.actions { display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 4px; }
+
+/* ── D02 시냇가 다섯 돌 ── */
+.stones-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.stone-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 64px;
+  padding: 6px 4px;
+  border-radius: 14px;
+  background: #fff;
+  border: 2px solid var(--paper-line);
+  font-family: var(--f-display);
+  font-size: 13px;
+  color: var(--ink);
+}
+.stone-btn.picked {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.stone-btn svg { width: 28px; height: 22px; display: block; }
+
+/* ── D03 순서 놓기 (탭 전용) ── */
+.order-list { display: flex; flex-direction: column; gap: 8px; }
+.order-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff;
+  border: 2px solid var(--paper-line);
+  text-align: left;
+}
+.order-card.selected { border-color: var(--ink); background: var(--teal-soft); }
+.order-num {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--brass);
+  font-family: var(--f-display);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.order-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.order-title { font-family: var(--f-display); font-size: 16px; color: var(--ink); }
+.order-hint { font-size: 13px; color: var(--text-soft); }
+.order-msg { font-size: 14px; color: var(--warm); font-family: var(--f-display); }
+
+/* ── 일지 화면 ── */
+.journal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px var(--gutter-r) 20px var(--gutter-l);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.journal-empty {
+  padding: 20px 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 2px dashed var(--paper-line);
+  text-align: center;
+  color: var(--text-soft);
+}
+.journal-item {
+  background: #fff;
+  border: 2px solid var(--paper-line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.journal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.journal-title { font-family: var(--f-display); font-size: 16.5px; color: var(--ink); }
+.journal-fact { font-size: 15px; color: var(--text); line-height: 1.48; }
+.journal-sub { font-size: 13.5px; color: var(--text-soft); }
+.journal-open {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font-family: var(--f-display);
+  font-size: 14px;
+}
+
+/* ── 가로 화면 (예: 640x360) 대응 ── */
+@media (orientation: landscape) and (max-height: 460px) {
+  .app { max-width: 100%; }
+  .topbar { padding-top: 6px; padding-bottom: 6px; }
+  .play-layout { flex-direction: row; }
+  .stage {
+    width: 42%;
+    height: auto;
+    border-bottom: 0;
+    border-right: 2px solid var(--paper-line);
+  }
+  .sheet { padding: 10px var(--gutter-r) 12px 14px; gap: 8px; }
+  .question { font-size: 17px; }
+  .choice-card { min-height: 50px; padding: 8px 12px; }
+  .btn { min-height: 44px; font-size: 16px; }
+  .scene-list { display: grid; grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
