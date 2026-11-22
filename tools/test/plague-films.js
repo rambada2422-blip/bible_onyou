@@ -61,3 +61,36 @@ test('정해진 파일명과 기술 규격으로 납품 검사', (t) => {
   assert.match(tampered, /불합격  plague-07\.mp4[^\n]*디코딩 실패/);
   assert.match(check(args, 0), /결과  합격 1 · 미도착 0 · 불합격 2/);
 });
+
+test('같은 길이의 합본에서 프레임 순서와 반복을 대조', (t) => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'plague-reviews-test-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const numbers = ['05', '06', '07'];
+  const colors = ['red', 'green', 'blue'];
+  const playlist = path.join(dir, 'parts.txt');
+  const clip = (number) => `plague-${number}.mp4`;
+  function bundle(name, order, videoOptions = ['-c:v', 'copy']) {
+    writeFileSync(playlist, order.map((number) => `file '${clip(number)}'`).join('\n'));
+    const file = path.join(dir, name);
+    ffmpeg(['-f', 'concat', '-safe', '1', '-i', playlist, ...videoOptions, file]);
+    return file;
+  }
+  for (const [index, number] of numbers.entries()) smallFilm(path.join(dir, clip(number)), colors[index]);
+  const args = ['--dir', dir, '--group', '05-07', '--strict'];
+  bundle('plague-05-07-review.mp4', numbers);
+  assert.match(check([...args, '--review'], 0), /전체 432프레임 해시 일치/);
+
+  const swapped = bundle('다른 이름 합본.mp4', ['06', '05', '07']);
+  assert.match(check([...args, '--review-file', `05-07=${swapped}`], 1), /합본 순서 또는 반복 오류[^\n]*06\.mp4 → plague-05\.mp4/);
+  const repeated = bundle('repeated.mp4', ['05', '05', '07']);
+  assert.match(check([...args, '--review-file', `05-07=${repeated}`], 1), /합본 순서 또는 반복 오류[^\n]*05\.mp4 → plague-05\.mp4/);
+
+  const reencoded = bundle('reencoded.mp4', numbers, [
+    '-c:v', 'libx264', '-threads', '2', '-preset', 'ultrafast', '-vf', 'eq=brightness=0.01',
+  ]);
+  assert.match(check([...args, '--review-file', `05-07=${reencoded}`], 0), /화면 유사도로 구간 순서 일치 · 원본과 일부 프레임 해시 다름/);
+
+  smallFilm(path.join(dir, clip('00')), 'yellow');
+  const unknown = bundle('unknown.mp4', ['05', '00', '07']);
+  assert.match(check([...args, '--review-file', `05-07=${unknown}`], 0), /육안 대조 필요 1/);
+});

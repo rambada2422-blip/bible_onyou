@@ -5,6 +5,7 @@ const path = require('node:path');
 const { parseArgs } = require('node:util');
 
 const fps = 24;
+const thumbnailBytes = 16 * 24 * 3;
 const defaultDir = path.resolve(__dirname, '../videos/exodus-plagues');
 const films = [12, 6, 6, 12, 6, 6, 6, 6, 12, 16].map((seconds, index) => ({
   name: `plague-${String(index + 1).padStart(2, '0')}.mp4`,
@@ -32,6 +33,9 @@ const help = `열 가지 재앙 영상 납품 점검 (Node.js 18 이상, ffprobe
 개별 파일은 plague-01.mp4부터 plague-10.mp4까지 번호 순으로 검사합니다.
 팀 합본의 기본 파일명은 ${groups.map((group) => group.review).join(', ')}입니다.
 직접 지정한 팀 합본은 --review 없이도 검사하며, 상대 경로는 현재 폴더를 기준으로 합니다.
+합본과 개별 영상이 모두 기술 검사에 합격하면 ffmpeg로 디코딩한 프레임의 해시를 대조합니다.
+해시가 다르면 구간별 화면 유사도로 순서를 확인합니다. 순서를 확인하기 어려우면 육안 대조가 필요합니다.
+육안 대조가 필요한 합본은 기술 검사 합격으로 표시됩니다. 그 항목만으로 종료 코드가 바뀌지 않습니다.
 진척 확인은 파일별 불합격과 미도착을 표시한 뒤 코드 0으로 끝납니다.
 명령 사용이나 실행 환경에 문제가 있으면 두 모드 모두 코드 2로 끝납니다.
 검사 중 파일을 읽기만 합니다.`;
@@ -167,6 +171,86 @@ function inspect(file, seconds) {
   return { status: issues.length ? '불합격' : '합격', issues };
 }
 
+function decodeFrames(file, mode) {
+  const output = mode === 'hash'
+    ? ['-c:v', 'rawvideo', '-pix_fmt', 'yuv420p', '-f', 'framehash', '-hash', 'sha256']
+    : ['-vf', 'scale=16:24:flags=area', '-c:v', 'rawvideo', '-pix_fmt', 'rgb24', '-f', 'rawvideo'];
+  const result = spawnSync('ffmpeg', [
+    '-v', 'error', '-xerror', '-protocol_whitelist', 'file', '-f', 'mov', '-threads', '2', '-noautorotate', '-i', file,
+    '-map', '0:v:0', '-threads', '1', '-fps_mode', 'passthrough', ...output, 'pipe:1',
+  ], { timeout: 60_000, maxBuffer: 8 * 1024 * 1024 });
+  if (result.error?.code === 'ENOENT') throw new Error('ffmpeg를 찾을 수 없습니다.');
+  if (result.error || result.status !== 0) throw new Error(`프레임 비교 자료를 읽을 수 없습니다 (${path.basename(file)}).`);
+  if (mode === 'hash') {
+    return result.stdout.toString('utf8').split('\n').filter((line) => /^\s*0,/.test(line))
+      .map((line) => line.slice(line.lastIndexOf(',') + 1).trim());
+  }
+  return Array.from({ length: result.stdout.length / thumbnailBytes }, (_, index) => {
+    return result.stdout.subarray(index * thumbnailBytes, (index + 1) * thumbnailBytes);
+  });
+}
+
+function compareThumbnails(reference, review, offset) {
+  // 시작과 끝을 포함하여 구간마다 고르게 분산된 아홉 프레임을 비교합니다.
+  for (let sample = 0; sample < 9; sample++) {
+    const index = Math.round(sample * (reference.length - 1) / 8);
+    let difference = 0;
+    for (let channel = 0; channel < thumbnailBytes; channel++) {
+      difference += Math.abs(reference[index][channel] - review[offset + index][channel]);
+    }
+    if (difference > 6 * thumbnailBytes) return false;
+  }
+  return true;
+}
+
+function identifyOrder(references, review, compare) {
+  const order = [];
+  let offset = 0;
+  while (offset < review.length) {
+    const matches = references.filter(({ frames }) => frames.length <= review.length - offset && compare(frames, review, offset));
+    if (matches.length !== 1) return null;
+    order.push(matches[0].name);
+    offset += matches[0].frames.length;
+  }
+  return order.join(' → ');
+}
+
+function compareReview(films, dir, file, seconds) {
+  const expected = films.map(({ name }) => name).join(' → ');
+  const read = (mode) => {
+    const references = films.map(({ name, seconds }) => ({ name, seconds, frames: decodeFrames(path.join(dir, name), mode) }));
+    const review = decodeFrames(file, mode);
+    if (references.some((film) => film.frames.length !== film.seconds * fps) || review.length !== seconds * fps) {
+      throw new Error('순서 대조에서 디코딩한 프레임 수가 기술 검사 결과와 다릅니다.');
+    }
+    return { references, review };
+  };
+
+  try {
+    const { references, review } = read('hash');
+    const expectedFrames = references.flatMap(({ frames }) => frames);
+    if (expectedFrames.every((hash, index) => hash === review[index])) {
+      return { status: '합격', issues: [`원본과 동일한 순서 · 전체 ${review.length}프레임 해시 일치`] };
+    }
+    const hashOrder = identifyOrder(references, review, (frames, combined, offset) => {
+      return frames.every((hash, index) => hash === combined[offset + index]);
+    });
+    if (hashOrder && hashOrder !== expected) {
+      return { status: '불합격', issues: [`합본 순서 또는 반복 오류 (프레임 해시로 확인: ${hashOrder})`] };
+    }
+
+    const thumbnails = read('thumbnail');
+    const similarOrder = identifyOrder(thumbnails.references, thumbnails.review, compareThumbnails);
+    if (similarOrder === expected) {
+      return { status: '합격', issues: ['화면 유사도로 구간 순서 일치 · 원본과 일부 프레임 해시 다름'] };
+    }
+    const detail = similarOrder ? `화면 유사도상 순서 불일치 의심: ${similarOrder}` : '프레임 해시 불일치 · 화면 유사도로 구간 순서 확인 불가';
+    return { status: '합격', issues: [`육안 대조 필요 (${detail})`], needsReview: true };
+  } catch (error) {
+    return { status: '합격', issues: [`육안 대조 필요 (${error.message})`], needsReview: true };
+  }
+}
+
 function run(args) {
   const options = readOptions(args);
   if (options.help) {
@@ -174,8 +258,9 @@ function run(args) {
     return 0;
   }
   const counts = { 합격: 0, 미도착: 0, 불합격: 0 };
-  function show(label, file, seconds) {
-    const { status, issues } = inspect(file, seconds);
+  let needsReview = 0;
+  const filmStatus = new Map();
+  function show(label, seconds, { status, issues }) {
     counts[status]++;
     const detail = issues.length ? ` · ${issues.join(' / ')}` : '';
     console.log(`${status}  ${label} · ${seconds}초 · ${seconds * fps}프레임${detail}`);
@@ -184,15 +269,30 @@ function run(args) {
   console.log(`열재앙 영상 ${options.strict ? '승인 전 기술 검사' : '진척 확인'} · ${options.selected.map((group) => group.id).join(', ')}`);
   console.log(`개별 영상 폴더  ${options.dir}`);
   for (const group of options.selected) {
-    for (const { name, seconds } of group.films) show(name, path.join(options.dir, name), seconds);
+    for (const { name, seconds } of group.films) {
+      const result = inspect(path.join(options.dir, name), seconds);
+      filmStatus.set(name, result.status);
+      show(name, seconds, result);
+    }
   }
   for (const group of options.selected) {
     const reviewFile = options.reviewPaths.get(group.id);
     if (!options.review && !reviewFile) continue;
     const seconds = group.films.reduce((total, film) => total + film.seconds, 0);
-    show(`${group.team} 합본 ${reviewFile ?? group.review}`, reviewFile ?? path.join(options.dir, group.review), seconds);
+    const file = reviewFile ?? path.join(options.dir, group.review);
+    let result = inspect(file, seconds);
+    if (result.status === '합격') {
+      if (group.films.every(({ name }) => filmStatus.get(name) === '합격')) {
+        result = compareReview(group.films, options.dir, file, seconds);
+        if (result.needsReview) needsReview++;
+      } else {
+        result.issues.push('순서 대조 보류 · 개별 영상 미도착 또는 기술 불합격');
+      }
+    }
+    show(`${group.team} 합본 ${reviewFile ?? group.review}`, seconds, result);
   }
-  console.log(`결과  합격 ${counts.합격} · 미도착 ${counts.미도착} · 불합격 ${counts.불합격}`);
+  const reviewSummary = needsReview ? ` · 육안 대조 필요 ${needsReview}` : '';
+  console.log(`결과  합격 ${counts.합격} · 미도착 ${counts.미도착} · 불합격 ${counts.불합격}${reviewSummary}`);
   return options.strict && (counts.미도착 || counts.불합격) ? 1 : 0;
 }
 
