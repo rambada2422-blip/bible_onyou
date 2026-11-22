@@ -2,7 +2,7 @@
 
 # 일감 나-1 인계 · Gemini
 
-- 날짜와 시각: 2026-11-19 23:08 ~ 23:12
+- 날짜와 시각: 2026-11-19 23:08 ~ 23:12 (전체 점검 이어받음 2026-11-22 10:48 ~ 11:21)
 - AI 이름: Gemini (안티그래비티)
 - 줄: 코드 줄 나 · 점검 도구
 - 단계: 일감 나-1 · 점검이 시험과 검사를 스스로 찾아 돌리게
@@ -10,8 +10,10 @@
 
 ## 어디까지 했는지
 
-- `docs/일감/나-1.md`의 할 일 1~5번 구현, 임시 `exit 1`/`exit 2` 검사 검증 및 삭제, 빠른 점검(`node tools/check.js`) 합격까지 마쳤다.
-- ⚠️ **자동 조작 미실행**: 이 환경(Windows 로컬)에 Playwright가 설치되어 있지 않아 `node tools/check.js --full`을 실행하지 못했다. 완료 기준에 `--full` 합격이 있으므로 `상태: 하는 중`으로 둔다.
+- `docs/일감/나-1.md`의 할 일 1~5번 구현, 임시 `exit 1`/`exit 2` 검사 검증 및 삭제, 빠른 점검(`node tools/check.js` 5/5 합격)을 마쳤다.
+- 2026-11-22에 최신 `origin/main`(`1350b27`)을 `relay/tools`에 합치고 Playwright로 `node tools/check.js --full`을 끝까지 실행했다.
+- `tools/check.js`의 자동 탐색 기능 자체는 정상 작동해 `tools/lint/00_selftest.js`와 `tools/test/full/`의 23개 시험을 모두 찾아 실행했고, **32개 중 31개 통과**했다.
+- 다만 `origin/main`에 이미 들어 있던 `tools/test/full/a11y3d.js` 1건이 3D 처음 화면(`menu`) 글자 대비 부족(`3.86~4.48 < 4.5`, 10건)으로 불합격해 `상태: 하는 중`으로 둔다. `web3d/css/game.css`는 코드 줄 나의 건드릴 파일 밖이라 고치지 않았다.
 
 ## 한 일
 
@@ -42,16 +44,18 @@
 
 ## 점검
 
-- 빠른 점검 명령: `node tools/check.js`
-- 자동 조작: ⚠️ **자동 조작 미실행** (Playwright 미설치 환경)
-- 점검 결과 마지막 두 줄 (`node tools/check.js`):
+- 빠른 점검 (`node tools/check.js`): `통과 5/5`, `점검 결과: 합격` (`문법 61개 파일`, `build.js`, `build3d.js`, `00_selftest` 70개 js 파일 깨진 글자 없음).
+- 전체 점검 (`node tools/check.js --full`, 2026-11-22 실행):
+  - 통과 31건: 문법(61개), `build.js`, `build3d.js`, 바뀐 파일, `00_selftest`, 기본 자동 조작 4종(`2D 시범판` 61초, `사진형 배경` 2초, `3D 호렙 산` 415초, `3D 요단 강` 130초), `tools/test/full/` 22종(`a11y2d`, `awe-options`, `awe_flow`, `awe_layout`, `detour-clues`, `font-start`, `journal-clues`, `layout2d`, `layout3d`, `look-beats2d`, `mobile-preview`, `motion2d`, `nofont2d`, `nowebgl`, `order-retry`, `pillar-preview`, `read-aloud2d`, `save2d`, `save3d`, `story-resume3d`, `verse-input`, `walk2d_tiers`).
+  - 불합격 1건: `a11y3d` (109초) — 단독 재실행(`node tools/test/full/a11y3d.js dist/check/a11y3d`)으로 확인한 원인:
+    - `menu 320×568`·`568×320` 화면의 글자 대비 10건이 `4.5` 미만 (`3.86` ~ `4.48`: `누가 되어 탐험할까요?` 3.86/3.94, `이야기를 따라가며 그림에서 답을 골라요.` 4.09/4.19, `몇 살 탐험대인가요?` 4.12, `주제만 듣고 본문을 스스로 찾아 기록해요.` 4.25/4.38, `순서를 맞추고 성경에서 장절을 찾아요.` 4.30/4.48, `13살` 4.36).
+- 점검 결과 마지막 두 줄 (`node tools/check.js --full`):
 
 ```text
-점검 종류: 빠른 · 통과 5/5
-점검 결과: 합격
+점검 종류: 전체 · 통과 31/32
+점검 결과: 불합격
 ```
 
 ## 남은 일
 
-- Playwright가 있는 환경의 다음 세션이 `relay/tools`에서 `node tools/check.js --full`을 돌려 `tools/test/full/awe_layout.js`를 포함한 전체 점검이 통과하는지 확인한다.
-- 합격하면 이 파일의 첫머리를 `상태: 끝`으로 바꾸고 전체 점검 결과 마지막 두 줄을 적어 커밋·푸시한 뒤 `일감 나-2`로 넘어간다.
+- `코드 줄 가` 또는 총괄이 `web3d/css/game.css`의 3D 처음 화면(`menu`) 글자 대비를 `4.5` 이상으로 고쳐 `main`에 반영한 뒤, `relay/tools`에 `origin/main`을 합쳐 `node tools/check.js --full`을 다시 돌려 `32/32 합격`을 확인하고 `상태: 끝`으로 바꾼다.
