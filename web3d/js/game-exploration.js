@@ -31,6 +31,22 @@ BO3D.gameModules.exploration = function (G) {
   }
   function dexCount() { return Object.keys(G.dex).length; }
   function updateDexBtn() { G.dexLabel.textContent = '도감 ' + dexCount() + ' / ' + G.DEX.length; }
+  function flockInPhoto(cw, ch, sx, sy, size) {
+    var targets = [], ray = new G.T.Raycaster();
+    var blockers = G.followers.concat([G.player, G.moses]).map(function (actor) { return actor.group; });
+    G.sheep.forEach(function (sheep) {
+      var center = sheep.group.localToWorld(v3(0, 0.43, 0)), point = center.clone().project(G.camera);
+      var x = ((1 + point.x) * cw / 2 - sx) / size, y = ((1 - point.y) * ch / 2 - sy) / size;
+      if (point.z <= -1 || point.z >= 1 || x < 0 || x > 1 || y < 0 || y > 1) return;
+      ray.setFromCamera(point, G.camera);
+      ray.far = Math.max(0, center.distanceTo(ray.ray.origin) - 0.35);
+      if (ray.intersectObjects(blockers, true).length) return;
+      var side = v3(1, 0, 0).applyQuaternion(G.camera.quaternion).multiplyScalar(0.38 * sheep.group.scale.x);
+      var radius = Math.abs(center.add(side).project(G.camera).x - point.x) * cw / (2 * size);
+      targets.push([Math.round(x * 1000), Math.round(y * 1000), Math.min(200, Math.max(1, Math.round(radius * 1000)))]);
+    });
+    return targets;
+  }
   function takeShot() {
     var cw = G.canvas.width, ch = G.canvas.height, found = [], best = null;
     G.DEX.forEach(function (d) {
@@ -57,7 +73,11 @@ BO3D.gameModules.exploration = function (G) {
       var size = Math.min(cw, ch) * (f.d.crop || 0.5), sx = (f.n.x * 0.5 + 0.5) * cw - size / 2, sy = (1 - (f.n.y * 0.5 + 0.5)) * ch - size / 2;
       sx = Math.max(0, Math.min(cw - size, sx)); sy = Math.max(0, Math.min(ch - size, sy));
       var cv = document.createElement('canvas'); cv.width = cv.height = 220;
-      try { cv.getContext('2d').drawImage(G.canvas, sx, sy, size, size, 0, 0, 220, 220); G.dex[f.d.id] = cv.toDataURL('image/jpeg', 0.82); }
+      try {
+        cv.getContext('2d').drawImage(G.canvas, sx, sy, size, size, 0, 0, 220, 220);
+        G.dex[f.d.id] = cv.toDataURL('image/jpeg', 0.82);
+        if (f.d.id === 'sheep') G.flockMarks = flockInPhoto(cw, ch, sx, sy, size);
+      }
       catch (e) { G.dex[f.d.id] = ''; }
     });
     updateDexBtn();

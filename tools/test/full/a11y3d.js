@@ -128,7 +128,13 @@ async function run(output) {
     }
     await audit('menu');
     await button('탐험 시작').tap(); await audit('route');
-    await button('모세').tap(); await button('어떻게 하나요?').waitFor(); await audit('horeb-landing');
+    await button('모세').tap(); await button('어떻게 하나요?').waitFor();
+    // 글과 배경을 따로 찍는 동안 알림이 사라지면 글자 뒤의 땅을 배경색으로 읽게 된다.
+    const notice = page.locator('.toast3');
+    await notice.waitFor({ state: 'visible' });
+    await notice.evaluate(el => el.style.setProperty('display', getComputedStyle(el).display, 'important'));
+    try { await audit('horeb-landing'); }
+    finally { await notice.evaluate(el => el.style.removeProperty('display')); }
     await button('어떻게 하나요?').tap(); await audit('flock-help');
     await resume('route');
     await button('여호수아').tap(); await button('둘러보자').waitFor(); await audit('jordan-arrival');
