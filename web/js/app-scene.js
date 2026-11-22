@@ -433,4 +433,7 @@
   app.runScene = runScene;
   app.savedJourney = savedJourney;
   app.cardNode = cardNode;
+  app.canReadAloud = canSpeak;
+  app.readButton = readButton;
+  app.stopReading = stopReading;
 })();

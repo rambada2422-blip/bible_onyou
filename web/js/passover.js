@@ -286,6 +286,9 @@
         if (!readOnly) body.append(button('처음부터 다시 둘러보기', replay));
         foot.push(button(returnTo + '로 돌아가기', leave));
       }
+      if (!readOnly && (step === 0 || step === end)) {
+        body.append(button('모세와 바로의 대화 · 열 재앙 영상', function () { app.openPalace('passover'); }));
+      }
       app.show(el('div', {class:'screen po-screen' + (meal ? ' po-meal' : river ? ' po-river' : '')},
         el('div', {class:'page-head pad'}, button('← ' + returnTo, leave, 'pillbtn'), notesButton, el('span', {}, '감수용 미리보기')),
         el('main', {class:'po-scroll'}, land, body),

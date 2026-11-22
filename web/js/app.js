@@ -10,7 +10,16 @@
   var cardNode = app.cardNode;
 
   /* ════════════ 처음 화면 ════════════ */
+  function openPalace(from) {
+    app.palace.open(from, function () {
+      if (from === 'passover') app.passover.open(renderHub);
+      else if (app.state.char && app.state.tier) renderHub();
+      else renderTitle();
+    });
+  }
+  app.openPalace = openPalace;
   function continueJourney() {
+    if (app.palace.resuming()) { openPalace(app.state.palace.from); return; }
     if (app.passover.resuming()) { app.passover.open(renderHub); return; }
     var journey = app.savedJourney();
     if (journey) runScene(journey.id, journey);
@@ -114,6 +123,7 @@
         detours.map(function (option) {
           return el('button', { class: 'btn wide', on: { click: function () { depart(option.to); } } }, option.label + ' · 이어서 탐험하기');
         }),
+        el('button', { class: 'btn wide', on: { click: function () { openPalace('hub'); } } }, '모세와 바로의 대화 · 열 재앙 영상'),
         el('button', { class: 'btn wide', on: { click: function () { app.passover.open(renderHub); } } }, '열 가지 재앙과 유월절 · 감수용 미리보기'),
         locked.length ? toggle : null,
         el('ol', { class: 'tl', id: 'journey-list' }, items),
@@ -244,5 +254,8 @@
           el('p', { text: '재앙과 유월절의 세 장면은 시간표의 감수용 미리보기에서 살펴볼 수 있습니다. 본편 공개는 목회자 감수 뒤에 진행합니다.' })))));
   }
 
-  renderTitle();
+  if (location.hash === '#palace' || document.body.dataset.start === 'palace') {
+    openPalace(app.palace.resuming() ? app.state.palace.from : 'hub');
+  }
+  else renderTitle();
 })();

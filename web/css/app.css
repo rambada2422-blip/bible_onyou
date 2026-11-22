@@ -540,3 +540,44 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 @media (orientation: landscape) and (max-height: 500px) {
   .po-land[data-view="plague-midnight"] .po-picture { height: clamp(104px, 35vh, 150px); }
 }
+
+/* 열 재앙 이야기. 글과 영상은 따로 넘기며 그림의 가로 구도를 살린다. */
+.palace-screen { color: #30281e; background: #fbf6e9; }
+.palace-nav { display:flex; align-items:center; justify-content:space-between; gap:8px; background:#262d2a; color:#fff7dc; font:16px/1.3 var(--f-display); min-height:48px; flex:none; }
+.palace-nav .pillbtn { min-height:44px; }
+.palace-scroll { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; }
+.palace-headline { padding:14px var(--gutter-r) 10px var(--gutter-l); }
+.palace-chapter { font:700 13px/1.5 var(--f-body); color:#725430; }
+.palace-headline h1 { color:#332c21; font:clamp(24px,6vw,32px)/1.25 var(--f-display); }
+.palace-picture { background:#262d2a; aspect-ratio:16/9; overflow:hidden; }
+.palace-picture img,.palace-picture video { display:block; width:100%; height:100%; }
+.palace-picture img { object-fit:cover; }
+.palace-picture video { object-fit:contain; background:#151917; }
+.palace-panel { margin:16px var(--gutter-r) 18px var(--gutter-l); }
+.palace-speaker { color:#725430; font:700 14px/1.5 var(--f-body); margin-bottom:4px; }
+.palace-moses .palace-speaker { color:#1e5c54; }
+.palace-king .palace-speaker { color:#88491d; }
+.palace-moses,.palace-king { border-inline-start:4px solid #47736a; padding-inline-start:14px; }
+.palace-king { border-color:#a16b33; }
+.palace-words { font:clamp(18px,4.9vw,22px)/1.55 var(--f-body); color:#29251e; }
+.palace-sources { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+.palace-sources .readbtn { min-height:44px; }
+.palace-status,.palace-feedback { font-size:15px; color:#564b39; }
+.palace-status:not(:empty),.palace-feedback:not(:empty) { margin-top:10px; }
+.palace-options { display:grid; gap:8px; margin-top:12px; }
+.palace-option,.palace-film-play { min-height:46px; padding:9px 14px; border-radius:10px; font-weight:700; }
+.palace-option { text-align:left; line-height:1.45; background:#fffdf7; border:1px solid #bcb09a; }
+.palace-option[aria-pressed=true] { color:#23483e; box-shadow:inset 0 0 0 2px #476e60; }
+.palace-film-play { margin-top:12px; color:#fff; background:#31534c; }
+.palace-restart { text-decoration:underline; min-height:44px; }
+.palace-foot { flex:none; border-top:1px solid #d7c6a7; background:#f4ecd9; }
+.palace-foot .btn { min-height:46px; }
+.palace-foot .btn:disabled { opacity:.55; }
+@media (orientation:landscape) and (max-height:500px) {
+  .palace-scroll { display:grid; grid-template-columns:42% minmax(0,1fr); align-content:start; }
+  .palace-headline { grid-column:1/-1; padding-block:5px; }
+  .palace-picture { align-self:start; }
+  .palace-panel { margin-block:0 12px; }
+}
+
+.palace-retelling { margin-inline-start:10px; color:#685e50; font:13px/1.4 var(--f-body); }

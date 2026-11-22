@@ -73,7 +73,7 @@ for (const ext of ['.jpg', '.png']) {
     const sz = rasterSize(buf, ext);
     // 재앙 관찰 그림과 유월절 방은 단서가 가로로 배치되어 있다.
     const [width, height] = k.startsWith('plague-') ? [720, 480]
-      : k === 'ex07-room' ? [1200, 800] : [900, 1200];
+      : k === 'ex07-room' ? [1200, 800] : k === 'ex04-palace' ? [864, 486] : [900, 1200];
     if (!sz || sz.w !== width || sz.h !== height) {
       console.error(`사진형 배경 그림 크기가 가로 ${width} × 세로 ${height} 픽셀이 아닙니다: ${f} (${sz ? sz.w + '×' + sz.h : '크기 확인 불가'})`);
       process.exit(1);
@@ -112,7 +112,7 @@ const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fontCss = require('./font-css');
 const scripts = [
   'js/content.js', 'js/icons.js', 'js/order-question.js', 'js/reference-input.js', 'js/art.js',
-  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/passover.js', 'js/app.js',
+  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/palace.js', 'js/passover.js', 'js/app.js',
 ];
 const page = [
   '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
