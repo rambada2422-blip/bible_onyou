@@ -37,7 +37,7 @@ node tools/build.js
 | 위치 | 내용 |
 |---|---|
 | `web3d/js/world.js` | 지형, 하늘, 빛, 소품 배치 |
-| `web3d/js/models.js` | 세 아이, 모세, 양, 떨기나무, 타임머신 등 3D 모델 |
+| `web3d/js/models.js`, `models-kids.js`, `models-horeb-cast.js`, `models-bush-props.js`, `models-machine.js` | 공통 도구와 세 아이, 모세, 양, 떨기나무·소품, 타임머신 등 3D 모델 |
 | `web3d/js/game.js` | 조작, 카메라, 진행, 화면 위 안내 |
 | `web3d/vendor/` | three.js r128 (MIT 라이선스) |
 
