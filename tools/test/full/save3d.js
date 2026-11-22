@@ -1,0 +1,205 @@
+// 호렙의 첫 부품을 실제로 얻은 다음 다시 열어 복원한다. 그 저장으로 나머지 구간과 예외도 확인한다.
+const { chromium } = require('playwright');
+const { gameOrigin, proxy } = require('../game-server');
+const { passSharonIntro } = require('../photograph-flock');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const out = process.argv[2] || path.resolve('dist/check/save3d');
+const key = 'bo3d.save.v1';
+
+async function checkJourney(page, url) {
+  const button = name => page.getByRole('button', { name, exact: true });
+  const state = desired => page.waitForFunction(value => BO3D.debug.state().state === value, desired);
+  const snapshot = () => page.evaluate(k => JSON.parse(localStorage.getItem(k)), key);
+  const resume = async () => { await page.reload(); await button('이어서 탐험하기').click(); };
+  await page.goto(url);
+  await page.locator('.char').last().click();
+  await button('탐험 시작').click();
+  await page.locator('.route-opts .btn').filter({ hasText: '모세' }).click();
+  await page.waitForFunction(() => ['caption', 'explore'].includes(BO3D.debug.state().state));
+  async function sheepPhoto() {
+    await page.evaluate(() => {
+      const [x, z] = BO3D.world.P.flock;
+      BO3D.debug.goto(x + 6, z + 6); BO3D.debug.yaw(-3 * Math.PI / 4);
+    });
+    await page.waitForTimeout(2200);
+    await button('사진 찍기').click();
+    await page.waitForFunction(() => BO3D.debug.dex().includes('sheep'));
+  }
+  // 기존 호렙 소개와 사진부터 시작하는 통합 검토본 모두 같은 첫 부품을 얻는다.
+  if (await page.evaluate(() => BO3D.debug.state().state === 'caption')) {
+    await button('다음').click(); await button('출발하자').click();
+  } else {
+    await button('타임머신에 타기').click();
+    const teal = button('청록색 깃발');
+    await teal.click();
+    assert(await teal.evaluate(el => el === document.activeElement), '깃발을 바꿔도 고른 단추에 초점이 남는다');
+    assert(await button('쓰기').isDisabled(), '아직 얻지 않은 모자는 쓸 수 없다');
+    await resume(); await state('explore');
+    await button('타임머신에 타기').click();
+    assert.equal(await teal.getAttribute('aria-pressed'), 'true');
+    await button('밖으로 나가기').click();
+    assert.equal(await page.locator('[data-detector-quiz="0"]').count(), 0);
+    await sheepPhoto();
+    await resume();
+  }
+  // 자기소개를 다 보기 전에 닫았으면 다시 연다. 물음까지 본 뒤에는 바로 물음으로 돌아온다.
+  await passSharonIntro(page);
+  assert.deepEqual((await snapshot()).signal, { part: 0, step: 'question' });
+  await resume();
+  await page.locator('[data-detector-quiz="0"]').waitFor();
+  assert.equal(await page.locator('[data-sharon-intro]').count(), 0, '본 자기소개는 다시 나오지 않는다');
+  const first = await page.evaluate(() => BO.content3d.horeb.quiz[0]);
+  await button(first.q.t2.options.find(o => o.ok).label).click(); await resume();
+  assert.equal((await snapshot()).signal.step, 'reference');
+  await button('다음').click(); await resume();
+  assert.equal((await snapshot()).signal.step, 'sharon');
+  await button('계속 탐험하기').click();
+  await state('explore');
+  if (!(await page.evaluate(() => BO3D.debug.dex())).includes('sheep')) await sheepPhoto();
+  await resume(); await state('explore');
+  assert.deepEqual((await snapshot()).signal, { part: 0, step: 'search' });
+  await page.locator('.track3').waitFor({ state: 'visible' });
+  await button('소리 끄기').click();
+  await page.evaluate(([x, z]) => BO3D.debug.goto(x, z), first.at);
+  await page.waitForFunction(k => JSON.parse(localStorage.getItem(k)).parts === 1, key);
+  assert(await page.locator('.panel3').isVisible(), '부품을 얻으면 말씀 조각을 읽는다');
+  for (const selector of ['.cam3', '.dex3', '.hud3 .obj'])
+    assert(await page.locator(selector).isHidden(), '말씀을 읽을 때 지난 탐색 항목을 접는다 · ' + selector);
+  const firstPart = await snapshot();
+  assert.equal(firstPart.signal, undefined, '획득한 부품 신호를 다음 질문에서 재사용하지 않는다');
+  assert.equal(firstPart.route, 'EX-01'); assert.equal(firstPart.ch, 'onwoo'); assert.equal(firstPart.tier, 't2');
+  assert.equal(firstPart.muted, true); assert.match(firstPart.dex.sheep, /^data:image\/jpeg;base64,/);
+  await page.reload(); await button('이어서 탐험하기').waitFor();
+  await page.screenshot({ path: path.join(out, 'resume.png') });
+  await button('이어서 탐험하기').click();
+  await page.locator('[data-detector-quiz="1"]').waitFor();
+  assert.equal(await page.evaluate(() => BO3D.debug.parts().found), 1);
+  assert.equal(await button('소리 켜기').getAttribute('aria-pressed'), 'true');
+  assert.equal((await snapshot()).dex.sheep, firstPart.dex.sheep);
+  await page.screenshot({ path: path.join(out, 'next-part.png') });
+  console.log('첫 부품, 사진, 인물, 나이 단계, 음소거 복원');
+
+  for (const [stage, expected] of [['watch', 'event'], ['gates', 'gates'], ['reward', 'end'], ['free', 'free'], ['end', 'end2']]) {
+    await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, { ...firstPart, stage, parts: 3 }]);
+    await resume(); await state(expected);
+    assert.equal(await page.evaluate(() => BO3D.debug.parts().found), 3);
+    if (stage === 'watch') assert(await page.evaluate(() => BO3D.debug.aweState().active));
+    if (stage === 'free') {
+      const board = async () => {
+        await page.evaluate(() => BO3D.debug.goto(...BO3D.world.P.machine));
+        await button('타임머신에 타기').click();
+      };
+      await board(); await button('쓰기').click(); await button('남색 깃발').click();
+      await resume(); await state('free'); await board();
+      assert.equal(await button('쓰고 있어요').getAttribute('aria-pressed'), 'true');
+      assert.equal(await button('남색 깃발').getAttribute('aria-pressed'), 'true');
+      await page.screenshot({ path: path.join(out, 'restored-den.png') });
+      await button('쓰고 있어요').click(); await button('깃발 없음').click();
+      assert.equal((await snapshot()).flagColor, null); assert.equal((await snapshot()).hatOn, false);
+    }
+  }
+  await button('처음부터 다시').click();
+  assert.equal(await snapshot(), null);
+  await button('탐험 시작').click();
+  assert.equal((await snapshot()).flagColor, null);
+  await page.locator('.route-opts .btn').filter({ hasText: '여호수아' }).click();
+  await button('둘러보자').click();
+  await page.evaluate(() => {
+    const mark = BO3D.debug.jordan().targets.find(([id]) => id === 'ark');
+    BO3D.debug.goto(mark[1] + 5, mark[3] + 5); BO3D.debug.yaw(-3 * Math.PI / 4);
+  });
+  await page.waitForTimeout(2200); await button('사진 찍기').click();
+  await page.waitForFunction(() => BO3D.debug.clues().includes('ark'));
+  const jordan = await snapshot();
+  assert.equal(jordan.route, 'ALT-02'); assert.equal(jordan.stage, 'jordan'); assert.equal(Object.keys(jordan.dex).length, 0);
+  await resume(); await state('explore');
+  assert.equal(await page.evaluate(() => BO3D.debug.level()), 'jordan');
+  assert((await page.evaluate(() => BO3D.debug.clues())).includes('ark'));
+  await page.locator('.dex3').click();
+  assert(await page.locator('.dexcell img').first().isVisible());
+  await button('닫기').click();
+  // 한도 때문에 사진 자리만 남았으면 같은 대상을 다시 찍어 그림을 되살릴 수 있다.
+  await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)),
+    [key, { ...jordan, clues: { ...jordan.clues, ark: '' } }]);
+  await resume(); await state('explore');
+  await page.evaluate(() => {
+    const mark = BO3D.debug.jordan().targets.find(([id]) => id === 'ark');
+    BO3D.debug.goto(mark[1] + 5, mark[3] + 5); BO3D.debug.yaw(-3 * Math.PI / 4);
+  });
+  await page.waitForTimeout(2200); await button('사진 찍기').click();
+  await page.waitForFunction(k => JSON.parse(localStorage.getItem(k)).clues.ark.startsWith('data:image/jpeg'), key);
+  assert.deepEqual(Object.keys((await snapshot()).clues).sort(), Object.keys(jordan.clues).sort());
+  assert.match(await page.locator('.toast3').innerText(), /이미 찾은 단서/);
+  // 수첩에 모은 단서가 충분할 때 추리와 그 결과도 해당 구간부터 열린다.
+  const clueIds = await page.evaluate(() => BO.content3d.jordan.clues.map(c => c.id));
+  const allClues = Object.fromEntries(clueIds.map(id => [id, jordan.clues.ark]));
+  for (const [stage, title] of [['deduce', '추리 1 /'], ['return', '추리 결과']]) {
+    await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, { ...jordan, stage, clues: allClues }]);
+    await resume(); await page.locator('.overlay3 .q-kicker').filter({ hasText: title }).waitFor();
+    assert.equal((await snapshot()).stage, stage);
+  }
+  console.log('다섯 호렙 구간, 깃발·탐험 모자, 요단 강 수첩·추리·결과 복원, 처음부터 다시');
+
+  await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)),
+    [key, { ...firstPart, signal: { part: 0, step: 'search' } }]);
+  await resume();
+  await page.locator('[data-detector-quiz="1"]').waitFor(); // 이미 주운 부품 번호는 다음 신호를 열 수 없다.
+  await button('소리 켜기').click(); await button('소리 끄기').click();
+  const secondAnswer = await page.evaluate(() => BO.content3d.horeb.quiz[1].q.t2.options.find(o => o.ok).label);
+  await button(secondAnswer).click(); await resume();
+  assert.equal((await snapshot()).signal.step, 'reference');
+  await button('다음').click(); await resume();
+  assert.equal((await snapshot()).signal.step, 'sharon');
+  await button('계속 탐험하기').click();
+  await state('explore');
+  await page.evaluate(() => {
+    const write = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, data) {
+      if (data.includes('data:image/jpeg')) throw new DOMException('full', 'QuotaExceededError');
+      return write.call(this, k, data);
+    };
+  });
+  await button('소리 켜기').click();
+  const compact = await snapshot();
+  assert.equal(compact.dex.sheep, ''); assert.equal(compact.parts, 1); assert.equal(compact.muted, false);
+  await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, { ...compact, stage: 'route', parts: 0 }]);
+  await button('소리 끄기').click();
+  assert.equal((await snapshot()).stage, 'route', '다른 탭의 새 진행을 이전 탭이 덮지 않는다');
+  await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)),
+    [key, { ...firstPart, dex: { ...firstPart.dex, sheep: '' } }]);
+  await resume();
+  await button(secondAnswer).click(); await button('다음').click(); await button('계속 탐험하기').click();
+  await state('explore'); await sheepPhoto();
+  await page.waitForFunction(k => JSON.parse(localStorage.getItem(k)).dex.sheep.startsWith('data:image/jpeg'), key);
+  assert.deepEqual(Object.keys((await snapshot()).dex).sort(), Object.keys(firstPart.dex).sort());
+  assert.match(await page.locator('.toast3').innerText(), /이미 도감에 있는 사진/);
+  console.log('저장 공간 부족 시 진행 유지, 오래된 탭 보호, 호렙·요단 강에서 빈 사진 다시 촬영');
+
+  await page.evaluate(k => localStorage.setItem(k, '{'), key);
+  await page.reload(); await button('탐험 시작').waitFor();
+  assert.equal(await button('이어서 탐험하기').count(), 0);
+  await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, { ...firstPart, stage: 'gates', parts: 1 }]);
+  await page.reload(); await button('탐험 시작').waitFor();
+  assert.equal(await button('이어서 탐험하기').count(), 0);
+  console.log('깨진 저장과 맞지 않는 구간은 새 게임으로 시작');
+}
+
+(async () => {
+  await fs.mkdir(out, { recursive: true });
+  const browser = await chromium.launch({ proxy, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--enable-webgl'] });
+  try {
+    const url = await gameOrigin(browser) + '/preview3d.html';
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await checkJourney(page, url);
+    await page.addInitScript(() => Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked'); } }));
+    await page.reload(); await page.getByRole('button', { name: '탐험 시작', exact: true }).click();
+    await page.locator('.route-opts .btn').filter({ hasText: '모세' }).click();
+    await page.waitForFunction(() => ['caption', 'explore'].includes(BO3D.debug.state().state));
+    assert.deepEqual(errors, []);
+    console.log('저장 차단 환경에서도 탐험 · no errors');
+  } finally { await browser.close(); }
+})().catch(e => { console.error('FAIL', e); process.exitCode = 1; });

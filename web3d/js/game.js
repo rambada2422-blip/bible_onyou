@@ -20,7 +20,10 @@
     modules.loop(G),
     modules.debug(G)
   ];
-  initialize.forEach(function (init) { init(); });
+  modules.save(G);
+  for (var i = 0; i < initialize.length; i++) {
+    if (initialize[i]() === false) return;
+  }
 
   G.resize(); G.menu(); requestAnimationFrame(G.frame);
 })();

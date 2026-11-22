@@ -8,6 +8,10 @@ BO3D.gameModules.debug = function (G) {
   return function initDebug() {
     /* 자동 점검용 (화면에는 영향 없음) */
     BO3D.debug = {
+      perf: G.frameStats,
+      quality: G.quality,
+      aweOverviewOnly: false,
+      includeReviewRequiredGloss: true,
       level: function () { return G.cur; },
       clues: function () { return Object.keys(G.clue); },
       jordan: function () { return G.JL ? { P: G.JL.P, targets: Object.keys(G.JL.targets).map(function (k) { var v = G.JL.targets[k].pos(); return [k, v.x, v.y, v.z]; }) } : null; },
@@ -16,6 +20,14 @@ BO3D.gameModules.debug = function (G) {
       sheep: function () { return G.sheep ? G.sheep.length : 0; },
       awe: function (view, pic) { return G.showAwe ? G.showAwe(view, pic) : null; },
       aweRect: function () { return G.aweRect ? G.aweRect() : null; },
+      aweNext: function (arg) { return G.aweNext ? G.aweNext(arg) : null; },
+      aweState: function () { return G.aweState ? G.aweState() : null; },
+      /* 전체 소리 크기와 바람, 불, 음악의 크기. fireMax는 넘지 못하는 선에 섰을 때의 불 소리 크기 */
+      audioLevels: function () {
+        var A = G.FX && G.FX.audio, L = A && A.levels ? A.levels() : null;
+        if (L) { var top = A.fireLevel(G.P.witnessRadius); L.fireMax = top.fire; L.crackleMax = top.crackle; }
+        return L;
+      },
       state: function () { return { state: G.state, step: G.step, x: G.player && G.player.group.position.x, z: G.player && G.player.group.position.z, mosesArrived: G.mosesArrived }; },
       stick: function (x, y) { G.stick.x = x; G.stick.y = y; },
       yaw: function (v) { G.camYaw = v; G.lastDrag = G.now + 999; },

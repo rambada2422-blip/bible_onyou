@@ -4,9 +4,24 @@ BO3D.gameModules.ui = function (G) {
   'use strict';
   var objText, toastEl, panelBody, panelFoot, panel;
 
+  G.showWebGLNotice = function () {
+    G.canvas.hidden = true;
+    G.ui.replaceChildren(G.el('main', { class: 'webgl-notice', 'aria-labelledby': 'webgl-title' },
+      G.el('div', {},
+        G.el('h1', { id: 'webgl-title', text: '이 기기에서는 3D 탐험을 열 수 없어요' }),
+        G.el('p', { text: '다른 휴대폰이나 컴퓨터에서 다시 열어 주세요.' }))));
+  };
 
+  G.setMuted = function (muted) {
+    if (G.FX) G.FX.audio.mute(muted);
+    G.snd.setAttribute('aria-pressed', String(muted));
+    G.snd.setAttribute('aria-label', muted ? '소리 켜기' : '소리 끄기');
+  };
   function setObjective(t) { objText.textContent = t; }
   function toast(html, who) {
+    // 첫 탐험의 알림은 도움말과 거리 표시 바로 아래에 놓는다.
+    if (G.cur === 'horeb' && G.state === 'explore' && G.step === 0) G.hud.appendChild(toastEl);
+    else G.ui.insertBefore(toastEl, G.dexBtn);
     toastEl.replaceChildren();
     if (who) { G.add(toastEl, [G.avatar(who), G.el('span', {}, G.el('b', { text: G.C.chars[who].name + ' ', style: 'color:' + G.C.chars[who].color }), html)]); }
     else G.add(toastEl, G.el('span', { text: html }));
@@ -17,41 +32,85 @@ BO3D.gameModules.ui = function (G) {
     panelBody.replaceChildren(); panelFoot.replaceChildren();
     G.add(panelBody, kids_); G.add(panelFoot, foot);
     panel.hidden = false; panelBody.scrollTop = 0;
-    G.base.hidden = true; G.stick.x = G.stick.y = 0; G.stick.id = null;
+    G.releaseControls();
   }
   function hidePanel() { panel.hidden = true; }
   function btn(label, fn, cls) { return G.el('button', { class: 'btn ' + (cls || 'onpaper'), on: { click: fn } }, label); }
 
-  /* 문구와 보기 순서는 승인된 horeb 자료에서만 읽는다. note는 화면에 내보내지 않는다. */
-  function detectorQuestion(item, index, onReady) {
-    var data = G.C3.horeb, tier = G.S.tier, q = item.q[tier], solved = false;
+  function sharonSay(face, line) {
+    var sharon = G.C3.sharon;
+    return G.el('div', { class: 'say sharon-say' }, G.sharonFace(face),
+      G.el('div', { class: 'bubble' },
+        G.el('b', { text: sharon.name, style: 'color:' + sharon.color }),
+        G.el('span', { class: 'sharon-line', text: line })));
+  }
+
+  function sharonGloss(gloss) {
+    var tier = G.S.tier;
+    return G.el('section', { class: 'sharon-gloss', 'data-sharon-gloss': gloss.id },
+      G.el('div', { class: 'q-kicker' }, G.icon('bookline'), G.C3.sharon.glossKicker),
+      sharonSay('avatar', gloss.text[tier]),
+      G.el('div', { class: 'narr-meta' }, gloss.refs[tier].map(function (ref) { return G.refChip(ref); })));
+  }
+
+  /* 물음과 보기 순서는 승인된 horeb 자료에서 읽는다.
+   * 샤론이 처음 말하는 물음 1 앞에서 자기소개를 한다 (docs/11 7.1, 7.2의 2·3번 글. 8~10세는 두 화면).
+   * 세 물음 모두 맞힌 뒤에는 성경 표시와 샤론의 안내를 두 화면으로 나눈다 (docs/11 7.3). */
+  function detectorQuestion(item, index, onReady, savedPage) {
+    var data = G.C3.horeb, sharon = G.C3.sharon, tier = G.S.tier, q = item.q[tier], solved = false;
+    var split = q.prompt.search(/[.?] /);
+    var speech = sharonSay('ask', split === -1 ? q.prompt : q.prompt.slice(0, split + 1));
+    var continuation = split === -1 ? null : G.el('p', { class: 'q-prompt', text: q.prompt.slice(split + 2) });
     var noteBox = G.el('div', {});
-    function foundNodes() {
-      return [G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
-        G.el('p', { class: 'narr', text: tier === 't1' && item.foundT1 ? item.foundT1 : item.found })];
+    function showSharon() {
+      G.rememberDetectorAnswer(index, 'sharon');
+      var found = sharon.found[index];
+      showPanel([G.el('div', { class: 'q-kicker', text: '탐험대 이야기' }),
+        sharonSay('joy', tier === 't1' && found.t1 ? found.t1 : found.text)], btn('계속 탐험하기', onReady));
     }
-    function answer() {
-      var good = G.goodNote(item.okRef[tier]), go = btn('계속 탐험하기', onReady);
-      if (tier === 't1') showPanel([good], btn('다음', function () { showPanel(foundNodes(), go); }));
-      else showPanel([good].concat(foundNodes()), go);
+    function showReference() {
+      G.rememberDetectorAnswer(index, 'reference');
+      showPanel([G.goodNote(item.okRef[tier])], btn('다음', showSharon));
     }
+    if (savedPage === 'reference') { showReference(); return; }
+    if (savedPage === 'sharon') { showSharon(); return; }
     var opts = q.options.map(function (option) {
       var b = G.el('button', { class: 'opt', on: { click: function () {
         if (solved) return;
-        if (option.ok) { solved = true; answer(); }
+        if (option.ok) {
+          solved = true;
+          showReference();
+        }
         else {
           b.classList.add('rest'); b.disabled = true;
-          noteBox.replaceChildren(G.lookNote());
+          if (!noteBox.firstChild) {
+            var ask = speech.querySelector('[data-sharon="ask"]');
+            var cheer = G.sharonFace('cheer');
+            if (ask) ask.remove();
+            if (cheer) speech.prepend(cheer);
+            noteBox.appendChild(G.lookNote());
+          }
           noteBox.scrollIntoView({ block: 'nearest' });
         }
       } } }, G.el('span', { text: option.label }));
       return b;
     });
-    showPanel([
-      G.el('div', { class: 'q-kicker', 'data-detector-quiz': String(index), text: data.kicker + ' ' + (index + 1) + ' / ' + data.quiz.length }),
-      G.el('div', { class: 'narr-meta' }, tier === 't2' ? G.refChip(item.ref) : G.el('span', { text: data.bookHint[tier] })),
-      G.el('p', { class: 'q-prompt', text: q.prompt }), G.el('div', { class: 'opts' }, opts), noteBox
-    ], []);
+    function showQuestion() {
+      if (index === 0) G.rememberDetectorAnswer(index, 'question');
+      showPanel([
+        G.el('div', { class: 'q-kicker', 'data-detector-quiz': String(index), text: sharon.kicker + ' ' + (index + 1) + ' / ' + data.quiz.length }),
+        G.el('div', { class: 'narr-meta' }, tier === 't2' ? G.refChip(item.ref) : G.el('span', { text: data.bookHint[tier] })),
+        speech, continuation, G.el('div', { class: 'opts' }, opts), noteBox
+      ], []);
+    }
+    function introPage(lines, next) {
+      showPanel([G.el('div', { class: 'q-kicker', 'data-sharon-intro': '', text: '탐험대 이야기' }),
+        lines.map(function (line) { return sharonSay('avatar', line); })], btn('다음', next));
+    }
+    var intro = sharon.intro[tier];
+    if (index !== 0 || savedPage === 'question') showQuestion();
+    else if (tier === 't1') introPage([intro[0]], function () { introPage([intro[1]], showQuestion); });
+    else introPage(intro, showQuestion);
   }
 
   function beatNodes(b) {
@@ -69,6 +128,8 @@ BO3D.gameModules.ui = function (G) {
   G.showPanel = showPanel;
   G.hidePanel = hidePanel;
   G.btn = btn;
+  G.sharonSay = sharonSay;
+  G.sharonGloss = sharonGloss;
   G.detectorQuestion = detectorQuestion;
   G.beatNodes = beatNodes;
   return function initUi() {
@@ -89,10 +150,12 @@ BO3D.gameModules.ui = function (G) {
     G.trackArrow = G.el('i', {}, G.icon('arrow')), G.trackText = G.el('span', { text: '' });
     G.track = G.el('div', { class: 'track3', hidden: '' }, G.trackArrow, G.trackText);
     G.hudRef = G.refChip(G.SC.ref, true), G.clueCount = G.el('span', { class: 'count teal', hidden: '', text: '단서 0 / 5' });
+    G.flockHelp = btn('어떻게 하나요?', G.showFlockHelp, 'flock-help');
+    G.flockHelp.hidden = true;
     G.hud = G.el('div', { class: 'hud3 pad', hidden: '' },
       G.el('div', { class: 'row' }, G.place_, G.hudRef),
       G.el('div', { class: 'row' }, G.count, G.partCount, G.clueCount),
-      G.el('div', { class: 'obj' }, G.icon('compass'), objText), G.track);
+      G.el('div', { class: 'obj' }, G.icon('compass'), objText), G.flockHelp, G.track);
     G.knob = G.el('i', {}), G.base = G.el('div', { class: 'stick', hidden: '' }, G.knob);
     G.hint = G.el('div', { class: 'hint', hidden: '' }, '왼쪽 아래를 누른 채 밀면 걸어요. 오른쪽을 밀면 둘러봐요. 사진기 버튼으로 본 것을 찍어 도감에 담아요.');
     toastEl = G.el('div', { class: 'toast3', hidden: '' });
@@ -101,7 +164,7 @@ BO3D.gameModules.ui = function (G) {
     G.overlay = G.el('div', { class: 'overlay3', hidden: '' });
     G.touch = G.el('div', { class: 'touch3' });
     G.snd = G.el('button', { class: 'snd3', hidden: '', 'aria-label': '소리 끄기', 'aria-pressed': 'false', on: { click: function () {
-      var m = !G.FX.audio.isMuted(); G.FX.audio.mute(m); G.snd.setAttribute('aria-pressed', String(m)); G.snd.setAttribute('aria-label', m ? '소리 켜기' : '소리 끄기');
+      G.setMuted(!G.FX.audio.isMuted()); G.checkpoint();
     } } }, G.icon('speaker'));
     G.dexLabel = G.el('span', { text: '도감 0 / 5' });
     G.dexBtn = G.el('button', { class: 'dex3', hidden: '', on: { click: function () { if (G.cur === 'jordan') G.openClues(); else G.openDex(); } } }, G.icon('journal'), G.dexLabel);
