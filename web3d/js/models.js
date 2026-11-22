@@ -61,7 +61,7 @@
     var m = _mats[name];
     if (m) return m;
     var S = T.MeshStandardMaterial;
-    if (name === 'smooth') m = new S({ vertexColors: true, roughness: 0.8, metalness: 0 });
+    if (name === 'smooth' || name === 'sheepWalk') m = new S({ vertexColors: true, roughness: 0.8, metalness: 0, morphTargets: name === 'sheepWalk' });
     else if (name === 'cloth') m = new S({ vertexColors: true, roughness: 0.9, metalness: 0, side: T.DoubleSide });
     else if (name === 'flat') m = new S({ vertexColors: true, roughness: 0.92, metalness: 0, flatShading: true });
     else if (name === 'leaf') m = new S({ vertexColors: true, roughness: 0.9, metalness: 0, flatShading: true, side: T.DoubleSide });
