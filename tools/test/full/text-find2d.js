@@ -150,7 +150,7 @@ async function play(browser, origin, entry, size, label) {
     await page.locator('.narr.findtext').waitFor();
     assert.deepEqual(await page.locator('.find-word').allInnerTexts(), names.find.t1.words);
     await page.locator('.find-word').nth(2).tap();
-    assert.equal(await page.locator('.find-note').innerText(), '1개 찾았어요. 2개 남았어요.');
+    assert.equal(await page.locator('.find-note').innerText(), '하나 찾았어요. 둘 남았어요.');
     await page.locator('.sheet-foot .find-help').focus();
     await page.keyboard.press('Enter');
     assert.equal(await page.locator('.find-note').innerText(), '글을 천천히 다시 읽어 볼까요?', '아래 단추를 처음 누르면 글을 다시 읽게 한다');
@@ -160,7 +160,7 @@ async function play(browser, origin, entry, size, label) {
     assert.equal(await page.locator('.find-word.nudge').count(), 2, '두 번째부터는 남은 말만 반짝인다');
     assert.equal(await page.evaluate(() => document.activeElement.textContent), names.find.t1.words[0], '아래 단추를 누르면 초점이 남은 말로 간다');
     await page.keyboard.press('Enter');
-    assert.equal(await page.locator('.find-note').innerText(), '2개 찾았어요. 1개 남았어요.');
+    assert.equal(await page.locator('.find-note').innerText(), '둘 찾았어요. 하나 남았어요.');
     assert.equal(await page.evaluate(() => document.activeElement.textContent), names.find.t1.words[1], '찾은 뒤 초점은 남은 말로 간다');
     await shot('04-names');
     await page.keyboard.press('Enter');

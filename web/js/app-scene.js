@@ -159,6 +159,7 @@
       else node.appendChild(el('span', { class: 'w', text: piece }));
     });
   }
+  function count(n) { return ['', '하나', '둘', '셋', '넷', '다섯'][n] || n + '개'; }
   function findText(text, fw, onAll) {
     var node = el('p', { class: 'narr findtext' });
     var note = el('p', { class: 'find-note', role: 'status', 'aria-live': 'polite' });
@@ -191,7 +192,7 @@
         w.classList.add('found');
         w.setAttribute('aria-pressed', 'true');
         got++;
-        note.textContent = got === total ? '찾았어요!' : got + '개 찾았어요. ' + (total - got) + '개 남았어요.';
+        note.textContent = got === total ? '찾았어요!' : count(got) + ' 찾았어요. ' + count(total - got) + ' 남았어요.';
         if (got === total) setTimeout(onAll, calm() ? 0 : 450);
         else if (document.activeElement === w && left()[0]) left()[0].focus({ preventScroll: true });
         return;
