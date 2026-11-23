@@ -993,7 +993,7 @@ window.BO_DAVID = window.BO_DAVID || {};
     return null;
   }
 
-  /* A11(D09): 예물 작업대 — 확인된 사물(금·은)과 가져온 이들/백성의 반응 짝짓기 (가치 순위·가격·점수 없음) */
+  /* A11·A12(D09): 예물 작업대 + 둘이 나누어 보는 판(차례 넘기기·역할 바꾸기·혼자 앞뒤 전환) */
   function renderD09Workbench(ctx, sc) {
     var state = ctx.state;
     var el = ctx.el;
@@ -1003,6 +1003,203 @@ window.BO_DAVID = window.BO_DAVID || {};
     if (!state.d09Slots || typeof state.d09Slots !== 'object') {
       state.d09Slots = { givers: null, joy: null };
     }
+    if (!state.d09CoopPicks || typeof state.d09CoopPicks !== 'object') {
+      state.d09CoopPicks = { object: null, clue: null };
+    }
+
+    var mode = state.d09Mode === 'coop' ? 'coop' : 'solo';
+    var firstRole = state.d09FirstRole === 'clue' ? 'clue' : 'object';
+    var secondRole = firstRole === 'object' ? 'clue' : 'object';
+
+    var modeBar = el('div', { class: 'd05-wing-place-btns', 'data-d09-mode-bar': mode },
+      el('button', {
+        class: 'd05-mini-btn' + (mode === 'solo' ? ' active' : ''),
+        'data-d09-mode': 'solo',
+        'aria-pressed': String(mode === 'solo'),
+        on: {
+          click: function () {
+            state.d09Mode = 'solo';
+            state.d09Msg = '';
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, '혼자 앞뒤 전환'),
+      el('button', {
+        class: 'd05-mini-btn' + (mode === 'coop' ? ' active' : ''),
+        'data-d09-mode': 'coop',
+        'aria-pressed': String(mode === 'coop'),
+        on: {
+          click: function () {
+            state.d09Mode = 'coop';
+            state.d09Turn = 0;
+            state.d09CoopPicks = { object: null, clue: null };
+            state.d09Msg = '';
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, '둘이 차례 넘기기')
+    );
+
+    if (mode === 'coop') {
+      var roleOpts = {
+        object: {
+          title: '물건 고르기 담당',
+          prompt: '성전을 위해 지도자들이 드린 사물 카드를 몰래 골라 덮어 두세요.',
+          choices: [
+            { id: 'gold-silver', label: '금과 은', sub: '성전을 위한 예물' },
+            { id: 'brook-stones', label: '시냇가의 돌', sub: '다른 장면의 사물' }
+          ]
+        },
+        clue: {
+          title: '근거 고르기 담당',
+          prompt: '이 장면의 성경 근거와 백성의 반응을 몰래 골라 덮어 두세요.',
+          choices: [
+            { id: 'chron-29', label: '대상 29:6–9 · 기쁜 마음으로 기뻐함', sub: '지도자들과 백성의 반응' },
+            { id: 'sam-17', label: '삼상 17:40 · 시냇가에서 돌 다섯을 고름', sub: '다른 장면의 근거' }
+          ]
+        }
+      };
+
+      var turn = state.d09Turn || 0;
+      var bodyNodes = [
+        el('div', { class: 'd01-memory-row' },
+          el('span', { class: 'd01-memory-text', text: '첫 역할: ' + (firstRole === 'object' ? '1번 물건 → 2번 근거' : '1번 근거 → 2번 물건') }),
+          el('button', {
+            class: 'd04-undo-btn',
+            'data-action': 'd09-swap-first',
+            on: {
+              click: function () {
+                state.d09FirstRole = firstRole === 'object' ? 'clue' : 'object';
+                state.d09Turn = 0;
+                state.d09CoopPicks = { object: null, clue: null };
+                state.d09Msg = '';
+                ctx.saveState();
+                ctx.render();
+              }
+            }
+          }, '첫 역할 바꾸기')
+        )
+      ];
+
+      if (turn === 0 || turn === 2) {
+        var activeRole = turn === 0 ? firstRole : secondRole;
+        var playerNum = turn === 0 ? 1 : 2;
+        var rInfo = roleOpts[activeRole];
+        var pickedVal = state.d09CoopPicks[activeRole];
+        /* 주의: 2번 사람 차례(turn === 2)에는 1번 사람의 선택 내용을 화면 DOM에 절대 출력하지 않는다 */
+        bodyNodes.push(
+          el('div', { class: 'd08-card', 'data-d09-turn': String(turn), 'data-d09-role': activeRole },
+            el('div', { class: 'd01-zoom-head' },
+              el('span', { class: 'tag', text: playerNum + '번 사람 · ' + rInfo.title }),
+              el('span', { class: 'ref', text: '비공개 선택' })
+            ),
+            el('p', { class: 'd05-wing-fact', text: rInfo.prompt }),
+            el('div', { class: 'd05-wing-place-btns' }, rInfo.choices.map(function (c) {
+              return el('button', {
+                class: 'd05-mini-btn' + (pickedVal === c.id ? ' active' : ''),
+                'data-d09-coop-pick': c.id,
+                on: {
+                  click: function () {
+                    state.d09CoopPicks[activeRole] = c.id;
+                    ctx.saveState();
+                    ctx.render();
+                  }
+                }
+              }, c.label);
+            })),
+            el('button', {
+              class: 'btn brass d04-check-btn',
+              'data-action': turn === 0 ? 'd09-pass' : 'd09-reveal',
+              disabled: !pickedVal,
+              on: {
+                click: function () {
+                  state.d09Turn = turn === 0 ? 1 : 3;
+                  ctx.saveState();
+                  ctx.render();
+                }
+              }
+            }, turn === 0 ? '선택 덮고 2번 사람에게 넘기기' : '둘의 선택 함께 펼치기')
+          )
+        );
+      } else if (turn === 1) {
+        /* 차례 넘김 가림막: 앞사람 선택 내용이 DOM에 전혀 노출되지 않음 */
+        bodyNodes.push(
+          el('div', { class: 'd05-reopen-card', 'data-d09-shield': 'true' },
+            el('div', { class: 'd01-zoom-title', text: '1번 사람이 선택을 덮어 두었어요' }),
+            el('p', { class: 'd05-wing-fact', text: '정답이 보이지 않게 가려져 있어요. 2번 사람에게 기기를 건네 주세요.' }),
+            el('button', {
+              class: 'btn brass d04-check-btn',
+              'data-action': 'd09-open-p2',
+              on: {
+                click: function () {
+                  state.d09Turn = 2;
+                  ctx.saveState();
+                  ctx.render();
+                }
+              }
+            }, '2번 사람 차례 열기 (' + roleOpts[secondRole].title + ')')
+          )
+        );
+      } else {
+        var objOk = state.d09CoopPicks.object === 'gold-silver';
+        var clueOk = state.d09CoopPicks.clue === 'chron-29';
+        var bothOk = objOk && clueOk;
+        bodyNodes.push(
+          el('div', { class: 'd08-card', 'data-d09-reveal': 'true' },
+            el('div', { class: 'd01-zoom-head' },
+              el('span', { class: 'tag', text: '함께 펼친 결과' }),
+              el('span', { class: 'ref', text: '대상 29:6–9' })
+            ),
+            el('p', { class: 'd05-wing-fact', text: '물건 담당 선택: ' + (objOk ? '금과 은 (맞음 ✓)' : '시냇가의 돌 (다시 확인)') }),
+            el('p', { class: 'd05-wing-fact', text: '근거 담당 선택: ' + (clueOk ? '대상 29:6–9 · 백성의 기쁨 (맞음 ✓)' : '삼상 17:40 (다시 확인)') }),
+            bothOk
+              ? el('button', {
+                  class: 'btn brass d04-check-btn',
+                  'data-action': 'd09-coop-finish',
+                  on: {
+                    click: function () {
+                      ctx.recordDiscovery(
+                        sc,
+                        '『탐험대 이야기』 둘이 나누어 보는 판 완료(첫 역할: ' + (firstRole === 'object' ? '물건 먼저' : '근거 먼저') + ') · 대상 29:6–9'
+                      );
+                      state.step = 'done';
+                      ctx.saveState();
+                      ctx.render();
+                    }
+                  }
+                }, '함께 찾은 기록을 일지에 남기기 (대상 29:6–9)')
+              : el('button', {
+                  class: 'btn plain d04-check-btn',
+                  'data-action': 'd09-coop-retry',
+                  on: {
+                    click: function () {
+                      state.d09Turn = 0;
+                      state.d09CoopPicks = { object: null, clue: null };
+                      ctx.saveState();
+                      ctx.render();
+                    }
+                  }
+                }, '다시 나누어 고르기')
+          )
+        );
+      }
+
+      return el('section', {
+        class: 'notebook-map d05-hebron-board',
+        'data-d09-board': 'true',
+        'data-d09-mode-cur': 'coop',
+        'data-d09-seed': String(seed)
+      },
+        el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 한 기기에서 물건과 근거를 나누어 몰래 고른 뒤 마지막에 함께 펼쳐 보자.' }),
+        modeBar,
+        bodyNodes
+      );
+    }
+
+    /* 혼자 앞뒤 전환 모드 (A11 예물 작업대 + 앞뒤 근거 전환) */
+    var soloBack = !!state.d09SoloBack;
 
     function placeD09Card(cardId, slotKey) {
       if (!cardId || !slotKey) return;
@@ -1098,13 +1295,35 @@ window.BO_DAVID = window.BO_DAVID || {};
     return el('section', {
       class: 'notebook-map d05-hebron-board',
       'data-d09-board': 'true',
+      'data-d09-mode-cur': 'solo',
       'data-d09-seed': String(seed)
     },
       el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 예물 작업대에서 금·은 사물 카드와 백성의 반응 쪽지를 어느 쪽부터든 옮겨 짝지어 보자.' }),
-      el('div', { class: 'd05-order-slots' }, slotNodes),
-      el('div', { class: 'd04-tag-tray', 'data-d09-tray': 'true' },
-        cardNodes.length ? cardNodes : el('span', { class: 'd04-tray-hint', text: '두 카드를 모두 놓았어요. 짝짓기를 확인해 보세요.' })
+      modeBar,
+      el('div', { class: 'd01-memory-row' },
+        el('span', { class: 'd01-memory-text', text: soloBack ? '뒷면 · 성경 근거 보기' : '앞면 · 예물 작업대' }),
+        el('button', {
+          class: 'd04-undo-btn',
+          'data-action': 'd09-flip-solo',
+          on: {
+            click: function () {
+              state.d09SoloBack = !state.d09SoloBack;
+              ctx.render();
+            }
+          }
+        }, soloBack ? '앞면(작업대)으로 뒤집기' : '뒷면(근거)으로 뒤집기')
       ),
+      soloBack
+        ? el('div', { class: 'd05-reopen-card', 'data-d09-solo-back': 'true' },
+            el('span', { class: 'ref', text: '대상 29:6–9' }),
+            el('p', { class: 'd05-wing-fact', text: '지도자들이 기쁜 마음으로 금과 은을 드렸고(6–7절), 백성도 기뻐했어(9절).' })
+          )
+        : [
+            el('div', { class: 'd05-order-slots' }, slotNodes),
+            el('div', { class: 'd04-tag-tray', 'data-d09-tray': 'true' },
+              cardNodes.length ? cardNodes : el('span', { class: 'd04-tray-hint', text: '두 카드를 모두 놓았어요. 짝짓기를 확인해 보세요.' })
+            )
+          ],
       state.d09Msg ? el('div', { class: 'order-msg', 'data-d09-msg': 'true', text: state.d09Msg }) : null,
       el('button', {
         class: 'btn brass d04-check-btn',
