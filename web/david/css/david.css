@@ -870,6 +870,15 @@ h1, h2, h3, p { margin: 0; }
   border: 2px solid var(--ok);
   text-align: center;
 }
+.d05-reopen-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #FFF9ED;
+  border: 1.5px solid var(--brass-deep);
+}
 
 .journal-title-row { display: flex; align-items: center; gap: 6px; }
 .journal-clue-icon { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; }

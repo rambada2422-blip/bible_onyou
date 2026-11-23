@@ -440,7 +440,21 @@ window.BO_DAVID = window.BO_DAVID || {};
       if (state.d05Order[1] === wingId) state.d05Order[1] = null;
       state.d05Order[slotIdx] = wingId;
       state.d05Pick = null;
+      state.d05ReopenRef = null;
       state.d05Msg = '';
+      ctx.saveState();
+      ctx.render();
+    }
+
+    function undoSingleSlot(slotIdx) {
+      var removedId = state.d05Order[slotIdx];
+      if (!removedId) return;
+      state.d05Order[slotIdx] = null;
+      state.d05Pick = removedId;
+      state.d05ReopenRef = removedId;
+      var rw = getD05Wing(removedId);
+      state.d05Msg = (slotIdx + 1) + '번째 칸 쪽지 한 장만 되돌렸어요. ' + (rw ? (rw.ref + '을 다시 펴고 자리를 골라 보세요.') : '');
+      ctx.recordFirstAction('D05:undo-slot:' + slotIdx + ':' + removedId);
       ctx.saveState();
       ctx.render();
     }
@@ -502,9 +516,29 @@ window.BO_DAVID = window.BO_DAVID || {};
       },
         el('div', { class: 'd05-slot-head', text: slotLabels[sIdx] }),
         placedWing
-          ? el('div', { class: 'd05-slot-placed', 'data-d05-slot-val': placedWing.id },
-              el('span', { class: 'd04-chip-owner', text: placedWing.title }),
-              el('span', { class: 'd04-chip-ref', text: placedWing.ref })
+          ? el('div', { class: 'd04-placed-wrap' },
+              el('button', {
+                class: 'd05-slot-placed',
+                'data-d05-slot-val': placedWing.id,
+                'aria-label': placedWing.title + ' 놓임. 두 번 탭 또는 Backspace로 이 칸만 되돌리기',
+                on: {
+                  dblclick: function () { undoSingleSlot(sIdx); },
+                  keydown: function (ev) {
+                    if (ev.key === 'Backspace' || ev.key === 'Delete') {
+                      ev.preventDefault();
+                      undoSingleSlot(sIdx);
+                    }
+                  }
+                }
+              },
+                el('span', { class: 'd04-chip-owner', text: placedWing.title }),
+                el('span', { class: 'd04-chip-ref', text: placedWing.ref })
+              ),
+              el('button', {
+                class: 'd04-undo-btn',
+                'data-d05-undo-slot': String(sIdx),
+                on: { click: function () { undoSingleSlot(sIdx); } }
+              }, '한 칸 되돌리기')
             )
           : el('button', {
               class: 'd04-drop-btn' + (state.d05Pick ? ' ready' : ''),
@@ -523,6 +557,12 @@ window.BO_DAVID = window.BO_DAVID || {};
       );
     });
 
+    var reopenWing = state.d05ReopenRef ? getD05Wing(state.d05ReopenRef) : null;
+    var reopenCard = reopenWing ? el('div', { class: 'd05-reopen-card', 'data-d05-reopen-ref': reopenWing.id },
+      el('span', { class: 'ref', text: '장절 다시 펴기 · ' + reopenWing.ref }),
+      el('p', { class: 'd05-wing-fact', text: reopenWing.title + ': ' + reopenWing.fact })
+    ) : null;
+
     var bothOpened = state.d05Opened.indexOf('judah') !== -1 && state.d05Opened.indexOf('elders') !== -1;
     var bothPlaced = !!(state.d05Order[0] && state.d05Order[1]);
 
@@ -534,6 +574,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 같은 장소 헤브론의 두 만남을 양쪽으로 펼쳐 보고, 어느 쪽부터 시작했든 두 기록을 시간순으로 놓아 보자.' }),
       el('div', { class: 'd05-wings' }, wingNodes),
       el('div', { class: 'd05-order-slots' }, slotNodes),
+      reopenCard,
       state.d05Msg ? el('div', { class: 'order-msg', 'data-d05-msg': 'true', text: state.d05Msg }) : null,
       el('button', {
         class: 'btn brass d04-check-btn',
@@ -548,11 +589,12 @@ window.BO_DAVID = window.BO_DAVID || {};
                 '『탐험대 이야기』 헤브론 두 만남(먼저 펼친 쪽: ' + firstW.title + '): 유다 사람들(삼하 2:4) → 이스라엘의 장로들(삼하 5:1–5)'
               );
               state.step = 'done';
+              state.d05ReopenRef = null;
               state.d05Msg = '';
               ctx.saveState();
               ctx.render();
             } else {
-              state.d05Msg = '순서가 바뀌었어요. 유다 사람들(삼하 2:4)이 먼저, 이스라엘의 장로들(삼하 5:1–5)이 나중이에요.';
+              state.d05Msg = '순서가 바뀌었어요. 한 칸만 되돌려 장절을 다시 펴고 놓아 보세요 (삼하 2:4 → 삼하 5:1–5).';
               ctx.render();
             }
           }
