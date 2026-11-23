@@ -31,6 +31,10 @@
     ['엇갈린 두 문', ['..#.##','T....#','.L....','S#....','#D.AB.']],
     ['두 바퀴의 나루', ['S.#...','T.#..#','..T.#D','......','..ALB#','...###']]
   ].map(makeRoute);
+  // 위쪽 갈대섬 길은 잔잔하고, 가운데 샛길은 두 물살이 번갈아 막는다.
+  const courier = makeRoute(['갈대섬 우편선', [
+    '#...L...', '#.#.###.', '#..##...', '#S.~~==D', '##.#.###', '##...###'
+  ]]);
   function sail(route, position, direction) {
     if (position.arrived) return null;
     if (direction === 'turn') {
@@ -91,5 +95,5 @@
     }
     return null;
   }
-  BO.nileRoutes = {routes, locks, directions, sail, start, trace, expandGlides, hint};
+  BO.nileRoutes = {routes, locks, courier, directions, sail, start, trace, expandGlides, hint};
 })();

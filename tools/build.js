@@ -112,7 +112,7 @@ const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fontCss = require('./font-css');
 const scripts = [
   'js/content.js', 'js/icons.js', 'js/order-question.js', 'js/reference-input.js', 'js/art.js',
-  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-game.js', 'js/palace.js', 'js/passover.js', 'js/app.js',
+  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-rapids.js', 'js/nile-game.js', 'js/palace.js', 'js/passover.js', 'js/app.js',
 ];
 // 단일 HTML에서도 본문 음성을 인터넷 연결 없이 재생한다.
 const palaceAudio = {};
@@ -138,7 +138,7 @@ fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/preview.html'), page);
 
 // 물길 단독 입구는 공통 저장과 본문을 그대로 쓰고, 왕궁 음성·그림·글꼴은 왕궁에 들어갈 때만 불러온다.
-const riverScripts = ['content', 'icons', 'app-core', 'palace-story', 'nile-routes', 'nile-art', 'nile-game'];
+const riverScripts = ['content', 'icons', 'app-core', 'palace-story', 'nile-routes', 'nile-art', 'nile-rapids', 'nile-game'];
 const riverPage = [
   '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',

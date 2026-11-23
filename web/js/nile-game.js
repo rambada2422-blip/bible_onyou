@@ -14,9 +14,24 @@
     {title:'강에서 온 경고', beat:0}, {title:'바로의 약속', beat:2}, {title:'개구리가 떠난 뒤', beat:5}
   ];
 
+  function markCourse(target) {
+    try {
+      const url = new URL(location.href);
+      url.searchParams.set('course', target);
+      history.replaceState(null, '', url);
+    } catch (_) { /* 로컬 파일은 현재 화면만 전환한다. */ }
+  }
   function open(leave, selected) {
     const requested = new URLSearchParams(location.search).get('course');
-    const course = selected || (['locks', 'river'].includes(requested) ? requested : app.state.nileCourse);
+    const course = selected || (['locks', 'river', 'rapids'].includes(requested) ? requested : app.state.nileCourse);
+    if (course === 'rapids') {
+      app.nileRapids.open(() => {
+        const target = app.state.nileCourse === 'locks' ? 'locks' : 'river';
+        markCourse(target);
+        open(leave, target);
+      });
+      return;
+    }
     const isLockCourse = course === 'locks';
     const routes = isLockCourse ? BO.nileRoutes.locks : BO.nileRoutes.routes;
     const pages = isLockCourse ? lockPages : riverPages;
@@ -61,11 +76,7 @@
     }
     function switchCourse() {
       const target = isLockCourse ? 'river' : 'locks';
-      if (requested) {
-        const url = new URL(location.href);
-        url.searchParams.set('course', target);
-        try { history.replaceState(null, '', url); } catch (_) { /* 파일의 주소 변경이 제한될 수 있다. */ }
-      }
+      if (requested) markCourse(target);
       depart();
       open(leave, target);
     }
@@ -142,7 +153,9 @@
     const result = el('section', {class:'river-result', hidden:true});
     const journal = el('dialog', {class:'river-journal', 'aria-label':'항해 일지'});
     const screen = el('main', {class:isLockCourse ? 'river-screen river-locks' : 'river-screen'},
-      el('nav', {class:'river-nav'}, back, el('span', {}, '나일강 탐험대'), journalButton),
+      el('nav', {class:'river-nav'}, back, button('급류 도전', 'river-nav-link courier-launch', () => {
+        save(); depart(); markCourse('rapids'); open(leave, 'rapids');
+      }), journalButton),
       el('div', {class:'river-layout'},
         el('div', {class:'river-chart'}, routeNo, name, board,
           el('div', {class:'river-stats'}, counter, flower)),

@@ -346,8 +346,110 @@
     }
   }
 
-  function backdrop(ctx, rows, landing, gateOpen) {
+  function rapidSprite(scale, state) {
+    const tile = document.createElement('canvas');
+    tile.width = tile.height = scale;
+    const g = tile.getContext('2d');
+    g.scale(scale, scale);
+    g.lineCap = g.lineJoin = 'round';
+    if (state === 'open') {
+      // An open lane has a clear centre and interrupted rails along its sides.
+      for (const x of [0.13, 0.86]) {
+        for (const y of [0.17, 0.55]) {
+          g.beginPath();
+          g.moveTo(x, y);
+          g.quadraticCurveTo(x - 0.085, y + 0.13, x - 0.025, y + 0.28);
+          g.strokeStyle = '#9fd6d2';
+          g.lineWidth = 0.039;
+          g.stroke();
+        }
+      }
+    } else if (state === 'warning') {
+      // Foam creeps in from the edges before the next surge, leaving the route readable.
+      for (const x of [0.28, 0.72]) {
+        for (const [dx, y, r] of [[0, 0.28, 0.046], [-0.044, 0.46, 0.032], [0.025, 0.65, 0.055], [0.006, 0.77, 0.027]]) {
+          oval(g, x + dx, y, r, r * 0.77, '#fff1c2');
+        }
+      }
+    } else {
+      // Three breaking waves fill the entire channel, with a dark face beneath each white lip.
+      for (const y of [0.36, 0.59, 0.82]) {
+        g.beginPath();
+        g.moveTo(0.055, y);
+        g.bezierCurveTo(0.20, y + 0.015, 0.24, y - 0.20, 0.38, y - 0.24);
+        g.quadraticCurveTo(0.48, y - 0.27, 0.53, y - 0.175);
+        g.quadraticCurveTo(0.44, y - 0.20, 0.435, y - 0.125);
+        g.bezierCurveTo(0.49, y - 0.035, 0.60, y - 0.04, 0.69, y - 0.14);
+        g.quadraticCurveTo(0.76, y - 0.22, 0.86, y - 0.195);
+        g.bezierCurveTo(0.77, y - 0.10, 0.82, y - 0.078, 0.95, y - 0.086);
+        g.lineTo(0.91, y + 0.052);
+        g.quadraticCurveTo(0.45, y + 0.115, 0.055, y + 0.05);
+        g.closePath();
+        g.fillStyle = y === 0.59 ? '#367a8b' : '#28576c';
+        g.fill();
+        g.strokeStyle = '#e9fcf4';
+        g.lineWidth = 0.036;
+        g.stroke();
+      }
+      oval(g, 0.30, 0.10, 0.034, 0.029, '#f9f7cd');
+      oval(g, 0.58, 0.16, 0.027, 0.033, '#e0faf5');
+    }
+    return tile;
+  }
+
+  function prepareRapids(rows, scale) {
+    const cells = [];
+    rows.forEach((row, y) => Array.from(row).forEach((tile, x) => {
+      if (tile === '~' || tile === '=') cells.push({x, y, high:tile === '~' ? 0 : 1});
+    }));
+    return {cells, open:rapidSprite(scale, 'open'), crest:rapidSprite(scale, 'crest'), warning:rapidSprite(scale, 'warning')};
+  }
+
+  function drawRapids(ctx, rapids, tide) {
+    const warning = Math.max(0, Math.min(1, (tide.progress - 0.60) / 0.40));
+    for (const {x, y, high} of rapids.cells) {
+      if (high === tide.phase) {
+        ctx.drawImage(rapids.crest, x, y, 1, 1);
+      } else {
+        ctx.drawImage(rapids.open, x, y, 1, 1);
+        if (warning > 0) {
+          ctx.save();
+          ctx.globalAlpha *= warning;
+          ctx.drawImage(rapids.warning, x, y, 1, 1);
+          ctx.restore();
+        }
+      }
+    }
+  }
+
+  function anchorMark(ctx, boat) {
+    ctx.save();
+    ctx.translate(boat.x + 0.5, boat.y + 0.50);
+    ctx.beginPath();
+    ctx.ellipse(0, 0.045, 0.46, 0.34, 0, 0, TAU);
+    ctx.lineWidth = 0.031;
+    ctx.strokeStyle = '#efd692';
+    ctx.stroke();
+    ctx.translate(0.30, 0.26);
+    oval(ctx, 0, 0, 0.148, 0.148, '#f7dda0');
+    oval(ctx, 0, 0, 0.121, 0.121, '#22556b');
+    line(ctx, [0, -0.057, 0, 0.058], '#fbf0c9', 0.026);
+    oval(ctx, 0, -0.062, 0.023, 0.023, '#fbf0c9');
+    line(ctx, [-0.059,-0.005, -0.043,0.037, 0,0.065, 0.043,0.037, 0.059,-0.005], '#fbf0c9', 0.024);
+    ctx.restore();
+  }
+
+  function backdrop(ctx, rows, landing, gateOpen, twilight) {
     water(ctx, rows);
+    if (twilight) {
+      const width = rows[0].length, height = rows.length;
+      const dusk = ctx.createLinearGradient(0, 0, width, height);
+      dusk.addColorStop(0, 'rgba(86,71,122,.48)');
+      dusk.addColorStop(0.48, 'rgba(39,57,102,.48)');
+      dusk.addColorStop(1, 'rgba(12,42,74,.55)');
+      ctx.fillStyle = dusk;
+      ctx.fillRect(0, 0, width, height);
+    }
     shoals(ctx, rows);
     rows.forEach((row, y) => Array.from(row).forEach((tile, x) => {
       if (tile !== 'T' && tile !== 'A' && tile !== 'B') return;
@@ -362,10 +464,10 @@
 
   window.BO = window.BO || {};
   window.BO.drawNileBoard = function (ctx, board) {
-    const {rows, boat, lotus, dock:landing, found, direction, gateOpen = false} = board;
+    const {rows, boat, lotus, dock:landing, found, direction, gateOpen = false, tide} = board;
     const width = rows[0].length, height = rows.length;
     const scale = Math.max(1, Math.round(Math.hypot(ctx.getTransform().a, ctx.getTransform().b)));
-    const key = [rows.join('/'), landing.x, landing.y, scale, gateOpen].join(':');
+    const key = [rows.join('/'), landing.x, landing.y, scale, gateOpen, Boolean(tide)].join(':');
     if (!scenery || key !== scenery.key) {
       const canvas = document.createElement('canvas');
       canvas.width = width * scale;
@@ -373,14 +475,16 @@
       const layer = canvas.getContext('2d');
       layer.scale(scale, scale);
       layer.lineCap = layer.lineJoin = 'round';
-      backdrop(layer, rows, landing, gateOpen);
-      scenery = {key, canvas};
+      backdrop(layer, rows, landing, gateOpen, Boolean(tide));
+      scenery = {key, canvas, rapids:tide ? prepareRapids(rows, scale) : null};
     }
     ctx.save();
     ctx.lineCap = ctx.lineJoin = 'round';
     ctx.drawImage(scenery.canvas, 0, 0, width, height);
+    if (tide) drawRapids(ctx, scenery.rapids, tide);
     flower(ctx, lotus, found);
     skiff(ctx, boat, direction);
+    if (tide && tide.shield) anchorMark(ctx, boat);
     ctx.restore();
   };
 })();
