@@ -172,7 +172,12 @@
       }}}, '이전');
       previous.disabled = s.chapter === 0 && s.beat === 0;
       const footer = el('div', {class:'sheet-foot pad palace-foot'}, previous, next);
-      if (final) panel.append(el('button', {class:'palace-restart', on:{click:() => go(0, 0)}}, '첫 대화 다시 읽기'));
+      if (final) {
+        panel.append(el('button', {class:'btn onpaper', on:{click:function () {
+          detach(); s.finished = true; s.active = false; app.save(); app.openPassoverRoom();
+        }}}, '유월절을 준비한 집 살펴보기'),
+          el('button', {class:'palace-restart', on:{click:() => go(0, 0)}}, '첫 대화 다시 읽기'));
+      }
       const filmIndex = chapter.beats.findIndex(b => b.film);
       const when = beat.film ? '재앙 장면' : s.beat < filmIndex ? '재앙이 일어나기 전' : '재앙이 일어난 뒤';
       const section = el('main', {class:'palace-scroll'}, el('div', {class:'palace-headline'},

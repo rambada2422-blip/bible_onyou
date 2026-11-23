@@ -10,18 +10,35 @@
   var cardNode = app.cardNode;
 
   /* ════════════ 처음 화면 ════════════ */
+  function markScene(hash) {
+    try { history.replaceState(null, '', hash); } catch (_) { /* 주소를 쓸 수 없는 환경 */ }
+  }
+  function entrance() {
+    markScene('#home');
+    if (app.state.char && app.state.tier) renderHub(); else renderTitle();
+  }
+  app.openExodusTrail = function () {
+    markScene('#exodus'); app.exodusTrail.open(entrance);
+  };
+  app.openPassoverRoom = function () {
+    markScene('#passover');
+    app.passover.open(entrance, '탐험 입구', false, true);
+  };
+  app.openPillars = function () {
+    markScene('#pillar');
+    if (app.state.char && app.state.tier) depart('EX-09'); else renderSetup();
+  };
   function openPalace(from) {
+    if (location.hash === '#passover') { from = 'room'; markScene('#palace'); }
     app.palace.open(from, function () {
-      if (from === 'passover') app.passover.open(renderHub);
+      if (from === 'room') { markScene('#passover'); app.passover.open(entrance, '탐험 입구'); }
+      else if (from === 'passover') app.passover.open(renderHub);
       else if (app.state.char && app.state.tier) renderHub();
       else renderTitle();
     });
   }
   app.openPalace = openPalace;
   app.openNile = function () {
-    function markScene(hash) {
-      try { history.replaceState(null, '', hash); } catch (_) { /* 로컬 파일에서는 주소 변경이 제한될 수 있다. */ }
-    }
     markScene('#nile');
     app.nile.open(function () {
       markScene('#palace');
@@ -48,6 +65,7 @@
       el('div', { class: 'title-actions' },
         el('button', { class: 'btn wide', on: { click: function () { (app.state.tier && app.state.char) ? continueJourney() : renderSetup(); } } },
           (app.state.tier && app.state.char) ? '이어서 탐험하기' : '탐험 시작'),
+        app.state.exodusTrail ? el('button', {class:'btn wide quiet', on:{click:app.openExodusTrail}}, '세 친구의 길 잇기 계속하기') : null,
         el('button', { class: 'btn wide quiet', on: { click: renderGuide } }, '구성 안내 (선생님·부모님용)'),
         el('p', { class: 'fine', text: '감수 전 시범 화면입니다. 성경 본문은 싣지 않고 장절만 안내합니다.' }))));
   }
@@ -61,7 +79,8 @@
         delete app.state.journey;
         delete app.state.pausedJourneys;
       }
-      app.state.tier = tier; app.state.char = ch; save(); renderHub();
+      app.state.tier = tier; app.state.char = ch; save();
+      if (location.hash === '#pillar') depart('EX-09'); else renderHub();
     } } }, '출발 준비 완료');
     var tierBtns = C.tiers.map(function (t) {
       return el('button', { class: 'tier', 'aria-pressed': 'false', on: { click: function () { tier = t.id; if (!picked) ch = t.char; sync(); } } },
@@ -91,6 +110,7 @@
 
   /* ════════════ 시간표 ════════════ */
   function renderHub() {
+    if (location.hash === '#pillar') markScene('#home');
     var nextId = null;
     var detours = C.route.options.filter(function (option) {
       return C.scenes[option.to].alt && app.savedJourney(option.to);
@@ -135,6 +155,7 @@
         }),
         el('button', { class: 'btn wide', on: { click: function () { openPalace('hub'); } } }, '모세와 바로의 대화 · 열 재앙 영상'),
         el('button', { class: 'btn wide', on: { click: function () { app.passover.open(renderHub); } } }, '열 가지 재앙과 유월절 · 감수용 미리보기'),
+        el('button', {class:'btn wide', on:{click:app.openExodusTrail}}, '홍해에서 성막까지 · 세 친구의 길 잇기'),
         locked.length ? toggle : null,
         el('ol', { class: 'tl', id: 'journey-list' }, items),
         el('p', { class: 'hub-note', text: '본편 세 장면을 탐험할 수 있어요. 재앙과 유월절은 감수용 미리보기에서 살펴보세요.' }),
@@ -265,6 +286,10 @@
   }
 
   if (location.hash === '#nile' || (!location.hash && document.body.dataset.start === 'nile')) app.openNile();
+  else if (location.hash === '#pillar') app.openPillars();
+  else if (location.hash === '#exodus') app.openExodusTrail();
+  else if (location.hash === '#passover') app.passover.open(entrance, '탐험 입구');
+  else if (location.hash === '#home') entrance();
   else if (location.hash === '#palace' || document.body.dataset.start === 'palace') {
     openPalace(app.palace.resuming() ? app.state.palace.from : 'hub');
   }

@@ -173,15 +173,23 @@
     }
     reveal(last);
   }
-  function open(back, returnTo, readOnly) {
+  function open(back, returnTo, readOnly, fromPalace) {
     returnTo = returnTo || '시간표';
     var s = app.state.passover;
     if (!valid(s)) s = app.state.passover = {step:0, seen:0};
+    if (fromPalace && s.step < plagues.length) {
+      s = app.state.passover = {step:plagues.length, seen:0, recorded:s.recorded === true};
+    }
     if (!readOnly) { s.active = true; app.save(); }
     function leave() {
       if (!readOnly) { s.active = false; app.save(); }
       back();
     }
+    function departTo(destination) {
+      s.step = end; s.recorded = true; s.active = false; app.save(); destination();
+    }
+    function onward() { departTo(app.openExodusTrail); }
+    function wilderness() { departTo(app.openPillars); }
     function replay() {
       s = app.state.passover = {step:0, seen:0, recorded:true, active:true};
       app.save(); render(true);
@@ -279,11 +287,12 @@
         }
       } else if (step === 11) {
         body.append(el('h3', {}, departure[0]), el('p', {}, departure[2]), app.refChip(departure[1]));
-        foot.push(button('탐험 기록 다시 읽기', advance));
+        body.append(button('구름 기둥과 불 기둥 따라가기', wilderness));
+        foot.push(button('홍해 건너편으로', onward), button('탐험 기록 다시 읽기', advance));
       } else {
         body.append(el('h3', {}, '열 가지 재앙과 유월절'), el('p', {}, '이름을 눌러 그때의 기록과 장절을 다시 읽어 보세요.'));
         plagues.concat(preparation, [night, departure]).forEach(function (row) { body.append(record(row)); });
-        if (!readOnly) body.append(button('처음부터 다시 둘러보기', replay));
+        if (!readOnly) body.append(button('구름 기둥과 불 기둥 따라가기', wilderness), button('홍해 건너편으로', onward), button('처음부터 다시 둘러보기', replay));
         foot.push(button(returnTo + '로 돌아가기', leave));
       }
       if (!readOnly && (step === 0 || step === end)) {

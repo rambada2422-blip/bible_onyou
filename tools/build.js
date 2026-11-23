@@ -112,7 +112,7 @@ const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fontCss = require('./font-css');
 const scripts = [
   'js/content.js', 'js/icons.js', 'js/order-question.js', 'js/reference-input.js', 'js/art.js',
-  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-rapids.js', 'js/nile-game.js', 'js/palace-watch-scenes.js', 'js/palace-watch.js', 'js/palace.js', 'js/passover.js', 'js/app.js',
+  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-rapids.js', 'js/nile-game.js', 'js/palace-watch-scenes.js', 'js/palace-watch.js', 'js/palace.js', 'js/exodus-trail.js', 'js/passover.js', 'js/app.js',
 ];
 // 단일 HTML에서도 본문 음성을 인터넷 연결 없이 재생한다.
 const palaceAudio = {};
@@ -131,7 +131,7 @@ const page = [
   '<title>성경 탐험대</title>',
   '<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,' + Buffer.from(read('assets/char/timemachine.svg')).toString('base64') + '">',
   '<meta name="claude:viewport-fit-sides" content="cover">',
-  '<style>\n' + read('css/app.css') + '\n' + read('css/nile.css') + '\n' + read('css/palace-watch.css') + '\n</style>',
+  '<style>\n' + read('css/app.css') + '\n' + read('css/nile.css') + '\n' + read('css/palace-watch.css') + '\n' + read('css/exodus-trail.css') + '\n</style>',
   '</head><body>',
   '<div id="app" class="app"></div>',
   '<script>window.BO = window.BO || {}; BO.palaceAudio = ' + JSON.stringify(palaceAudio) + '; BO.palaceWatchImages = ' + JSON.stringify(watchImages) + ';</script>',

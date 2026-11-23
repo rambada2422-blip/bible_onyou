@@ -398,10 +398,16 @@
         kids.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 기록' }), el('p', { text: c.prompt }), ta));
         kids.push(el('p', { class: 'pending', text: '뜻과 삶의 적용을 묻는 질문은 목사님 감수를 마친 뒤 이 자리에 열립니다.' }));
       }
+      if (id === 'EX-01' || id === 'EX-09') {
+        kids.push(el('button', {class:'btn wide onpaper', on:{click:function () {
+          finish(id === 'EX-09' ? app.openExodusTrail : function () { app.openPalace('hub'); });
+        }}}, id === 'EX-09' ? '홍해 건너편으로' : '모세를 따라 왕궁으로'));
+      }
       fill([el('div', { class: 'q-kicker', text: '탐험을 마치며' }), kids],
         nextBtn(id === 'EX-00' ? '다음 목적지 정하기' : '시간표로 돌아가기'));
     }
-    function finish() {
+    function finish(onward) {
+      stopReading();
       delete app.state.journey;
       if (sc.alt) {
         app.state.routed = true;
@@ -411,7 +417,8 @@
         return;
       }
       app.state.done[id] = true; save();
-      if (id === 'EX-00' && !app.state.routed) renderRoute(); else renderHub();
+      if (onward) onward();
+      else if (id === 'EX-00' && !app.state.routed) renderRoute(); else renderHub();
     }
     if (journey) {
       // 단서나 관문에서 바로 열어도 직전에 본 그림의 상태가 맞아야 한다.
