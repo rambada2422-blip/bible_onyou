@@ -456,6 +456,9 @@
     state.d09Slots = { givers: null, joy: null };
     state.d09Pick = null;
     state.d09Msg = '';
+    if (sc.id === 'D09' && state.d09Mode === 'coop') {
+      state.d09FirstRole = (state.d09FirstRole === 'object') ? 'clue' : 'object';
+    }
     state.d09Turn = 0;
     state.d09CoopPicks = { object: null, clue: null };
     state.stonesFound = [];
@@ -747,6 +750,34 @@
               'data-action': 'quick-trial',
               on: { click: startQuickTrial }
             }, '체험 한 판 바로 시작 (시냇가 돌밭 · 『탐험대 이야기』)')
+          ),
+          el('div', { class: 'd05-wing-place-btns', 'data-trial-entry': 'true' },
+            el('button', {
+              class: 'btn brass d08-step-btn',
+              'data-action': 'trial-solo',
+              on: {
+                click: function () {
+                  recordFirstAction('trial:solo:D01');
+                  openScene('D01', false);
+                }
+              }
+            }, '혼자 짧게 바로 시작 (D01 덮개 관찰)'),
+            el('button', {
+              class: 'btn plain d08-step-btn',
+              'data-action': 'trial-coop',
+              on: {
+                click: function () {
+                  recordFirstAction('trial:coop:D09');
+                  openScene('D09', false);
+                  state.d09Mode = 'coop';
+                  state.d09FirstRole = 'object';
+                  state.d09Turn = 0;
+                  state.d09CoopPicks = { object: null, clue: null };
+                  saveState();
+                  render();
+                }
+              }
+            }, '둘이 협력 바로 시작 (D09 차례 넘기기)')
           )
         ),
         tracesHomeCard,
