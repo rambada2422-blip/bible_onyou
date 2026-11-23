@@ -781,11 +781,10 @@ window.BO_DAVID = window.BO_DAVID || {};
     if (d08HoldInterval) { clearInterval(d08HoldInterval); d08HoldInterval = null; }
   }
 
-  /* A09(D08): 우물물의 출발과 도착 — 세 지점 사이를 한 칸씩 이동(한 번 탭=1칸, 길게 누르다 떼면 그 자리 정지) */
+  /* A09·A10(D08): 우물물의 출발과 도착 + 중간 분기 다음 지점 예상 + 부모·교사 안내 연결 */
   function renderD08Path(ctx, sc) {
     var state = ctx.state;
     var el = ctx.el;
-    var ART = ctx.ART;
     var seed = ctx.getSeed(state, 'D08');
 
     if (typeof state.d08Pos !== 'number') state.d08Pos = 0;
@@ -793,6 +792,15 @@ window.BO_DAVID = window.BO_DAVID || {};
 
     function stepMove(delta) {
       var next = Math.max(0, Math.min(4, state.d08Pos + delta));
+      if (next > 2 && !state.d08GuessOk) {
+        stopD08Hold();
+        state.d08Pos = 2;
+        if (state.d08Visited.indexOf(2) === -1) state.d08Visited.push(2);
+        state.d08GuessMsg = '중간 분기(2번 지점)에서 다음 기록을 먼저 예상해 보세요.';
+        ctx.saveState();
+        ctx.render();
+        return false;
+      }
       if (next === state.d08Pos) {
         stopD08Hold();
         return false;
@@ -835,7 +843,54 @@ window.BO_DAVID = window.BO_DAVID || {};
       );
     });
 
-    var reachedAll = state.d08Visited.indexOf(0) !== -1 && state.d08Visited.indexOf(2) !== -1 && state.d08Visited.indexOf(4) !== -1;
+    var guessBox = null;
+    if (state.d08Pos >= 2 || state.d08Visited.indexOf(2) !== -1) {
+      guessBox = el('div', { class: 'd05-reopen-card', 'data-d08-guess-box': 'true', 'data-d08-guess-ok': String(!!state.d08GuessOk) },
+        el('div', { class: 'd01-zoom-head' },
+          el('span', { class: 'tag', text: '중간 분기 · 다음 기록 예상' }),
+          el('span', { class: 'ref', text: '삼하 23:16–17' })
+        ),
+        el('p', { class: 'd05-wing-fact', text: '세 사람이 우물물을 가져왔을 때, 다음 기록은 무엇일까?' }),
+        el('div', { class: 'd05-wing-place-btns' },
+          el('button', {
+            class: 'd05-mini-btn' + (state.d08Guess === 'drink' ? ' active' : ''),
+            'data-d08-guess': 'drink',
+            on: {
+              click: function () {
+                state.d08Guess = 'drink';
+                state.d08GuessOk = false;
+                /* 예상이 어긋나면 처음(0)이 아니라 마지막 분기(2번 지점)에서만 다시 시작한다 */
+                state.d08Pos = 2;
+                state.d08GuessMsg = '예상이 어긋났어요. 마지막 분기(2번 지점)에서 삼하 23:16–17을 펼쳐 다시 골라 보세요.';
+                ctx.saveState();
+                ctx.render();
+              }
+            }
+          }, '물을 바로 마셨어'),
+          el('button', {
+            class: 'd05-mini-btn' + (state.d08Guess === 'pour' ? ' active' : ''),
+            'data-d08-guess': 'pour',
+            on: {
+              click: function () {
+                state.d08Guess = 'pour';
+                state.d08GuessOk = true;
+                state.d08GuessMsg = '삼하 23:16 확인 완료! 이제 도착 지점(다윗의 행동)까지 한 칸씩 이동해 보세요.';
+                ctx.saveState();
+                ctx.render();
+              }
+            }
+          }, '여호와께 바쳐 쏟았어')
+        ),
+        state.d08GuessMsg ? el('div', { class: 'order-msg', 'data-d08-guess-msg': 'true', text: state.d08GuessMsg }) : null,
+        el('button', {
+          class: 'd04-undo-btn',
+          'data-action': 'd08-open-guardian',
+          on: { click: function () { ctx.openGuardian(); } }
+        }, '목회자 감수 대기 해석 · 부모·교사 안내에서 함께 읽기')
+      );
+    }
+
+    var reachedAll = state.d08GuessOk && state.d08Visited.indexOf(0) !== -1 && state.d08Visited.indexOf(2) !== -1 && state.d08Visited.indexOf(4) !== -1;
 
     return el('section', {
       class: 'notebook-map d08-path-board',
@@ -865,6 +920,7 @@ window.BO_DAVID = window.BO_DAVID || {};
         ),
         el('p', { class: 'd05-wing-fact', text: curNode.fact })
       ),
+      guessBox,
       el('div', { class: 'd08-controls' },
         el('button', {
           class: 'btn plain d08-step-btn',
@@ -900,14 +956,14 @@ window.BO_DAVID = window.BO_DAVID || {};
             stopD08Hold();
             ctx.recordDiscovery(
               sc,
-              '『탐험대 이야기』 우물물 경로 연결: 성문 곁 우물(삼하 23:15) → 물을 가져온 세 사람 → 아둘람 굴에서 다윗의 행동(삼하 23:16–17)'
+              '『탐험대 이야기』 우물물 경로 연결: 성문 곁 우물(삼하 23:15) → 물을 가져온 세 사람(분기 예상 확인) → 아둘람 굴에서 다윗의 행동(삼하 23:16–17)'
             );
             state.step = 'done';
             ctx.saveState();
             ctx.render();
           }
         }
-      }, reachedAll ? '세 지점 경로를 일지에 남기기 (삼하 23:13–17)' : '도착 지점(다윗의 행동)까지 한 칸씩 이동해 보세요')
+      }, reachedAll ? '세 지점 경로를 일지에 남기기 (삼하 23:13–17)' : '중간 분기 예상 후 도착 지점까지 이동해 보세요')
     );
   }
 
