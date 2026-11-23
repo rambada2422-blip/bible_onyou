@@ -652,6 +652,84 @@
       )
     );
 
+    function pickUnopenedRoute() {
+      for (var i = 0; i < DATA.scenes.length; i++) {
+        if (!state.journal[DATA.scenes[i].id]) {
+          return {
+            sceneId: DATA.scenes[i].id,
+            label: DATA.scenes[i].id + ' · ' + DATA.scenes[i].title + ' (아직 열지 않은 장면)',
+            setup: function (id) { openScene(id, false); }
+          };
+        }
+      }
+      if (state.d06Path !== 'place') {
+        return {
+          sceneId: 'D06',
+          label: 'D06 · 도착한 곳부터(장막 → 궤) 관찰 경로',
+          setup: function () {
+            openScene('D06', true);
+            state.d06Path = 'place';
+            state.d06Opened = ['tent'];
+            saveState();
+            render();
+          }
+        };
+      }
+      if (state.d09Mode !== 'coop') {
+        return {
+          sceneId: 'D09',
+          label: 'D09 · 둘이 나누어 보는 차례 넘기기 경로',
+          setup: function () {
+            openScene('D09', true);
+            state.d09Mode = 'coop';
+            state.d09Turn = 0;
+            saveState();
+            render();
+          }
+        };
+      }
+      return {
+        sceneId: 'D01',
+        label: 'D01 · 자리 바뀐 목자의 물건 다시 찾기 경로',
+        setup: function () { openScene('D01', true); }
+      };
+    }
+
+    function renderTracesCard() {
+      var doneIds = (state.course && state.course.completed && state.course.completed.length)
+        ? state.course.completed.slice()
+        : Object.keys(state.journal);
+      if (!doneIds.length) return null;
+      var traces = doneIds.slice(-2).map(function (id) {
+        var sc = getScene(id);
+        var rec = state.journal[id];
+        if (!sc) return null;
+        return el('div', { class: 'd08-card', 'data-trace-item': id },
+          el('div', { class: 'd01-zoom-head' },
+            el('span', { class: 'tag', text: '지난 흔적 · ' + sc.id + ' ' + sc.title }),
+            el('span', { class: 'ref', text: (rec && rec.ref) || sc.ref })
+          ),
+          el('p', { class: 'd05-wing-fact', text: (rec && rec.extra) || sc.discovery })
+        );
+      }).filter(Boolean);
+      var unopened = pickUnopenedRoute();
+      return el('section', { class: 'd05-reopen-card', 'data-traces-card': 'true' },
+        el('div', { class: 'd01-zoom-head' },
+          el('span', { class: 'tag', text: '어제의 흔적으로 다시 시작' }),
+          el('span', { class: 'ref', text: '흔적 ' + traces.length + '개 · 새 경로 1곳' })
+        ),
+        traces,
+        el('button', {
+          class: 'btn brass d04-check-btn',
+          'data-action': 'open-unopened-route',
+          'data-route-scene': unopened.sceneId,
+          on: { click: function () { unopened.setup(unopened.sceneId); } }
+        }, '아직 열지 않은 경로 바로 들어가기: ' + unopened.label)
+      );
+    }
+
+    var tracesHomeCard = doneCount > 0 ? renderTracesCard() : null;
+
     root.replaceChildren(
       renderTopbar('다윗의 일곱 관찰', null,
         el('button', { class: 'topbtn brass', 'data-action': 'journal', on: { click: openJournal } }, '탐험 일지 ' + doneCount + '/' + total)
@@ -671,6 +749,7 @@
             }, '체험 한 판 바로 시작 (시냇가 돌밭 · 『탐험대 이야기』)')
           )
         ),
+        tracesHomeCard,
         courseBox,
         el('div', { class: 'section-head', text: '다윗의 일곱 관찰 (D01~D07)' }),
         el('div', { class: 'scene-list' }, mainScenes.map(renderSceneCard)),
@@ -1398,10 +1477,45 @@
         el('p', { class: 'discovery-text', text: sc.discovery }),
         saved && saved.extra ? el('p', { class: 'discovery-note', text: saved.extra }) : null
       ),
-      courseDone ? el('section', { class: 'd05-reopen-card', 'data-course-finished': 'true' },
-        el('div', { class: 'd01-zoom-title', text: '내가 고른 세 장면 코스 완주!' }),
-        el('p', { class: 'd05-wing-fact', text: '순서대로 마친 장면: ' + c.picks.join(' → ') })
-      ) : null,
+      courseDone ? (function () {
+        var traceIds = c.completed.slice(-2);
+        var nextUnopened = null;
+        for (var ui = 0; ui < DATA.scenes.length; ui++) {
+          if (!state.journal[DATA.scenes[ui].id]) { nextUnopened = DATA.scenes[ui]; break; }
+        }
+        return el('section', { class: 'd05-reopen-card', 'data-course-finished': 'true', 'data-traces-card': 'true' },
+          el('div', { class: 'd01-zoom-title', text: '내가 고른 세 장면 코스 완주!' }),
+          el('p', { class: 'd05-wing-fact', text: '순서대로 마친 장면: ' + c.picks.join(' → ') }),
+          traceIds.map(function (tid) {
+            var tsc = getScene(tid);
+            var trec = state.journal[tid];
+            return tsc ? el('div', { class: 'd08-card', 'data-trace-item': tid },
+              el('span', { class: 'tag', text: '지난 흔적 · ' + tsc.id + ' ' + tsc.title + ' (' + tsc.ref + ')' }),
+              el('p', { class: 'd05-wing-fact', text: (trec && trec.extra) || tsc.discovery })
+            ) : null;
+          }),
+          el('button', {
+            class: 'btn brass d04-check-btn',
+            'data-action': 'open-unopened-route',
+            'data-route-scene': nextUnopened ? nextUnopened.id : 'D06',
+            on: {
+              click: function () {
+                if (nextUnopened) {
+                  openScene(nextUnopened.id, false);
+                } else {
+                  openScene('D06', true);
+                  state.d06Path = (state.d06Path === 'place') ? 'object' : 'place';
+                  state.d06Opened = [state.d06Path === 'place' ? 'tent' : 'ark'];
+                  saveState();
+                  render();
+                }
+              }
+            }
+          }, nextUnopened
+            ? ('아직 열지 않은 경로 바로 들어가기: ' + nextUnopened.id + ' ' + nextUnopened.title)
+            : '아직 열지 않은 D06 반대 경로로 다시 시작')
+        );
+      })() : null,
       el('div', { class: 'actions' },
         primaryBtn,
         el('button', { class: 'btn plain', 'data-action': 'replay-scene', on: { click: replayCurrentScene } }, '다른 배치로 다시 놀기'),
