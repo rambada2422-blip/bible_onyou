@@ -173,8 +173,9 @@ h1, h2, h3, p { margin: 0; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   margin-top: 4px;
+  flex-wrap: wrap;
 }
 .progress-pill {
   font-family: var(--f-display);
@@ -184,10 +185,37 @@ h1, h2, h3, p { margin: 0; }
   background: rgba(251, 247, 238, .16);
   color: var(--paper);
 }
+.trial-btn {
+  min-height: 44px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--brass);
+  color: var(--ink-3);
+  font-family: var(--f-display);
+  font-size: 14px;
+  box-shadow: 0 2px 0 var(--brass-deep);
+}
+.scene-clue-mini {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scene-clue-mini svg { width: 24px; height: 24px; display: block; }
 .scene-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+.section-head {
+  font-family: var(--f-display);
+  font-size: 14.5px;
+  color: var(--ink);
+  padding: 2px 4px 0;
 }
 .scene-card {
   display: flex;
@@ -349,15 +377,32 @@ h1, h2, h3, p { margin: 0; }
   flex-direction: column;
   gap: 8px;
 }
+.discovery-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.discovery-clue-art {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--ok);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.discovery-clue-art svg { width: 28px; height: 28px; display: block; }
 .discovery-kicker { font-family: var(--f-display); font-size: 14px; color: var(--ok); }
 .discovery-text { font-family: var(--f-display); font-size: 17.5px; color: var(--ink); line-height: 1.45; }
 .discovery-note { font-size: 14px; color: var(--text-soft); }
 .actions { display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 4px; }
 
-/* ── D02 시냇가 다섯 돌 ── */
+/* ── D02 시냇가 다섯 돌 (시냇물 아래 관찰 창) ── */
 .stones-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 .stone-btn {
@@ -366,13 +411,13 @@ h1, h2, h3, p { margin: 0; }
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-height: 64px;
+  min-height: 60px;
   padding: 6px 4px;
   border-radius: 14px;
-  background: #fff;
-  border: 2px solid var(--paper-line);
+  background: #E7F4F8;
+  border: 2px solid #96C5D4;
   font-family: var(--f-display);
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--ink);
 }
 .stone-btn.picked {
@@ -380,7 +425,74 @@ h1, h2, h3, p { margin: 0; }
   border-color: var(--ok);
   color: var(--ok);
 }
-.stone-btn svg { width: 28px; height: 22px; display: block; }
+.stone-btn.pebble-opened {
+  background: var(--paper-2);
+  border-color: var(--paper-line);
+  color: var(--text-soft);
+}
+.stone-btn svg { width: 26px; height: 22px; display: block; }
+
+/* ── D03 수첩 펼침면 & D07 수첩 탐색 지도 ── */
+.notebook-spread {
+  padding: 8px;
+  border-radius: 16px;
+  background: var(--paper-2);
+  border: 2px dashed var(--brass-deep);
+}
+.piece-icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--paper-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.piece-icon svg { width: 26px; height: 26px; display: block; }
+.notebook-map {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: var(--paper-2);
+  border: 2px dashed var(--brass-deep);
+}
+.one-line-guide {
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.fold-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.fold-wing {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 64px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #fff;
+  border: 2px solid var(--paper-line);
+  text-align: left;
+}
+.fold-wing.opened {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+}
+.fold-dir { font-family: var(--f-display); font-size: 12px; color: var(--teal); }
+.fold-main { display: flex; align-items: center; gap: 6px; }
+.fold-icon { flex: none; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+.fold-icon svg { width: 24px; height: 24px; display: block; }
+.fold-text { display: flex; flex-direction: column; min-width: 0; }
+.fold-title { font-family: var(--f-display); font-size: 14.5px; color: var(--ink); }
+.fold-sub { font-size: 12px; color: var(--text-soft); line-height: 1.3; }
+.journal-title-row { display: flex; align-items: center; gap: 6px; }
+.journal-clue-icon { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; }
+.journal-clue-icon svg { width: 22px; height: 22px; display: block; }
 
 /* ── D03 순서 놓기 (탭 전용) ── */
 .order-list { display: flex; flex-direction: column; gap: 8px; }

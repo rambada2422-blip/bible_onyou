@@ -1,4 +1,6 @@
-/* 바이블 온유 · 다윗 탐험 실행 엔진 (독립 실행형, 저장 키: bibleOnyou.david.v1) */
+/* 바이블 온유 · 다윗 탐험 실행 엔진 (독립 실행형, 저장 키: bibleOnyou.david.v1)
+ * D01~D09 및 다윗 놀이 1~5 (시냇물 아래 관찰 창, 겉옷의 두 장면 수첩 펼침면, 왕의 식탁 수첩 탐색 지도, 단서 그림 기록과 다시 놀기, 시작 화면 체험 한 판 바로 시작)
+ */
 (function () {
   'use strict';
 
@@ -7,6 +9,13 @@
   var ART = window.BO_DAVID.art;
   var root = document.getElementById('app');
 
+  /* 놀이 1(D02): 판마다 달라지는 시냇물 아래 돌(1~5)과 잔자갈(P1~P3) 배치 3종 */
+  var BROOK_LAYOUTS = [
+    ['s1', 'p1', 's2', 's3', 'p2', 's4', 'p3', 's5'],
+    ['p1', 's3', 's1', 'p2', 's5', 's2', 's4', 'p3'],
+    ['s4', 's1', 'p2', 's5', 'p1', 's3', 'p3', 's2']
+  ];
+
   function defaultState() {
     return {
       view: 'home',       /* home | scene | detour | journal */
@@ -14,12 +23,35 @@
       step: 'choose',     /* choose | stones | order | hebron2 | ark2 | done */
       detourId: null,
       stonesFound: [],
+      brookSpots: [],     /* 현재 판의 시냇물 아래 배치 (s1~s5, p1~p3) */
+      brookOpened: [],    /* 열어 본 물결 칸 인덱스 */
       orderList: [],
       orderPick: null,
       orderMsg: '',
       hebronFirstDone: false,
-      journal: {}         /* sceneId -> { id, title, ref, discovery, extra? } */
+      tableFolds: [],     /* 놀이 3(D07): 펼친 수첩 날개 ['son', 'table'] */
+      seeds: {},          /* 놀이 4: 장면별 다시 놀기 배치 번호 */
+      telemetry: {        /* 놀이 5: 첫 선택 및 다시 놀기 기록 */
+        firstAction: null,
+        replayCount: 0
+      },
+      journal: {}         /* sceneId -> { id, title, ref, discovery, clueIcon, extra? } */
     };
+  }
+
+  function getSeed(st, sceneId) {
+    return (st.seeds && typeof st.seeds[sceneId] === 'number') ? st.seeds[sceneId] : 0;
+  }
+
+  function makeBrookSpots(seed) {
+    return BROOK_LAYOUTS[Math.abs(seed || 0) % BROOK_LAYOUTS.length].slice();
+  }
+
+  function makeInitialOrderList(sc, seed) {
+    if (!sc || !sc.orderItems) return [];
+    var ids = sc.orderItems.map(function (o) { return o.id; });
+    /* 기본 첫 판은 아이가 맞춰 볼 수 있게 역순(['farewell','gift']), 다시 놀기에서는 시작 배치 경로를 바꾼다 */
+    return (seed % 2 === 1) ? ids.slice() : ids.slice().reverse();
   }
 
   function loadState() {
@@ -36,8 +68,22 @@
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
+      if (Array.isArray(parsed.brookSpots) && parsed.brookSpots.length === 8) {
+        base.brookSpots = parsed.brookSpots.slice();
+      }
+      if (Array.isArray(parsed.brookOpened)) {
+        base.brookOpened = parsed.brookOpened.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
+      }
       if (Array.isArray(parsed.orderList)) base.orderList = parsed.orderList.slice();
       base.hebronFirstDone = !!parsed.hebronFirstDone;
+      if (Array.isArray(parsed.tableFolds)) {
+        base.tableFolds = parsed.tableFolds.filter(function (v, i, a) { return (v === 'son' || v === 'table') && a.indexOf(v) === i; });
+      }
+      if (parsed.seeds && typeof parsed.seeds === 'object') base.seeds = parsed.seeds;
+      if (parsed.telemetry && typeof parsed.telemetry === 'object') {
+        base.telemetry.firstAction = parsed.telemetry.firstAction || null;
+        base.telemetry.replayCount = Number(parsed.telemetry.replayCount || 0);
+      }
       if (parsed.journal && typeof parsed.journal === 'object') base.journal = parsed.journal;
       if ((base.view === 'scene' || base.view === 'detour') && !getScene(base.sceneId)) {
         base.view = 'home';
@@ -46,6 +92,9 @@
       if (base.view === 'detour' && !DATA.supplements[base.detourId]) {
         base.view = 'scene';
         base.detourId = null;
+      }
+      if (base.sceneId === 'D02' && base.brookSpots.length !== 8) {
+        base.brookSpots = makeBrookSpots(getSeed(base, 'D02'));
       }
     } catch (e) { /* 저장이 깨져 있어도 기본 상태로 연다 */ }
     return base;
@@ -61,8 +110,13 @@
         step: state.step,
         detourId: state.detourId,
         stonesFound: state.stonesFound,
+        brookSpots: state.brookSpots,
+        brookOpened: state.brookOpened,
         orderList: state.orderList,
         hebronFirstDone: state.hebronFirstDone,
+        tableFolds: state.tableFolds,
+        seeds: state.seeds,
+        telemetry: state.telemetry,
         journal: state.journal
       }));
     } catch (e) { /* 저장 불가 환경 무시 */ }
@@ -73,6 +127,14 @@
       if (DATA.scenes[i].id === id) return DATA.scenes[i];
     }
     return null;
+  }
+
+  function sceneClueIcon(scene) {
+    if (!scene || !scene.choices) return 'stone';
+    for (var i = 0; i < scene.choices.length; i++) {
+      if (scene.choices[i].ok && scene.choices[i].icon) return scene.choices[i].icon;
+    }
+    return 'stone';
   }
 
   function el(tag, attrs) {
@@ -106,10 +168,22 @@
     return Object.keys(state.journal).length;
   }
 
+  function recordFirstAction(tag) {
+    if (!state.telemetry.firstAction) {
+      state.telemetry.firstAction = tag;
+    }
+  }
+
   function recordDiscovery(scene, extra) {
+    var icon = sceneClueIcon(scene);
     if (state.journal[scene.id]) {
-      /* 이미 기록된 장면은 중복 저장하지 않는다. */
-      if (extra && !state.journal[scene.id].extra) state.journal[scene.id].extra = extra;
+      /* 이미 기록된 장면은 중복 추가하지 않고 최신 문구와 단서 그림만 유지한다. */
+      state.journal[scene.id].title = scene.title;
+      state.journal[scene.id].ref = scene.journalRef || scene.ref;
+      state.journal[scene.id].place = scene.place || '';
+      state.journal[scene.id].discovery = scene.discovery;
+      state.journal[scene.id].clueIcon = icon;
+      if (extra) state.journal[scene.id].extra = extra;
       saveState();
       return;
     }
@@ -119,23 +193,64 @@
       ref: scene.journalRef || scene.ref,
       place: scene.place || '',
       discovery: scene.discovery,
+      clueIcon: icon,
       extra: extra || null
     };
     saveState();
   }
 
-  function openScene(sceneId) {
+  function openScene(sceneId, isReplay) {
     var sc = getScene(sceneId);
     if (!sc) return;
+    if (isReplay) {
+      state.seeds[sc.id] = getSeed(state, sc.id) + 1;
+      state.telemetry.replayCount = (state.telemetry.replayCount || 0) + 1;
+    }
+    var seed = getSeed(state, sc.id);
     state.view = 'scene';
     state.sceneId = sc.id;
     state.step = 'choose';
     state.detourId = null;
     state.stonesFound = [];
-    state.orderList = sc.orderItems ? sc.orderItems.map(function (o) { return o.id; }).reverse() : [];
+    state.brookSpots = makeBrookSpots(seed);
+    state.brookOpened = [];
+    state.orderList = makeInitialOrderList(sc, seed);
     state.orderPick = null;
     state.orderMsg = '';
     state.hebronFirstDone = false;
+    state.tableFolds = [];
+    saveState();
+    render();
+  }
+
+  function replayCurrentScene() {
+    if (!state.sceneId) return;
+    var sc = getScene(state.sceneId);
+    if (!sc) return;
+    state.seeds[sc.id] = getSeed(state, sc.id) + 1;
+    state.telemetry.replayCount = (state.telemetry.replayCount || 0) + 1;
+    var seed = getSeed(state, sc.id);
+    state.detourId = null;
+    state.stonesFound = [];
+    state.brookSpots = makeBrookSpots(seed);
+    state.brookOpened = [];
+    state.orderList = makeInitialOrderList(sc, seed);
+    state.orderPick = null;
+    state.orderMsg = '';
+    state.hebronFirstDone = false;
+    state.tableFolds = [];
+    /* 다시 놀기에서는 해당 장면의 핵심 수첩 놀이로 바로 들어가 다른 배치를 체험하게 한다 */
+    if (sc.mode === 'stones') state.step = 'stones';
+    else if (sc.mode === 'order') state.step = 'order';
+    else state.step = 'choose';
+    saveState();
+    render();
+  }
+
+  function startQuickTrial() {
+    recordFirstAction('quick-trial:D02');
+    openScene('D02', false);
+    state.step = 'stones';
     saveState();
     render();
   }
@@ -175,27 +290,32 @@
     );
   }
 
+  function renderSceneCard(sc) {
+    var done = !!state.journal[sc.id];
+    var rec = state.journal[sc.id];
+    return el('button', {
+      class: 'scene-card' + (done ? ' done' : ''),
+      'data-scene': sc.id,
+      on: { click: function () { recordFirstAction('scene:' + sc.id); openScene(sc.id, false); } }
+    },
+      el('div', { class: 'scene-badge', text: done ? '완료' : sc.id }),
+      el('div', { class: 'scene-info' },
+        el('div', { class: 'scene-name', text: sc.title }),
+        el('div', { class: 'scene-meta' },
+          el('span', { class: 'ref', text: sc.ref }),
+          sc.place ? el('span', { class: 'tag', text: sc.place }) : null,
+          done ? el('span', { class: 'scene-state', text: '일지에 기록됨' }) : null
+        )
+      ),
+      done && rec && rec.clueIcon ? el('div', { class: 'scene-clue-mini', html: ART.icon(rec.clueIcon) }) : null
+    );
+  }
+
   function renderHome() {
     var doneCount = journalCount();
     var total = DATA.scenes.length;
-    var cards = DATA.scenes.map(function (sc) {
-      var done = !!state.journal[sc.id];
-      return el('button', {
-        class: 'scene-card' + (done ? ' done' : ''),
-        'data-scene': sc.id,
-        on: { click: function () { openScene(sc.id); } }
-      },
-        el('div', { class: 'scene-badge', text: done ? '완료' : sc.id }),
-        el('div', { class: 'scene-info' },
-          el('div', { class: 'scene-name', text: sc.title }),
-          el('div', { class: 'scene-meta' },
-            el('span', { class: 'ref', text: sc.ref }),
-            sc.place ? el('span', { class: 'tag', text: sc.place }) : null,
-            done ? el('span', { class: 'scene-state', text: '일지에 기록됨' }) : null
-          )
-        )
-      );
-    });
+    var mainScenes = DATA.scenes.filter(function (sc) { return sc.group !== 'extra'; });
+    var extraScenes = DATA.scenes.filter(function (sc) { return sc.group === 'extra'; });
 
     root.replaceChildren(
       renderTopbar('다윗의 일곱 관찰', null,
@@ -205,17 +325,26 @@
         el('section', { class: 'hero' },
           el('div', { class: 'hero-kicker', text: '8~10세 성경 탐험' }),
           el('h1', { text: '다윗의 발자취를 살펴보자' }),
-          el('p', { text: '장면을 골라 단서를 만지고, 성경 장절을 확인해 탐험 일지에 남겨 보세요.' }),
+          el('p', { text: '장면을 골라 단서를 살펴보고, 성경 장절을 확인해 탐험 일지에 남겨 보세요.' }),
           el('div', { class: 'progress-row' },
-            el('span', { class: 'progress-pill', text: '발견 기록 ' + doneCount + ' / ' + total })
+            el('span', { class: 'progress-pill', text: '발견 기록 ' + doneCount + ' / ' + total }),
+            el('button', {
+              class: 'trial-btn',
+              'data-action': 'quick-trial',
+              on: { click: startQuickTrial }
+            }, '체험 한 판 바로 시작 (시냇물 아래)')
           )
         ),
-        el('div', { class: 'scene-list' }, cards)
+        el('div', { class: 'section-head', text: '다윗의 일곱 관찰 (D01~D07)' }),
+        el('div', { class: 'scene-list' }, mainScenes.map(renderSceneCard)),
+        extraScenes.length ? el('div', { class: 'section-head', text: '더 보기 · 추가 관찰 (D08~D09)' }) : null,
+        extraScenes.length ? el('div', { class: 'scene-list' }, extraScenes.map(renderSceneCard)) : null
       )
     );
   }
 
   function handleChoice(sc, choice) {
+    recordFirstAction(sc.id + ':choice:' + choice.id);
     if (choice.detour) {
       openDetour(choice.detour);
       return;
@@ -223,12 +352,15 @@
     if (!choice.ok) return;
     if (sc.mode === 'stones') {
       state.step = 'stones';
+      if (!state.brookSpots || state.brookSpots.length !== 8) {
+        state.brookSpots = makeBrookSpots(getSeed(state, sc.id));
+      }
       saveState();
       render();
     } else if (sc.mode === 'order') {
       state.step = 'order';
       if (!state.orderList.length && sc.orderItems) {
-        state.orderList = sc.orderItems.map(function (o) { return o.id; }).reverse();
+        state.orderList = makeInitialOrderList(sc, getSeed(state, sc.id));
       }
       saveState();
       render();
@@ -241,12 +373,77 @@
       state.step = 'ark2';
       saveState();
       render();
+    } else if (sc.id === 'D07') {
+      state.tableFolds = ['son', 'table'];
+      recordDiscovery(sc, '수첩 연결: 요나단의 아들 므비보셋(삼하 9:6–7) ↔ 왕의 식탁(삼하 9:10–13)');
+      state.step = 'done';
+      saveState();
+      render();
     } else {
       recordDiscovery(sc);
       state.step = 'done';
       saveState();
       render();
     }
+  }
+
+  /* 놀이 3(D07): 접힌 수첩을 양방향으로 펼쳐 '요나단의 아들'과 '왕의 식탁' 두 단서를 연결 */
+  function renderD07FoldMap(sc) {
+    var seed = getSeed(state, 'D07');
+    var folds = [
+      {
+        id: 'son',
+        dir: (seed % 2 === 0) ? '서쪽 수첩 날개' : '북쪽 수첩 날개',
+        title: '요나단의 아들',
+        sub: '삼하 9:6–7 · 다윗이 친구 요나단 때문에 찾은 아들 므비보셋',
+        icon: 'person'
+      },
+      {
+        id: 'table',
+        dir: (seed % 2 === 0) ? '동쪽 수첩 날개' : '남쪽 수첩 날개',
+        title: '왕의 식탁',
+        sub: '삼하 9:10–13 · 늘 다윗의 식탁에서 함께 먹게 한 자리',
+        icon: 'table'
+      }
+    ];
+    if (seed % 2 === 1) folds.reverse();
+
+    var foldNodes = folds.map(function (f) {
+      var opened = state.tableFolds.indexOf(f.id) !== -1;
+      return el('button', {
+        class: 'fold-wing' + (opened ? ' opened' : ''),
+        'data-fold': f.id,
+        'aria-expanded': String(opened),
+        on: {
+          click: function () {
+            recordFirstAction('D07:fold:' + f.id);
+            if (state.tableFolds.indexOf(f.id) === -1) {
+              state.tableFolds.push(f.id);
+            }
+            if (state.tableFolds.indexOf('son') !== -1 && state.tableFolds.indexOf('table') !== -1) {
+              recordDiscovery(sc, '수첩 연결: ' + (state.tableFolds[0] === 'son' ? '요나단의 아들 → 왕의 식탁' : '왕의 식탁 → 요나단의 아들') + ' (삼하 9:6–13)');
+              state.step = 'done';
+            }
+            saveState();
+            render();
+          }
+        }
+      },
+        el('div', { class: 'fold-dir', text: f.dir + (opened ? ' · 펼쳐짐 ✓' : ' · 눌러서 펼치기') }),
+        el('div', { class: 'fold-main' },
+          el('span', { class: 'fold-icon', html: ART.icon(f.icon) }),
+          el('div', { class: 'fold-text' },
+            el('span', { class: 'fold-title', text: f.title }),
+            el('span', { class: 'fold-sub', text: opened ? f.sub : '접힌 수첩 날개를 펼쳐 단서를 확인해 보자.' })
+          )
+        )
+      );
+    });
+
+    return el('section', { class: 'notebook-map', 'data-notebook-map': 'D07' },
+      el('div', { class: 'one-line-guide', text: '수첩의 두 날개를 어느 쪽부터든 펼쳐 두 단서를 이어 보자.' }),
+      el('div', { class: 'fold-grid' }, foldNodes)
+    );
   }
 
   function renderChooseStep(sc) {
@@ -269,83 +466,212 @@
         sc.place ? el('span', { class: 'tag', text: '장소: ' + sc.place }) : null
       ),
       el('h2', { class: 'question', text: sc.question }),
+      sc.artNote ? el('p', { class: 'subnote', text: sc.artNote }) : null,
+      sc.id === 'D07' ? renderD07FoldMap(sc) : null,
       el('div', { class: 'choices' }, choiceNodes)
     ];
   }
 
+  /* 놀이 1(D02): 물결이 걷히는 관찰 창. 첫 입력은 반드시 매끄러운 돌 하나를 드러낸다. */
+  function activateBrookSpot(sc, spotIdx) {
+    if (!state.brookSpots || state.brookSpots.length !== 8) {
+      state.brookSpots = makeBrookSpots(getSeed(state, sc.id));
+    }
+    var item = state.brookSpots[spotIdx];
+    /* 첫 입력 보장: 아직 찾은 돌이 하나도 없을 때 잔자갈 칸을 처음 누르면 가장 가까운 돌과 자리를 바꿔 첫 입력이 항상 돌을 드러내게 한다 */
+    if (state.stonesFound.length === 0 && state.brookOpened.length === 0 && item && item.charAt(0) === 'p') {
+      for (var i = 0; i < state.brookSpots.length; i++) {
+        if (state.brookSpots[i].charAt(0) === 's') {
+          var tmp = state.brookSpots[spotIdx];
+          state.brookSpots[spotIdx] = state.brookSpots[i];
+          state.brookSpots[i] = tmp;
+          item = state.brookSpots[spotIdx];
+          break;
+        }
+      }
+    }
+    if (state.brookOpened.indexOf(spotIdx) === -1) {
+      state.brookOpened.push(spotIdx);
+    }
+    if (item && item.charAt(0) === 's') {
+      var num = Number(item.slice(1));
+      recordFirstAction('D02:stone:' + num);
+      if (state.stonesFound.indexOf(num) === -1) {
+        state.stonesFound.push(num);
+        if (state.stonesFound.length >= 5) {
+          recordDiscovery(sc, '시냇물 아래 관찰 창에서 매끄러운 돌 다섯을 모두 확인함 (배치 #' + (getSeed(state, sc.id) + 1) + ')');
+          state.step = 'done';
+        }
+      }
+    } else {
+      recordFirstAction('D02:pebble:' + spotIdx);
+    }
+    saveState();
+    render();
+  }
+
   function renderStonesStep(sc) {
+    if (!state.brookSpots || state.brookSpots.length !== 8) {
+      state.brookSpots = makeBrookSpots(getSeed(state, sc.id));
+    }
     var count = state.stonesFound.length;
-    var btns = [1, 2, 3, 4, 5].map(function (num) {
-      var picked = state.stonesFound.indexOf(num) !== -1;
-      return el('button', {
-        class: 'stone-btn' + (picked ? ' picked' : ''),
-        'data-stone': String(num),
+    var seed = getSeed(state, sc.id);
+
+    var spotBtns = state.brookSpots.map(function (code, idx) {
+      var isStone = code.charAt(0) === 's';
+      var stoneNum = isStone ? Number(code.slice(1)) : null;
+      var picked = isStone ? (state.stonesFound.indexOf(stoneNum) !== -1) : (state.brookOpened.indexOf(idx) !== -1);
+      var attrs = {
+        class: 'stone-btn brook-spot' + (picked ? (isStone ? ' picked' : ' pebble-opened') : ''),
+        'data-spot': String(idx),
+        'data-spot-kind': isStone ? 'stone' : 'pebble',
         'aria-pressed': String(picked),
-        on: { click: function () {
-          if (state.stonesFound.indexOf(num) === -1) {
-            state.stonesFound.push(num);
-            if (state.stonesFound.length >= 5) {
-              recordDiscovery(sc);
-              state.step = 'done';
+        on: {
+          click: function () { activateBrookSpot(sc, idx); },
+          keydown: function (ev) {
+            if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
+              ev.preventDefault();
+              var next = root.querySelector('[data-spot="' + ((idx + 1) % 8) + '"]');
+              if (next) next.focus();
+            } else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') {
+              ev.preventDefault();
+              var prev = root.querySelector('[data-spot="' + ((idx + 7) % 8) + '"]');
+              if (prev) prev.focus();
             }
-            saveState();
-            render();
           }
-        } }
-      },
-        el('span', { html: ART.icon('stone') }),
-        el('span', { text: picked ? '돌 ' + num + ' ✓' : '돌 ' + num })
+        }
+      };
+      if (isStone) attrs['data-stone'] = String(stoneNum);
+
+      var labelText;
+      if (!picked) {
+        labelText = isStone ? ('물결 ' + (idx + 1) + ' · 돌 ' + stoneNum) : ('물결 ' + (idx + 1));
+      } else {
+        labelText = isStone ? ('돌 ' + stoneNum + ' ✓') : '잔자갈';
+      }
+
+      return el('button', attrs,
+        el('span', { class: 'spot-visual', html: isStone ? ART.icon('stone') : ART.icon('water') }),
+        el('span', { class: 'spot-label', text: labelText })
       );
     });
+
     return [
       el('div', { class: 'meta-row' },
         el('span', { class: 'ref', text: sc.ref }),
-        el('span', { class: 'tag', text: '관찰한 돌 ' + count + ' / 5' })
+        el('span', { class: 'tag', text: '관찰한 돌 ' + count + ' / 5' }),
+        seed > 0 ? el('span', { class: 'tag', text: '새 물결 배치 #' + (seed + 1) }) : null
       ),
       el('h2', { class: 'question', text: '시냇가의 매끄러운 돌 다섯을 하나씩 눌러 살펴보자.' }),
-      el('p', { class: 'subnote', text: '같은 돌을 다시 눌러도 한 번만 세어져요.' }),
-      el('div', { class: 'stones-grid' }, btns)
+      el('p', { class: 'subnote one-line-guide', text: '물결 칸을 누르거나 방향키·엔터로 들여다보세요. 같은 돌은 한 번만 세어져요.' }),
+      el('div', { class: 'stones-grid brook-window', 'data-brook-seed': String(seed) }, spotBtns)
     ];
+  }
+
+  /* 놀이 2(D03): 수첩 펼침면의 두 장면 조각. 끌기, 두 번 탭, 한 번 탭 맞바꾸기, 키보드 집기·놓기 지원 */
+  function swapOrderPieces(idxA, idxB) {
+    if (idxA === idxB || idxA < 0 || idxB < 0 || idxA >= state.orderList.length || idxB >= state.orderList.length) return;
+    var tmp = state.orderList[idxA];
+    state.orderList[idxA] = state.orderList[idxB];
+    state.orderList[idxB] = tmp;
+    state.orderPick = null;
+    state.orderMsg = '';
+    saveState();
   }
 
   function renderOrderStep(sc) {
     var map = {};
     sc.orderItems.forEach(function (it) { map[it.id] = it; });
+    var seed = getSeed(state, sc.id);
+    var dragFromIdx = null;
+
     var nodes = state.orderList.map(function (id, idx) {
       var it = map[id];
       var selected = state.orderPick === idx;
+      var edgeLabel = it.id === 'gift' ? '왼쪽 이음새 · 겉옷 단서' : '오른쪽 이음새 · 들판 작별';
+      var iconKey = it.id === 'gift' ? 'robe' : 'person';
+
       return el('button', {
-        class: 'order-card' + (selected ? ' selected' : ''),
+        class: 'order-card spread-piece' + (selected ? ' selected' : ''),
         'data-order-id': it.id,
+        'data-slot-idx': String(idx),
+        draggable: 'true',
         'aria-pressed': String(selected),
-        on: { click: function () {
-          state.orderMsg = '';
-          if (state.orderPick === null) {
+        on: {
+          click: function () {
+            recordFirstAction('D03:order-click:' + it.id);
+            state.orderMsg = '';
+            if (state.orderPick === null) {
+              state.orderPick = idx;
+            } else if (state.orderPick === idx) {
+              state.orderPick = null;
+            } else {
+              swapOrderPieces(state.orderPick, idx);
+            }
+            render();
+          },
+          dblclick: function () {
+            /* 두 번 탭(더블클릭)하면 다른 칸과 즉시 자리를 맞바꾼다 */
+            recordFirstAction('D03:order-dblclick:' + it.id);
+            swapOrderPieces(idx, (idx + 1) % state.orderList.length);
+            render();
+          },
+          keydown: function (ev) {
+            if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp' || ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
+              ev.preventDefault();
+              var otherIdx = (idx + 1) % state.orderList.length;
+              if (state.orderPick === idx) {
+                swapOrderPieces(idx, otherIdx);
+                render();
+                var moved = root.querySelector('[data-slot-idx="' + otherIdx + '"]');
+                if (moved) moved.focus();
+              } else {
+                var target = root.querySelector('[data-slot-idx="' + otherIdx + '"]');
+                if (target) target.focus();
+              }
+            }
+          },
+          dragstart: function (ev) {
+            dragFromIdx = idx;
             state.orderPick = idx;
-          } else if (state.orderPick === idx) {
-            state.orderPick = null;
-          } else {
-            var tmp = state.orderList[state.orderPick];
-            state.orderList[state.orderPick] = state.orderList[idx];
-            state.orderList[idx] = tmp;
-            state.orderPick = null;
-            saveState();
+            if (ev.dataTransfer) {
+              ev.dataTransfer.effectAllowed = 'move';
+              ev.dataTransfer.setData('text/plain', String(idx));
+            }
+          },
+          dragover: function (ev) {
+            ev.preventDefault();
+          },
+          drop: function (ev) {
+            ev.preventDefault();
+            var from = dragFromIdx;
+            if (from === null && ev.dataTransfer) {
+              from = Number(ev.dataTransfer.getData('text/plain'));
+            }
+            if (typeof from === 'number' && !isNaN(from) && from !== idx) {
+              swapOrderPieces(from, idx);
+              render();
+            }
           }
-          render();
-        } }
+        }
       },
         el('div', { class: 'order-num', text: String(idx + 1) }),
+        el('div', { class: 'piece-icon', html: ART.icon(iconKey) }),
         el('div', { class: 'order-info' },
           el('span', { class: 'order-title', text: it.label }),
-          el('span', { class: 'order-hint', text: it.ref })
+          el('span', { class: 'order-hint', text: it.ref + ' · ' + edgeLabel })
         )
       );
     });
+
     return [
-      el('div', { class: 'meta-row' }, el('span', { class: 'ref', text: sc.ref })),
-      el('h2', { class: 'question', text: '두 일을 먼저 일어난 순서대로 놓아 보자.' }),
-      el('p', { class: 'subnote', text: '카드 두 개를 차례로 누르면 서로 자리가 바뀌어요.' }),
-      el('div', { class: 'order-list' }, nodes),
+      el('div', { class: 'meta-row' },
+        el('span', { class: 'ref', text: sc.ref }),
+        seed > 0 ? el('span', { class: 'tag', text: '수첩 펼침면 #' + (seed + 1) }) : null
+      ),
+      el('h2', { class: 'question', text: '수첩 펼침면에서 두 장면 조각을 일어난 순서대로 이어 붙여 보자.' }),
+      el('p', { class: 'subnote one-line-guide', text: '조각을 끌어서 옮기거나, 차례로 탭·두 번 탭·키보드 엔터로 자리를 바꿀 수 있어요.' }),
+      el('div', { class: 'order-list notebook-spread', 'data-spread-seed': String(seed) }, nodes),
       state.orderMsg ? el('div', { class: 'order-msg', text: state.orderMsg }) : null,
       el('div', { class: 'actions' },
         el('button', {
@@ -361,7 +687,7 @@
               saveState();
               render();
             } else {
-              state.orderMsg = '두 카드를 눌러 순서를 바꿔 보자. 선물을 먼저 주고, 나중에 헤어졌어.';
+              state.orderMsg = '조각을 집어 다시 옮겨 보자. 선물을 먼저 주고(삼상 18:1–4), 나중에 헤어졌어(삼상 20:41–42).';
               render();
             }
           } }
@@ -378,9 +704,9 @@
       ),
       el('div', { class: 'discovery-box' },
         el('div', { class: 'discovery-kicker', text: '첫 번째 만남 (삼하 2:4 · 헤브론)' }),
-        el('div', { class: 'discovery-text', text: '유다 사람들이 헤브론에 와서 먼저 다윗에게 기름을 부어 왕으로 세웠어.' })
+        el('div', { class: 'discovery-text', text: '먼저 유다 사람들이 헤브론에 와서 다윗을 유다의 왕으로 세웠어.' })
       ),
-      el('h2', { class: 'question', text: '그 뒤 헤브론에 와서 다윗을 온 이스라엘의 왕으로 세운 사람들은 누구였을까?' }),
+      el('h2', { class: 'question', text: '그 뒤 헤브론에 와서 다윗을 이스라엘의 왕으로 세운 사람들은 누구였을까?' }),
       el('div', { class: 'choices' },
         el('button', {
           class: 'choice-card',
@@ -392,7 +718,7 @@
             render();
           } }
         },
-          el('div', { class: 'choice-icon', html: ART.icon('crown') }),
+          el('div', { class: 'choice-icon', html: ART.icon('horn') }),
           el('div', { class: 'choice-text' },
             el('span', { class: 'choice-label', text: '이스라엘의 장로들' }),
             el('span', { class: 'choice-sub', text: '삼하 5:1–5 · 헤브론의 나중 만남' })
@@ -434,21 +760,26 @@
     var idx = DATA.scenes.indexOf(sc);
     var nextSc = idx >= 0 && idx + 1 < DATA.scenes.length ? DATA.scenes[idx + 1] : null;
     var saved = state.journal[sc.id];
+    var clueIcon = (saved && saved.clueIcon) ? saved.clueIcon : sceneClueIcon(sc);
     return [
       el('div', { class: 'meta-row' },
         el('span', { class: 'ref', text: sc.journalRef || sc.ref }),
         sc.place ? el('span', { class: 'tag', text: '장소: ' + sc.place }) : null
       ),
       el('section', { class: 'discovery-box', 'data-discovery': sc.id },
-        el('div', { class: 'discovery-kicker', text: '탐험 일지에 기록했어요' }),
+        el('div', { class: 'discovery-head' },
+          el('div', { class: 'discovery-clue-art', 'data-clue-icon': clueIcon, html: ART.icon(clueIcon) }),
+          el('div', { class: 'discovery-kicker', text: '단서 그림을 탐험 일지에 기록했어요' })
+        ),
         el('p', { class: 'discovery-text', text: sc.discovery }),
         saved && saved.extra ? el('p', { class: 'discovery-note', text: saved.extra }) : null
       ),
       el('div', { class: 'actions' },
-        el('button', { class: 'btn brass', 'data-action': 'open-journal', on: { click: openJournal } }, '탐험 일지 보기'),
         nextSc
-          ? el('button', { class: 'btn', 'data-action': 'next-scene', on: { click: function () { openScene(nextSc.id); } } }, '다음 장면: ' + nextSc.title)
-          : el('button', { class: 'btn plain', 'data-action': 'go-home', on: { click: goHome } }, '장면 목록으로')
+          ? el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { openScene(nextSc.id, false); } } }, '다음 장면: ' + nextSc.title)
+          : el('button', { class: 'btn brass', 'data-action': 'go-home', on: { click: goHome } }, '장면 목록으로'),
+        el('button', { class: 'btn plain', 'data-action': 'replay-scene', on: { click: replayCurrentScene } }, '다른 배치로 다시 놀기'),
+        el('button', { class: 'btn', 'data-action': 'open-journal', on: { click: openJournal } }, '탐험 일지 보기')
       )
     ];
   }
@@ -486,6 +817,7 @@
     var sc = getScene(state.sceneId);
     var sup = DATA.supplements[state.detourId];
     if (!sc || !sup) { returnFromDetour(); return; }
+    var diffText = (sup.diffByScene && sup.diffByScene[sc.id]) ? sup.diffByScene[sc.id] : sup.diff;
 
     root.replaceChildren(
       renderTopbar('다른 장면 · ' + sup.title,
@@ -504,7 +836,7 @@
           el('section', { class: 'detour-box', 'data-detour': sup.id },
             el('div', { class: 'detour-kicker', text: sup.badge + ' · ' + sup.ref }),
             el('p', { class: 'detour-fact', text: sup.fact }),
-            el('p', { class: 'detour-diff', text: sup.diff })
+            el('p', { class: 'detour-diff', text: diffText })
           ),
           el('div', { class: 'detour-backref' },
             el('span', { text: '원래 보던 장면: ' + sc.title }),
@@ -521,18 +853,22 @@
   function renderJournal() {
     var entries = DATA.scenes.filter(function (sc) { return !!state.journal[sc.id]; }).map(function (sc) {
       var rec = state.journal[sc.id];
+      var clueIcon = rec.clueIcon || sceneClueIcon(sc);
       return el('article', { class: 'journal-item', 'data-journal-id': sc.id },
         el('div', { class: 'journal-head' },
-          el('h3', { class: 'journal-title', text: sc.id + ' · ' + rec.title }),
-          el('span', { class: 'ref', text: rec.ref })
+          el('div', { class: 'journal-title-row' },
+            el('span', { class: 'journal-clue-icon', 'data-journal-clue': clueIcon, html: ART.icon(clueIcon) }),
+            el('h3', { class: 'journal-title', text: sc.id + ' · ' + sc.title })
+          ),
+          el('span', { class: 'ref', text: sc.journalRef || rec.ref })
         ),
-        rec.place ? el('div', { class: 'journal-sub', text: '장소: ' + rec.place }) : null,
-        el('p', { class: 'journal-fact', text: rec.discovery }),
+        sc.place ? el('div', { class: 'journal-sub', text: '장소: ' + sc.place }) : null,
+        el('p', { class: 'journal-fact', text: sc.discovery }),
         rec.extra ? el('p', { class: 'journal-sub', text: rec.extra }) : null,
         el('button', {
           class: 'journal-open',
           'data-reopen': sc.id,
-          on: { click: function () { openScene(sc.id); } }
+          on: { click: function () { openScene(sc.id, false); } }
         }, '이 장면 다시 보기')
       );
     });

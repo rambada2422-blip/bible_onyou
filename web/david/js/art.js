@@ -28,7 +28,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       '<ellipse cx="180" cy="146" rx="16" ry="10"/><ellipse cx="232" cy="152" rx="14" ry="9"/>' +
       '<ellipse cx="280" cy="145" rx="15" ry="10"/></g></svg>',
 
-    D03: '<svg viewBox="0 0 360 180" role="img" aria-label="접어 건네는 요나단의 겉옷과 들판 길">' +
+    D03: '<svg viewBox="0 0 360 180" role="img" aria-label="요나단의 겉옷과 들판 길">' +
       '<rect width="360" height="180" fill="#DCE9F2"/>' +
       '<path d="M0 118 Q180 100 360 116 L360 180 L0 180 Z" fill="#C9A86B"/>' +
       '<path d="M118 36 L152 24 L208 24 L242 36 L258 140 L220 146 L208 72 L196 148 L164 148 L152 72 L140 146 L102 140 Z" fill="#3B5B8C"/>' +
@@ -44,13 +44,16 @@ window.BO_DAVID = window.BO_DAVID || {};
       '<path d="M8 10 L62 4 L74 68 L18 74 Z" fill="#8C3B3B"/>' +
       '<path d="M15 58 L70 52" stroke="#E9B44C" stroke-width="6"/></g></svg>',
 
-    D05: '<svg viewBox="0 0 360 180" role="img" aria-label="헤브론 성읍 언덕과 왕관">' +
+    D05: '<svg viewBox="0 0 360 180" role="img" aria-label="헤브론 성읍 언덕과 기름 뿔">' +
       '<rect width="360" height="180" fill="#9BC8DE"/>' +
       '<path d="M0 110 Q180 78 360 112 L360 180 L0 180 Z" fill="#C9A26B"/>' +
       '<rect x="52" y="76" width="62" height="44" fill="#E6CFA3" stroke="#A68251" stroke-width="2"/>' +
       '<rect x="246" y="74" width="64" height="46" fill="#E6CFA3" stroke="#A68251" stroke-width="2"/>' +
       '<rect x="108" y="64" width="144" height="58" fill="#DFC391" stroke="#A68251" stroke-width="2"/>' +
-      '<path d="M148 144 L154 114 L170 128 L180 106 L190 128 L206 114 L212 144 Z" fill="#E9B44C" stroke="#A8741F" stroke-width="3"/></svg>',
+      '<g transform="translate(152,96)">' +
+      '<path d="M10 54 C22 38 40 22 58 6 C52 20 44 40 30 56 Z" fill="#7D4F2A" stroke="#4E3019" stroke-width="2"/>' +
+      '<ellipse cx="20" cy="55" rx="11" ry="5" fill="#4E3019"/>' +
+      '<circle cx="20" cy="55" r="5" fill="#E9B44C"/></g></svg>',
 
     D06: '<svg viewBox="0 0 360 180" role="img" aria-label="청색 천으로 덮인 하나님의 궤와 다윗이 마련한 장막">' +
       '<rect width="360" height="180" fill="#9AD0DE"/>' +
@@ -60,15 +63,15 @@ window.BO_DAVID = window.BO_DAVID || {};
       '<rect x="44" y="106" width="148" height="8" rx="4" fill="#B9832F"/>' +
       '<rect x="76" y="74" width="84" height="54" rx="8" fill="#3F72D0" stroke="#244B96" stroke-width="3"/></svg>',
 
-    D07: '<svg viewBox="0 0 360 180" role="img" aria-label="왕의 식탁에 차려진 떡과 잔">' +
+    D07: '<svg viewBox="0 0 360 180" role="img" aria-label="왕의 식탁에 차려진 음식">' +
       '<rect width="360" height="180" fill="#E8D8BC"/>' +
       '<rect y="128" width="360" height="52" fill="#C29C6A"/>' +
       '<rect x="64" y="96" width="232" height="16" rx="4" fill="#7D4F2A"/>' +
       '<rect x="86" y="112" width="16" height="52" fill="#5E3A1E"/>' +
       '<rect x="258" y="112" width="16" height="52" fill="#5E3A1E"/>' +
       '<ellipse cx="144" cy="88" rx="28" ry="12" fill="#E9B44C"/>' +
-      '<ellipse cx="218" cy="90" rx="18" ry="8" fill="#B4532A"/>' +
-      '<rect x="210" y="72" width="16" height="18" rx="3" fill="#B4532A"/></svg>',
+      '<ellipse cx="216" cy="90" rx="24" ry="9" fill="#B4532A"/>' +
+      '<ellipse cx="216" cy="84" rx="16" ry="6" fill="#E6CFA3"/></svg>',
 
     D08: '<svg viewBox="0 0 360 180" role="img" aria-label="베들레헴 성문 곁 돌우물과 물그릇">' +
       '<rect width="360" height="180" fill="#8CC0DC"/>' +
@@ -86,7 +89,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       '<path d="M138 138 C144 96 206 92 222 138 Z" fill="#F0C662" stroke="#A8741F" stroke-width="3"/>' +
       '<path d="M206 136 C214 104 268 100 286 136 Z" fill="#D4DCE8" stroke="#7A8699" stroke-width="3"/></svg>',
 
-    'jonathan-robe': '<svg viewBox="0 0 360 180" role="img" aria-label="접어 건네는 요나단의 겉옷">' +
+    'jonathan-robe': '<svg viewBox="0 0 360 180" role="img" aria-label="요나단의 겉옷">' +
       '<rect width="360" height="180" fill="#E9D6B5"/>' +
       '<rect y="128" width="360" height="52" fill="#C9A26B"/>' +
       '<path d="M115 36 L152 24 L208 24 L245 36 L262 142 L222 148 L210 72 L198 150 L162 150 L150 72 L138 148 L98 142 Z" fill="#3B5B8C"/>' +
