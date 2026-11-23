@@ -11,7 +11,7 @@
     const route = {name, rows, wheels:[], gates:[]};
     for (const [y, row] of rows.entries()) {
       for (const [x, tile] of Array.from(row).entries()) {
-        const key = {S:'start', D:'dock', L:'lotus'}[tile];
+        const key = {S:'start', D:'dock', L:'reed'}[tile];
         if (key) route[key] = {x,y};
         if (tile === 'T') route.wheels.push({x,y});
         if (tile === 'A' || tile === 'B') route.gates.push({x, y, type:tile});

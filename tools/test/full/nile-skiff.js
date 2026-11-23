@@ -66,7 +66,7 @@ async function play(browser, origin, entry, width, height, touch) {
   assert.equal(await page.locator('dialog li').count(),4);
   await page.getByText('모세와 아론의 부탁',{exact:true}).click();
   assert.equal(await page.locator('dialog details[open] .ref').innerText(),'출 5:1');
-  assert.equal(await page.locator('dialog li').filter({hasText:'연꽃 기록'}).count(),4);
+  assert.equal(await page.locator('dialog li').filter({hasText:'갈대 기록'}).count(),4);
   await page.locator('dialog li').first().getByRole('button').click();
   assert.equal(await page.locator('.river-name').innerText(),names[0]);
   await tap('왕궁 이야기');
@@ -76,7 +76,7 @@ async function play(browser, origin, entry, width, height, touch) {
   assert.equal((await active()).records.filter(Boolean).length,4);
   assert.deepEqual(errors,[]);
   await page.close();
-  console.log(entry,width+'×'+height,'· 네 물길, 터치/키 입력, 연꽃, 되감기·회전·재개·일지·왕궁 복귀 통과');
+  console.log(entry,width+'×'+height,'· 네 물길, 터치/키 입력, 갈대, 되감기·회전·재개·일지·왕궁 복귀 통과');
 }
 async function lightweight(browser, origin) {
   const page = await browser.newPage({viewport:{width:390,height:844}, hasTouch:true, isMobile:true});
@@ -86,7 +86,7 @@ async function lightweight(browser, origin) {
   await page.goto(origin + '/nile.html');
   await page.locator('.river-name').waitFor();
   await page.getByRole('button',{name:'아래 방향으로 노 젓기'}).tap();
-  await page.getByText('연꽃을 발견했어요!',{exact:false}).waitFor();
+  await page.getByText('갈대를 발견했어요!',{exact:false}).waitFor();
   assert.deepEqual(assets,[origin + '/nile.html']);
   await page.reload();
   assert.deepEqual(await page.evaluate(() => BO.app2d.state.nile.moves),['down']);
@@ -96,7 +96,7 @@ async function lightweight(browser, origin) {
   assert.deepEqual(await page.evaluate(() => BO.app2d.state.nile.moves),['down']);
   assert.deepEqual(errors,[]);
   await page.close();
-  console.log('가벼운 입구 · 단일 요청, 일반 모션 연꽃 발견, 왕궁과 저장 공유 통과');
+  console.log('가벼운 입구 · 단일 요청, 일반 모션 갈대 발견, 왕궁과 저장 공유 통과');
 }
 (async () => {
   await fs.mkdir(out,{recursive:true});

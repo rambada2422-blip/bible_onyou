@@ -57,7 +57,7 @@ function checkRoutes() {
       assert.equal(positions.length,word.length+1);
       assert(positions.at(-1).arrived);
     }
-    console.log(route.name,seen.size+'개 상태·도착/연꽃 최단 해법 검증');
+    console.log(route.name,seen.size+'개 상태·도착/갈대 최단 해법 검증');
   });
 }
 
@@ -172,7 +172,7 @@ async function precision(browser, origin) {
     await page.keyboard.press('ArrowDown');
     await at(2,2); // 애니메이션 중 두 번 누른 방향을 모두 반영한다.
 
-    // 미끄러지던 저장에서 황금 수문을 지나 연꽃이 있는 행까지 간 배를 복원한다.
+    // 미끄러지던 저장에서 황금 수문을 지나 갈대가 있는 행까지 간 배를 복원한다.
     await page.evaluate(() => {
       const old = JSON.parse(localStorage.getItem('bo_demo_v1'));
       old.nileLocks = {index:0, moves:['right','turn','down','left'], records:[{best:4,flower:true}], sound:false};
@@ -185,7 +185,7 @@ async function precision(browser, origin) {
     assert.deepEqual(migrated.moves,['right','right','turn','down','down','down','down','left','left','left']);
     assert.deepEqual(migrated.records[0],{best:null,flower:true,glideBest:4});
     assert.match(await page.locator('.river-gate-state').innerText(),/황금 수문 열림/);
-    assert(await page.locator('.flower-found').isVisible());
+    assert(await page.locator('.reed-found').isVisible());
     await page.reload();
     assert.deepEqual(await saved(),migrated);
     await page.getByRole('button',{name:'한 수 되돌리기',exact:true}).tap();
@@ -196,13 +196,23 @@ async function precision(browser, origin) {
 async function layouts(browser, origin) {
   const page = await browser.newPage({hasTouch:true, isMobile:true});
   try {
-    await page.goto(origin+'/nile.html?course=locks');
+    const note = '『탐험대 이야기』 탐험대 수첩 속 물길 놀이예요. 수문과 바퀴는 성경에 나오지 않아요.';
+    for (const course of ['river','locks']) {
+      await page.goto(origin+'/nile.html?course='+course);
+      assert.equal(await page.locator('.river-story-note').innerText(),note);
+      assert.match(await page.locator('canvas').getAttribute('aria-label'),/갈대/);
+      const button = page.getByRole('button',{name:'항해 일지'});
+      await button.click();
+      assert(await page.getByText('출 2:3',{exact:true}).isVisible());
+      await page.getByRole('button',{name:'물길로 돌아가기'}).click();
+    }
     for (const [width,height] of [[320,568],[360,640],[390,844],[414,896],[568,320],[844,390],[768,1024],[1280,800]]) {
       await page.setViewportSize({width,height});
       const fit = await page.evaluate(() => {
         const screen = document.querySelector('.river-screen');
         const buttons = screen.querySelectorAll('.river-key,.river-wheel');
-        return screen.scrollWidth <= screen.clientWidth && Array.from(buttons).every(button => {
+        const note = screen.querySelector('.river-story-note').getBoundingClientRect();
+        return note.top >= 0 && note.bottom <= innerHeight && screen.scrollWidth <= screen.clientWidth && Array.from(buttons).every(button => {
           const box = button.getBoundingClientRect();
           return box.width >= 44 && box.height >= 44 && box.left >= 0 && box.right <= innerWidth &&
             box.top >= 0 && box.bottom <= innerHeight;

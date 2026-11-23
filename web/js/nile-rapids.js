@@ -6,7 +6,7 @@
   const period = 2400;
   const penalty = 1500;
   const dispatchWindow = 8000;
-  const defaultMessage = '윗길로 연꽃을 챙길까요, 가운데로 깃발까지 곧장 갈까요?';
+  const defaultMessage = '윗길로 갈대를 챙길까요, 가운데로 깃발까지 곧장 갈까요?';
   const timeText = ms => (ms / 1000).toFixed(1) + '초';
   const clock = (mode, r) => mode === 'express' ? r.elapsed / period : r.beats / 2;
   const bankedTime = r => Math.round(r.elapsed + r.hits * penalty);
@@ -119,7 +119,7 @@
           boat = {x:transition.x+(run.x-transition.x)*pct, y:transition.y+(run.y-transition.y)*pct};
           if (pct>=1) transition=null;
         }
-        BO.drawNileBoard(ctx,{rows:route.rows,boat,lotus:route.lotus,dock:route.dock,direction:run.direction,
+        BO.drawNileBoard(ctx,{rows:route.rows,boat,reed:route.reed,dock:route.dock,direction:run.direction,
           found:run.found,tide:{phase,progress:frac,shield:run.armed}});
       }
       fill.style.transform='scaleX('+(1-frac)+')';
@@ -152,13 +152,13 @@
       overlay.hidden=!paused; controls.hidden=goal.hidden=run.arrived; result.hidden=!run.arrived;
       pauseButton.textContent=paused ? '계속하기' : '잠깐 쉬기';
       pauseButton.disabled=run.arrived;
-      cargo.textContent=run.found ? '✿  연꽃 우편' : '✉  탐험 일지';
+      cargo.textContent=run.found ? '갈대 우편' : '✉  탐험 일지';
       goal.textContent=mode==='express' ? '8초 안에 두 물살을 막힘없이 건너면 급행 도장을 받아요.' :
         '한 칸씩 배달해요. 두 수마다 물살이 바뀌고, 제자리에서 기다릴 수도 있어요.';
       if (!run.arrived) {
         note.textContent=notice;
       } else note.textContent='';
-      canvas.setAttribute('aria-label','배 '+(run.y+1)+'행 '+(run.x+1)+'열, 깃발 4행 8열, 연꽃 1행 5열');
+      canvas.setAttribute('aria-label','배 '+(run.y+1)+'행 '+(run.x+1)+'열, 깃발 4행 8열, 갈대 1행 5열');
       paint();
     }
     function pause() {
@@ -191,9 +191,9 @@
       if (newDelivery && stamped && (!best['express-stamp'] || score<best['express-stamp'])) best['express-stamp']=score;
       const fmt = n => mode==='express' ? timeText(n) : n+'수';
       const again = button('다시 배달하기','river-primary',restart);
-      result.replaceChildren(el('h2',{},run.found ? '연꽃 우편 도착!' : '탐험 일지 배달 완료!'),
+      result.replaceChildren(el('h2',{},run.found ? '갈대 우편 도착!' : '탐험 일지 배달 완료!'),
         el('p',{},'이번 '+fmt(score)+' · '+(run.hits ? '물살에 '+run.hits+'번 막힘' : '물살을 말끔히 통과')),
-        el('p',{class:'courier-best'},(run.found ? '연꽃 우편' : '일지')+' 개인 최고  '+fmt(best[key] || score)),
+        el('p',{class:'courier-best'},(run.found ? '갈대 우편' : '일지')+' 개인 최고  '+fmt(best[key] || score)),
         again);
       if (mode==='express') {
         if (stamped) result.prepend(el('strong',{class:'courier-stamp'},'급행 도장 획득'));
@@ -235,7 +235,7 @@
       if (tile==='~') run.channels|=1;
       if (tile==='=') run.channels|=2;
       if (strong) {run.rope=false;run.armed=false;}
-      notice = strong ? '밧줄로 물살을 건넜어요!' : !found && run.found ? '연꽃 우편을 챙겼어요. 이제 나루로!' : '깃발 나루로 일지를 가져가세요.';
+      notice = strong ? '밧줄로 물살을 건넜어요!' : !found && run.found ? '갈대 우편을 챙겼어요. 이제 나루로!' : '깃발 나루로 일지를 가져가세요.';
       if (run.arrived) { finish(true);return; }
       persist(); update(); animate(x,y);
     }

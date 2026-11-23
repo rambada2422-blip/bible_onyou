@@ -190,38 +190,27 @@
     ctx.restore();
   }
 
-  function flower(ctx, point, found) {
+  function drawReedMarker(ctx, point, found) {
     ctx.save();
-    ctx.translate(point.x + 0.5, point.y + 0.53);
+    ctx.translate(point.x + .5, point.y + .76);
+    oval(ctx, 0, 0, .35, .10, '#155b58');
     ctx.beginPath();
-    ctx.ellipse(0, 0.03, 0.40, 0.29, 0, 0, TAU);
-    ctx.lineWidth = found ? 0.022 : 0.014;
-    ctx.strokeStyle = found ? '#b7e0c2' : '#8cc7ab';
+    ctx.ellipse(0, -.01, .36, .11, 0, 0, TAU);
+    ctx.lineWidth = .025;
+    ctx.strokeStyle = found ? '#abe2cf' : '#ffe7a2';
     ctx.stroke();
-    oval(ctx, 0.09, 0.13, 0.25, 0.11, '#255e53', -0.16);
-    oval(ctx, 0.10, 0.10, 0.24, 0.10, '#749964', -0.16);
-    shape(ctx, [0.07, 0.11, 0.30, 0.04, 0.28, 0.095], '#477b65');
-    oval(ctx, -0.17, 0.09, 0.12, 0.062, '#97b679', 0.22);
-    function petal(x, y, a, size, color) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(a);
-      ctx.scale(size, size);
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.bezierCurveTo(-0.106, -0.075, -0.084, -0.188, 0, -0.29);
-      ctx.bezierCurveTo(0.07, -0.205, 0.11, -0.081, 0, 0);
-      ctx.fillStyle = color;
-      ctx.fill();
-      ctx.restore();
+    reeds(ctx, 0, -.035, 1.22, 3);
+    // 길게 휘는 두 이삭은 작은 지도에서도 모래톱의 풀과 구별된다.
+    for (const side of [-1, 1]) {
+      const tip = side < 0 ? -.15 : .10;
+      const top = side < 0 ? -.52 : -.64;
+      line(ctx, [side * .055, -.04, tip, top], '#eed18a', .027);
+      for (let i = 0; i < 4; i++) {
+        const y = top + i * .035, x = tip - side * .014 * i;
+        line(ctx, [x, y + .055, x + side * .10, y], found ? '#bed1a3' : '#ffdc8d', .029);
+        line(ctx, [x, y + .035, x - side * .049, y - .025], '#e5bd71', .021);
+      }
     }
-    const colors = found ? ['#9ebaae', '#bdd3bc', '#d2dfc5'] : ['#c17eab', '#e8a5cb', '#ffe2ee'];
-    petal(-0.025, 0.073, -1.03, 0.96, colors[0]);
-    petal(-0.01, 0.07, 0.97, 0.97, colors[0]);
-    petal(-0.028, 0.058, -0.55, 1, colors[1]);
-    petal(-0.022, 0.065, 0.50, 0.99, colors[1]);
-    petal(-0.021, 0.064, 0, 1.1, colors[2]);
-    oval(ctx, -0.019, 0.045, 0.058, 0.04, '#efca64');
     ctx.restore();
   }
 
@@ -464,7 +453,7 @@
 
   window.BO = window.BO || {};
   window.BO.drawNileBoard = function (ctx, board) {
-    const {rows, boat, lotus, dock:landing, found, direction, gateOpen = false, tide} = board;
+    const {rows, boat, reed, dock:landing, found, direction, gateOpen = false, tide} = board;
     const width = rows[0].length, height = rows.length;
     const scale = Math.max(1, Math.round(Math.hypot(ctx.getTransform().a, ctx.getTransform().b)));
     const key = [rows.join('/'), landing.x, landing.y, scale, gateOpen, Boolean(tide)].join(':');
@@ -482,7 +471,7 @@
     ctx.lineCap = ctx.lineJoin = 'round';
     ctx.drawImage(scenery.canvas, 0, 0, width, height);
     if (tide) drawRapids(ctx, scenery.rapids, tide);
-    flower(ctx, lotus, found);
+    drawReedMarker(ctx, reed, found);
     skiff(ctx, boat, direction);
     if (tide && tide.shield) anchorMark(ctx, boat);
     ctx.restore();

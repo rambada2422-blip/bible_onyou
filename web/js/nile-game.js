@@ -11,7 +11,7 @@
   ];
 
   const lockPages = [
-    {title:'강에서 온 경고', beat:0}, {title:'바로의 약속', beat:2}, {title:'개구리가 떠난 뒤', beat:5}
+    {title:'강에서 온 경고', beat:0}, {title:'바로의 약속', beat:2}, {title:'개구리가 죽은 뒤', beat:5}
   ];
 
   function markCourse(target) {
@@ -108,7 +108,7 @@
     const routeNo = el('p', {class:'river-kicker'});
     const name = el('h1', {tabindex:'-1', class:'river-name'});
     const status = el('p', {class:'river-status', role:'status', 'aria-live':'polite'});
-    const counter = el('span'), flower = el('span');
+    const counter = el('span'), reedLabel = el('span');
     const canvas = el('canvas', {class:'river-canvas', role:'img'});
     const board = el('div', {class:'river-map'}, canvas);
     const highlights = el('div', {class:'river-gate-highlights', 'aria-hidden':'true'});
@@ -152,13 +152,14 @@
       el('p', {class:'river-input-note'}, '방향 단추 · 밀기 · 방향키'));
     const result = el('section', {class:'river-result', hidden:true});
     const journal = el('dialog', {class:'river-journal', 'aria-label':'항해 일지'});
+    const storyNote = el('p', {class:'river-story-note'}, '『탐험대 이야기』 탐험대 수첩 속 물길 놀이예요. 수문과 바퀴는 성경에 나오지 않아요.');
     const screen = el('main', {class:isLockCourse ? 'river-screen river-locks' : 'river-screen'},
       el('nav', {class:'river-nav'}, back, button('급류 도전', 'river-nav-link courier-launch', () => {
         save(); depart(); markCourse('rapids'); open(leave, 'rapids');
-      }), journalButton),
+      }), journalButton), storyNote,
       el('div', {class:'river-layout'},
         el('div', {class:'river-chart'}, routeNo, name, board,
-          el('div', {class:'river-stats'}, counter, flower)),
+          el('div', {class:'river-stats'}, counter, reedLabel)),
         el('section', {class:'river-cockpit'}, goal, controls, result, status, tools)),
       journal);
     app.show(screen);
@@ -170,7 +171,7 @@
       routes.forEach((r, i) => {
         const rec = records[i];
         const item = el('li', {}, el('strong', {}, r.name), el('span', {}, rec
-          ? (rec.best ? '가장 짧은 항해 ' + rec.best : '이전 항해 ' + rec.glideBest) + '수 · ' + (rec.flower ? '연꽃 기록' : '연꽃 미발견')
+          ? (rec.best ? '가장 짧은 항해 ' + rec.best : '이전 항해 ' + rec.glideBest) + '수 · ' + (rec.flower ? '갈대 기록' : '갈대 미발견')
           : i === index ? '항해 중' : '미탐험'));
         if (rec) {
           const page = pages[i], beat = BO.palaceChapters[isLockCourse ? 1 : 0].beats[page.beat];
@@ -185,6 +186,7 @@
         list.append(item);
       });
       journal.replaceChildren(el('h2', {}, isLockCourse ? '수문 항해 일지' : '항해 일지'),
+        el('p', {}, '갈대 사이에 아기 모세의 바구니를 놓았어요. ', app.refChip('출 2:3', true)),
         button(isLockCourse ? '첫 네 물길로' : '수문 탐험으로', 'river-course-link', switchCourse), list, button('물길로 돌아가기', 'river-primary', () => journal.close()));
       journal.showModal();
     }
@@ -201,14 +203,14 @@
       if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
       const ctx = canvas.getContext('2d');
       ctx.setTransform(width / route.rows[0].length, 0, 0, height / route.rows.length, 0, 0);
-      BO.drawNileBoard(ctx, {rows:route.rows, boat:pos, lotus:route.lotus, dock:route.dock, direction, found, gateOpen:last(path).gateOpen});
+      BO.drawNileBoard(ctx, {rows:route.rows, boat:pos, reed:route.reed, dock:route.dock, direction, found, gateOpen:last(path).gateOpen});
     }
     const observer = new ResizeObserver(() => { if (!moving) paint(); });
     observer.observe(canvas);
     function describe() {
       const p = last(path);
       const coord = point => (point.y + 1) + '행 ' + (point.x + 1) + '열';
-      let mapLabel = '배 ' + coord(p) + ', 나루 ' + coord(route.dock) + ', 연꽃 ' + coord(route.lotus);
+      let mapLabel = '배 ' + coord(p) + ', 나루 ' + coord(route.dock) + ', 갈대 ' + coord(route.reed);
       if (isLockCourse) {
         const atWheel = route.rows[p.y][p.x] === 'T';
         const gold = p.gateOpen ? '황금 수문 열림' : '황금 수문 닫힘';
@@ -222,8 +224,8 @@
       }
       canvas.setAttribute('aria-label', mapLabel);
       counter.textContent = (isLockCourse ? '항해  ' : '노 젓기  ') + moves.length + '수';
-      flower.textContent = p.found ? '✿  연꽃 발견' : '✿  연꽃 미발견';
-      flower.classList.toggle('flower-found', p.found);
+      reedLabel.textContent = p.found ? '갈대 발견' : '갈대 미발견';
+      reedLabel.classList.toggle('reed-found', p.found);
       for (const [dir, key] of Object.entries(keys)) {
         key.setAttribute('aria-disabled', String(!sail(route, p, dir)));
         key.classList.remove('river-hinted');
@@ -249,7 +251,7 @@
           ? button('다음 물길', 'river-primary', () => begin(index + 1))
           : button('완성한 항해 일지', 'river-primary', openJournal);
         result.replaceChildren(el('h2', {}, '나루에 도착했어요!'),
-          el('p', {}, last(path).found ? '이번 물길의 연꽃을 일지에 그렸어요.' : '연꽃을 지나는 또 다른 길도 있어요.'),
+          el('p', {}, last(path).found ? '이번 물길의 갈대를 일지에 그렸어요.' : '갈대를 지나는 또 다른 길도 있어요.'),
           next, button('이 물길 다시 타기', 'river-tool', () => begin(index)));
         result.append(button('발견한 기록 · ' + pages[index].title, 'river-discovery', () => openJournal(index)));
         if (index === routes.length - 1) {
@@ -257,7 +259,7 @@
         }
         if (!firstFocus) next.focus({preventScroll:true});
       }
-      status.textContent = atDock ? '' : '연꽃을 지나 나루에 닿으면 일지에 꽃이 남아요.';
+      status.textContent = atDock ? '' : '갈대를 지나 나루에 닿으면 일지에 갈대 그림이 남아요.';
       describe(); paint(); updateSound();
       if (firstFocus) name.focus({preventScroll:true});
       firstFocus = false;
@@ -302,7 +304,7 @@
         describe();
         if (next.arrived) { tone(392); tone(523, .13); showStage(); }
         else if (route.rows[next.y][next.x] === 'T') status.textContent = '바퀴에 닿았어요. 돌리거나 그대로 노를 저을 수 있어요.';
-        else if (next.found && !before.found) { tone(523); status.textContent = '연꽃을 발견했어요! 이제 나루까지 데려가요.'; }
+        else if (next.found && !before.found) { tone(523); status.textContent = '갈대를 발견했어요! 이제 나루로 가요.'; }
         else status.textContent = '배가 멈췄어요. 다음 방향을 골라 보세요.';
       }
       frame(started);

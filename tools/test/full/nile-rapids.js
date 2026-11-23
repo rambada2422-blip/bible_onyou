@@ -50,7 +50,7 @@ async function play(browser,origin,touch) {
     assert((await voyage()).practice.arrived);
     await tap('다시 배달하기');
     await steer('UUURRRRRRDDD');
-    assert(await p.getByRole('heading',{name:'연꽃 우편 도착!'}).isVisible());
+    assert(await p.getByRole('heading',{name:'갈대 우편 도착!'}).isVisible());
     assert.equal((await voyage()).best['practice-flower'],12);
 
     await tap('급행 배달');
@@ -68,7 +68,7 @@ async function play(browser,origin,touch) {
     assert.equal((await voyage()).express.hits,1);
     // 우회로에서 시간 초과 뒤에도 배달을 끝낼 수 있다.
     await p.clock.runFor(8500);await steer('LUUURRRRRRDDD');
-    assert(await p.getByRole('heading',{name:'연꽃 우편 도착!'}).isVisible());
+    assert(await p.getByRole('heading',{name:'갈대 우편 도착!'}).isVisible());
     assert.equal((await voyage()).best['express-stamp'],undefined);
     await tap('다시 배달하기');
 
