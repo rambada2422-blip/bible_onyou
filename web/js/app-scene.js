@@ -398,10 +398,11 @@
         kids.push(el('div', { class: 'closebox' }, el('h3', { text: '탐험 기록' }), el('p', { text: c.prompt }), ta));
         kids.push(el('p', { class: 'pending', text: '뜻과 삶의 적용을 묻는 질문은 목사님 감수를 마친 뒤 이 자리에 열립니다.' }));
       }
+      if (id === 'EX-09') kids.push(el('button', {class:'btn wide onpaper', on:{click:function () { finish(app.openRedSea); }}}, '홍해 본편으로'));
       if (id === 'EX-01' || id === 'EX-09') {
         kids.push(el('button', {class:'btn wide onpaper', on:{click:function () {
           finish(id === 'EX-09' ? app.openExodusTrail : function () { app.openPalace('hub'); });
-        }}}, id === 'EX-09' ? '홍해 건너편으로' : '모세를 따라 왕궁으로'));
+        }}}, id === 'EX-09' ? '길 잇기 수첩 바로 열기' : '모세를 따라 왕궁으로'));
       }
       fill([el('div', { class: 'q-kicker', text: '탐험을 마치며' }), kids],
         nextBtn(id === 'EX-00' ? '다음 목적지 정하기' : '시간표로 돌아가기'));

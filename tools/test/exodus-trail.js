@@ -29,7 +29,7 @@ async function walk(page, origin, output) {
   assert.equal((await save()).passover.seen, 1);
   for (const i of [1, 2]) await page.locator('.po-pin').nth(i).click();
   await tap('그 밤의 기록으로'); await tap('바로의 소식 읽기'); await tap('떠나는 길 살펴보기');
-  await tap('홍해 건너편으로');
+  await tap('길 잇기 수첩 바로 열기');
   assert.equal((await save()).passover.recorded, true);
 
   const titles = ['홍해 건너편', '광야의 샘', '시내산의 기록', '성막의 마지막 장'];
@@ -113,7 +113,7 @@ async function walk(page, origin, output) {
     },id);
   }
   await resumeClosing('EX-09'); await page.reload();
-  await tap('홍해 건너편으로');
+  await tap('길 잇기 수첩 바로 열기');
   assert.equal((await save()).done['EX-09'],true);
   await resumeClosing('EX-01');
   await page.goto(origin + '/index.html');

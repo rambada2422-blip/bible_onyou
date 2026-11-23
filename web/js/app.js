@@ -20,6 +20,12 @@
   app.openExodusTrail = function () {
     markScene('#exodus'); app.exodusTrail.open(entrance);
   };
+  app.openRedSea = function () {
+    markScene('#redsea');
+    app.redSea.open(entrance, function () {
+      markScene('#exodus'); app.exodusTrail.open(entrance, true);
+    });
+  };
   function openPassoverFromHub() {
     if (!location.hash) { app.passover.open(renderHub); return; }
     markScene('#passover'); app.passover.open(entrance, '탐험 입구');
@@ -71,6 +77,7 @@
       el('div', { class: 'title-actions' },
         el('button', { class: 'btn wide', on: { click: function () { (app.state.tier && app.state.char) ? continueJourney() : renderSetup(); } } },
           (app.state.tier && app.state.char) ? '이어서 탐험하기' : '탐험 시작'),
+        app.state.redSea ? el('button', {class:'btn wide quiet', on:{click:app.openRedSea}}, '홍해 본편 이어 보기') : null,
         app.state.exodusTrail ? el('button', {class:'btn wide quiet', on:{click:app.openExodusTrail}}, '세 친구의 길 잇기 계속하기') : null,
         el('button', { class: 'btn wide quiet', on: { click: renderGuide } }, '구성 안내 (선생님·부모님용)'),
         el('p', { class: 'fine', text: '감수 전 시범 화면입니다. 성경 본문은 싣지 않고 장절만 안내합니다.' }))));
@@ -143,7 +150,7 @@
         toggle.textContent = expand ? '갈 수 있는 장면만 보기' : '전체 여정 보기';
       } } }, '전체 여정 보기');
     var c = C.chars[app.state.char], t = tierInfo();
-    var entryCount = app.state.cards.length + writtenNotes().length + (app.passover.completed() ? 1 : 0);
+    var entryCount = (app.state.redSea && app.state.redSea.finished ? 1 : 0) + app.state.cards.length + writtenNotes().length + (app.passover.completed() ? 1 : 0);
     C.route.options.forEach(function (option) { entryCount += app.journalClues(option.to).length; });
     show(el('div', { class: 'screen sky hub' },
       el('div', { class: 'hub-head pad' },
@@ -161,6 +168,7 @@
         }),
         el('button', { class: 'btn wide', on: { click: function () { openPalace('hub'); } } }, '모세와 바로의 대화 · 열 재앙 영상'),
         el('button', { class: 'btn wide', on: { click: openPassoverFromHub } }, '열 가지 재앙과 유월절 · 감수용 미리보기'),
+        el('button', {class:'btn wide', on:{click:app.openRedSea}}, '홍해 본편 · 바닷가에서 미리암의 노래까지'),
         el('button', {class:'btn wide', on:{click:app.openExodusTrail}}, '홍해에서 성막까지 · 세 친구의 길 잇기'),
         locked.length ? toggle : null,
         el('ol', { class: 'tl', id: 'journey-list' }, items),
@@ -229,6 +237,7 @@
     show(el('div', { class: 'screen page' },
       pageHead('탐험 일지', back, sceneId ? '말씀 카드로 돌아가기' : '돌아가기'),
       el('div', { class: 'page-body pad' },
+        app.state.redSea && app.state.redSea.finished ? el('details', {class:'po-record'}, el('summary', {}, '홍해 · 건너편에서 부른 노래'), app.refChip('출 14:30–31, 15:1, 15:20–21'), el('p', {}, '그날 하나님이 이스라엘을 애굽 사람의 손에서 구원하셨다. 모세와 이스라엘 자손이 하나님께 노래했다.')) : null,
         app.passover.completed() ? el('button', { class: 'btn wide onpaper', on: { click: function () { app.passover.open(function () { renderJournal(back, sceneId); }, '일지', true); } } }, '열 가지 재앙과 유월절 · 탐험 기록') : null,
         groups.length ? el('section', { class: 'journal-clues' }, el('h3', { text: '내가 찾은 단서' }), groups) : null,
         el('section', {}, el('h3', { text: '말씀 카드 ' + app.state.cards.length + '장' }),
@@ -291,8 +300,13 @@
           el('p', { text: '재앙과 유월절의 세 장면은 시간표의 감수용 미리보기에서 살펴볼 수 있습니다. 본편 공개는 목회자 감수 뒤에 진행합니다.' })))));
   }
 
+  // 외부의 같은 페이지 링크도 새 입구로 진입한다. 내부 이동은 replaceState라 이 이벤트를 보내지 않는다.
+  window.addEventListener('hashchange', function () {
+    if (['#home','#pillar','#palace','#passover','#redsea','#exodus','#nile',''].includes(location.hash)) location.reload();
+  });
   if (location.hash === '#nile' || (!location.hash && document.body.dataset.start === 'nile')) app.openNile();
   else if (location.hash === '#pillar') app.openPillars();
+  else if (location.hash === '#redsea') app.openRedSea();
   else if (location.hash === '#exodus') app.openExodusTrail();
   else if (location.hash === '#passover') app.passover.open(entrance, '탐험 입구');
   else if (location.hash === '#home') entrance();

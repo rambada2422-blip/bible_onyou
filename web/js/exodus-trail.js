@@ -64,8 +64,9 @@
     return s;
   }
   function btn(text, action, cls) { return el('button', {type:'button', class:cls, on:{click:action}}, text); }
-  function open(leave) {
+  function open(leave, fromSea) {
     const s = state();
+    if (fromSea && s.index === 0 && !s.book && s.review === undefined) s.index = 1;
     function count() { return s.pages.reduce((n, p, i) => n + (cleared(i) ? 3 : p.found), 0); }
     function cleared(i) { return Number.isSafeInteger(s.best[i]) && s.best[i] >= 0; }
     function notebook(focus) {
@@ -85,13 +86,13 @@
           group.append(el('details', {}, el('summary', {}, entry[0]), app.refChip(entry[1]), entry[2] ? el('p', {}, entry[2]) : null));
         }
         if (available < 3) group.append(el('p', {}, '남은 기록 ' + (3 - available) + '장'));
-        if (i === 0 || cleared(i - 1)) group.append(btn(cleared(i) ? '이 판 다시 맞추기' : '이 판 이어 맞추기', () => {
+        if (i === 0 || cleared(i - 1) || (i === 1 && app.state.redSea && app.state.redSea.finished)) group.append(btn(cleared(i) ? '이 판 다시 맞추기' : '이 판 이어 맞추기', () => {
           if (cleared(i) && s.pages[i].rotation.every(n => n === 0)) s.pages[i] = newPage(spread, i, !s.pages[i].flipped);
           s.index = i; board(true);
         }, 'xt-action'));
         list.append(group);
       });
-      app.show(el('main', {class:'screen xt-screen xt-book'}, el('nav', {class:'xt-nav'}, btn('탐험 입구', leave, 'xt-link'), btn('놀이판', () => board(true), 'xt-link')),
+      app.show(el('main', {class:'screen xt-screen xt-book'}, el('nav', {class:'xt-nav'}, btn('탐험 입구', leave, 'xt-link'), btn('홍해 본편', app.openRedSea, 'xt-link'), btn('놀이판', () => board(true), 'xt-link')),
         el('div', {class:'xt-scroll'}, el('header', {class:'xt-head'}, el('p', {}, '『탐험대 이야기』'), heading, el('p', {}, '모은 기록 ' + count() + ' / 12')), list)));
       if (focus) heading.focus({preventScroll:true});
     }
@@ -121,7 +122,7 @@
         remaining.append(el('div', {}, choice, el('details', {}, el('summary', {}, '장절 보기'), app.refChip(entry[1]))));
       });
       app.show(el('main', {class:'screen xt-screen xt-' + spread.theme},
-        el('nav', {class:'xt-nav'}, btn('탐험 입구', leave, 'xt-link'), btn('내 수첩', () => { delete s.review; notebook(true); }, 'xt-link')),
+        el('nav', {class:'xt-nav'}, btn('탐험 입구', leave, 'xt-link'), btn('홍해 본편', app.openRedSea, 'xt-link'), btn('내 수첩', () => { delete s.review; notebook(true); }, 'xt-link')),
         el('div', {class:'xt-scroll'}, el('header', {class:'xt-head'}, el('p', {}, '『탐험대 이야기』 기록 복원 · ' + s.review + ' / 12'), heading), placed, feedback, remaining)));
       if (focus) heading.focus({preventScroll:true});
     }
@@ -203,7 +204,7 @@
       const crew = el('div', {class:'xt-crew', 'aria-label':'함께하는 탐험대'}, friends.map(f =>
         el('span', {}, app.pic(f[0] + '-avatar', '', ''), f[1])));
       app.show(el('main', {class:'screen xt-screen xt-' + spread.theme},
-        el('nav', {class:'xt-nav'}, btn('탐험 입구', leave, 'xt-link'), btn('내 수첩', () => notebook(true), 'xt-link')),
+        el('nav', {class:'xt-nav'}, btn('탐험 입구', leave, 'xt-link'), btn('홍해 본편', app.openRedSea, 'xt-link'), btn('내 수첩', () => notebook(true), 'xt-link')),
         el('div', {class:'xt-scroll'}, el('header', {class:'xt-head'}, el('p', {}, '『탐험대 이야기』 길 잇기 · ' + (index + 1) + ' / ' + spreads.length), heading,
           el('div', {class:'xt-byline'}, el('span', {}, spread.range), crew)),
           el('section', {class:'xt-play'}, el('div', {class:'xt-boardlabel'}, el('strong', {}, '수첩 조각 맞추기'), counter), cells, message, stamps, actions))));
