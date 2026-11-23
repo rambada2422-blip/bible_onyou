@@ -76,6 +76,8 @@
       d05Order: [null, null], /* A05·A06(D05): 1번째·2번째에 놓은 만남 쪽지 */
       d05Pick: null,      /* A05(D05): 현재 고른 만남 쪽지 */
       d05Msg: '',         /* A05·A06(D05): 안내 메시지 */
+      d06Opened: [],      /* A07(D06): 펼친 행렬 기록 수첩 면 ['ark', 'tent'] */
+      d06Path: null,      /* A08(D06): 관찰 경로 ('object' 물건부터 | 'place' 도착한 곳부터) */
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
@@ -146,6 +148,10 @@
       if (Array.isArray(parsed.d05Order) && parsed.d05Order.length === 2) {
         base.d05Order = parsed.d05Order.map(function (v) { return (v === 'judah' || v === 'elders') ? v : null; });
       }
+      if (Array.isArray(parsed.d06Opened)) {
+        base.d06Opened = parsed.d06Opened.filter(function (v, i, a) { return (v === 'ark' || v === 'tent') && a.indexOf(v) === i; });
+      }
+      if (parsed.d06Path === 'object' || parsed.d06Path === 'place') base.d06Path = parsed.d06Path;
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
@@ -208,6 +214,8 @@
         d05Opened: state.d05Opened,
         d05FirstWing: state.d05FirstWing,
         d05Order: state.d05Order,
+        d06Opened: state.d06Opened,
+        d06Path: state.d06Path,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,
@@ -319,6 +327,15 @@
     state.d04Slots = { jonathan: null, saul: null };
     state.d04PickTag = null;
     state.d04Msg = '';
+    if (isReplay) {
+      state.d05Opened = [];
+      state.d05FirstWing = null;
+      state.d05Order = [null, null];
+      state.d06Opened = [];
+      state.d06Path = null;
+    }
+    state.d05Pick = null;
+    state.d05Msg = '';
     state.stonesFound = [];
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
@@ -347,6 +364,13 @@
     state.d04Slots = { jonathan: null, saul: null };
     state.d04PickTag = null;
     state.d04Msg = '';
+    state.d05Opened = [];
+    state.d05FirstWing = null;
+    state.d05Order = [null, null];
+    state.d05Pick = null;
+    state.d05Msg = '';
+    state.d06Opened = [];
+    state.d06Path = null;
     state.stonesFound = [];
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
@@ -782,6 +806,7 @@
       sc.id === 'D01' ? renderD01Notebook(sc) : null,
       (sc.id === 'D04' && boards.renderD04Compare) ? boards.renderD04Compare(boardCtx(), sc) : null,
       (sc.id === 'D05' && boards.renderD05Hebron) ? boards.renderD05Hebron(boardCtx(), sc) : null,
+      (sc.id === 'D06' && boards.renderD06Notebook) ? boards.renderD06Notebook(boardCtx(), sc) : null,
       sc.id === 'D07' ? renderD07FoldMap(sc) : null,
       el('div', { class: 'choices' }, choiceNodes)
     ];

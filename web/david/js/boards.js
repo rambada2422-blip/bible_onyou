@@ -603,8 +603,102 @@ window.BO_DAVID = window.BO_DAVID || {};
     );
   }
 
+  var D06_PAGES = [
+    {
+      id: 'ark',
+      pageLabel: '수첩 1면 · 궤가 들어옴',
+      nameTag: '이름표: 하나님의 궤 (청색 천으로 덮임 · 민 4:5–6)',
+      title: '궤가 들어옴',
+      ref: '삼하 6:12–13',
+      fact: '행렬이 청색 천으로 덮인 하나님의 궤를 다윗 성으로 메고 들어왔어.',
+      icon: 'ark'
+    },
+    {
+      id: 'tent',
+      pageLabel: '수첩 2면 · 마련한 장막',
+      nameTag: '이름표: 다윗이 마련한 장막',
+      title: '마련한 장막',
+      ref: '삼하 6:17',
+      fact: '다윗 성에 들어온 하나님의 궤를 다윗이 마련한 장막 안에 두었어.',
+      icon: 'tent'
+    }
+  ];
+
+  /* A07(D06): 행렬 기록 펼치기 — 수첩 두 면('궤가 들어옴' / '마련한 장막'), 이름표로 완주 */
+  function renderD06Notebook(ctx, sc) {
+    var state = ctx.state;
+    var el = ctx.el;
+    var ART = ctx.ART;
+    var seed = ctx.getSeed(state, 'D06');
+
+    if (!Array.isArray(state.d06Opened)) state.d06Opened = [];
+
+    var pages = D06_PAGES.slice();
+    if (seed % 2 === 1) pages.reverse();
+
+    var pageNodes = pages.map(function (pg) {
+      var opened = state.d06Opened.indexOf(pg.id) !== -1;
+      return el('div', { class: 'd05-wing-card' + (opened ? ' opened' : ''), 'data-d06-page-card': pg.id },
+        el('button', {
+          class: 'd05-wing-btn',
+          'data-d06-page': pg.id,
+          'aria-expanded': String(opened),
+          on: {
+            click: function () {
+              ctx.recordFirstAction('D06:page:' + pg.id);
+              if (state.d06Opened.indexOf(pg.id) === -1) state.d06Opened.push(pg.id);
+              ctx.saveState();
+              ctx.render();
+            }
+          }
+        },
+          el('div', { class: 'fold-dir', text: pg.pageLabel + (opened ? ' · 펼쳐짐 ✓' : ' · 펼치기') }),
+          el('div', { class: 'fold-main' },
+            el('span', { class: 'fold-icon', html: ART.icon(pg.icon) }),
+            el('div', { class: 'fold-text' },
+              el('span', { class: 'fold-title', text: pg.title }),
+              el('span', { class: 'fold-sub', text: opened ? pg.ref : '이름표와 기록 펼치기' })
+            )
+          )
+        ),
+        opened ? el('div', { class: 'd05-wing-detail', 'data-d06-detail': pg.id },
+          el('span', { class: 'tag', text: pg.nameTag }),
+          el('p', { class: 'd05-wing-fact', text: pg.fact })
+        ) : null
+      );
+    });
+
+    var bothOpened = state.d06Opened.indexOf('ark') !== -1 && state.d06Opened.indexOf('tent') !== -1;
+
+    return el('section', {
+      class: 'notebook-map d05-hebron-board',
+      'data-d06-board': 'true',
+      'data-d06-seed': String(seed)
+    },
+      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 수첩 두 면(궤가 들어옴 · 마련한 장막)을 차례로 펼쳐 이름표와 장절 기록을 확인하자.' }),
+      el('div', { class: 'd05-wings' }, pageNodes),
+      el('button', {
+        class: 'btn brass d04-check-btn',
+        'data-action': 'd06-finish',
+        disabled: !bothOpened,
+        on: {
+          click: function () {
+            ctx.recordDiscovery(
+              sc,
+              '『탐험대 이야기』 행렬 기록 수첩(궤가 들어옴 삼하 6:12–13 → 마련한 장막 삼하 6:17)'
+            );
+            state.step = 'done';
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, bothOpened ? '두 면의 기록을 일지에 남기기 (삼하 6:12–15, 17–19)' : '수첩 두 면을 모두 펼쳐 보세요')
+    );
+  }
+
   window.BO_DAVID.boards = {
     renderD04Compare: renderD04Compare,
-    renderD05Hebron: renderD05Hebron
+    renderD05Hebron: renderD05Hebron,
+    renderD06Notebook: renderD06Notebook
   };
 })();
