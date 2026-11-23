@@ -20,6 +20,10 @@
   app.openExodusTrail = function () {
     markScene('#exodus'); app.exodusTrail.open(entrance);
   };
+  function openPassoverFromHub() {
+    if (!location.hash) { app.passover.open(renderHub); return; }
+    markScene('#passover'); app.passover.open(entrance, '탐험 입구');
+  }
   app.openPassoverRoom = function () {
     markScene('#passover');
     app.passover.open(entrance, '탐험 입구', false, true);
@@ -30,9 +34,11 @@
   };
   function openPalace(from) {
     if (location.hash === '#passover') { from = 'room'; markScene('#palace'); }
+    else if (location.hash === '#home' || location.hash === '#pillar') markScene('#palace');
     app.palace.open(from, function () {
       if (from === 'room') { markScene('#passover'); app.passover.open(entrance, '탐험 입구'); }
-      else if (from === 'passover') app.passover.open(renderHub);
+      else if (from === 'passover') openPassoverFromHub();
+      else if (location.hash === '#palace') entrance();
       else if (app.state.char && app.state.tier) renderHub();
       else renderTitle();
     });
@@ -154,7 +160,7 @@
           return el('button', { class: 'btn wide', on: { click: function () { depart(option.to); } } }, option.label + ' · 이어서 탐험하기');
         }),
         el('button', { class: 'btn wide', on: { click: function () { openPalace('hub'); } } }, '모세와 바로의 대화 · 열 재앙 영상'),
-        el('button', { class: 'btn wide', on: { click: function () { app.passover.open(renderHub); } } }, '열 가지 재앙과 유월절 · 감수용 미리보기'),
+        el('button', { class: 'btn wide', on: { click: openPassoverFromHub } }, '열 가지 재앙과 유월절 · 감수용 미리보기'),
         el('button', {class:'btn wide', on:{click:app.openExodusTrail}}, '홍해에서 성막까지 · 세 친구의 길 잇기'),
         locked.length ? toggle : null,
         el('ol', { class: 'tl', id: 'journey-list' }, items),

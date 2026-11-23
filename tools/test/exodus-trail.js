@@ -130,6 +130,17 @@ async function walk(page, origin, output) {
   try {
     const page = await browser.newPage({viewport:{width:320,height:568},hasTouch:true,reducedMotion:'reduce'});
     await walk(page, await gameOrigin(browser), output);
+    const freshPage = await browser.newPage();
+    await freshPage.goto(new URL('/index.html#home', page.url()).href);
+    const tap = name => freshPage.getByRole('button',{name,exact:true}).click();
+    await tap('탐험 시작'); await freshPage.locator('.tier').first().click(); await tap('출발 준비 완료');
+    await tap('모세와 바로의 대화 · 열 재앙 영상'); await tap('다음');
+    const words = await freshPage.locator('.palace-words').innerText();
+    await freshPage.reload();
+    assert.equal(await freshPage.locator('.palace-words').innerText(), words);
+    await tap('← 돌아가기'); await tap('열 가지 재앙과 유월절 · 감수용 미리보기');
+    await tap('강물'); await freshPage.reload();
+    assert.equal(await freshPage.getByRole('button',{name:'✓ 강물',exact:true}).getAttribute('aria-pressed'),'true');
     console.log('왕궁 → 유월절 → 홍해 → 성막, 4판 12기록, 회전·복원·재도전: no errors');
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
