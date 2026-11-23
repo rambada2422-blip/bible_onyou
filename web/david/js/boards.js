@@ -624,7 +624,7 @@ window.BO_DAVID = window.BO_DAVID || {};
     }
   ];
 
-  /* A07(D06): 행렬 기록 펼치기 — 수첩 두 면('궤가 들어옴' / '마련한 장막'), 이름표로 완주 */
+  /* A07·A08(D06): 행렬 기록 펼치기 + 관찰 경로 두 개('물건부터' / '도착한 곳부터') */
   function renderD06Notebook(ctx, sc) {
     var state = ctx.state;
     var el = ctx.el;
@@ -633,12 +633,37 @@ window.BO_DAVID = window.BO_DAVID || {};
 
     if (!Array.isArray(state.d06Opened)) state.d06Opened = [];
 
-    var pages = D06_PAGES.slice();
-    if (seed % 2 === 1) pages.reverse();
+    var curPath = state.d06Path || (seed % 2 === 1 ? 'place' : 'object');
+    var pages = curPath === 'place' ? [D06_PAGES[1], D06_PAGES[0]] : [D06_PAGES[0], D06_PAGES[1]];
 
-    var pageNodes = pages.map(function (pg) {
+    function selectPath(pathId) {
+      state.d06Path = pathId;
+      var firstId = pathId === 'place' ? 'tent' : 'ark';
+      state.d06Opened = [firstId];
+      ctx.recordFirstAction('D06:path:' + pathId);
+      ctx.saveState();
+      ctx.render();
+    }
+
+    var pathBar = el('div', { class: 'd05-wing-place-btns d06-path-row', 'data-d06-path-active': curPath },
+      el('button', {
+        class: 'd05-mini-btn' + (curPath === 'object' ? ' active' : ''),
+        'data-d06-path': 'object',
+        'aria-pressed': String(curPath === 'object'),
+        on: { click: function () { selectPath('object'); } }
+      }, '물건부터 (궤 → 장막)'),
+      el('button', {
+        class: 'd05-mini-btn' + (curPath === 'place' ? ' active' : ''),
+        'data-d06-path': 'place',
+        'aria-pressed': String(curPath === 'place'),
+        on: { click: function () { selectPath('place'); } }
+      }, '도착한 곳부터 (장막 → 궤)')
+    );
+
+    var pageNodes = pages.map(function (pg, idx) {
       var opened = state.d06Opened.indexOf(pg.id) !== -1;
-      return el('div', { class: 'd05-wing-card' + (opened ? ' opened' : ''), 'data-d06-page-card': pg.id },
+      var stepTag = idx === 0 ? '첫 증거' : '다음 기록';
+      return el('div', { class: 'd05-wing-card' + (opened ? ' opened' : ''), 'data-d06-page-card': pg.id, 'data-d06-order': String(idx) },
         el('button', {
           class: 'd05-wing-btn',
           'data-d06-page': pg.id,
@@ -652,7 +677,7 @@ window.BO_DAVID = window.BO_DAVID || {};
             }
           }
         },
-          el('div', { class: 'fold-dir', text: pg.pageLabel + (opened ? ' · 펼쳐짐 ✓' : ' · 펼치기') }),
+          el('div', { class: 'fold-dir', text: stepTag + ' · ' + pg.pageLabel + (opened ? ' ✓' : '') }),
           el('div', { class: 'fold-main' },
             el('span', { class: 'fold-icon', html: ART.icon(pg.icon) }),
             el('div', { class: 'fold-text' },
@@ -669,13 +694,16 @@ window.BO_DAVID = window.BO_DAVID || {};
     });
 
     var bothOpened = state.d06Opened.indexOf('ark') !== -1 && state.d06Opened.indexOf('tent') !== -1;
+    var pathLabel = curPath === 'place' ? '도착한 곳부터(장막 → 궤)' : '물건부터(궤 → 장막)';
 
     return el('section', {
       class: 'notebook-map d05-hebron-board',
       'data-d06-board': 'true',
-      'data-d06-seed': String(seed)
+      'data-d06-seed': String(seed),
+      'data-d06-first': pages[0].id
     },
-      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 수첩 두 면(궤가 들어옴 · 마련한 장막)을 차례로 펼쳐 이름표와 장절 기록을 확인하자.' }),
+      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 관찰 경로를 골라 처음 볼 증거를 바꾸고, 두 면을 모두 펼쳐 같은 장절(삼하 6:12–15, 17–19)에 도착해 보자.' }),
+      pathBar,
       el('div', { class: 'd05-wings' }, pageNodes),
       el('button', {
         class: 'btn brass d04-check-btn',
@@ -685,7 +713,7 @@ window.BO_DAVID = window.BO_DAVID || {};
           click: function () {
             ctx.recordDiscovery(
               sc,
-              '『탐험대 이야기』 행렬 기록 수첩(궤가 들어옴 삼하 6:12–13 → 마련한 장막 삼하 6:17)'
+              '『탐험대 이야기』 행렬 기록 수첩 · 경로: ' + pathLabel + ' → 도착 장절 ' + (sc.journalRef || sc.ref)
             );
             state.step = 'done';
             ctx.saveState();
