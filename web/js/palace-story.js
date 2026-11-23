@@ -8,7 +8,7 @@
 
   BO.palaceChapters = [
     {title:'피로 변한 나일강', art:'plague-water',
-     url:'https://d8j0ntlcm91z4.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/hf_20261122_140336_c61c86f9-4251-4514-81c0-000e6fb4cc3a.mp4', beats:[
+     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/d7c69792-8b83-470f-ae77-69a7e842df87.mp4', seconds:23, beats:[
       witness('이스라엘 백성은 애굽에서 고된 일을 하며 부르짖었어요. 하나님은 그 소리를 들으시고, 백성을 이끌어 내도록 모세를 애굽 왕 바로에게 보내셨어요.', '출 2:23–25, 3:7–10'),
       say('모세와 아론', '이스라엘의 하나님 여호와께서 이렇게 말씀하셨습니다. "내 백성을 보내라. 그들이 광야에서 내 앞에 절기를 지킬 것이다."', '출 5:1'),
       say('바로', '여호와가 누구이기에 내가 그의 말을 듣고 이스라엘을 보내겠느냐? 나는 여호와를 알지 못한다. 이스라엘을 보내지 않겠다.', '출 5:2'),
@@ -19,7 +19,7 @@
       witness('애굽 요술사들도 자기들의 요술로 그와 같이 하자, 바로의 마음이 완악하여 모세와 아론의 말을 듣지 않았어요. 여호와께서 말씀하신 대로였어요.', '출 7:22')
     ]},
     {title:'개구리가 뒤덮은 집', art:'plague-frogs',
-     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/0d4ad7b2-9fdc-4bae-93d7-3bbaef613eb0.mp4', beats:[
+     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/18c8bf32-950f-4ebf-ad64-06ebab1894e5.mp4', seconds:28, beats:[
       witness('하나님은 바로가 여전히 백성을 보내지 않으면 개구리가 집 안에까지 올라올 것이라고 모세를 통해 경고하셨어요.', '출 8:1–4'),
       film('아론이 하나님의 명령대로 물 위에 손을 내밀자 개구리들이 올라와 애굽 땅을 덮었어요.', '출 8:5–6'),
       say('바로', '여호와께 기도해서 개구리를 떠나게 해 다오. 그러면 백성이 가서 제사를 드리게 하겠다.', '출 8:8'),
@@ -30,12 +30,12 @@
         '양과 소를 데리고 떠난 것은 마지막 밤이에요. 개구리가 죽은 뒤의 기록을 다시 살펴보세요.', '바로는 보내겠다고 했지만, 재앙이 그치자 마음을 굳게 하고 모세와 아론의 말을 듣지 않았어요.', '출 8:8, 8:15, 12:31–32')
     ]},
     {title:'티끌에서 일어난 이', art:'plague-dust',
-     url:'https://d8j0ntlcm91z4.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/hf_20261122_142121_107590b1-e42b-4661-9382-0abe3237cc02.mp4', beats:[
+     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/58a72ebd-95a1-4e12-9ec2-879ae7345571.mp4', seconds:24, beats:[
       film('하나님의 명령대로 아론이 지팡이로 땅의 티끌을 치자, 아주 작은 벌레인 이가 사람과 가축에게 올랐어요.', '출 8:16–17'),
       witness('요술사들도 요술로 작은 벌레인 이를 생기게 하려 했지만 하지 못했어요. 요술사들은 바로에게 이것이 하나님의 권능이라고 말했어요. 그러나 바로의 마음이 완악하게 되어 그들의 말을 듣지 않았어요. 여호와께서 말씀하신 대로였어요.', '출 8:18–19')
     ]},
     {title:'왕궁까지 들어온 파리 떼', art:'plague-flies',
-     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/ec9d2b13-b0b3-4aee-adc3-f2ecd232f0df.mp4', beats:[
+     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/076cd4bf-2824-419e-af6b-b7d80e3f7e06.mp4', seconds:21, beats:[
       witness('이번에도 하나님은 백성을 보내 하나님을 섬기게 하라고 전하게 하셨어요. 백성이 사는 고센 땅은 구별하겠다고 하셨어요.', '출 8:20–23'),
       film('파리 떼가 왕궁과 신하들의 집까지 가득 채웠어요. 이스라엘 백성이 살던 고센 땅에는 파리 떼가 없었어요.', '출 8:22–24'),
       say('바로', '가서 너희 하나님께 제사를 드려라. 다만 이 땅에서 드려라.', '출 8:25'),
@@ -43,18 +43,18 @@
       witness('바로는 너무 멀리 가지 말라고 했어요. 여호와께서 파리 떼를 거두시자, 바로는 또 마음을 굳게 하고 백성을 보내지 않았어요.', '출 8:28–32')
     ]},
     {title:'들에 있던 가축', art:'plague-yard',
-     url:'https://d8j0ntlcm91z4.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/hf_20261122_141606_8a1f98c1-e2ea-441e-a044-f89915a1dbb1.mp4', beats:[
+     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/f43dc713-31fe-4865-b78d-e5107dc6a3a5.mp4', seconds:24, beats:[
       witness('하나님은 바로가 계속 백성을 붙잡아 두면 들에 있는 애굽 가축에 심한 병이 생길 것이라고 전하게 하셨어요.', '출 9:1–4'),
       film('이튿날 여호와께서 말씀하신 대로 애굽의 가축이 병으로 죽었어요. 이스라엘의 가축은 한 마리도 죽지 않았어요.', '출 9:5–6'),
       witness('바로가 사람을 보내어 보니 이스라엘의 가축은 하나도 죽지 않았어요. 그러나 바로의 마음이 완강하여 백성을 보내지 않았어요.', '출 9:7')
     ]},
     {title:'화덕에서 날린 재', art:'plague-kiln',
-     url:'https://d8j0ntlcm91z4.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/hf_20261122_141735_10b8744b-8b25-4af5-a780-6f243151dbf3.mp4', beats:[
+     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/34d05e20-3abe-4809-84f5-4a2b65014fcd.mp4', seconds:26, beats:[
       film('모세와 아론은 화덕에서 재를 가져왔어요. 모세가 바로 앞에서 재를 날리자 사람과 가축의 피부에 아픈 종기가 생겼어요.', '출 9:8–10'),
       witness('성경은 이때 여호와께서 바로의 마음을 완악하게 하셨다고 기록해요. 바로는 모세와 아론의 말을 듣지 않았어요.', '출 9:11–12')
     ]},
     {title:'들판을 때린 우박', art:'plague-hail',
-     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/bf36c746-fdc2-425d-9e94-34d1fb50e932.mp4', beats:[
+     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/3230002a-cfa1-4d35-b441-b3cf0c8ea9fc.mp4', seconds:22, beats:[
       witness('하나님은 무거운 우박이 올 테니 사람과 가축을 집으로 피하게 하라고 경고하셨어요. 바로의 신하들 중에는 그 말씀을 듣고 서둘러 피하게 한 이들도 있었어요.', '출 9:18–21'),
       film('여호와께서 천둥과 우박을 보내셨어요. 우박은 들판의 작물을 꺾었지만 고센 땅에는 내리지 않았어요.', '출 9:23–26'),
       say('바로', '이번에는 내가 죄를 지었다. 여호와는 의로우시고 나와 내 백성은 악하다. 천둥과 우박이 그치도록 여호와께 구해 다오. 너희를 보내 주겠다.', '출 9:27–28'),
@@ -62,7 +62,7 @@
       witness('모세가 기도하자 천둥과 우박이 그쳤어요. 바로는 다시 마음을 굳게 하고 이스라엘 백성을 보내지 않았어요.', '출 9:33–35')
     ]},
     {title:'해를 가린 메뚜기 떼', art:'plague-locusts',
-     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/faaeac19-1c5d-4827-b8c8-d51fa3ef9f7a.mp4', beats:[
+     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/ddd52844-f957-4016-9009-3f78b12eaf1e.mp4', seconds:28, beats:[
       say('바로', '가서 너희 하나님을 섬겨라. 그런데 누가 함께 갈 것이냐?', '출 10:8'),
       say('모세', '우리의 어른과 아이들이 함께 갑니다. 양과 소도 데려가야 합니다. 여호와께 절기를 지킬 것입니다.', '출 10:9'),
       say('바로', '남자 어른들만 가서 여호와를 섬겨라.', '출 10:10–11'),
@@ -70,14 +70,14 @@
       witness('모세가 기도하자 여호와께서 서풍으로 메뚜기를 몰아내셨어요. 여호와께서 바로의 마음을 완악하게 하셨고, 바로는 백성을 보내지 않았어요.', '출 10:18–20')
     ]},
     {title:'사흘 동안의 어둠', art:'plague-darkness',
-     url:'https://d8j0ntlcm91z4.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/hf_20261122_142505_f035fab5-a3df-45ae-9c6b-99409c0d4712.mp4', beats:[
+     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/4492c05c-99d3-42d0-8d5a-6d951dcd21d5.mp4', seconds:30, beats:[
       film('여호와께서 말씀하신 대로 모세가 하늘을 향해 손을 내밀자, 사흘 동안 애굽 온 땅에 캄캄한 어둠이 있었어요. 이스라엘 자손이 사는 곳에는 빛이 있었어요.', '출 10:21–23'),
       say('바로', '아이들도 데려가 여호와를 섬겨라. 하지만 양과 소는 여기에 두어라.', '출 10:24'),
       say('모세', '우리 가축도 모두 데려가야 합니다. 어떤 것으로 여호와를 섬길지는 그곳에 이를 때까지 모릅니다.', '출 10:25–26'),
       witness('여호와께서 바로의 마음을 완악하게 하셨어요. 바로는 백성을 보내려 하지 않았어요.', '출 10:27')
     ]},
     {title:'떠나라고 한 밤', art:'plague-midnight',
-     url:'https://d8j0ntlcm91z4.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/hf_20261122_142505_5c68087e-4dd4-4578-ab51-a62498036048.mp4', beats:[
+     url:'https://d2ol7oe51mr4n9.cloudfront.net/user_3BUlkqr62Kq073dmR6GRokxkB9P/a3a1bbd1-b4c5-4431-a431-296e822f4cb8.mp4', seconds:33, beats:[
       witness('마지막 재앙을 앞두고 이스라엘 가족들은 일러 주신 대로 어린 양의 피를 문 양옆과 위에 바르고 떠날 준비를 했어요.', '출 11:1, 12:7, 12:21–28'),
       film('밤중에 여호와께서 애굽 땅에 있는 사람과 가축의 처음 난 것을 다 치셨어요. 애굽에 큰 부르짖음이 있었어요. 그러나 여호와께서는 문설주와 문 위에 피를 바른 이스라엘 자손의 집은 넘어가셨어요.', '출 12:23, 12:27, 12:29–30'),
       say('바로', '너희와 이스라엘 백성은 떠나라. 말한 대로 양과 소도 데려가서 여호와를 섬겨라.', '출 12:31–32'),

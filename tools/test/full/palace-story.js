@@ -59,7 +59,7 @@ async function check(browser, origin, entry, width, height) {
       }
       if (b.film) {
         const before = requests.length;
-        await tap('영상 보기 · 12초');
+        await tap('영상 보기 · ' + ch.seconds + '초');
         await page.getByRole('button', {name:'영상 다시 불러오기'}).waitFor();
         assert.equal(requests[before], ch.url);
         if (number === 0) {
