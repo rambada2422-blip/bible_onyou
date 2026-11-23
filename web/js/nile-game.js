@@ -133,7 +133,7 @@
       el('p', {class:'river-input-note'}, '방향 단추 · 밀기 · 방향키'));
     const result = el('section', {class:'river-result', hidden:true});
     const journal = el('dialog', {class:'river-journal', 'aria-label':'항해 일지'});
-    const screen = el('main', {class:'river-screen'},
+    const screen = el('main', {class:isLockCourse ? 'river-screen river-locks' : 'river-screen'},
       el('nav', {class:'river-nav'}, back, el('span', {}, '나일강 탐험대'), journalButton),
       el('div', {class:'river-layout'},
         el('div', {class:'river-chart'}, routeNo, name, board,

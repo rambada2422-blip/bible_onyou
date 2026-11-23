@@ -96,3 +96,8 @@
   from {transform:translate(-50%,-50%) scale(.65);opacity:1;}
   to {transform:translate(-50%,-50%) scale(1.6);opacity:0;}
 }
+@media(max-width:479px) and (max-height:720px) and (orientation:portrait) {
+  .river-locks .river-controls:not([hidden]) {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;margin:5px auto 0;max-width:335px;}
+  .river-locks .river-gate-panel {flex-direction:column;margin:0;gap:2px;}
+  .river-locks .river-pad {grid-template-columns:repeat(3,48px);}
+}

@@ -129,11 +129,33 @@ async function check(browser, origin, mobile, width, height) {
     console.log(width+'×'+height,'수문 3곳·두 항해 저장·이전 저장 복원·일지 통과');
   } finally { await page.close(); }
 }
+async function layouts(browser, origin) {
+  const page = await browser.newPage({hasTouch:true, isMobile:true});
+  try {
+    await page.goto(origin+'/nile.html?course=locks');
+    for (const [width,height] of [[320,568],[360,640],[390,844],[414,896],[568,320],[844,390],[768,1024],[1280,800]]) {
+      await page.setViewportSize({width,height});
+      const fit = await page.evaluate(() => {
+        const screen = document.querySelector('.river-screen');
+        const buttons = screen.querySelectorAll('.river-key,.river-wheel');
+        return screen.scrollWidth <= screen.clientWidth && Array.from(buttons).every(button => {
+          const box = button.getBoundingClientRect();
+          return box.width >= 44 && box.height >= 44 && box.left >= 0 && box.right <= innerWidth &&
+            box.top >= 0 && box.bottom <= innerHeight;
+        });
+      });
+      assert(fit,width+'×'+height+'에서 수문과 노 젓기 단추가 첫 화면에 보여야 한다');
+    }
+    console.log('화면 8종 · 좌우 넘침 없이 수문과 방향 단추 44px 이상, 첫 화면에 표시');
+  } finally { await page.close(); }
+}
 (async () => {
   checkRoutes(); await fs.mkdir(out,{recursive:true});
   const b = await chromium.launch({proxy});
   try {
     const origin = await gameOrigin(b);
+    await layouts(b,origin);
+    await check(b,origin,true,320,568);
     await check(b,origin,true,360,640);
     await check(b,origin,false,1280,800);
     await check(b,origin,true,844,390);
