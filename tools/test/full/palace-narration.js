@@ -47,7 +47,7 @@ async function check(browser, url) {
       }
       if (chapterIndex===0 && beat.film) {
         await page.route('**/*.mp4',route=>route.abort());
-        await button('영상 보기 · 12초').click();
+        await button('영상 보기 · ' + chapter.seconds + '초').click();
         assert(await page.evaluate(() => window.played.at(-1).paused));
         await hear('읽어 줘');
       }

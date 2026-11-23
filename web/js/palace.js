@@ -160,7 +160,7 @@
           });
           player.focus();
         }
-        const playButton = el('button', {class:'palace-film-play', on:{click:play}}, '영상 보기 · 12초');
+        const playButton = el('button', {class:'palace-film-play', on:{click:play}}, '영상 보기 · ' + chapter.seconds + '초');
         panel.append(playButton, notice);
       }
       const previous = el('button', {class:'btn plain', on:{click:function () {
