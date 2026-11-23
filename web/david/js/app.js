@@ -93,6 +93,12 @@
       ageTier: 't1',      /* A13·A14·A20: 나이 단계 ('t1' 8~10세 | 't2' 11~13세 | 't3' 14~17세) */
       lessClueMode: false,/* A13: 11~13세 '단서 한 장부터' 모드 */
       lessClueHelpUsed: {}, /* A13: 장면별 도움 1회 사용 여부 */
+      course: {           /* A15·A16: 내가 고르는 세 장면 코스 */
+        picks: [],        /* 고른 장면 ID 최대 3개 */
+        idx: 0,           /* 현재 진행 중인 코스 순서 (0~2) */
+        active: false,
+        completed: []     /* 이번 코스에서 마친 장면 ID */
+      },
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
@@ -192,6 +198,14 @@
       if (['t1', 't2', 't3'].indexOf(parsed.ageTier) !== -1) base.ageTier = parsed.ageTier;
       base.lessClueMode = !!parsed.lessClueMode;
       if (parsed.lessClueHelpUsed && typeof parsed.lessClueHelpUsed === 'object') base.lessClueHelpUsed = parsed.lessClueHelpUsed;
+      if (parsed.course && typeof parsed.course === 'object') {
+        base.course = {
+          picks: Array.isArray(parsed.course.picks) ? parsed.course.picks.filter(function (id) { return !!getScene(id); }).slice(0, 3) : [],
+          idx: typeof parsed.course.idx === 'number' ? Math.max(0, Math.min(2, parsed.course.idx)) : 0,
+          active: !!parsed.course.active,
+          completed: Array.isArray(parsed.course.completed) ? parsed.course.completed.slice(0, 3) : []
+        };
+      }
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
@@ -268,6 +282,7 @@
         ageTier: state.ageTier,
         lessClueMode: state.lessClueMode,
         lessClueHelpUsed: state.lessClueHelpUsed,
+        course: state.course,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,
@@ -564,6 +579,79 @@
       })
     );
 
+    var course = state.course || { picks: [], idx: 0, active: false, completed: [] };
+    var canResumeCourse = course.active && course.picks.length === 3 && course.idx < 3;
+    var resumeSc = canResumeCourse ? getScene(course.picks[course.idx]) : null;
+
+    var courseBox = el('section', { class: 'notebook-map d05-hebron-board', 'data-course-box': 'true' },
+      el('div', { class: 'd01-zoom-head' },
+        el('span', { class: 'tag', text: '『탐험대 이야기』 내가 고르는 세 장면 코스' }),
+        el('span', { class: 'ref', text: course.picks.length + ' / 3 선택' })
+      ),
+      canResumeCourse && resumeSc ? el('button', {
+        class: 'btn brass d04-check-btn',
+        'data-action': 'course-resume',
+        on: {
+          click: function () {
+            openScene(resumeSc.id, false);
+          }
+        }
+      }, '중단한 코스 이어하기 (' + (course.idx + 1) + '/3 · ' + resumeSc.id + ' ' + resumeSc.title + ')') : null,
+      el('p', { class: 'd05-wing-fact', text: '원하는 장면 1~3개를 순서대로 눌러 고르세요. 첫 선택 직후 바로 놀이를 열거나 3개를 다 고른 뒤 시작할 수 있어요.' }),
+      el('div', { class: 'd04-tag-tray', 'data-course-picks': course.picks.join(',') },
+        DATA.scenes.map(function (sc) {
+          var pos = course.picks.indexOf(sc.id);
+          return el('button', {
+            class: 'd05-mini-btn' + (pos !== -1 ? ' active' : ''),
+            'data-course-pick': sc.id,
+            'aria-pressed': String(pos !== -1),
+            on: {
+              click: function () {
+                if (pos !== -1) {
+                  course.picks.splice(pos, 1);
+                } else if (course.picks.length < 3) {
+                  course.picks.push(sc.id);
+                }
+                state.course = course;
+                saveState();
+                render();
+              }
+            }
+          }, (pos !== -1 ? ((pos + 1) + '번 · ') : '') + sc.id);
+        })
+      ),
+      el('div', { class: 'd05-wing-place-btns' },
+        el('button', {
+          class: 'btn brass d08-step-btn',
+          'data-action': 'course-start',
+          disabled: course.picks.length === 0,
+          on: {
+            click: function () {
+              var full = course.picks.slice();
+              for (var i = 0; i < DATA.scenes.length && full.length < 3; i++) {
+                if (full.indexOf(DATA.scenes[i].id) === -1) full.push(DATA.scenes[i].id);
+              }
+              state.course = { picks: full, idx: 0, active: true, completed: [] };
+              recordFirstAction('course:start:' + full.join(','));
+              openScene(full[0], false);
+            }
+          }
+        }, course.picks.length ? ('선택한 ' + course.picks[0] + ' 바로 열기 (3장면 코스)') : '장면을 먼저 고르세요'),
+        el('button', {
+          class: 'btn plain d08-step-btn',
+          'data-action': 'course-clear',
+          disabled: course.picks.length === 0 && !course.active,
+          on: {
+            click: function () {
+              state.course = { picks: [], idx: 0, active: false, completed: [] };
+              saveState();
+              render();
+            }
+          }
+        }, '코스 초기화')
+      )
+    );
+
     root.replaceChildren(
       renderTopbar('다윗의 일곱 관찰', null,
         el('button', { class: 'topbtn brass', 'data-action': 'journal', on: { click: openJournal } }, '탐험 일지 ' + doneCount + '/' + total)
@@ -583,6 +671,7 @@
             }, '체험 한 판 바로 시작 (시냇가 돌밭 · 『탐험대 이야기』)')
           )
         ),
+        courseBox,
         el('div', { class: 'section-head', text: '다윗의 일곱 관찰 (D01~D07)' }),
         el('div', { class: 'scene-list' }, mainScenes.map(renderSceneCard)),
         extraScenes.length ? el('div', { class: 'section-head', text: '더 보기 · 추가 관찰 (D08~D09)' }) : null,
@@ -1268,10 +1357,38 @@
     var nextSc = idx >= 0 && idx + 1 < DATA.scenes.length ? DATA.scenes[idx + 1] : null;
     var saved = state.journal[sc.id];
     var clueIcon = (saved && saved.clueIcon) ? saved.clueIcon : sceneClueIcon(sc);
+    var c = state.course;
+    var inCourse = c && c.active && Array.isArray(c.picks) && c.picks[c.idx] === sc.id;
+    if (inCourse && c.completed.indexOf(sc.id) === -1) {
+      c.completed.push(sc.id);
+      saveState();
+    }
+    var nextCourseSc = (inCourse && c.idx + 1 < c.picks.length) ? getScene(c.picks[c.idx + 1]) : null;
+    var courseDone = inCourse && c.idx === c.picks.length - 1;
+
+    var primaryBtn;
+    if (nextCourseSc) {
+      primaryBtn = el('button', {
+        class: 'btn brass',
+        'data-action': 'course-next',
+        on: {
+          click: function () {
+            state.course.idx = c.idx + 1;
+            openScene(nextCourseSc.id, false);
+          }
+        }
+      }, '코스 다음 장면 (' + (c.idx + 2) + '/3): ' + nextCourseSc.id + ' ' + nextCourseSc.title);
+    } else if (nextSc) {
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { openScene(nextSc.id, false); } } }, '다음 장면: ' + nextSc.title);
+    } else {
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'go-home', on: { click: goHome } }, '장면 목록으로');
+    }
+
     return [
       el('div', { class: 'meta-row' },
         el('span', { class: 'ref', text: sc.journalRef || sc.ref }),
-        sc.place ? el('span', { class: 'tag', text: '장소: ' + sc.place }) : null
+        sc.place ? el('span', { class: 'tag', text: '장소: ' + sc.place }) : null,
+        inCourse ? el('span', { class: 'tag', text: '세 장면 코스 ' + (c.idx + 1) + ' / ' + c.picks.length }) : null
       ),
       el('section', { class: 'discovery-box', 'data-discovery': sc.id },
         el('div', { class: 'discovery-head' },
@@ -1281,10 +1398,12 @@
         el('p', { class: 'discovery-text', text: sc.discovery }),
         saved && saved.extra ? el('p', { class: 'discovery-note', text: saved.extra }) : null
       ),
+      courseDone ? el('section', { class: 'd05-reopen-card', 'data-course-finished': 'true' },
+        el('div', { class: 'd01-zoom-title', text: '내가 고른 세 장면 코스 완주!' }),
+        el('p', { class: 'd05-wing-fact', text: '순서대로 마친 장면: ' + c.picks.join(' → ') })
+      ) : null,
       el('div', { class: 'actions' },
-        nextSc
-          ? el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { openScene(nextSc.id, false); } } }, '다음 장면: ' + nextSc.title)
-          : el('button', { class: 'btn brass', 'data-action': 'go-home', on: { click: goHome } }, '장면 목록으로'),
+        primaryBtn,
         el('button', { class: 'btn plain', 'data-action': 'replay-scene', on: { click: replayCurrentScene } }, '다른 배치로 다시 놀기'),
         el('button', { class: 'btn', 'data-action': 'open-journal', on: { click: openJournal } }, '탐험 일지 보기')
       )
