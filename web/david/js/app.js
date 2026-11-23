@@ -66,6 +66,9 @@
       d01LastSlot: null,  /* A02(D01): 이번 판에 고른 자리 정보 { seed, slotIdx, clueId, clueTitle } */
       d01ShowFirstArt: false, /* A02(D01): 처음 본 그림 다시 보기 펼침 여부 */
       d01History: [],     /* A02(D01): 판별 선택 자리 기록 */
+      d04Slots: { jonathan: null, saul: null }, /* A03(D04): 두 겉옷 비교대 쪽지 배치 */
+      d04PickTag: null,   /* A03(D04): 현재 집은 쪽지 */
+      d04Msg: '',         /* A03(D04): 비교대 안내 메시지 */
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
@@ -121,6 +124,12 @@
       if (parsed.d01LastSlot && typeof parsed.d01LastSlot === 'object') base.d01LastSlot = parsed.d01LastSlot;
       base.d01ShowFirstArt = !!parsed.d01ShowFirstArt;
       if (Array.isArray(parsed.d01History)) base.d01History = parsed.d01History.slice(-10);
+      if (parsed.d04Slots && typeof parsed.d04Slots === 'object') {
+        base.d04Slots = {
+          jonathan: (parsed.d04Slots.jonathan === 'jonathan' || parsed.d04Slots.jonathan === 'saul') ? parsed.d04Slots.jonathan : null,
+          saul: (parsed.d04Slots.saul === 'jonathan' || parsed.d04Slots.saul === 'saul') ? parsed.d04Slots.saul : null
+        };
+      }
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
@@ -177,6 +186,7 @@
         d01LastSlot: state.d01LastSlot,
         d01ShowFirstArt: state.d01ShowFirstArt,
         d01History: state.d01History,
+        d04Slots: state.d04Slots,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,
@@ -285,6 +295,9 @@
     state.d01ZoomId = null;
     state.d01FirstCover = null;
     state.d01PickedClue = null;
+    state.d04Slots = { jonathan: null, saul: null };
+    state.d04PickTag = null;
+    state.d04Msg = '';
     state.stonesFound = [];
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
@@ -310,6 +323,9 @@
     state.d01ZoomId = null;
     state.d01FirstCover = null;
     state.d01PickedClue = null;
+    state.d04Slots = { jonathan: null, saul: null };
+    state.d04PickTag = null;
+    state.d04Msg = '';
     state.stonesFound = [];
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
@@ -698,6 +714,23 @@
     );
   }
 
+  function boardCtx() {
+    return {
+      state: state,
+      el: el,
+      ART: ART,
+      DATA: DATA,
+      root: root,
+      getSeed: getSeed,
+      saveState: saveState,
+      render: render,
+      recordFirstAction: recordFirstAction,
+      recordDiscovery: recordDiscovery,
+      openDetour: openDetour,
+      openGuardian: openGuardian
+    };
+  }
+
   function renderChooseStep(sc) {
     var seed = getSeed(state, sc.id);
     var list = sc.choices.slice();
@@ -715,6 +748,7 @@
         )
       );
     });
+    var boards = window.BO_DAVID.boards || {};
     return [
       el('div', { class: 'meta-row' },
         el('span', { class: 'ref', text: sc.step1Ref || sc.ref }),
@@ -725,6 +759,7 @@
       el('h2', { class: 'question', text: sc.question }),
       sc.artNote ? el('p', { class: 'subnote', text: sc.artNote }) : null,
       sc.id === 'D01' ? renderD01Notebook(sc) : null,
+      (sc.id === 'D04' && boards.renderD04Compare) ? boards.renderD04Compare(boardCtx(), sc) : null,
       sc.id === 'D07' ? renderD07FoldMap(sc) : null,
       el('div', { class: 'choices' }, choiceNodes)
     ];

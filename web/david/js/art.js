@@ -147,7 +147,23 @@ window.BO_DAVID = window.BO_DAVID || {};
       '<ellipse cx="44" cy="80" rx="20" ry="8" fill="#4E3019"/>' +
       '<ellipse cx="44" cy="80" rx="11" ry="4.5" fill="#E9B44C"/>' +
       '<circle cx="44" cy="74" r="4" fill="#F6D172"/>' +
-      '</g></svg>'
+      '</g></svg>',
+
+    'd04-jonathan': '<svg viewBox="0 0 160 110" role="img" aria-label="소매와 띠가 있는 온전한 겉옷 그림">' +
+      '<rect width="160" height="110" fill="#EEF3F7"/>' +
+      '<path d="M40 20 L62 12 L98 12 L120 20 L132 92 L106 96 L98 46 L90 98 L70 98 L62 46 L54 96 L28 92 Z" fill="#3B5B8C" stroke="#223859" stroke-width="2.5"/>' +
+      '<path d="M62 12 L80 30 L98 12" fill="none" stroke="#E9B44C" stroke-width="4"/>' +
+      '<rect x="58" y="60" width="44" height="9" rx="3" fill="#B4532A" stroke="#6E2E14" stroke-width="1.5"/>' +
+      '<rect x="71" y="58" width="18" height="13" rx="2" fill="#E9B44C"/>' +
+      '</svg>',
+
+    'd04-saul': '<svg viewBox="0 0 160 110" role="img" aria-label="금빛 단이 있는 베어 낸 옷자락 조각 그림">' +
+      '<rect width="160" height="110" fill="#F7EFEA"/>' +
+      '<path d="M34 26 L116 18 L130 88 L46 96 L38 74 L44 58 L32 42 Z" fill="#8C3B3B" stroke="#541F1F" stroke-width="2.5"/>' +
+      '<path d="M44 76 L124 68" stroke="#E9B44C" stroke-width="6"/>' +
+      '<path d="M46 84 L126 76" stroke="#F6D98B" stroke-width="2" stroke-dasharray="6 4"/>' +
+      '<path d="M34 26 L38 42 L44 58 L38 74 L46 96" fill="none" stroke="#F7EFEA" stroke-width="2" stroke-dasharray="3 3"/>' +
+      '</svg>'
   };
 
   window.BO_DAVID.art = {
