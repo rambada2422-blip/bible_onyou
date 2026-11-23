@@ -90,6 +90,9 @@
       d09FirstRole: 'object', /* A12(D09): 첫 역할 ('object' 물건 먼저 | 'clue' 근거 먼저) */
       d09Turn: 0,         /* A12(D09): 0=첫 사람 고르기, 1=차례 넘김 가림막, 2=둘째 사람 고르기, 3=함께 펼치기 */
       d09CoopPicks: { object: null, clue: null }, /* A12(D09): 둘이 각자 고른 비공개 선택 */
+      ageTier: 't1',      /* A13·A14·A20: 나이 단계 ('t1' 8~10세 | 't2' 11~13세 | 't3' 14~17세) */
+      lessClueMode: false,/* A13: 11~13세 '단서 한 장부터' 모드 */
+      lessClueHelpUsed: {}, /* A13: 장면별 도움 1회 사용 여부 */
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
@@ -186,6 +189,9 @@
           clue: parsed.d09CoopPicks.clue || null
         };
       }
+      if (['t1', 't2', 't3'].indexOf(parsed.ageTier) !== -1) base.ageTier = parsed.ageTier;
+      base.lessClueMode = !!parsed.lessClueMode;
+      if (parsed.lessClueHelpUsed && typeof parsed.lessClueHelpUsed === 'object') base.lessClueHelpUsed = parsed.lessClueHelpUsed;
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
@@ -259,6 +265,9 @@
         d09FirstRole: state.d09FirstRole,
         d09Turn: state.d09Turn,
         d09CoopPicks: state.d09CoopPicks,
+        ageTier: state.ageTier,
+        lessClueMode: state.lessClueMode,
+        lessClueHelpUsed: state.lessClueHelpUsed,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,
@@ -531,15 +540,40 @@
     var mainScenes = DATA.scenes.filter(function (sc) { return sc.group !== 'extra'; });
     var extraScenes = DATA.scenes.filter(function (sc) { return sc.group === 'extra'; });
 
+    var tierLabels = { t1: '8~10세 성경 탐험', t2: '11~13세 · 단서 한 장부터', t3: '14~17세 · 어느 기록인지 가려내기' };
+    var tierRow = el('div', { class: 'd04-trace-tabs', 'data-tier-switcher': state.ageTier, role: 'group', 'aria-label': '나이 단계 선택' },
+      [
+        { id: 't1', label: '8~10세' },
+        { id: 't2', label: '11~13세' },
+        { id: 't3', label: '14~17세' }
+      ].map(function (tr) {
+        var active = state.ageTier === tr.id;
+        return el('button', {
+          class: 'd04-trace-tab' + (active ? ' active' : ''),
+          'data-tier': tr.id,
+          'aria-pressed': String(active),
+          on: {
+            click: function () {
+              state.ageTier = tr.id;
+              state.lessClueMode = (tr.id === 't2');
+              saveState();
+              render();
+            }
+          }
+        }, tr.label);
+      })
+    );
+
     root.replaceChildren(
       renderTopbar('다윗의 일곱 관찰', null,
         el('button', { class: 'topbtn brass', 'data-action': 'journal', on: { click: openJournal } }, '탐험 일지 ' + doneCount + '/' + total)
       ),
       el('main', { class: 'home-body' },
         el('section', { class: 'hero' },
-          el('div', { class: 'hero-kicker', text: '8~10세 성경 탐험' }),
+          el('div', { class: 'hero-kicker', text: tierLabels[state.ageTier] || tierLabels.t1 }),
           el('h1', { text: '다윗의 발자취를 살펴보자' }),
           el('p', { text: '장면을 골라 단서를 살펴보고, 성경 장절을 확인해 탐험 일지에 남겨 보세요.' }),
+          tierRow,
           el('div', { class: 'progress-row' },
             el('span', { class: 'progress-pill', text: '발견 기록 ' + doneCount + ' / ' + total }),
             el('button', {
@@ -722,6 +756,9 @@
       );
     });
 
+    var lessOn = !!(state.lessClueMode || state.ageTier === 't2');
+    var d01HelpUsed = !!(state.lessClueHelpUsed && state.lessClueHelpUsed.D01);
+
     var activeSpot = state.d01ZoomId ? getD01Spot(state.d01ZoomId) : null;
     var activeSlotIdx = activeSpot ? layout.order.indexOf(activeSpot.id) : -1;
     var zoomPanel;
@@ -729,11 +766,13 @@
       zoomPanel = el('div', { class: 'd01-zoom-panel', 'data-d01-zoom': activeSpot.id },
         el('div', { class: 'd01-zoom-head' },
           el('span', { class: 'tag', text: '확대 관찰 · ' + activeSpot.kind }),
-          el('span', { class: 'ref', text: activeSpot.ref })
+          el('span', { class: 'ref', text: (!lessOn || d01HelpUsed) ? activeSpot.ref : '단서 한 장 모드 · 장절 가림' })
         ),
         el('div', { class: 'd01-zoom-art', html: ART.zoom(activeSpot.zoomArt) }),
         el('div', { class: 'd01-zoom-title', text: activeSpot.title }),
-        el('p', { class: 'd01-zoom-detail', text: activeSpot.detail }),
+        (!lessOn || d01HelpUsed)
+          ? el('p', { class: 'd01-zoom-detail', text: activeSpot.detail })
+          : el('p', { class: 'd01-zoom-detail', text: '단서 한 장만으로 스스로 일지에 가져가거나, 필요할 때 도움을 1회 열어 볼 수 있어요.' }),
         el('button', {
           class: 'btn brass d01-take-btn',
           'data-action': 'd01-bring-journal',
@@ -762,9 +801,12 @@
                 ref: activeSpot.ref
               };
               state.d01History.push(state.d01LastSlot);
+              var solvePrefix = lessOn
+                ? (d01HelpUsed ? '[11~13세 · 도움 1회 사용] ' : '[11~13세 · 스스로 해결] ')
+                : '';
               var extraMsg = state.d01FirstRecord && seed > 0
-                ? ('처음 판 기록 보존: ' + state.d01FirstRecord.clueTitle + '(' + state.d01FirstRecord.ref + ') / 이번 판(' + layout.label + ' #' + (activeSlotIdx + 1) + '번 자리): ' + activeSpot.title)
-                : ('『탐험대 이야기』 수첩 관찰: 먼저 연 덮개(' + firstSpot.kind + ') → 일지로 가져온 단서(' + activeSpot.title + ' · ' + activeSpot.ref + ')');
+                ? (solvePrefix + '처음 판 기록 보존: ' + state.d01FirstRecord.clueTitle + '(' + state.d01FirstRecord.ref + ') / 이번 판(' + layout.label + ' #' + (activeSlotIdx + 1) + '번 자리): ' + activeSpot.title)
+                : (solvePrefix + '『탐험대 이야기』 수첩 관찰: 먼저 연 덮개(' + firstSpot.kind + ') → 일지로 가져온 단서(' + activeSpot.title + ' · ' + activeSpot.ref + ')');
               recordDiscovery(sc, extraMsg);
               state.step = 'done';
               saveState();
@@ -780,6 +822,35 @@
           : '덮개를 하나 들면 그 자리의 단서가 바로 확대돼요.'
       );
     }
+
+    var lessBar = el('div', { class: 'd01-memory-row', 'data-less-clue-bar': 'D01' },
+      el('button', {
+        class: 'd04-undo-btn',
+        'data-action': 'toggle-less-clue',
+        'aria-pressed': String(lessOn),
+        on: {
+          click: function () {
+            state.lessClueMode = !lessOn;
+            if (!state.lessClueMode && state.ageTier === 't2') state.ageTier = 't1';
+            if (state.lessClueMode) state.lessClueHelpUsed.D01 = false;
+            saveState();
+            render();
+          }
+        }
+      }, lessOn ? '11~13세 단서 한 장부터 켜짐 ✓' : '11~13세 단서 한 장부터 켜기'),
+      lessOn ? el('button', {
+        class: 'd04-undo-btn',
+        'data-action': 'd01-help',
+        disabled: d01HelpUsed,
+        on: {
+          click: function () {
+            state.lessClueHelpUsed.D01 = true;
+            saveState();
+            render();
+          }
+        }
+      }, d01HelpUsed ? '추가 단서 도움 사용됨(1회)' : '추가 단서 도움 1회 보기') : null
+    );
 
     var firstRec = state.d01FirstRecord;
     var firstRecBlock = null;
@@ -811,11 +882,13 @@
       class: 'notebook-map d01-board',
       'data-d01-board': 'true',
       'data-d01-seed': String(seed),
-      'data-d01-layout': layout.dir + ':' + layout.order.join(',')
+      'data-d01-layout': layout.dir + ':' + layout.order.join(','),
+      'data-less-clue': String(lessOn)
     },
       el('div', { class: 'one-line-guide', text: seed > 0
         ? ('『탐험대 이야기』 ' + layout.label + ' — 바뀐 자리에서 다시 펼칠 창을 골라 보자.')
         : '『탐험대 이야기』 수첩의 덮개 둘 중 어느 쪽부터든 열어 확대하고, 하나를 골라 일지로 가져가자.' }),
+      lessBar,
       firstRecBlock,
       el('div', { class: 'fold-grid d01-cover-grid dir-' + layout.dir }, coverNodes),
       zoomPanel

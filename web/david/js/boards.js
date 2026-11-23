@@ -342,14 +342,51 @@ window.BO_DAVID = window.BO_DAVID || {};
       )
     );
 
+    var lessOn = !!(state.lessClueMode || state.ageTier === 't2');
+    var helpUsed = !!(state.lessClueHelpUsed && state.lessClueHelpUsed.D04);
+
+    var lessBar = el('div', { class: 'd01-memory-row', 'data-less-clue-bar': 'D04' },
+      el('button', {
+        class: 'd04-undo-btn',
+        'data-action': 'toggle-less-clue',
+        'aria-pressed': String(lessOn),
+        on: {
+          click: function () {
+            state.lessClueMode = !lessOn;
+            if (!state.lessClueMode && state.ageTier === 't2') state.ageTier = 't1';
+            if (state.lessClueMode) state.lessClueHelpUsed.D04 = false;
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, lessOn ? '11~13세 단서 한 장부터 켜짐 ✓' : '11~13세 단서 한 장부터 켜기'),
+      lessOn ? el('button', {
+        class: 'd04-undo-btn',
+        'data-action': 'd04-help',
+        disabled: helpUsed,
+        on: {
+          click: function () {
+            state.lessClueHelpUsed.D04 = true;
+            state.d04Msg = '추가 단서 도움 1회 사용: 요나단의 겉옷(삼상 18:4) · 사울의 겉옷 자락(삼상 24:4, 11)';
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, helpUsed ? '추가 단서 도움 사용됨(1회)' : '추가 단서 도움 1회 보기') : null
+    );
+
     return el('section', {
       class: 'notebook-map d04-compare-tray' + (state.d04Mono ? ' mono-mode' : ''),
       'data-d04-compare': 'true',
-      'data-d04-seed': String(seed)
+      'data-d04-seed': String(seed),
+      'data-less-clue': String(lessOn)
     },
-      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 같은 크기의 비교대에서 두 겉옷의 주인과 장절 쪽지를 맞춰 보자. 놓은 쪽지는 끌기·두 번 탭·Backspace로 한 장만 되돌릴 수 있어요.' }),
+      el('div', { class: 'one-line-guide', text: lessOn
+        ? '『탐험대 이야기』 11~13세 단서 한 장부터: 장절 도움 없이 모양만으로 먼저 맞대거나, 필요할 때만 도움을 1회 열어 보세요.'
+        : '『탐험대 이야기』 같은 크기의 비교대에서 두 겉옷의 주인과 장절 쪽지를 맞춰 보자. 놓은 쪽지는 끌기·두 번 탭·Backspace로 한 장만 되돌릴 수 있어요.' }),
+      lessBar,
       el('div', { class: 'd04-specimen-grid' }, specimenNodes),
-      traceWindow,
+      (!lessOn || helpUsed) ? traceWindow : el('div', { class: 'd01-zoom-empty', 'data-d04-less-hidden': 'true' }, '단서 한 장부터 모드: 추가 흔적 창이 가려져 있어요. 위 표본 모양만으로 해결하거나 도움을 1회 열 수 있어요.'),
       el('div', {
         class: 'd04-tag-tray',
         'data-d04-tag-tray': 'true',
@@ -381,7 +418,10 @@ window.BO_DAVID = window.BO_DAVID || {};
         on: {
           click: function () {
             if (state.d04Slots.jonathan === 'jonathan' && state.d04Slots.saul === 'saul') {
-              ctx.recordDiscovery(sc, '『탐험대 이야기』 두 겉옷 맞대기 완료: 요나단의 겉옷(삼상 18:4) ↔ 사울의 겉옷 자락(삼상 24:4, 11)');
+              var solveTag = lessOn
+                ? (helpUsed ? '11~13세 판정: 도움 1회 사용(추가 흔적 창 확인 후 완료)' : '11~13세 판정: 스스로 해결(단서 한 장만으로 완료)')
+                : '『탐험대 이야기』 두 겉옷 맞대기 완료';
+              ctx.recordDiscovery(sc, solveTag + ' — 요나단의 겉옷(삼상 18:4) ↔ 사울의 겉옷 자락(삼상 24:4, 11)');
               state.step = 'done';
               state.d04Msg = '';
               ctx.saveState();
