@@ -904,7 +904,7 @@ window.BO_DAVID = window.BO_DAVID || {};
     if (typeof state.d08Pos !== 'number') state.d08Pos = 0;
     if (!Array.isArray(state.d08Visited) || !state.d08Visited.length) state.d08Visited = [0];
 
-    function stepMove(delta) {
+    function stepMove(delta, fromKeyboard) {
       var next = Math.max(0, Math.min(4, state.d08Pos + delta));
       if (next > 2 && !state.d08GuessOk) {
         stopD08Hold();
@@ -913,6 +913,10 @@ window.BO_DAVID = window.BO_DAVID || {};
         state.d08GuessMsg = '중간 분기(2번 지점)에서 다음 기록을 먼저 예상해 보세요.';
         ctx.saveState();
         ctx.render();
+        if (fromKeyboard) {
+          var b0 = ctx.root.querySelector('[data-d08-board="true"]');
+          if (b0) b0.focus();
+        }
         return false;
       }
       if (next === state.d08Pos) {
@@ -924,6 +928,10 @@ window.BO_DAVID = window.BO_DAVID || {};
       ctx.recordFirstAction('D08:move:' + next);
       ctx.saveState();
       ctx.render();
+      if (fromKeyboard) {
+        var b1 = ctx.root.querySelector('[data-d08-board="true"]');
+        if (b1) b1.focus();
+      }
       return true;
     }
 
@@ -1017,10 +1025,10 @@ window.BO_DAVID = window.BO_DAVID || {};
         keydown: function (ev) {
           if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
             ev.preventDefault();
-            stepMove(1);
+            stepMove(1, true);
           } else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') {
             ev.preventDefault();
-            stepMove(-1);
+            stepMove(-1, true);
           }
         }
       }
