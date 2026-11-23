@@ -25,6 +25,7 @@
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇물 아래 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 물결 칸 인덱스 */
+      lastSpotIdx: null,  /* 방금 들여다본 물결 관찰 창 위치 */
       orderList: [],
       orderPick: null,
       orderMsg: '',
@@ -50,7 +51,7 @@
   function makeInitialOrderList(sc, seed) {
     if (!sc || !sc.orderItems) return [];
     var ids = sc.orderItems.map(function (o) { return o.id; });
-    /* 기본 첫 판은 아이가 맞춰 볼 수 있게 역순(['farewell','gift']), 다시 놀기에서는 시작 배치 경로를 바꾼다 */
+    /* 첫 판은 역순(['farewell','gift']), 다시 놀기에서는 시작 배치 경로가 달라진다 */
     return (seed % 2 === 1) ? ids.slice() : ids.slice().reverse();
   }
 
@@ -74,6 +75,7 @@
       if (Array.isArray(parsed.brookOpened)) {
         base.brookOpened = parsed.brookOpened.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
+      if (typeof parsed.lastSpotIdx === 'number') base.lastSpotIdx = parsed.lastSpotIdx;
       if (Array.isArray(parsed.orderList)) base.orderList = parsed.orderList.slice();
       base.hebronFirstDone = !!parsed.hebronFirstDone;
       if (Array.isArray(parsed.tableFolds)) {
@@ -112,6 +114,7 @@
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,
+        lastSpotIdx: state.lastSpotIdx,
         orderList: state.orderList,
         hebronFirstDone: state.hebronFirstDone,
         tableFolds: state.tableFolds,
@@ -214,6 +217,7 @@
     state.stonesFound = [];
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
+    state.lastSpotIdx = null;
     state.orderList = makeInitialOrderList(sc, seed);
     state.orderPick = null;
     state.orderMsg = '';
@@ -234,6 +238,7 @@
     state.stonesFound = [];
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
+    state.lastSpotIdx = null;
     state.orderList = makeInitialOrderList(sc, seed);
     state.orderPick = null;
     state.orderMsg = '';
@@ -393,16 +398,16 @@
     var folds = [
       {
         id: 'son',
-        dir: (seed % 2 === 0) ? '서쪽 수첩 날개' : '북쪽 수첩 날개',
+        dir: (seed % 2 === 0) ? '서쪽 날개' : '북쪽 날개',
         title: '요나단의 아들',
-        sub: '삼하 9:6–7 · 다윗이 친구 요나단 때문에 찾은 아들 므비보셋',
+        sub: '삼하 9:6–7 · 므비보셋',
         icon: 'person'
       },
       {
         id: 'table',
-        dir: (seed % 2 === 0) ? '동쪽 수첩 날개' : '남쪽 수첩 날개',
+        dir: (seed % 2 === 0) ? '동쪽 날개' : '남쪽 날개',
         title: '왕의 식탁',
-        sub: '삼하 9:10–13 · 늘 다윗의 식탁에서 함께 먹게 한 자리',
+        sub: '삼하 9:10–13 · 늘 함께 먹음',
         icon: 'table'
       }
     ];
@@ -429,12 +434,12 @@
           }
         }
       },
-        el('div', { class: 'fold-dir', text: f.dir + (opened ? ' · 펼쳐짐 ✓' : ' · 눌러서 펼치기') }),
+        el('div', { class: 'fold-dir', text: f.dir + (opened ? ' · 펼쳐짐 ✓' : ' · 펼치기') }),
         el('div', { class: 'fold-main' },
           el('span', { class: 'fold-icon', html: ART.icon(f.icon) }),
           el('div', { class: 'fold-text' },
             el('span', { class: 'fold-title', text: f.title }),
-            el('span', { class: 'fold-sub', text: opened ? f.sub : '접힌 수첩 날개를 펼쳐 단서를 확인해 보자.' })
+            el('span', { class: 'fold-sub', text: opened ? f.sub : '눌러서 수첩 펼치기' })
           )
         )
       );
@@ -490,6 +495,7 @@
         }
       }
     }
+    state.lastSpotIdx = spotIdx;
     if (state.brookOpened.indexOf(spotIdx) === -1) {
       state.brookOpened.push(spotIdx);
     }
@@ -516,16 +522,23 @@
     }
     var count = state.stonesFound.length;
     var seed = getSeed(state, sc.id);
+    var lensStatus = '물결 칸을 골라 누르면 물결이 걷히고 시냇물 바닥이 보여요.';
+    if (typeof state.lastSpotIdx === 'number' && state.brookSpots[state.lastSpotIdx]) {
+      var lastCode = state.brookSpots[state.lastSpotIdx];
+      lensStatus = lastCode.charAt(0) === 's'
+        ? ('관찰 창 #' + (state.lastSpotIdx + 1) + ': 물결 아래에서 매끄러운 돌 ' + lastCode.slice(1) + '번을 찾았어요!')
+        : ('관찰 창 #' + (state.lastSpotIdx + 1) + ': 여기는 울퉁불퉁한 잔자갈이에요. 다른 물결을 들여다보세요.');
+    }
 
     var spotBtns = state.brookSpots.map(function (code, idx) {
       var isStone = code.charAt(0) === 's';
       var stoneNum = isStone ? Number(code.slice(1)) : null;
-      var picked = isStone ? (state.stonesFound.indexOf(stoneNum) !== -1) : (state.brookOpened.indexOf(idx) !== -1);
+      var opened = isStone ? (state.stonesFound.indexOf(stoneNum) !== -1) : (state.brookOpened.indexOf(idx) !== -1);
       var attrs = {
-        class: 'stone-btn brook-spot' + (picked ? (isStone ? ' picked' : ' pebble-opened') : ''),
+        class: 'stone-btn brook-spot' + (opened ? (isStone ? ' picked' : ' pebble-opened') : ''),
         'data-spot': String(idx),
         'data-spot-kind': isStone ? 'stone' : 'pebble',
-        'aria-pressed': String(picked),
+        'aria-pressed': String(opened),
         on: {
           click: function () { activateBrookSpot(sc, idx); },
           keydown: function (ev) {
@@ -543,15 +556,12 @@
       };
       if (isStone) attrs['data-stone'] = String(stoneNum);
 
-      var labelText;
-      if (!picked) {
-        labelText = isStone ? ('물결 ' + (idx + 1) + ' · 돌 ' + stoneNum) : ('물결 ' + (idx + 1));
-      } else {
-        labelText = isStone ? ('돌 ' + stoneNum + ' ✓') : '잔자갈';
-      }
+      /* 열어 보기 전에는 모든 칸이 '물결 1~8'로 보여 아이가 직접 위치를 골라 들여다보게 한다 */
+      var labelText = !opened ? ('물결 ' + (idx + 1)) : (isStone ? ('돌 ' + stoneNum + ' ✓') : '잔자갈');
+      var visualIcon = !opened ? 'water' : 'stone';
 
       return el('button', attrs,
-        el('span', { class: 'spot-visual', html: isStone ? ART.icon('stone') : ART.icon('water') }),
+        el('span', { class: 'spot-visual', html: ART.icon(visualIcon) }),
         el('span', { class: 'spot-label', text: labelText })
       );
     });
@@ -562,13 +572,13 @@
         el('span', { class: 'tag', text: '관찰한 돌 ' + count + ' / 5' }),
         seed > 0 ? el('span', { class: 'tag', text: '새 물결 배치 #' + (seed + 1) }) : null
       ),
-      el('h2', { class: 'question', text: '시냇가의 매끄러운 돌 다섯을 하나씩 눌러 살펴보자.' }),
-      el('p', { class: 'subnote one-line-guide', text: '물결 칸을 누르거나 방향키·엔터로 들여다보세요. 같은 돌은 한 번만 세어져요.' }),
+      el('h2', { class: 'question', text: '물결이 걷히는 관찰 창으로 매끄러운 돌 다섯을 찾아보자.' }),
+      el('p', { class: 'subnote one-line-guide', text: lensStatus }),
       el('div', { class: 'stones-grid brook-window', 'data-brook-seed': String(seed) }, spotBtns)
     ];
   }
 
-  /* 놀이 2(D03): 수첩 펼침면의 두 장면 조각. 끌기, 두 번 탭, 한 번 탭 맞바꾸기, 키보드 집기·놓기 지원 */
+  /* 놀이 2(D03): 수첩 펼침면의 두 장면 조각. 터치/마우스 끌기, 두 번 탭, 한 번 탭 맞바꾸기, 키보드 집기·놓기 지원 */
   function swapOrderPieces(idxA, idxB) {
     if (idxA === idxB || idxA < 0 || idxB < 0 || idxA >= state.orderList.length || idxB >= state.orderList.length) return;
     var tmp = state.orderList[idxA];
@@ -584,11 +594,12 @@
     sc.orderItems.forEach(function (it) { map[it.id] = it; });
     var seed = getSeed(state, sc.id);
     var dragFromIdx = null;
+    var pointerStartIdx = null;
 
     var nodes = state.orderList.map(function (id, idx) {
       var it = map[id];
       var selected = state.orderPick === idx;
-      var edgeLabel = it.id === 'gift' ? '왼쪽 이음새 · 겉옷 단서' : '오른쪽 이음새 · 들판 작별';
+      var edgeLabel = it.id === 'gift' ? '왼쪽 이음새 · 겉옷' : '오른쪽 이음새 · 작별';
       var iconKey = it.id === 'gift' ? 'robe' : 'person';
 
       return el('button', {
@@ -615,6 +626,24 @@
             recordFirstAction('D03:order-dblclick:' + it.id);
             swapOrderPieces(idx, (idx + 1) % state.orderList.length);
             render();
+          },
+          pointerdown: function () {
+            pointerStartIdx = idx;
+          },
+          pointerup: function (ev) {
+            if (pointerStartIdx !== null && typeof document.elementFromPoint === 'function') {
+              var hit = document.elementFromPoint(ev.clientX, ev.clientY);
+              var slotNode = hit && hit.closest ? hit.closest('[data-slot-idx]') : null;
+              if (slotNode) {
+                var targetIdx = Number(slotNode.getAttribute('data-slot-idx'));
+                if (!isNaN(targetIdx) && targetIdx !== pointerStartIdx) {
+                  swapOrderPieces(pointerStartIdx, targetIdx);
+                  pointerStartIdx = null;
+                  render();
+                }
+              }
+            }
+            pointerStartIdx = null;
           },
           keydown: function (ev) {
             if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp' || ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
@@ -655,11 +684,14 @@
           }
         }
       },
-        el('div', { class: 'order-num', text: String(idx + 1) }),
-        el('div', { class: 'piece-icon', html: ART.icon(iconKey) }),
+        el('div', { class: 'spread-top' },
+          el('div', { class: 'order-num', text: String(idx + 1) }),
+          el('div', { class: 'piece-icon', html: ART.icon(iconKey) }),
+          el('span', { class: 'seam-badge', text: edgeLabel })
+        ),
         el('div', { class: 'order-info' },
           el('span', { class: 'order-title', text: it.label }),
-          el('span', { class: 'order-hint', text: it.ref + ' · ' + edgeLabel })
+          el('span', { class: 'order-hint', text: it.ref })
         )
       );
     });
@@ -669,8 +701,8 @@
         el('span', { class: 'ref', text: sc.ref }),
         seed > 0 ? el('span', { class: 'tag', text: '수첩 펼침면 #' + (seed + 1) }) : null
       ),
-      el('h2', { class: 'question', text: '수첩 펼침면에서 두 장면 조각을 일어난 순서대로 이어 붙여 보자.' }),
-      el('p', { class: 'subnote one-line-guide', text: '조각을 끌어서 옮기거나, 차례로 탭·두 번 탭·키보드 엔터로 자리를 바꿀 수 있어요.' }),
+      el('h2', { class: 'question', text: '수첩 펼침면에서 두 장면 조각을 순서대로 이어 붙여 보자.' }),
+      el('p', { class: 'subnote one-line-guide', text: '조각을 끌거나 탭·두 번 탭·키보드 엔터로 자리를 바꿔 보세요.' }),
       el('div', { class: 'order-list notebook-spread', 'data-spread-seed': String(seed) }, nodes),
       state.orderMsg ? el('div', { class: 'order-msg', text: state.orderMsg }) : null,
       el('div', { class: 'actions' },
@@ -687,7 +719,7 @@
               saveState();
               render();
             } else {
-              state.orderMsg = '조각을 집어 다시 옮겨 보자. 선물을 먼저 주고(삼상 18:1–4), 나중에 헤어졌어(삼상 20:41–42).';
+              state.orderMsg = '조각을 집어 옮겨 보자. 선물을 먼저 주고(삼상 18:1–4), 나중에 헤어졌어(삼상 20:41–42).';
               render();
             }
           } }

@@ -260,7 +260,7 @@ h1, h2, h3, p { margin: 0; }
 .stage {
   flex: none;
   position: relative;
-  height: 180px;
+  height: 142px;
   background: #233354;
   overflow: hidden;
   border-bottom: 2px solid var(--paper-line);
@@ -287,22 +287,22 @@ h1, h2, h3, p { margin: 0; }
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 12px var(--gutter-r) 16px var(--gutter-l);
+  padding: 10px var(--gutter-r) 12px var(--gutter-l);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .meta-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .question {
   font-family: var(--f-display);
-  font-size: 19px;
-  line-height: 1.38;
+  font-size: 17.5px;
+  line-height: 1.32;
   color: var(--ink);
 }
 .subnote {
-  font-size: 14.5px;
+  font-size: 13.5px;
   color: var(--text-soft);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 /* ── 선택 단서 카드 ── */
@@ -434,46 +434,66 @@ h1, h2, h3, p { margin: 0; }
 
 /* ── D03 수첩 펼침면 & D07 수첩 탐색 지도 ── */
 .notebook-spread {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
   padding: 8px;
   border-radius: 16px;
   background: var(--paper-2);
   border: 2px dashed var(--brass-deep);
 }
+.spread-piece {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-height: 76px;
+  padding: 8px;
+}
+.spread-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.seam-badge {
+  font-family: var(--f-display);
+  font-size: 11.5px;
+  color: var(--teal);
+}
 .piece-icon {
   flex: none;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   background: var(--paper-2);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.piece-icon svg { width: 26px; height: 26px; display: block; }
+.piece-icon svg { width: 22px; height: 22px; display: block; }
 .notebook-map {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-radius: 14px;
   background: var(--paper-2);
   border: 2px dashed var(--brass-deep);
 }
 .one-line-guide {
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--ink);
 }
 .fold-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 .fold-wing {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-height: 64px;
-  padding: 8px 10px;
+  gap: 3px;
+  min-height: 56px;
+  padding: 6px 8px;
   border-radius: 12px;
   background: #fff;
   border: 2px solid var(--paper-line);
@@ -483,13 +503,13 @@ h1, h2, h3, p { margin: 0; }
   background: var(--ok-bg);
   border-color: var(--ok);
 }
-.fold-dir { font-family: var(--f-display); font-size: 12px; color: var(--teal); }
+.fold-dir { font-family: var(--f-display); font-size: 11.5px; color: var(--teal); }
 .fold-main { display: flex; align-items: center; gap: 6px; }
-.fold-icon { flex: none; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
-.fold-icon svg { width: 24px; height: 24px; display: block; }
+.fold-icon { flex: none; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+.fold-icon svg { width: 20px; height: 20px; display: block; }
 .fold-text { display: flex; flex-direction: column; min-width: 0; }
-.fold-title { font-family: var(--f-display); font-size: 14.5px; color: var(--ink); }
-.fold-sub { font-size: 12px; color: var(--text-soft); line-height: 1.3; }
+.fold-title { font-family: var(--f-display); font-size: 14px; color: var(--ink); }
+.fold-sub { font-size: 11.5px; color: var(--text-soft); line-height: 1.25; }
 .journal-title-row { display: flex; align-items: center; gap: 6px; }
 .journal-clue-icon { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; }
 .journal-clue-icon svg { width: 22px; height: 22px; display: block; }
