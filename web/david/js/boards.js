@@ -1025,42 +1025,44 @@ window.BO_DAVID = window.BO_DAVID || {};
 
     var guessBox = null;
     if (state.d08Pos >= 2 || state.d08Visited.indexOf(2) !== -1) {
+      var guessBtns = [
+        el('button', {
+          class: 'd05-mini-btn' + (state.d08Guess === 'drink' ? ' active' : ''),
+          'data-d08-guess': 'drink',
+          on: {
+            click: function () {
+              state.d08Guess = 'drink';
+              state.d08GuessOk = false;
+              /* 예상이 어긋나면 처음(0)이 아니라 마지막 분기(2번 지점)에서만 다시 시작한다 */
+              state.d08Pos = 2;
+              state.d08GuessMsg = '예상이 어긋났어요. 마지막 분기(2번 지점)에서 삼하 23:16–17을 펼쳐 다시 골라 보세요.';
+              ctx.saveState();
+              ctx.render();
+            }
+          }
+        }, '물을 바로 마셨어'),
+        el('button', {
+          class: 'd05-mini-btn' + (state.d08Guess === 'pour' ? ' active' : ''),
+          'data-d08-guess': 'pour',
+          on: {
+            click: function () {
+              state.d08Guess = 'pour';
+              state.d08GuessOk = true;
+              state.d08GuessMsg = '삼하 23:16 확인 완료! 이제 도착 지점(다윗의 행동)까지 한 칸씩 이동해 보세요.';
+              ctx.saveState();
+              ctx.render();
+            }
+          }
+        }, '여호와께 바쳐 쏟았어')
+      ];
+      if (seed % 2 === 1) guessBtns.reverse();
       guessBox = el('div', { class: 'd05-reopen-card', 'data-d08-guess-box': 'true', 'data-d08-guess-ok': String(!!state.d08GuessOk) },
         el('div', { class: 'd01-zoom-head' },
-          el('span', { class: 'tag', text: '중간 분기 · 다음 기록 예상' }),
+          el('span', { class: 'tag', text: '중간 분기 · 다음 기록 예상 (배치 #' + (seed + 1) + ')' }),
           el('span', { class: 'ref', text: '삼하 23:16–17' })
         ),
         el('p', { class: 'd05-wing-fact', text: '세 사람이 우물물을 가져왔을 때, 다음 기록은 무엇일까?' }),
-        el('div', { class: 'd05-wing-place-btns' },
-          el('button', {
-            class: 'd05-mini-btn' + (state.d08Guess === 'drink' ? ' active' : ''),
-            'data-d08-guess': 'drink',
-            on: {
-              click: function () {
-                state.d08Guess = 'drink';
-                state.d08GuessOk = false;
-                /* 예상이 어긋나면 처음(0)이 아니라 마지막 분기(2번 지점)에서만 다시 시작한다 */
-                state.d08Pos = 2;
-                state.d08GuessMsg = '예상이 어긋났어요. 마지막 분기(2번 지점)에서 삼하 23:16–17을 펼쳐 다시 골라 보세요.';
-                ctx.saveState();
-                ctx.render();
-              }
-            }
-          }, '물을 바로 마셨어'),
-          el('button', {
-            class: 'd05-mini-btn' + (state.d08Guess === 'pour' ? ' active' : ''),
-            'data-d08-guess': 'pour',
-            on: {
-              click: function () {
-                state.d08Guess = 'pour';
-                state.d08GuessOk = true;
-                state.d08GuessMsg = '삼하 23:16 확인 완료! 이제 도착 지점(다윗의 행동)까지 한 칸씩 이동해 보세요.';
-                ctx.saveState();
-                ctx.render();
-              }
-            }
-          }, '여호와께 바쳐 쏟았어')
-        ),
+        el('div', { class: 'd05-wing-place-btns' }, guessBtns),
         state.d08GuessMsg ? el('div', { class: 'order-msg', 'data-d08-guess-msg': 'true', text: state.d08GuessMsg }) : null,
         el('button', {
           class: 'd04-undo-btn',

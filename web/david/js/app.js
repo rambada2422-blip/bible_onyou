@@ -434,11 +434,13 @@
     render();
   }
 
-  function replayCurrentScene() {
+  function replayCurrentScene(sameLayout) {
     if (!state.sceneId) return;
     var sc = getScene(state.sceneId);
     if (!sc) return;
-    state.seeds[sc.id] = getSeed(state, sc.id) + 1;
+    if (!sameLayout) {
+      state.seeds[sc.id] = getSeed(state, sc.id) + 1;
+    }
     state.telemetry.replayCount = (state.telemetry.replayCount || 0) + 1;
     var seed = getSeed(state, sc.id);
     state.detourId = null;
@@ -1575,7 +1577,12 @@
       })() : null,
       el('div', { class: 'actions' },
         primaryBtn,
-        el('button', { class: 'btn plain', 'data-action': 'replay-scene', on: { click: replayCurrentScene } }, '다른 배치로 다시 놀기'),
+        (sc.id === 'D02' || sc.id === 'D08')
+          ? el('div', { class: 'd05-wing-place-btns', 'data-a24-replay': sc.id },
+              el('button', { class: 'btn plain d08-step-btn', 'data-action': 'replay-same', on: { click: function () { replayCurrentScene(true); } } }, '같은 배치 다시'),
+              el('button', { class: 'btn plain d08-step-btn', 'data-action': 'replay-scene', on: { click: function () { replayCurrentScene(false); } } }, '새 배치 도전')
+            )
+          : el('button', { class: 'btn plain', 'data-action': 'replay-scene', on: { click: function () { replayCurrentScene(false); } } }, '다른 배치로 다시 놀기'),
         el('button', { class: 'btn', 'data-action': 'open-journal', on: { click: openJournal } }, '탐험 일지 보기')
       )
     ];
