@@ -10,6 +10,7 @@ if (!outputFolder) {
 }
 
 const { chromium } = require('playwright');
+const { passFindWords } = require('../find-words2d');
 let url;
 const viewport = { width: 390, height: 664 };
 
@@ -121,6 +122,7 @@ async function checkReduced(browser, folder) {
         state = beat.state || state;
         await checkArtwork();
         await capture(id + '-' + String(index + 1).padStart(2, '0') + '-beat');
+        if (await passFindWords(page)) await capture(id + '-' + String(index + 1).padStart(2, '0') + '-found');
         if (beats[index + 1]?.look) await page.locator('.hot-layer .look-target').click();
         else await next.click();
       }

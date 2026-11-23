@@ -59,7 +59,9 @@ async function play(browser, url, tierIndex, viewport) {
       await p.keyboard.press('Enter');
     } else await finger(target);
     if (tierIndex !== 0) {
-      assert.match(await p.locator('.field-observation [role=status]').innerText(), /양 떼를 찾았어요/);
+      const found = await p.locator('.field-observation [role=status]').innerText();
+      assert.match(found, /동물 무리를 찾았어요/);
+      assert.doesNotMatch(found, /양/, '물음 1의 답 (양 떼)을 먼저 보여 주지 않는다');
       assert.equal(await p.evaluate(() => BO3D.debug.state().state),'detector');
       await button(tierIndex===1?'장인 이드로의 양 떼':'장인 이드로').tap();
     }

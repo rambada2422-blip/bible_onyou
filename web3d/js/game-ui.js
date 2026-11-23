@@ -91,7 +91,10 @@ BO3D.gameModules.ui = function (G) {
           marker.classList.toggle('found', hit);
           if (!hit) { message.textContent = '그곳에는 동물이 보이지 않아요. 다른 곳을 짚어 보세요.'; return; }
           if (young) onIdentify();
-          else message.textContent = '양 떼를 찾았어요. 누구의 양 떼였는지 보기에서 골라요.';
+          /* 11~13세 보기에서는 '양 떼'가 정답에만 들어 있다. 물음 1의 답이 먼저 보이지 않게 동물 이름을 말하지 않는다 (대표 2026-11-21).
+             14~19세는 물음에 이미 양 떼가 있고 보기가 사람이라 '누구의 것'만 묻는다. */
+          else message.textContent = G.S.tier === 't2' ? '동물 무리를 찾았어요. 누구의 무엇이었는지 성경에서 확인하고 보기에서 골라요.'
+            : '동물 무리를 찾았어요. 누구의 것이었는지 성경에서 확인하고 보기에서 골라요.';
         }
       } }, photo, marker);
     return G.el('figure', { class: 'field-observation' }, picture, G.el('figcaption', {},
