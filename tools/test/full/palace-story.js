@@ -4,13 +4,15 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const { gameOrigin, proxy } = require('../game-server');
+const { playToEnding } = require('../palace-video');
 const out = path.resolve(process.argv[2] || 'dist/palace-proof');
 
 async function check(browser, origin, entry, width, height) {
   const page = await browser.newPage({viewport:{width, height}, isMobile:true, hasTouch:true, reducedMotion:'reduce'});
   const errors = [], requests = [];
   page.on('pageerror', err => errors.push(err.message));
-  await page.route('**/*.mp4', route => { requests.push(route.request().url()); return route.abort(); });
+  const testRetry = width === 320;
+  if (testRetry) await page.route('**/*.mp4', route => { requests.push(route.request().url()); return route.abort(); });
   const tap = name => page.getByRole('button', {name, exact:true}).click();
   const forward = page.locator('.palace-foot .onpaper');
   const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem('bo_demo_v1')));
@@ -60,12 +62,17 @@ async function check(browser, origin, entry, width, height) {
       if (b.film) {
         const before = requests.length;
         await tap('영상 보기 · ' + ch.seconds + '초');
-        await page.getByRole('button', {name:'영상 다시 불러오기'}).waitFor();
-        assert.equal(requests[before], ch.url);
-        if (number === 0) {
-          await tap('영상 다시 불러오기');
+        if (testRetry) {
           await page.getByRole('button', {name:'영상 다시 불러오기'}).waitFor();
-          assert.equal(requests[before + 1],ch.url);
+          assert.equal(requests[before], ch.url);
+          if (number === 0) {
+            await tap('영상 다시 불러오기');
+            await page.getByRole('button', {name:'영상 다시 불러오기'}).waitFor();
+            assert.equal(requests[before + 1],ch.url);
+          }
+        } else {
+          await playToEnding(page, number + 1, ch.seconds);
+          await page.getByRole('button', {name:'세 친구와 현장 살펴보기'}).waitFor();
         }
       }
       const footer = await forward.boundingBox();
@@ -84,7 +91,7 @@ async function check(browser, origin, entry, width, height) {
   }
   assert.deepEqual(errors,[]);
   await page.close();
-  console.log(entry, width+'×'+height, '· 장면 10개, 대화·장절·근거 찾기 3개, 회전·복원·영상 재시도·복귀 통과');
+  console.log(entry, width+'×'+height, '· 대화·장절·근거 찾기·회전·복원·복귀 통과,', testRetry ? '영상 오류와 재시도 통과' : '저장소 영상 10편 재생과 결말 통과');
 }
 (async () => {
   await fs.mkdir(out,{recursive:true});
@@ -93,6 +100,6 @@ async function check(browser, origin, entry, width, height) {
     const origin = await gameOrigin(browser);
     await check(browser,origin,'/index.html',360,640);
     await check(browser,origin,'/preview.html#palace',320,568);
-    await check(browser,origin,'/preview.html#palace',844,390);
+    await check(browser,origin,'/dist/preview.html#palace',844,390);
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exitCode=1; });

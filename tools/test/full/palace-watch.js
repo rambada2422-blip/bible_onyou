@@ -4,13 +4,14 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const {chromium} = require('playwright');
 const {gameOrigin, proxy} = require('../game-server');
+const { playToEnding } = require('../palace-video');
 const out = path.resolve(process.argv[2] || 'dist/palace-watch-proof');
 
 async function play(browser, url, firstPick) {
   const page = await browser.newPage({viewport:{width:360,height:640}, isMobile:true, hasTouch:true});
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  await page.route('**/*.mp4', route => route.abort());
+  if (firstPick === 0) await page.route('**/*.mp4', route => route.abort());
   await page.goto(url+'#palace');
   const dialog = page.locator('.watch-dialog');
   const tap = name => dialog.getByRole('button', {name,exact:true}).click();
@@ -29,9 +30,14 @@ async function play(browser, url, firstPick) {
       const r = await spot.boundingBox();
       assert(r && r.width>=44 && r.height>=44);
     }
-    if (i===0) {
+    if (firstPick === 1 || i === 0) {
       await tap('영상 함께 보기 · '+chapters[i].seconds+'초');
-      await dialog.getByText('영상을 불러오지 못했어요.',{exact:false}).waitFor();
+      if (firstPick === 0) {
+        await dialog.getByText('영상을 불러오지 못했어요.',{exact:false}).waitFor();
+      } else {
+        await playToEnding(page, i + 1, chapters[i].seconds);
+        await dialog.getByText('이제 사진에서 흔적을 살펴볼 수 있어.').waitFor();
+      }
     }
     if (i===6 && firstPick===0) await page.screenshot({path:path.join(out,'우박_두흔적.png')});
     await spots.nth(pick).click();
@@ -64,11 +70,11 @@ async function play(browser, url, firstPick) {
     }
   }
   assert.deepEqual(errors,[]); await page.close();
-  console.log(new URL(url).pathname,'열 장·흔적 10개·예상과 장절·본문 낭독·회전과 복원·영상 오류 뒤 계속하기 통과');
+  console.log(new URL(url).pathname,'열 장의 흔적·예상·장절·낭독·복원 통과,', firstPick ? '영상 10편 재생 뒤 사진 복귀 통과' : '영상 오류 뒤 사진 복귀 통과');
 }
 (async()=>{
   await fs.mkdir(out,{recursive:true});
   const b=await chromium.launch({proxy});
-  try { const host=await gameOrigin(b); await play(b, host+'/index.html',0); await play(b,host+'/preview.html',1); }
+  try { const host=await gameOrigin(b); await play(b, host+'/index.html',0); await play(b,host+'/dist/preview.html',1); }
   finally {await b.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

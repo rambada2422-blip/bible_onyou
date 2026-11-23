@@ -140,6 +140,12 @@ const page = [
   '</body></html>'
 ].join('\n');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
+const filmDir = 'videos/exodus-palace';
+fs.mkdirSync(path.join(root, 'dist', filmDir), { recursive: true });
+for (let chapter = 1; chapter <= 10; chapter++) {
+  const name = String(chapter).padStart(2, '0') + '.mp4';
+  fs.copyFileSync(path.join(root, filmDir, name), path.join(root, 'dist', filmDir, name), fs.constants.COPYFILE_FICLONE);
+}
 fs.writeFileSync(path.join(root, 'dist/preview.html'), page);
 
 // 물길 단독 입구는 공통 저장과 본문을 그대로 쓰고, 왕궁 음성·그림·글꼴은 왕궁에 들어갈 때만 불러온다.
