@@ -109,6 +109,10 @@
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
       lastSpotIdx: null,  /* 방금 살펴본 돌밭 관찰 창 위치 */
+      d02Entry: 'stones', /* A29: D02 접근 경로 ('stones' | 'sectors') */
+      d02MarkMode: false, /* A30: D02 관찰 책갈피 모드 */
+      d02Marks: [],       /* A30: D02 책갈피 꽂힌 칸 인덱스 */
+      d08Entry: 'well',   /* A31: D08 접근 경로 ('well' | 'action') */
       orderList: [],
       orderPick: null,
       orderMsg: '',
@@ -179,10 +183,12 @@
         base.d06Opened = parsed.d06Opened.filter(function (v, i, a) { return (v === 'ark' || v === 'tent') && a.indexOf(v) === i; });
       }
       if (parsed.d06Path === 'object' || parsed.d06Path === 'place') base.d06Path = parsed.d06Path;
+      if (parsed.d08Entry === 'well' || parsed.d08Entry === 'action') base.d08Entry = parsed.d08Entry;
       if (typeof parsed.d08Pos === 'number' && parsed.d08Pos >= 0 && parsed.d08Pos <= 4) base.d08Pos = parsed.d08Pos;
       if (Array.isArray(parsed.d08Visited)) {
         base.d08Visited = parsed.d08Visited.filter(function (v, i, a) { return typeof v === 'number' && v >= 0 && v <= 4 && a.indexOf(v) === i; });
-        if (base.d08Visited.indexOf(0) === -1) base.d08Visited.unshift(0);
+        var d08Start = base.d08Entry === 'action' ? 4 : 0;
+        if (base.d08Visited.indexOf(d08Start) === -1) base.d08Visited.unshift(d08Start);
       }
       if (typeof parsed.d08Guess === 'string') base.d08Guess = parsed.d08Guess;
       base.d08GuessOk = !!parsed.d08GuessOk;
@@ -213,6 +219,11 @@
       if (parsed.d07Entry === 'promise' || parsed.d07Entry === 'table') base.d07Entry = parsed.d07Entry;
       if (Array.isArray(parsed.d07Seen)) {
         base.d07Seen = parsed.d07Seen.filter(function (v, i, a) { return (v === 'son' || v === 'table') && a.indexOf(v) === i; });
+      }
+      if (parsed.d02Entry === 'stones' || parsed.d02Entry === 'sectors') base.d02Entry = parsed.d02Entry;
+      base.d02MarkMode = !!parsed.d02MarkMode;
+      if (Array.isArray(parsed.d02Marks)) {
+        base.d02Marks = parsed.d02Marks.filter(function (v, i, a) { return typeof v === 'number' && v >= 0 && v <= 7 && a.indexOf(v) === i; });
       }
       if (parsed.course && typeof parsed.course === 'object') {
         base.course = {
@@ -304,6 +315,10 @@
         d03Locked: state.d03Locked,
         d07Entry: state.d07Entry,
         d07Seen: state.d07Seen,
+        d02Entry: state.d02Entry,
+        d02MarkMode: state.d02MarkMode,
+        d02Marks: state.d02Marks,
+        d08Entry: state.d08Entry,
         course: state.course,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
@@ -439,6 +454,8 @@
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
     state.lastSpotIdx = null;
+    state.d02Marks = [];
+    state.d02MarkMode = false;
     state.orderList = makeInitialOrderList(sc, seed);
     state.orderPick = null;
     state.orderMsg = '';
@@ -474,8 +491,8 @@
     state.d05Msg = '';
     state.d06Opened = [];
     state.d06Path = null;
-    state.d08Pos = 0;
-    state.d08Visited = [0];
+    state.d08Pos = state.d08Entry === 'action' ? 4 : 0;
+    state.d08Visited = [state.d08Pos];
     state.d08Guess = null;
     state.d08GuessOk = false;
     state.d08GuessMsg = '';
@@ -491,6 +508,8 @@
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
     state.lastSpotIdx = null;
+    state.d02Marks = [];
+    state.d02MarkMode = false;
     state.orderList = makeInitialOrderList(sc, seed);
     state.orderPick = null;
     state.orderMsg = '';
@@ -1279,13 +1298,17 @@
     if (state.brookOpened.indexOf(spotIdx) === -1) {
       state.brookOpened.push(spotIdx);
     }
+    var mkIdx = state.d02Marks.indexOf(spotIdx);
+    if (mkIdx !== -1) state.d02Marks.splice(mkIdx, 1);
     if (item && item.charAt(0) === 's') {
       var num = Number(item.slice(1));
       recordFirstAction('D02:stone:' + num);
       if (state.stonesFound.indexOf(num) === -1) {
         state.stonesFound.push(num);
         if (state.stonesFound.length >= 5) {
-          recordDiscovery(sc, '『탐험대 이야기』 시냇가 돌밭 관찰 창에서 매끄러운 돌 다섯을 모두 확인함 (배치 #' + (getSeed(state, sc.id) + 1) + ')');
+          var entryLabel = state.d02Entry === 'sectors' ? '돌밭 구역부터' : '매끄러운 돌부터';
+          recordDiscovery(sc, '『탐험대 이야기』 경로(' + entryLabel + ')로 시냇가 돌밭 관찰 창에서 매끄러운 돌 다섯을 모두 확인함 (배치 #' + (getSeed(state, sc.id) + 1) + ')');
+          state.d02MarkMode = false;
           state.step = 'done';
         }
       }
@@ -1302,25 +1325,103 @@
     }
     var count = state.stonesFound.length;
     var seed = getSeed(state, sc.id);
-    var lensStatus = '시냇가 돌밭 칸을 골라 누르면 관찰 창으로 돌을 살펴볼 수 있어요.';
-    if (typeof state.lastSpotIdx === 'number' && state.brookSpots[state.lastSpotIdx]) {
+    var curEntry = state.d02Entry === 'sectors' ? 'sectors' : 'stones';
+    var topRemain = 0;
+    var bottomRemain = 0;
+    state.brookSpots.forEach(function (code, idx) {
+      if (code.charAt(0) === 's') {
+        var sNum = Number(code.slice(1));
+        if (state.stonesFound.indexOf(sNum) === -1) {
+          if (idx < 4) topRemain += 1;
+          else bottomRemain += 1;
+        }
+      }
+    });
+
+    var lensStatus = state.d02MarkMode
+      ? '책갈피 표시 모드예요. 아직 열지 않은 돌밭 칸을 눌러 책갈피(★)를 꽂거나 빼 보세요.'
+      : (curEntry === 'sectors'
+        ? ('돌밭 구역부터: 윗줄(1~4) 남은 돌 ' + topRemain + '개 · 아랫줄(5~8) 남은 돌 ' + bottomRemain + '개를 찾아 보세요.')
+        : '시냇가 돌밭 칸을 골라 누르면 관찰 창으로 돌을 살펴볼 수 있어요.');
+    if (!state.d02MarkMode && typeof state.lastSpotIdx === 'number' && state.brookSpots[state.lastSpotIdx]) {
       var lastCode = state.brookSpots[state.lastSpotIdx];
       lensStatus = lastCode.charAt(0) === 's'
         ? ('관찰 창 #' + (state.lastSpotIdx + 1) + ': 시냇가 돌밭에서 매끄러운 돌 ' + lastCode.slice(1) + '번을 찾았어요!')
         : ('관찰 창 #' + (state.lastSpotIdx + 1) + ': 여기는 울퉁불퉁한 잔자갈이에요. 다른 돌밭 칸을 살펴보세요.');
     }
 
+    var entryBar = el('div', { class: 'd05-wing-place-btns', 'data-d02-entry-bar': curEntry },
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'stones' ? ' active' : ''),
+        'data-d02-entry': 'stones',
+        'aria-pressed': String(curEntry === 'stones'),
+        on: {
+          click: function () {
+            state.d02Entry = 'stones';
+            saveState();
+            render();
+          }
+        }
+      }, '매끄러운 돌부터 (삼상 17:40)'),
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'sectors' ? ' active' : ''),
+        'data-d02-entry': 'sectors',
+        'aria-pressed': String(curEntry === 'sectors'),
+        on: {
+          click: function () {
+            state.d02Entry = 'sectors';
+            saveState();
+            render();
+          }
+        }
+      }, '돌밭 구역부터 (윗줄 1~4 · 아랫줄 5~8)')
+    );
+
+    var sectorStrip = curEntry === 'sectors'
+      ? el('div', { class: 'meta-row', 'data-d02-sectors': 'true', 'data-top-remain': String(topRemain), 'data-bottom-remain': String(bottomRemain) },
+          el('span', { class: 'tag', text: '윗줄(1~4) 남은 돌: ' + topRemain + '개' }),
+          el('span', { class: 'tag', text: '아랫줄(5~8) 남은 돌: ' + bottomRemain + '개' })
+        )
+      : null;
+
+    var markBar = el('div', { class: 'd05-wing-place-btns' },
+      el('button', {
+        class: 'd04-undo-btn' + (state.d02MarkMode ? ' active' : ''),
+        'data-action': 'd02-toggle-mark',
+        'aria-pressed': String(!!state.d02MarkMode),
+        on: {
+          click: function () {
+            state.d02MarkMode = !state.d02MarkMode;
+            saveState();
+            render();
+          }
+        }
+      }, state.d02MarkMode ? '책갈피 표시 모드 켬 (누르면 관찰로 돌아가기)' : ('책갈피 표시하기 (현재 ' + state.d02Marks.length + '칸)'))
+    );
+
     var spotBtns = state.brookSpots.map(function (code, idx) {
       var isStone = code.charAt(0) === 's';
       var stoneNum = isStone ? Number(code.slice(1)) : null;
       var opened = isStone ? (state.stonesFound.indexOf(stoneNum) !== -1) : (state.brookOpened.indexOf(idx) !== -1);
+      var marked = !opened && state.d02Marks.indexOf(idx) !== -1;
       var attrs = {
-        class: 'stone-btn brook-spot' + (opened ? (isStone ? ' picked' : ' pebble-opened') : ''),
+        class: 'stone-btn brook-spot' + (opened ? (isStone ? ' picked' : ' pebble-opened') : '') + (marked ? ' selected' : ''),
         'data-spot': String(idx),
         'data-spot-kind': isStone ? 'stone' : 'pebble',
-        'aria-pressed': String(opened),
+        'data-marked': String(marked),
+        'aria-pressed': String(opened || marked),
         on: {
-          click: function () { activateBrookSpot(sc, idx); },
+          click: function () {
+            if (state.d02MarkMode && !opened) {
+              var mIdx = state.d02Marks.indexOf(idx);
+              if (mIdx === -1) state.d02Marks.push(idx);
+              else state.d02Marks.splice(mIdx, 1);
+              saveState();
+              render();
+              return;
+            }
+            activateBrookSpot(sc, idx);
+          },
           keydown: function (ev) {
             if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
               ev.preventDefault();
@@ -1337,7 +1438,9 @@
       if (isStone) attrs['data-stone'] = String(stoneNum);
 
       /* 열어 보기 전에는 모든 칸이 '돌밭 1~8'로 보여 아이가 직접 위치를 골라 살펴보게 한다 */
-      var labelText = !opened ? ('돌밭 ' + (idx + 1)) : (isStone ? ('돌 ' + stoneNum + ' ✓') : '잔자갈');
+      var labelText = !opened
+        ? (marked ? ('★ 돌밭 ' + (idx + 1)) : ('돌밭 ' + (idx + 1)))
+        : (isStone ? ('돌 ' + stoneNum + ' ✓') : '잔자갈');
       var visualIcon = 'stone';
 
       return el('button', attrs,
@@ -1354,6 +1457,9 @@
         seed > 0 ? el('span', { class: 'tag', text: '새 돌밭 배치 #' + (seed + 1) }) : null
       ),
       el('h2', { class: 'question', text: '시냇가 돌밭 관찰 창에서 매끄러운 돌 다섯을 찾아보자.' }),
+      entryBar,
+      sectorStrip,
+      markBar,
       el('p', { class: 'subnote one-line-guide', text: lensStatus }),
       el('div', { class: 'stones-grid brook-window', 'data-brook-seed': String(seed) }, spotBtns)
     ];

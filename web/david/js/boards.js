@@ -958,13 +958,16 @@ window.BO_DAVID = window.BO_DAVID || {};
     var state = ctx.state;
     var el = ctx.el;
     var seed = ctx.getSeed(state, 'D08');
+    var curEntry = state.d08Entry === 'action' ? 'action' : 'well';
 
-    if (typeof state.d08Pos !== 'number') state.d08Pos = 0;
-    if (!Array.isArray(state.d08Visited) || !state.d08Visited.length) state.d08Visited = [0];
+    if (typeof state.d08Pos !== 'number') state.d08Pos = curEntry === 'action' ? 4 : 0;
+    if (!Array.isArray(state.d08Visited) || !state.d08Visited.length) state.d08Visited = [state.d08Pos];
 
     function stepMove(delta, fromKeyboard) {
       var next = Math.max(0, Math.min(4, state.d08Pos + delta));
-      if (next > 2 && !state.d08GuessOk) {
+      var blockedForward = curEntry === 'well' && next > 2 && !state.d08GuessOk;
+      var blockedReverse = curEntry === 'action' && next < 2 && !state.d08GuessOk;
+      if (blockedForward || blockedReverse) {
         stopD08Hold();
         state.d08Pos = 2;
         if (state.d08Visited.indexOf(2) === -1) state.d08Visited.push(2);
@@ -1009,6 +1012,47 @@ window.BO_DAVID = window.BO_DAVID || {};
       window.addEventListener('pointercancel', onEnd, { once: true });
     }
 
+    var entryBar = el('div', { class: 'd05-wing-place-btns', 'data-d08-entry-bar': curEntry },
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'well' ? ' active' : ''),
+        'data-d08-entry': 'well',
+        'aria-pressed': String(curEntry === 'well'),
+        on: {
+          click: function () {
+            stopD08Hold();
+            state.d08Entry = 'well';
+            state.d08Pos = 0;
+            state.d08Visited = [0];
+            state.d08Guess = null;
+            state.d08GuessOk = false;
+            state.d08GuessMsg = '';
+            ctx.recordFirstAction('D08:entry:well');
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, '성문 곁 우물부터 (삼하 23:15)'),
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'action' ? ' active' : ''),
+        'data-d08-entry': 'action',
+        'aria-pressed': String(curEntry === 'action'),
+        on: {
+          click: function () {
+            stopD08Hold();
+            state.d08Entry = 'action';
+            state.d08Pos = 4;
+            state.d08Visited = [4];
+            state.d08Guess = null;
+            state.d08GuessOk = false;
+            state.d08GuessMsg = '';
+            ctx.recordFirstAction('D08:entry:action');
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, '다윗의 행동부터 (삼하 23:16–17)')
+    );
+
     var curNode = D08_NODES[state.d08Pos] || D08_NODES[0];
     var trackNodes = D08_NODES.map(function (nd) {
       var visited = state.d08Visited.indexOf(nd.idx) !== -1;
@@ -1024,7 +1068,10 @@ window.BO_DAVID = window.BO_DAVID || {};
     });
 
     var guessBox = null;
-    if (state.d08Pos >= 2 || state.d08Visited.indexOf(2) !== -1) {
+    var showGuess = curEntry === 'action'
+      ? (state.d08Pos <= 2 || state.d08Visited.indexOf(2) !== -1)
+      : (state.d08Pos >= 2 || state.d08Visited.indexOf(2) !== -1);
+    if (showGuess) {
       var guessBtns = [
         el('button', {
           class: 'd05-mini-btn' + (state.d08Guess === 'drink' ? ' active' : ''),
@@ -1033,7 +1080,7 @@ window.BO_DAVID = window.BO_DAVID || {};
             click: function () {
               state.d08Guess = 'drink';
               state.d08GuessOk = false;
-              /* 예상이 어긋나면 처음(0)이 아니라 마지막 분기(2번 지점)에서만 다시 시작한다 */
+              /* 예상이 어긋나면 처음이 아니라 마지막 분기(2번 지점)에서만 다시 시작한다 */
               state.d08Pos = 2;
               state.d08GuessMsg = '예상이 어긋났어요. 마지막 분기(2번 지점)에서 삼하 23:16–17을 펼쳐 다시 골라 보세요.';
               ctx.saveState();
@@ -1048,7 +1095,9 @@ window.BO_DAVID = window.BO_DAVID || {};
             click: function () {
               state.d08Guess = 'pour';
               state.d08GuessOk = true;
-              state.d08GuessMsg = '삼하 23:16 확인 완료! 이제 도착 지점(다윗의 행동)까지 한 칸씩 이동해 보세요.';
+              state.d08GuessMsg = curEntry === 'action'
+                ? '삼하 23:16 확인 완료! 이제 성문 곁 우물(0번 지점)까지 한 칸씩 되짚어 보세요.'
+                : '삼하 23:16 확인 완료! 이제 도착 지점(다윗의 행동)까지 한 칸씩 이동해 보세요.';
               ctx.saveState();
               ctx.render();
             }
@@ -1079,6 +1128,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       'data-d08-board': 'true',
       'data-d08-pos': String(state.d08Pos),
       'data-d08-seed': String(seed),
+      'data-d08-entry': curEntry,
       tabindex: '0',
       'aria-label': '우물물 이동 경로. 좌우 방향키로 한 칸씩 움직일 수 있어요.',
       on: {
@@ -1093,7 +1143,10 @@ window.BO_DAVID = window.BO_DAVID || {};
         }
       }
     },
-      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 세 지점(우물 → 가져온 사람들 → 다윗의 행동)을 한 칸씩 눌러 이어 보자. 길게 누르다 떼면 그 자리에서 멈춰요.' }),
+      el('div', { class: 'one-line-guide', text: curEntry === 'action'
+        ? '『탐험대 이야기』 다윗의 행동(4번)에서 중간 분기(2번)를 거쳐 성문 곁 우물(0번)까지 한 칸씩 되짚어 보자.'
+        : '『탐험대 이야기』 세 지점(우물 → 가져온 사람들 → 다윗의 행동)을 한 칸씩 눌러 이어 보자. 길게 누르다 떼면 그 자리에서 멈춰요.' }),
+      entryBar,
       el('div', { class: 'd08-track' }, trackNodes),
       el('div', { class: 'd08-card', 'data-d08-current-card': String(curNode.idx) },
         el('div', { class: 'd01-zoom-head' },
@@ -1105,7 +1158,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       guessBox,
       el('div', { class: 'd08-controls' },
         el('button', {
-          class: 'btn plain d08-step-btn',
+          class: 'btn ' + (curEntry === 'action' ? 'brass' : 'plain') + ' d08-step-btn',
           'data-d08-move': 'prev',
           disabled: state.d08Pos <= 0,
           on: {
@@ -1117,7 +1170,7 @@ window.BO_DAVID = window.BO_DAVID || {};
           }
         }, '← 한 칸 뒤로'),
         el('button', {
-          class: 'btn brass d08-step-btn',
+          class: 'btn ' + (curEntry === 'action' ? 'plain' : 'brass') + ' d08-step-btn',
           'data-d08-move': 'next',
           disabled: state.d08Pos >= 4,
           on: {
@@ -1136,16 +1189,17 @@ window.BO_DAVID = window.BO_DAVID || {};
         on: {
           click: function () {
             stopD08Hold();
+            var entryLabel = curEntry === 'action' ? '다윗의 행동부터' : '성문 곁 우물부터';
             ctx.recordDiscovery(
               sc,
-              '『탐험대 이야기』 우물물 경로 연결: 성문 곁 우물(삼하 23:15) → 물을 가져온 세 사람(분기 예상 확인) → 아둘람 굴에서 다윗의 행동(삼하 23:16–17)'
+              '『탐험대 이야기』 경로(' + entryLabel + '): 성문 곁 우물(삼하 23:15) ↔ 물을 가져온 세 사람(분기 확인) ↔ 아둘람 굴에서 다윗의 행동(삼하 23:16–17)'
             );
             state.step = 'done';
             ctx.saveState();
             ctx.render();
           }
         }
-      }, reachedAll ? '세 지점 경로를 일지에 남기기 (삼하 23:13–17)' : '중간 분기 예상 후 도착 지점까지 이동해 보세요')
+      }, reachedAll ? '세 지점 경로를 일지에 남기기 (삼하 23:13–17)' : '중간 분기 예상 후 끝 지점까지 이동해 보세요')
     );
   }
 
