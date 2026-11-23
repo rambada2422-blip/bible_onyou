@@ -64,11 +64,18 @@
     return s;
   }
   function btn(text, action, cls) { return el('button', {type:'button', class:cls, on:{click:action}}, text); }
-  function open(leave, fromSea) {
+  function open(leave, fromSea, fromWilderness) {
     const s = state();
+    if (fromWilderness && s.index < 2 && s.review === undefined) { s.index = 2; s.book = false; }
     if (fromSea && s.index === 0 && !s.book && s.review === undefined) s.index = 1;
     function recordCount(i) {
       if (cleared(i) || (i === 0 && app.state.redSea && app.state.redSea.finished === true)) return 3;
+      if (i === 1 && Array.isArray(app.state.wilderness?.earned)) {
+        const earned = app.state.wilderness.earned;
+        let records = 0;
+        while (records < 3 && earned[records + 1] === true) records++;
+        return Math.max(records, s.pages[i].found);
+      }
       return s.pages[i].found;
     }
     function count() { return spreads.reduce((n, _, i) => n + recordCount(i), 0); }
@@ -89,6 +96,7 @@
         for (const entry of spread.entries.slice(0, available)) {
           group.append(el('details', {}, el('summary', {}, entry[0]), app.refChip(entry[1]), entry[2] ? el('p', {}, entry[2]) : null));
         }
+        if (i === 1) group.append(btn('광야 본편 답사', app.openWilderness, 'xt-action'));
         if (available < 3) group.append(el('p', {}, '남은 기록 ' + (3 - available) + '장'));
         if (i === 0 || recordCount(i - 1) === 3) group.append(btn(cleared(i) ? '이 판 다시 맞추기' : '이 판 이어 맞추기', () => {
           if (cleared(i) && s.pages[i].rotation.every(n => n === 0)) s.pages[i] = newPage(spread, i, !s.pages[i].flipped);
@@ -196,7 +204,7 @@
           '시작에서 ' + joined + '칸 이어졌어요. 이어진 선은 금빛이에요.';
         actions.replaceChildren();
         if (finished) {
-          const next = btn(index < spreads.length - 1 ? '다음 장 펼치기' : '완성한 수첩 열기', () => {
+          const next = btn(index < spreads.length - 1 ? '다음 장 펼치기' : count() === 12 ? '완성한 수첩 열기' : '수첩 열기', () => {
             if (index === spreads.length - 1) notebook(true);
             else { s.index++; board(true); }
           }, 'xt-primary');

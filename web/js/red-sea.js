@@ -144,7 +144,7 @@
           d.open=i===2;story.append(d);
         });
         controls.append(button('홍해 다시 목격하기',()=>{s=app.state.redSea=fresh();s.finished=true;turn(0);}));
-        footer.append(button('광야 수첩으로 이어가기',()=>exit(onward),'rs-primary'));
+        footer.append(button('마라로 떠나기',()=>exit(app.openWilderness),'rs-primary'),button('광야 수첩으로 이어가기',()=>exit(onward)));
       }
       app.show(el('main',{class:'screen rs-screen'},el('nav',{class:'rs-nav'},button('탐험 입구',()=>exit(leave),'rs-link'),el('span',{},tag)),
         el('div',{class:'rs-scroll'},el('header',{class:'rs-heading'},el('p',{},['출애굽기 14:1–14','출애굽기 14:15–31','출애굽기 15:1–21','출애굽기 14–15장'][chapter]),heading),

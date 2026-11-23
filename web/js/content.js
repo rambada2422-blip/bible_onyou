@@ -19,9 +19,9 @@ BO.content = {
   ],
 
   chars: {
-    choeon: { name: '최온', age: 10, line: '궁금한 건 못 참아! 내가 먼저 물어볼게.', color: '#EE7B62' },
+    choeon: { name: '최온', age: 8, line: '궁금한 건 못 참아! 내가 먼저 물어볼게.', color: '#EE7B62' },
     hyu: { name: '휴', age: 13, line: '본 것은 빠짐없이 탐험 일지에 적어 둘게.', color: '#2F9C95' },
-    onwoo: { name: '온우', age: 16, line: '헷갈리면 성경책을 펴서 확인하자.', color: '#4E5FB0' }
+    onwoo: { name: '온우', age: 17, line: '헷갈리면 성경책을 펴서 확인하자.', color: '#4E5FB0' }
   },
 
   /* 시간표: 출애굽기 시범판 13개 장면. playable이 아닌 장면은 목회자 감수 후 연다. */
