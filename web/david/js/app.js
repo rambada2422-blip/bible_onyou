@@ -40,6 +40,18 @@
     }
   ];
 
+  /* A02(D01): 다시 놀기마다 달라지는 단서 자리 배치 4종 */
+  var D01_LAYOUTS = [
+    { order: ['shepherd', 'horn'], dir: 'row', label: '기본 가로 배치' },
+    { order: ['horn', 'shepherd'], dir: 'row', label: '좌우 자리 바꿈' },
+    { order: ['shepherd', 'horn'], dir: 'col', label: '위아래 세로 배치' },
+    { order: ['horn', 'shepherd'], dir: 'col', label: '위아래 자리 바꿈' }
+  ];
+
+  function getD01Layout(seed) {
+    return D01_LAYOUTS[Math.abs(seed || 0) % D01_LAYOUTS.length];
+  }
+
   function defaultState() {
     return {
       view: 'home',       /* home | scene | detour | journal | guardian */
@@ -50,6 +62,10 @@
       d01ZoomId: null,    /* A01(D01): 현재 확대 중인 관찰 지점 */
       d01FirstCover: null,/* A01(D01): 이번 판에 먼저 연 덮개 */
       d01PickedClue: null,/* A01(D01): 일지로 가져간 단서 */
+      d01FirstRecord: null,/* A02(D01): 처음 완주한 판의 일지 기록(다시 놀기에도 보존) */
+      d01LastSlot: null,  /* A02(D01): 이번 판에 고른 자리 정보 { seed, slotIdx, clueId, clueTitle } */
+      d01ShowFirstArt: false, /* A02(D01): 처음 본 그림 다시 보기 펼침 여부 */
+      d01History: [],     /* A02(D01): 판별 선택 자리 기록 */
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
@@ -101,6 +117,10 @@
       if (parsed.d01ZoomId === 'shepherd' || parsed.d01ZoomId === 'horn') base.d01ZoomId = parsed.d01ZoomId;
       if (parsed.d01FirstCover === 'shepherd' || parsed.d01FirstCover === 'horn') base.d01FirstCover = parsed.d01FirstCover;
       if (parsed.d01PickedClue === 'shepherd' || parsed.d01PickedClue === 'horn') base.d01PickedClue = parsed.d01PickedClue;
+      if (parsed.d01FirstRecord && typeof parsed.d01FirstRecord === 'object') base.d01FirstRecord = parsed.d01FirstRecord;
+      if (parsed.d01LastSlot && typeof parsed.d01LastSlot === 'object') base.d01LastSlot = parsed.d01LastSlot;
+      base.d01ShowFirstArt = !!parsed.d01ShowFirstArt;
+      if (Array.isArray(parsed.d01History)) base.d01History = parsed.d01History.slice(-10);
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
@@ -153,6 +173,10 @@
         d01ZoomId: state.d01ZoomId,
         d01FirstCover: state.d01FirstCover,
         d01PickedClue: state.d01PickedClue,
+        d01FirstRecord: state.d01FirstRecord,
+        d01LastSlot: state.d01LastSlot,
+        d01ShowFirstArt: state.d01ShowFirstArt,
+        d01History: state.d01History,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,
@@ -529,12 +553,13 @@
 
   function renderD01Notebook(sc) {
     var seed = getSeed(state, 'D01');
-    var spots = D01_SPOTS.slice();
-    if (seed % 2 === 1) spots.reverse();
+    var layout = getD01Layout(seed);
+    var spots = layout.order.map(getD01Spot);
 
     var coverNodes = spots.map(function (sp, idx) {
       var opened = state.d01Opened.indexOf(sp.id) !== -1;
       var active = state.d01ZoomId === sp.id;
+      var slotLabel = layout.dir === 'col' ? (idx === 0 ? '위쪽 창' : '아래쪽 창') : (idx === 0 ? '왼쪽 창' : '오른쪽 창');
       return el('button', {
         class: 'd01-cover' + (opened ? ' opened' : '') + (active ? ' active' : ''),
         'data-d01-cover': sp.id,
@@ -551,7 +576,7 @@
             render();
           },
           keydown: function (ev) {
-            if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') {
+            if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight' || ev.key === 'ArrowUp' || ev.key === 'ArrowDown') {
               ev.preventDefault();
               var other = root.querySelector('[data-d01-slot="' + ((idx + 1) % 2) + '"]');
               if (other) other.focus();
@@ -560,7 +585,7 @@
         }
       },
         el('div', { class: 'd01-cover-top' },
-          el('span', { class: 'd01-cover-kind', text: sp.kind }),
+          el('span', { class: 'd01-cover-kind', text: slotLabel + ' · ' + sp.kind }),
           el('span', { class: 'd01-cover-state', text: active ? '확대 중' : (opened ? '열림' : '덮개 열기') })
         ),
         el('div', { class: 'd01-cover-main' },
@@ -574,6 +599,7 @@
     });
 
     var activeSpot = state.d01ZoomId ? getD01Spot(state.d01ZoomId) : null;
+    var activeSlotIdx = activeSpot ? layout.order.indexOf(activeSpot.id) : -1;
     var zoomPanel;
     if (activeSpot) {
       zoomPanel = el('div', { class: 'd01-zoom-panel', 'data-d01-zoom': activeSpot.id },
@@ -592,10 +618,30 @@
             click: function () {
               var firstSpot = getD01Spot(state.d01FirstCover) || activeSpot;
               state.d01PickedClue = activeSpot.id;
-              recordDiscovery(
-                sc,
-                '『탐험대 이야기』 수첩 관찰: 먼저 연 덮개(' + firstSpot.kind + ') → 일지로 가져온 단서(' + activeSpot.title + ' · ' + activeSpot.ref + ')'
-              );
+              if (!state.d01FirstRecord) {
+                state.d01FirstRecord = {
+                  clueId: activeSpot.id,
+                  clueTitle: activeSpot.title,
+                  firstCover: firstSpot.id,
+                  zoomArt: activeSpot.zoomArt,
+                  ref: activeSpot.ref,
+                  seed: seed,
+                  slotIdx: activeSlotIdx
+                };
+              }
+              state.d01LastSlot = {
+                seed: seed,
+                layout: layout.label,
+                slotIdx: activeSlotIdx,
+                clueId: activeSpot.id,
+                clueTitle: activeSpot.title,
+                ref: activeSpot.ref
+              };
+              state.d01History.push(state.d01LastSlot);
+              var extraMsg = state.d01FirstRecord && seed > 0
+                ? ('처음 판 기록 보존: ' + state.d01FirstRecord.clueTitle + '(' + state.d01FirstRecord.ref + ') / 이번 판(' + layout.label + ' #' + (activeSlotIdx + 1) + '번 자리): ' + activeSpot.title)
+                : ('『탐험대 이야기』 수첩 관찰: 먼저 연 덮개(' + firstSpot.kind + ') → 일지로 가져온 단서(' + activeSpot.title + ' · ' + activeSpot.ref + ')');
+              recordDiscovery(sc, extraMsg);
               state.step = 'done';
               saveState();
               render();
@@ -605,13 +651,49 @@
       );
     } else {
       zoomPanel = el('div', { class: 'd01-zoom-empty', 'data-d01-zoom': 'none' },
-        '덮개를 하나 들면 그 자리의 단서가 바로 확대돼요.'
+        seed > 0
+          ? ('단서 자리가 바뀌었어요(' + layout.label + '). 다시 펼칠 창을 골라 눌러 보세요.')
+          : '덮개를 하나 들면 그 자리의 단서가 바로 확대돼요.'
       );
     }
 
-    return el('section', { class: 'notebook-map d01-board', 'data-d01-board': 'true', 'data-d01-seed': String(seed) },
-      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 수첩의 덮개 둘 중 어느 쪽부터든 열어 확대하고, 하나를 골라 일지로 가져가자.' }),
-      el('div', { class: 'fold-grid d01-cover-grid' }, coverNodes),
+    var firstRec = state.d01FirstRecord;
+    var firstRecBlock = null;
+    if (firstRec) {
+      firstRecBlock = el('div', { class: 'd01-memory-bar', 'data-d01-memory': 'true' },
+        el('div', { class: 'd01-memory-row' },
+          el('span', { class: 'd01-memory-text', text: '전 판 일지 기록 보존: ' + firstRec.clueTitle + ' (' + firstRec.ref + ')' }),
+          el('button', {
+            class: 'd01-memory-btn',
+            'data-action': 'd01-toggle-first-art',
+            'aria-pressed': String(!!state.d01ShowFirstArt),
+            on: {
+              click: function () {
+                state.d01ShowFirstArt = !state.d01ShowFirstArt;
+                saveState();
+                render();
+              }
+            }
+          }, state.d01ShowFirstArt ? '처음 그림 접기' : '처음 본 그림 다시 보기')
+        ),
+        state.d01ShowFirstArt ? el('div', { class: 'd01-first-preview', 'data-d01-first-preview': 'true' },
+          el('div', { class: 'd01-zoom-art', html: ART.zoom(firstRec.zoomArt) }),
+          el('div', { class: 'd01-memory-cap', text: '처음 판에서 확인한 그림 · ' + firstRec.clueTitle + ' (' + firstRec.ref + ')' })
+        ) : null
+      );
+    }
+
+    return el('section', {
+      class: 'notebook-map d01-board',
+      'data-d01-board': 'true',
+      'data-d01-seed': String(seed),
+      'data-d01-layout': layout.dir + ':' + layout.order.join(',')
+    },
+      el('div', { class: 'one-line-guide', text: seed > 0
+        ? ('『탐험대 이야기』 ' + layout.label + ' — 바뀐 자리에서 다시 펼칠 창을 골라 보자.')
+        : '『탐험대 이야기』 수첩의 덮개 둘 중 어느 쪽부터든 열어 확대하고, 하나를 골라 일지로 가져가자.' }),
+      firstRecBlock,
+      el('div', { class: 'fold-grid d01-cover-grid dir-' + layout.dir }, coverNodes),
       zoomPanel
     );
   }
