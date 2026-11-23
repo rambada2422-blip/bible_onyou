@@ -375,15 +375,33 @@ window.BO_DAVID = window.BO_DAVID || {};
       }, helpUsed ? '추가 단서 도움 사용됨(1회)' : '추가 단서 도움 1회 보기') : null
     );
 
+    var hand = state.handPref === 'left' ? 'left' : 'right';
+    var handBar = el('div', { class: 'd05-wing-place-btns hand-bar', 'data-hand-bar': 'D04' },
+      el('button', {
+        class: 'd05-mini-btn' + (hand === 'left' ? ' active' : ''),
+        'data-hand-pref': 'left',
+        'aria-pressed': String(hand === 'left'),
+        on: { click: function () { state.handPref = 'left'; ctx.saveState(); ctx.render(); } }
+      }, '왼손 한 손 배치'),
+      el('button', {
+        class: 'd05-mini-btn' + (hand === 'right' ? ' active' : ''),
+        'data-hand-pref': 'right',
+        'aria-pressed': String(hand === 'right'),
+        on: { click: function () { state.handPref = 'right'; ctx.saveState(); ctx.render(); } }
+      }, '오른손 한 손 배치')
+    );
+
     return el('section', {
-      class: 'notebook-map d04-compare-tray' + (state.d04Mono ? ' mono-mode' : ''),
+      class: 'notebook-map d04-compare-tray hand-' + hand + (state.d04Mono ? ' mono-mode' : ''),
       'data-d04-compare': 'true',
       'data-d04-seed': String(seed),
-      'data-less-clue': String(lessOn)
+      'data-less-clue': String(lessOn),
+      'data-hand-cur': hand
     },
       el('div', { class: 'one-line-guide', text: lessOn
         ? '『탐험대 이야기』 11~13세 단서 한 장부터: 장절 도움 없이 모양만으로 먼저 맞대거나, 필요할 때만 도움을 1회 열어 보세요.'
         : '『탐험대 이야기』 같은 크기의 비교대에서 두 겉옷의 주인과 장절 쪽지를 맞춰 보자. 놓은 쪽지는 끌기·두 번 탭·Backspace로 한 장만 되돌릴 수 있어요.' }),
+      handBar,
       lessBar,
       el('div', { class: 'd04-specimen-grid' }, specimenNodes),
       (!lessOn || helpUsed) ? traceWindow : el('div', { class: 'd01-zoom-empty', 'data-d04-less-hidden': 'true' }, '단서 한 장부터 모드: 추가 흔적 창이 가려져 있어요. 위 표본 모양만으로 해결하거나 도움을 1회 열 수 있어요.'),

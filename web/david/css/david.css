@@ -935,6 +935,22 @@ h1, h2, h3, p { margin: 0; }
 }
 .d08-step-btn { min-height: 44px; font-size: 14.5px; user-select: none; touch-action: manipulation; }
 
+/* ── A21(D01·D04) 좌우 손 배치(한 손 완주 엄지 영역 정렬) ── */
+.hand-left .d01-take-btn,
+.hand-left .d04-check-btn,
+.hand-left .d04-undo-btn {
+  align-self: flex-start;
+  width: 82%;
+}
+.hand-right .d01-take-btn,
+.hand-right .d04-check-btn,
+.hand-right .d04-undo-btn {
+  align-self: flex-end;
+  width: 82%;
+}
+.hand-left .d04-tag-tray { justify-content: flex-start; }
+.hand-right .d04-tag-tray { justify-content: flex-end; }
+
 .journal-title-row { display: flex; align-items: center; gap: 6px; }
 .journal-clue-icon { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; }
 .journal-clue-icon svg { width: 22px; height: 22px; display: block; }

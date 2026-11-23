@@ -93,6 +93,7 @@
       ageTier: 't1',      /* A13·A14·A20: 나이 단계 ('t1' 8~10세 | 't2' 11~13세 | 't3' 14~17세) */
       lessClueMode: false,/* A13: 11~13세 '단서 한 장부터' 모드 */
       lessClueHelpUsed: {}, /* A13: 장면별 도움 1회 사용 여부 */
+      handPref: 'right',  /* A21(D01·D04): 한 손 배치 선택 ('right' 오른손 | 'left' 왼손) */
       course: {           /* A15·A16: 내가 고르는 세 장면 코스 */
         picks: [],        /* 고른 장면 ID 최대 3개 */
         idx: 0,           /* 현재 진행 중인 코스 순서 (0~2) */
@@ -198,6 +199,7 @@
       if (['t1', 't2', 't3'].indexOf(parsed.ageTier) !== -1) base.ageTier = parsed.ageTier;
       base.lessClueMode = !!parsed.lessClueMode;
       if (parsed.lessClueHelpUsed && typeof parsed.lessClueHelpUsed === 'object') base.lessClueHelpUsed = parsed.lessClueHelpUsed;
+      if (parsed.handPref === 'left' || parsed.handPref === 'right') base.handPref = parsed.handPref;
       if (parsed.course && typeof parsed.course === 'object') {
         base.course = {
           picks: Array.isArray(parsed.course.picks) ? parsed.course.picks.filter(function (id) { return !!getScene(id); }).slice(0, 3) : [],
@@ -282,6 +284,7 @@
         ageTier: state.ageTier,
         lessClueMode: state.lessClueMode,
         lessClueHelpUsed: state.lessClueHelpUsed,
+        handPref: state.handPref,
         course: state.course,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
@@ -1077,16 +1080,34 @@
       );
     }
 
+    var hand = state.handPref === 'left' ? 'left' : 'right';
+    var handBar = el('div', { class: 'd05-wing-place-btns hand-bar', 'data-hand-bar': 'D01' },
+      el('button', {
+        class: 'd05-mini-btn' + (hand === 'left' ? ' active' : ''),
+        'data-hand-pref': 'left',
+        'aria-pressed': String(hand === 'left'),
+        on: { click: function () { state.handPref = 'left'; saveState(); render(); } }
+      }, '왼손 한 손 배치'),
+      el('button', {
+        class: 'd05-mini-btn' + (hand === 'right' ? ' active' : ''),
+        'data-hand-pref': 'right',
+        'aria-pressed': String(hand === 'right'),
+        on: { click: function () { state.handPref = 'right'; saveState(); render(); } }
+      }, '오른손 한 손 배치')
+    );
+
     return el('section', {
-      class: 'notebook-map d01-board',
+      class: 'notebook-map d01-board hand-' + hand,
       'data-d01-board': 'true',
       'data-d01-seed': String(seed),
       'data-d01-layout': layout.dir + ':' + layout.order.join(','),
-      'data-less-clue': String(lessOn)
+      'data-less-clue': String(lessOn),
+      'data-hand-cur': hand
     },
       el('div', { class: 'one-line-guide', text: seed > 0
         ? ('『탐험대 이야기』 ' + layout.label + ' — 바뀐 자리에서 다시 펼칠 창을 골라 보자.')
         : '『탐험대 이야기』 수첩의 덮개 둘 중 어느 쪽부터든 열어 확대하고, 하나를 골라 일지로 가져가자.' }),
+      handBar,
       lessBar,
       firstRecBlock,
       el('div', { class: 'fold-grid d01-cover-grid dir-' + layout.dir }, coverNodes),
