@@ -271,18 +271,101 @@
     ctx.restore();
   }
 
-  function backdrop(ctx, rows, landing) {
+  function controlBuoy(ctx) {
+    // The wheel and its spokes keep the control recognizable without a colour cue.
+    oval(ctx, 0.04, 0.23, 0.32, 0.09, '#12535c');
+    oval(ctx, 0, 0.17, 0.30, 0.116, '#174e64');
+    oval(ctx, 0, 0.115, 0.30, 0.11, '#71c9df');
+    oval(ctx, 0, 0.105, 0.22, 0.067, '#2d91b1');
+    shape(ctx, [-0.12, 0.13, -0.06, -0.23, 0.06, -0.23, 0.14, 0.13], '#245465');
+    line(ctx, [-0.08, 0.12, -0.035, -0.19], '#9ee4dc', 0.023);
+    ctx.translate(0, -0.135);
+    for (let spoke = 0; spoke < 6; spoke++) {
+      const a = spoke * TAU / 6;
+      const x = Math.cos(a), y = Math.sin(a);
+      line(ctx, [0, 0, x * 0.26, y * 0.225], '#643e30', 0.055);
+      line(ctx, [0, -0.009, x * 0.26, y * 0.225 - 0.009], '#e8a16b', 0.030);
+      oval(ctx, x * 0.27, y * 0.235, 0.034, 0.029, '#ffd8a2');
+    }
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 0.206, 0.177, 0, 0, TAU);
+    ctx.lineWidth = 0.058;
+    ctx.strokeStyle = '#784533';
+    ctx.stroke();
+    ctx.lineWidth = 0.033;
+    ctx.strokeStyle = '#ffc28b';
+    ctx.stroke();
+    oval(ctx, 0, 0, 0.054, 0.047, '#f9dbac');
+  }
+
+  function sluice(ctx, closed, second) {
+    ctx.rotate(-0.10);
+    const wood = second ? '#88583d' : '#826341';
+    const facing = second ? '#ca8a59' : '#ceac70';
+    const marker = second ? '#58baf2' : '#f8c84f';
+    const markerShadow = second ? '#215575' : '#886325';
+    if (closed) {
+      shape(ctx, [-0.38, -0.21, 0.38, -0.21, 0.38, 0.185, -0.38, 0.185], '#573e30');
+      for (let i = 0; i < 6; i++) {
+        const x = -0.36 + i * 0.12;
+        shape(ctx, [x, -0.20, x + 0.106, -0.21, x + 0.105, 0.16, x, 0.15], facing);
+      }
+      line(ctx, [-0.34, 0.13, 0.34, -0.155], wood, 0.066);
+      line(ctx, [-0.34, -0.17, 0.34, 0.115], wood, 0.066);
+      line(ctx, [-0.33, -0.185, 0.33, 0.098], '#e2bb7c', 0.017);
+      line(ctx, [-0.29, -0.20, 0.29, -0.20], marker, 0.047);
+      line(ctx, [-0.31, 0.235, -0.17, 0.244, 0.05, 0.219], '#aad4b9', 0.023);
+    } else {
+      // Short parallel ripples emphasize a fully navigable gap between the posts.
+      for (const x of [-0.083, 0.09]) {
+        ctx.beginPath();
+        ctx.moveTo(x, -0.30);
+        ctx.bezierCurveTo(x + 0.086, -0.11, x - 0.075, 0.08, x + 0.025, 0.30);
+        ctx.strokeStyle = '#8bcbbd';
+        ctx.lineWidth = 0.021;
+        ctx.stroke();
+      }
+    }
+    for (const x of [-0.36, 0.36]) {
+      oval(ctx, x + 0.015, 0.175, 0.109, 0.04, '#246365');
+      shape(ctx, [x - 0.063, -0.24, x + 0.065, -0.24, x + 0.065, 0.15, x - 0.056, 0.17], wood);
+      line(ctx, [x - 0.048, -0.17, x - 0.048, 0.12], facing, 0.020);
+      line(ctx, [x - 0.064, -0.052, x + 0.068, -0.059], '#f1c48a', 0.031);
+      oval(ctx, x, -0.235, 0.071, 0.039, '#e9c58d');
+      oval(ctx, x, -0.235, 0.034, 0.018, '#9a774e');
+      // Gold diamond and blue roundel stay on the posts when the boards are raised.
+      if (second) {
+        oval(ctx, x, -0.25, 0.088, 0.085, markerShadow);
+        oval(ctx, x, -0.266, 0.072, 0.068, marker);
+        oval(ctx, x - 0.014, -0.282, 0.027, 0.019, '#c1eeff');
+      } else {
+        shape(ctx, [x, -0.37, x + 0.103, -0.257, x, -0.144, x - 0.103, -0.257], markerShadow);
+        shape(ctx, [x, -0.365, x + 0.084, -0.267, x, -0.171, x - 0.084, -0.267], marker);
+        line(ctx, [x - 0.046, -0.264, x - 0.002, -0.321], '#fff1aa', 0.018);
+      }
+    }
+  }
+
+  function backdrop(ctx, rows, landing, gateOpen) {
     water(ctx, rows);
     shoals(ctx, rows);
+    rows.forEach((row, y) => Array.from(row).forEach((tile, x) => {
+      if (tile !== 'T' && tile !== 'A' && tile !== 'B') return;
+      ctx.save();
+      ctx.translate(x + 0.5, y + 0.52);
+      if (tile === 'T') controlBuoy(ctx);
+      else sluice(ctx, tile === 'A' ? !gateOpen : gateOpen, tile === 'B');
+      ctx.restore();
+    }));
     dock(ctx, landing);
   }
 
   window.BO = window.BO || {};
   window.BO.drawNileBoard = function (ctx, board) {
-    const {rows, boat, lotus, dock:landing, found, direction} = board;
+    const {rows, boat, lotus, dock:landing, found, direction, gateOpen = false} = board;
     const width = rows[0].length, height = rows.length;
     const scale = Math.max(1, Math.round(Math.hypot(ctx.getTransform().a, ctx.getTransform().b)));
-    const key = [rows.join('/'), landing.x, landing.y, scale].join(':');
+    const key = [rows.join('/'), landing.x, landing.y, scale, gateOpen].join(':');
     if (!scenery || key !== scenery.key) {
       const canvas = document.createElement('canvas');
       canvas.width = width * scale;
@@ -290,7 +373,7 @@
       const layer = canvas.getContext('2d');
       layer.scale(scale, scale);
       layer.lineCap = layer.lineJoin = 'round';
-      backdrop(layer, rows, landing);
+      backdrop(layer, rows, landing, gateOpen);
       scenery = {key, canvas};
     }
     ctx.save();

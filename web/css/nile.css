@@ -82,3 +82,17 @@
   .river-status {font-size:14px;margin:4px 0 0;}
   .river-stats {padding-top:3px;}
 }
+.river-course-link,.river-wheel {min-height:44px;padding:6px 14px;border-radius:9px;font-weight:700;}
+.river-course-link {margin:6px 0;color:#ffdea5;border:1px solid #c6a66d;}
+.river-gate-panel {display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:5px 10px;margin-bottom:8px;}
+.river-gate-state {color:#f4ddb0;font-size:14px;}
+.river-wheel {background:#d9a16c;color:#192f30;border:2px solid #ffe0aa;}
+.river-wheel:disabled {background:#203f41;color:#b1c2b7;border-color:#506560;}
+.river-wheel.river-hinted {outline:3px solid #ffe9a2;outline-offset:2px;}
+
+.river-gate-highlights {position:absolute;inset:0;pointer-events:none;}
+.river-gate-ring {position:absolute;width:calc(85% / var(--river-cols));aspect-ratio:1;border:2px solid #fff1ac;border-radius:50%;animation:river-gate-wave .5s ease-out forwards;}
+@keyframes river-gate-wave {
+  from {transform:translate(-50%,-50%) scale(.65);opacity:1;}
+  to {transform:translate(-50%,-50%) scale(1.6);opacity:0;}
+}
