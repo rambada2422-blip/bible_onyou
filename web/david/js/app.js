@@ -18,7 +18,7 @@
 
   function defaultState() {
     return {
-      view: 'home',       /* home | scene | detour | journal */
+      view: 'home',       /* home | scene | detour | journal | guardian */
       sceneId: null,
       step: 'choose',     /* choose | stones | order | hebron2 | ark2 | done */
       detourId: null,
@@ -31,6 +31,7 @@
       orderMsg: '',
       hebronFirstDone: false,
       tableFolds: [],     /* 놀이 3(D07): 펼친 수첩 날개 ['son', 'table'] */
+      detoursVisited: [], /* 부모·교사 화면용: 거쳐 온 다른 단서 기록 (sceneId:detourId) */
       seeds: {},          /* 놀이 4: 장면별 다시 놀기 배치 번호 */
       telemetry: {        /* 놀이 5: 첫 선택 및 다시 놀기 기록 */
         firstAction: null,
@@ -62,7 +63,7 @@
       if (!raw) return base;
       var parsed = JSON.parse(raw);
       if (!parsed || typeof parsed !== 'object') return base;
-      if (['home', 'scene', 'detour', 'journal'].indexOf(parsed.view) !== -1) base.view = parsed.view;
+      if (['home', 'scene', 'detour', 'journal', 'guardian'].indexOf(parsed.view) !== -1) base.view = parsed.view;
       if (typeof parsed.sceneId === 'string') base.sceneId = parsed.sceneId;
       if (['choose', 'stones', 'order', 'hebron2', 'ark2', 'done'].indexOf(parsed.step) !== -1) base.step = parsed.step;
       if (typeof parsed.detourId === 'string') base.detourId = parsed.detourId;
@@ -80,6 +81,9 @@
       base.hebronFirstDone = !!parsed.hebronFirstDone;
       if (Array.isArray(parsed.tableFolds)) {
         base.tableFolds = parsed.tableFolds.filter(function (v, i, a) { return (v === 'son' || v === 'table') && a.indexOf(v) === i; });
+      }
+      if (Array.isArray(parsed.detoursVisited)) {
+        base.detoursVisited = parsed.detoursVisited.filter(function (v, i, a) { return typeof v === 'string' && a.indexOf(v) === i; });
       }
       if (parsed.seeds && typeof parsed.seeds === 'object') base.seeds = parsed.seeds;
       if (parsed.telemetry && typeof parsed.telemetry === 'object') {
@@ -118,6 +122,7 @@
         orderList: state.orderList,
         hebronFirstDone: state.hebronFirstDone,
         tableFolds: state.tableFolds,
+        detoursVisited: state.detoursVisited,
         seeds: state.seeds,
         telemetry: state.telemetry,
         journal: state.journal
@@ -263,6 +268,16 @@
   function openDetour(detourId) {
     state.view = 'detour';
     state.detourId = detourId;
+    if (state.sceneId && detourId) {
+      var key = state.sceneId + ':' + detourId;
+      if (state.detoursVisited.indexOf(key) === -1) state.detoursVisited.push(key);
+    }
+    saveState();
+    render();
+  }
+
+  function openGuardian() {
+    state.view = 'guardian';
     saveState();
     render();
   }
@@ -343,7 +358,14 @@
         el('div', { class: 'section-head', text: '다윗의 일곱 관찰 (D01~D07)' }),
         el('div', { class: 'scene-list' }, mainScenes.map(renderSceneCard)),
         extraScenes.length ? el('div', { class: 'section-head', text: '더 보기 · 추가 관찰 (D08~D09)' }) : null,
-        extraScenes.length ? el('div', { class: 'scene-list' }, extraScenes.map(renderSceneCard)) : null
+        extraScenes.length ? el('div', { class: 'scene-list' }, extraScenes.map(renderSceneCard)) : null,
+        el('div', { class: 'guardian-bar' },
+          el('button', {
+            class: 'btn plain',
+            'data-action': 'guardian-guide',
+            on: { click: openGuardian }
+          }, '부모·교사 동반 읽기 및 진도 안내')
+        )
       )
     );
   }
@@ -915,10 +937,53 @@
     root.replaceChildren(
       renderTopbar('탐험 일지 (' + entries.length + ' / ' + DATA.scenes.length + ')',
         el('button', { class: 'topbtn', 'data-action': 'home', on: { click: goHome } }, '목록'),
-        null
+        el('button', { class: 'topbtn', 'data-action': 'guardian-guide', on: { click: openGuardian } }, '부모·교사')
       ),
       el('main', { class: 'journal-body' },
         entries.length ? entries : el('div', { class: 'journal-empty', text: '아직 기록된 발견이 없어요. 장면을 골라 단서를 찾아보세요.' })
+      )
+    );
+  }
+
+  function renderGuardian() {
+    var doneScenes = DATA.scenes.filter(function (sc) { return !!state.journal[sc.id]; });
+    var foundRefs = doneScenes.map(function (sc) { return sc.id + ' ' + (sc.journalRef || sc.ref); });
+    var detourLabels = (state.detoursVisited || []).map(function (pair) {
+      var parts = pair.split(':');
+      var sc = getScene(parts[0]);
+      var sup = DATA.supplements[parts[1]];
+      if (!sc || !sup) return pair;
+      return sc.id + '(' + sc.title + ') → ' + sup.title + '(' + sup.ref + ') 확인 후 복귀';
+    });
+
+    var noteItems = DATA.scenes.map(function (sc) {
+      var done = !!state.journal[sc.id];
+      return el('article', { class: 'journal-item', 'data-guardian-scene': sc.id },
+        el('div', { class: 'journal-head' },
+          el('h3', { class: 'journal-title', text: sc.id + ' · ' + sc.title + (done ? ' (완료)' : ' (미완료)') }),
+          el('span', { class: 'ref', text: sc.ref })
+        ),
+        el('div', { class: 'journal-sub', text: '나이 단계: ' + sc.tier + ' · 장소: ' + sc.place + ' · 감수: ' + sc.reviewState + (sc.reviewRequired ? ' (감수 필수)' : '') }),
+        sc.id === 'D02'
+          ? el('p', { class: 'journal-fact', text: '부모·교사 동반 읽기 안내: 게임은 시냇가에서 돌 다섯을 고르고 45절을 확인하는 데까지만 다룹니다. 아이가 성경책을 펼 때 이어지는 삼상 17:46–51은 부모·교사가 옆에서 함께 읽으며 설명해 주세요.' })
+          : (sc.pastorNote ? el('p', { class: 'journal-fact', text: '부모·교사 참고: ' + sc.pastorNote }) : null)
+      );
+    });
+
+    root.replaceChildren(
+      renderTopbar('부모·교사 안내',
+        el('button', { class: 'topbtn', 'data-action': 'home', on: { click: goHome } }, '목록'),
+        el('button', { class: 'topbtn brass', 'data-action': 'journal', on: { click: openJournal } }, '일지 ' + doneScenes.length)
+      ),
+      el('main', { class: 'journal-body' },
+        el('section', { class: 'discovery-box', 'data-guardian-summary': 'true' },
+          el('div', { class: 'discovery-kicker', text: '8~10세 성경 찾기 · 부모·교사 동반 안내 (공통 규칙서 2·5절)' }),
+          el('p', { class: 'discovery-text', text: '진도: ' + doneScenes.length + ' / ' + DATA.scenes.length + ' 장면 완료' }),
+          el('p', { class: 'discovery-note', text: '찾은 구절: ' + (foundRefs.length ? foundRefs.join(', ') : '아직 없음') }),
+          el('p', { class: 'discovery-note', text: '거쳐 온 다른 단서(어긋남 대조): ' + (detourLabels.length ? detourLabels.join(' / ') : '아직 없음') }),
+          el('p', { class: 'discovery-note', text: '놀이 5 관찰 기록(기기 내 저장): 첫 선택 = ' + (state.telemetry.firstAction || '없음') + ' · 다시 놀기 횟수 = ' + (state.telemetry.replayCount || 0) + '회' })
+        ),
+        noteItems
       )
     );
   }
@@ -927,6 +992,7 @@
     if (state.view === 'scene') renderScene();
     else if (state.view === 'detour') renderDetour();
     else if (state.view === 'journal') renderJournal();
+    else if (state.view === 'guardian') renderGuardian();
     else renderHome();
   }
 
