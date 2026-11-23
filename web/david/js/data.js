@@ -59,6 +59,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       ref: '삼상 16:11–13',
       place: '베들레헴',
       art: 'D01',
+      teamNote: '『탐험대 이야기』 최온: "들판에 양들이 보여!" · 온우: "삼상 16:11–13을 펴서 사무엘이 무엇을 가져왔는지 찾아보자."',
       question: '사무엘이 기름을 부을 때 무엇을 가져왔을까?',
       choices: [
         { id: 'horn', label: '기름이 든 뿔', sub: '사무엘이 들고 온 것', ref: '삼상 16:13', icon: 'horn', ok: true },
@@ -77,6 +78,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       ref: '삼상 17:38–40, 45',
       place: '엘라 골짜기 시냇가',
       art: 'D02',
+      teamNote: '『탐험대 이야기』 최온: "시냇가에 매끄러운 돌들이 있어!" · 휴: "수첩 관찰 창으로 다섯 개를 하나씩 세어 적자."',
       mode: 'stones',
       question: '다윗이 시냇가에서 고른 건 무엇일까?',
       choices: [
@@ -97,6 +99,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       ref: '삼상 18:1–4, 20:41–42',
       place: '사울 앞과 들판',
       art: 'D03',
+      teamNote: '『탐험대 이야기』 휴: "수첩에 두 장면 조각이 놓여 있어." · 온우: "삼상 18장과 20장을 펴서 어느 일이 먼저인지 맞춰 보자."',
       mode: 'order',
       question: '요나단이 다윗에게 건넨 것은 무엇일까?',
       choices: [
@@ -121,6 +124,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       ref: '삼상 24:8–12',
       place: '엔게디 굴 밖',
       art: 'D04',
+      teamNote: '『탐험대 이야기』 최온: "굴 밖에서 다윗이 옷자락을 들어 보이고 있어." · 온우: "삼상 24:8–12에서 누구의 겉옷 자락인지 확인해 보자."',
       question: '다윗이 사울에게 보여 준 것은 무엇일까?',
       choices: [
         { id: 'saul-hem', label: '사울의 겉옷 자락', sub: '사울의 옷에서 베어 낸 자락', ref: '삼상 24:4, 11', icon: 'hem', ok: true },
@@ -141,6 +145,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       step1Ref: '삼하 2:4',
       place: '헤브론',
       art: 'D05',
+      teamNote: '『탐험대 이야기』 휴: "두 번 다 장소가 헤브론이야!" · 온우: "삼하 2:4와 5:3을 차례로 펴서 먼저 온 사람들을 구별해 보자."',
       mode: 'hebron',
       question: '헤브론에서 먼저 다윗을 왕으로 세운 사람들은 누구였을까?',
       choices: [
@@ -160,6 +165,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       ref: '삼하 6:12–15, 17–19',
       place: '다윗 성',
       art: 'D06',
+      teamNote: '『탐험대 이야기』 최온: "청색 천으로 덮인 궤가 다윗 성으로 들어오고 있어." · 휴: "삼하 6:17에서 궤를 어디에 두었는지 따라가 보자."',
       artNote: '그림 참고: 궤의 청색 덮개는 민수기 4:5–6에 근거해 그렸어요.',
       mode: 'ark',
       question: '행렬이 다윗 성으로 메고 온 것은 무엇일까?',
@@ -181,6 +187,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       ref: '삼하 9:1, 6–7, 10–13',
       place: '예루살렘 왕궁',
       art: 'D07',
+      teamNote: '『탐험대 이야기』 휴: "접힌 수첩 양쪽 날개에 단서가 하나씩 적혀 있어." · 온우: "삼하 9:6–13을 펴서 두 단서를 이어 보자."',
       question: '다윗의 식탁에서 늘 함께 먹게 된 사람은 누구였을까?',
       choices: [
         { id: 'mephibosheth', label: '요나단의 아들 므비보셋', sub: '다윗이 불러 식탁에서 함께 먹은 사람', ref: '삼하 9:7, 13', icon: 'table', ok: true },
@@ -199,6 +206,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       ref: '삼하 23:13–17',
       place: '아둘람 굴 (다윗이 있던 산성)',
       art: 'D08',
+      teamNote: '『탐험대 이야기』 최온: "세 사람이 길어 온 우물물이야." · 온우: "삼하 23:13–17에서 다윗이 어디에 있었고 그 물을 어떻게 했는지 찾아보자."',
       question: '세 사람이 다윗에게 가져온 것은 무엇일까?',
       choices: [
         { id: 'well-water', label: '우물물', sub: '베들레헴 성문 곁 우물에서 길어 온 물', ref: '삼하 23:15–16', icon: 'water', ok: true },
@@ -218,6 +226,7 @@ window.BO_DAVID = window.BO_DAVID || {};
       ref: '대상 29:6–9',
       place: '예루살렘',
       art: 'D09',
+      teamNote: '『탐험대 이야기』 최온: "성전을 위해 가져온 예물들이 모였어!" · 온우: "대상 29:6–9를 펴서 무엇을 드렸는지 확인해 보자."',
       question: '지도자들이 기쁜 마음으로 가져온 것은 무엇일까?',
       choices: [
         { id: 'gold-silver', label: '금과 은', sub: '성전을 위해 기쁜 마음으로 드린 예물', ref: '대상 29:6–7', icon: 'gold', ok: true },

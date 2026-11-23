@@ -474,6 +474,7 @@
         sc.place ? el('span', { class: 'tag', text: '장소: ' + sc.place }) : null,
         seed > 0 ? el('span', { class: 'tag', text: '다시 놀기 배치 #' + (seed + 1) }) : null
       ),
+      sc.teamNote ? el('p', { class: 'team-note', 'data-team-note': sc.id, text: sc.teamNote }) : null,
       el('h2', { class: 'question', text: sc.question }),
       sc.artNote ? el('p', { class: 'subnote', text: sc.artNote }) : null,
       sc.id === 'D07' ? renderD07FoldMap(sc) : null,
@@ -931,7 +932,20 @@
 
   window.BO_DAVID.debug = {
     state: function () { return JSON.parse(JSON.stringify(state)); },
-    storageKey: STORAGE_KEY
+    storageKey: STORAGE_KEY,
+    verifyData: function () {
+      var issues = [];
+      if (!DATA || !Array.isArray(DATA.scenes) || DATA.scenes.length !== 9) issues.push('scenes count !== 9');
+      DATA.scenes.forEach(function (sc) {
+        if (!sc.id || !sc.ref || !sc.tier || !sc.place || !sc.question || !sc.discovery) issues.push(sc.id + ': missing core field');
+        if (!sc.teamNote || sc.teamNote.indexOf('『탐험대 이야기』') === -1) issues.push(sc.id + ': missing teamNote label');
+        if (typeof sc.reviewRequired !== 'boolean' || !sc.reviewState) issues.push(sc.id + ': missing section 8 review metadata');
+        (sc.choices || []).forEach(function (ch) {
+          if (!ch.ref) issues.push(sc.id + '.' + ch.id + ': missing choice ref');
+        });
+      });
+      return { ok: issues.length === 0, count: DATA.scenes.length, issues: issues };
+    }
   };
 
   render();
