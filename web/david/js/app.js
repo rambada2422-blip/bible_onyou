@@ -78,6 +78,11 @@
       d05Msg: '',         /* A05·A06(D05): 안내 메시지 */
       d06Opened: [],      /* A07(D06): 펼친 행렬 기록 수첩 면 ['ark', 'tent'] */
       d06Path: null,      /* A08(D06): 관찰 경로 ('object' 물건부터 | 'place' 도착한 곳부터) */
+      d08Pos: 0,          /* A09(D08): 우물물 경로 현재 칸 (0~4) */
+      d08Visited: [0],    /* A09(D08): 지나온 칸 인덱스 */
+      d08Guess: null,     /* A10(D08): 반쯤 되짚을 때 고른 다음 지점 예상 */
+      d08GuessOk: false,  /* A10(D08): 예상 확인 완료 여부 */
+      d08GuessMsg: '',    /* A10(D08): 예상 안내 문구 */
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
@@ -152,6 +157,13 @@
         base.d06Opened = parsed.d06Opened.filter(function (v, i, a) { return (v === 'ark' || v === 'tent') && a.indexOf(v) === i; });
       }
       if (parsed.d06Path === 'object' || parsed.d06Path === 'place') base.d06Path = parsed.d06Path;
+      if (typeof parsed.d08Pos === 'number' && parsed.d08Pos >= 0 && parsed.d08Pos <= 4) base.d08Pos = parsed.d08Pos;
+      if (Array.isArray(parsed.d08Visited)) {
+        base.d08Visited = parsed.d08Visited.filter(function (v, i, a) { return typeof v === 'number' && v >= 0 && v <= 4 && a.indexOf(v) === i; });
+        if (base.d08Visited.indexOf(0) === -1) base.d08Visited.unshift(0);
+      }
+      if (typeof parsed.d08Guess === 'string') base.d08Guess = parsed.d08Guess;
+      base.d08GuessOk = !!parsed.d08GuessOk;
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
@@ -216,6 +228,10 @@
         d05Order: state.d05Order,
         d06Opened: state.d06Opened,
         d06Path: state.d06Path,
+        d08Pos: state.d08Pos,
+        d08Visited: state.d08Visited,
+        d08Guess: state.d08Guess,
+        d08GuessOk: state.d08GuessOk,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,
@@ -333,6 +349,11 @@
       state.d05Order = [null, null];
       state.d06Opened = [];
       state.d06Path = null;
+      state.d08Pos = 0;
+      state.d08Visited = [0];
+      state.d08Guess = null;
+      state.d08GuessOk = false;
+      state.d08GuessMsg = '';
     }
     state.d05Pick = null;
     state.d05Msg = '';
@@ -371,6 +392,11 @@
     state.d05Msg = '';
     state.d06Opened = [];
     state.d06Path = null;
+    state.d08Pos = 0;
+    state.d08Visited = [0];
+    state.d08Guess = null;
+    state.d08GuessOk = false;
+    state.d08GuessMsg = '';
     state.stonesFound = [];
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
@@ -808,6 +834,7 @@
       (sc.id === 'D05' && boards.renderD05Hebron) ? boards.renderD05Hebron(boardCtx(), sc) : null,
       (sc.id === 'D06' && boards.renderD06Notebook) ? boards.renderD06Notebook(boardCtx(), sc) : null,
       sc.id === 'D07' ? renderD07FoldMap(sc) : null,
+      (sc.id === 'D08' && boards.renderD08Path) ? boards.renderD08Path(boardCtx(), sc) : null,
       el('div', { class: 'choices' }, choiceNodes)
     ];
   }

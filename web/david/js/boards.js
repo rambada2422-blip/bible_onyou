@@ -724,9 +724,197 @@ window.BO_DAVID = window.BO_DAVID || {};
     );
   }
 
+  var D08_NODES = [
+    {
+      idx: 0,
+      kind: 'station',
+      short: '1. 성문 곁 우물',
+      title: '출발 · 베들레헴 성문 곁 우물',
+      ref: '삼하 23:15',
+      fact: '다윗이 베들레헴 성문 곁 우물물을 마시고 싶어 했어.',
+      icon: 'water'
+    },
+    {
+      idx: 1,
+      kind: 'step',
+      short: '길목 1',
+      title: '이동 칸 1 · 성문 곁에서 산성으로',
+      ref: '삼하 23:16',
+      fact: '세 용사가 물을 길어 다윗이 있는 산성 쪽으로 옮기고 있어.',
+      icon: 'water'
+    },
+    {
+      idx: 2,
+      kind: 'station',
+      short: '2. 물을 가져온 사람들',
+      title: '중간 · 물을 가져온 세 사람',
+      ref: '삼하 23:16',
+      fact: '세 사람이 베들레헴 성문 곁 우물에서 물을 길어 다윗에게 가져왔어.',
+      icon: 'person'
+    },
+    {
+      idx: 3,
+      kind: 'step',
+      short: '길목 2',
+      title: '이동 칸 2 · 아둘람 굴 앞 도착',
+      ref: '삼하 23:16',
+      fact: '우물물이 다윗 앞에 놓였어. 한 칸 더 가면 다윗의 행동을 확인할 수 있어.',
+      icon: 'water'
+    },
+    {
+      idx: 4,
+      kind: 'station',
+      short: '3. 다윗의 행동',
+      title: '도착 · 아둘람 굴에서 다윗의 행동',
+      ref: '삼하 23:16–17',
+      fact: '다윗은 그 물을 마시지 않고 여호와께 바쳐 쏟았어.',
+      icon: 'water'
+    }
+  ];
+
+  var d08HoldTimer = null;
+  var d08HoldInterval = null;
+  var d08SkipNextClick = false;
+
+  function stopD08Hold() {
+    if (d08HoldTimer) { clearTimeout(d08HoldTimer); d08HoldTimer = null; }
+    if (d08HoldInterval) { clearInterval(d08HoldInterval); d08HoldInterval = null; }
+  }
+
+  /* A09(D08): 우물물의 출발과 도착 — 세 지점 사이를 한 칸씩 이동(한 번 탭=1칸, 길게 누르다 떼면 그 자리 정지) */
+  function renderD08Path(ctx, sc) {
+    var state = ctx.state;
+    var el = ctx.el;
+    var ART = ctx.ART;
+    var seed = ctx.getSeed(state, 'D08');
+
+    if (typeof state.d08Pos !== 'number') state.d08Pos = 0;
+    if (!Array.isArray(state.d08Visited) || !state.d08Visited.length) state.d08Visited = [0];
+
+    function stepMove(delta) {
+      var next = Math.max(0, Math.min(4, state.d08Pos + delta));
+      if (next === state.d08Pos) {
+        stopD08Hold();
+        return false;
+      }
+      state.d08Pos = next;
+      if (state.d08Visited.indexOf(next) === -1) state.d08Visited.push(next);
+      ctx.recordFirstAction('D08:move:' + next);
+      ctx.saveState();
+      ctx.render();
+      return true;
+    }
+
+    function startHold(delta) {
+      stopD08Hold();
+      d08SkipNextClick = true;
+      stepMove(delta);
+      d08HoldTimer = setTimeout(function () {
+        d08HoldInterval = setInterval(function () {
+          if (!stepMove(delta)) stopD08Hold();
+        }, 260);
+      }, 320);
+      function onEnd() {
+        stopD08Hold();
+      }
+      window.addEventListener('pointerup', onEnd, { once: true });
+      window.addEventListener('pointercancel', onEnd, { once: true });
+    }
+
+    var curNode = D08_NODES[state.d08Pos] || D08_NODES[0];
+    var trackNodes = D08_NODES.map(function (nd) {
+      var visited = state.d08Visited.indexOf(nd.idx) !== -1;
+      var current = state.d08Pos === nd.idx;
+      return el('div', {
+        class: 'd08-cell ' + nd.kind + (visited ? ' visited' : '') + (current ? ' current' : ''),
+        'data-d08-cell': String(nd.idx),
+        'aria-current': current ? 'step' : null
+      },
+        el('span', { class: 'd08-cell-dot', text: current ? '●' : (visited ? '✓' : String(nd.idx + 1)) }),
+        el('span', { class: 'd08-cell-label', text: nd.short })
+      );
+    });
+
+    var reachedAll = state.d08Visited.indexOf(0) !== -1 && state.d08Visited.indexOf(2) !== -1 && state.d08Visited.indexOf(4) !== -1;
+
+    return el('section', {
+      class: 'notebook-map d08-path-board',
+      'data-d08-board': 'true',
+      'data-d08-pos': String(state.d08Pos),
+      'data-d08-seed': String(seed),
+      tabindex: '0',
+      'aria-label': '우물물 이동 경로. 좌우 방향키로 한 칸씩 움직일 수 있어요.',
+      on: {
+        keydown: function (ev) {
+          if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
+            ev.preventDefault();
+            stepMove(1);
+          } else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') {
+            ev.preventDefault();
+            stepMove(-1);
+          }
+        }
+      }
+    },
+      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 세 지점(우물 → 가져온 사람들 → 다윗의 행동)을 한 칸씩 눌러 이어 보자. 길게 누르다 떼면 그 자리에서 멈춰요.' }),
+      el('div', { class: 'd08-track' }, trackNodes),
+      el('div', { class: 'd08-card', 'data-d08-current-card': String(curNode.idx) },
+        el('div', { class: 'd01-zoom-head' },
+          el('span', { class: 'tag', text: curNode.title }),
+          el('span', { class: 'ref', text: curNode.ref })
+        ),
+        el('p', { class: 'd05-wing-fact', text: curNode.fact })
+      ),
+      el('div', { class: 'd08-controls' },
+        el('button', {
+          class: 'btn plain d08-step-btn',
+          'data-d08-move': 'prev',
+          disabled: state.d08Pos <= 0,
+          on: {
+            pointerdown: function (ev) { if (ev.button === 0 || ev.pointerType !== 'mouse') startHold(-1); },
+            click: function () {
+              if (d08SkipNextClick) { d08SkipNextClick = false; return; }
+              stepMove(-1);
+            }
+          }
+        }, '← 한 칸 뒤로'),
+        el('button', {
+          class: 'btn brass d08-step-btn',
+          'data-d08-move': 'next',
+          disabled: state.d08Pos >= 4,
+          on: {
+            pointerdown: function (ev) { if (ev.button === 0 || ev.pointerType !== 'mouse') startHold(1); },
+            click: function () {
+              if (d08SkipNextClick) { d08SkipNextClick = false; return; }
+              stepMove(1);
+            }
+          }
+        }, '한 칸 앞으로 →')
+      ),
+      el('button', {
+        class: 'btn brass d04-check-btn',
+        'data-action': 'd08-finish',
+        disabled: !reachedAll,
+        on: {
+          click: function () {
+            stopD08Hold();
+            ctx.recordDiscovery(
+              sc,
+              '『탐험대 이야기』 우물물 경로 연결: 성문 곁 우물(삼하 23:15) → 물을 가져온 세 사람 → 아둘람 굴에서 다윗의 행동(삼하 23:16–17)'
+            );
+            state.step = 'done';
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, reachedAll ? '세 지점 경로를 일지에 남기기 (삼하 23:13–17)' : '도착 지점(다윗의 행동)까지 한 칸씩 이동해 보세요')
+    );
+  }
+
   window.BO_DAVID.boards = {
     renderD04Compare: renderD04Compare,
     renderD05Hebron: renderD05Hebron,
-    renderD06Notebook: renderD06Notebook
+    renderD06Notebook: renderD06Notebook,
+    renderD08Path: renderD08Path
   };
 })();

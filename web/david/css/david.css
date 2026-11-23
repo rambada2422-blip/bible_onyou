@@ -880,6 +880,61 @@ h1, h2, h3, p { margin: 0; }
   border: 1.5px solid var(--brass-deep);
 }
 
+/* ── A09·A10(D08) 우물물의 출발과 도착 경로 ── */
+.d08-path-board { gap: 8px; padding: 8px 10px; }
+.d08-track {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+.d08-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 3px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1.5px solid var(--paper-line);
+  text-align: center;
+}
+.d08-cell.station { border-width: 2px; background: #FFF9ED; }
+.d08-cell.visited { border-color: var(--teal); }
+.d08-cell.current {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+  box-shadow: 0 0 0 2px rgba(45, 117, 72, 0.2);
+}
+.d08-cell-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--paper-2);
+  color: var(--ink);
+  font-family: var(--f-display);
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.d08-cell.current .d08-cell-dot { background: var(--ok); color: #fff; }
+.d08-cell-label { font-size: 10.5px; line-height: 1.2; color: var(--ink); font-family: var(--f-display); word-break: keep-all; }
+.d08-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1.5px solid var(--paper-line);
+}
+.d08-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.d08-step-btn { min-height: 44px; font-size: 14.5px; user-select: none; touch-action: manipulation; }
+
 .journal-title-row { display: flex; align-items: center; gap: 6px; }
 .journal-clue-icon { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; }
 .journal-clue-icon svg { width: 22px; height: 22px; display: block; }
