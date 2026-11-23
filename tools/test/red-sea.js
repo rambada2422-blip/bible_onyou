@@ -58,6 +58,10 @@ async function visit(browser,origin,entry,viewport,out) {
   await page.reload();assert.equal(await heading(),'홍해를 건넌 뒤');
   await tap('광야 수첩으로 이어가기');
   assert.equal(await heading(),'광야의 샘');
+  await tap('내 수첩');
+  assert.equal(await page.locator('.xt-entry').first().locator('details').count(),3);
+  assert.equal(await page.locator('.xt-head p').last().innerText(),'모은 기록 3 / 12');
+  assert.equal((await saved()).exodusTrail.best[0],undefined);
   await tap('홍해 본편');assert.equal(await heading(),'홍해를 건넌 뒤');
   await tap('홍해 다시 목격하기');assert((await saved()).redSea.finished);
   assert.equal(await heading(),'바다 앞에 갇히다');

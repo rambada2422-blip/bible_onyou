@@ -67,7 +67,11 @@
   function open(leave, fromSea) {
     const s = state();
     if (fromSea && s.index === 0 && !s.book && s.review === undefined) s.index = 1;
-    function count() { return s.pages.reduce((n, p, i) => n + (cleared(i) ? 3 : p.found), 0); }
+    function recordCount(i) {
+      if (cleared(i) || (i === 0 && app.state.redSea && app.state.redSea.finished === true)) return 3;
+      return s.pages[i].found;
+    }
+    function count() { return spreads.reduce((n, _, i) => n + recordCount(i), 0); }
     function cleared(i) { return Number.isSafeInteger(s.best[i]) && s.best[i] >= 0; }
     function notebook(focus) {
       s.book = true; app.save();
@@ -80,13 +84,13 @@
         }, 'xt-primary'));
       }
       spreads.forEach((spread, i) => {
-        const available = cleared(i) ? 3 : s.pages[i].found;
+        const available = recordCount(i);
         const group = el('section', {class:'xt-entry'}, el('h2', {}, spread.title), el('small', {}, spread.range));
         for (const entry of spread.entries.slice(0, available)) {
           group.append(el('details', {}, el('summary', {}, entry[0]), app.refChip(entry[1]), entry[2] ? el('p', {}, entry[2]) : null));
         }
         if (available < 3) group.append(el('p', {}, '남은 기록 ' + (3 - available) + '장'));
-        if (i === 0 || cleared(i - 1) || (i === 1 && app.state.redSea && app.state.redSea.finished)) group.append(btn(cleared(i) ? '이 판 다시 맞추기' : '이 판 이어 맞추기', () => {
+        if (i === 0 || recordCount(i - 1) === 3) group.append(btn(cleared(i) ? '이 판 다시 맞추기' : '이 판 이어 맞추기', () => {
           if (cleared(i) && s.pages[i].rotation.every(n => n === 0)) s.pages[i] = newPage(spread, i, !s.pages[i].flipped);
           s.index = i; board(true);
         }, 'xt-action'));
