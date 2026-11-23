@@ -94,6 +94,7 @@
       lessClueMode: false,/* A13: 11~13세 '단서 한 장부터' 모드 */
       lessClueHelpUsed: {}, /* A13: 장면별 도움 1회 사용 여부 */
       handPref: 'right',  /* A21(D01·D04): 한 손 배치 선택 ('right' 오른손 | 'left' 왼손) */
+      returnBookmark: null, /* A23(D03·D07): 수첩 근거 표식으로 원래 놀이 자리 돌아오기 */
       course: {           /* A15·A16: 내가 고르는 세 장면 코스 */
         picks: [],        /* 고른 장면 ID 최대 3개 */
         idx: 0,           /* 현재 진행 중인 코스 순서 (0~2) */
@@ -200,6 +201,9 @@
       base.lessClueMode = !!parsed.lessClueMode;
       if (parsed.lessClueHelpUsed && typeof parsed.lessClueHelpUsed === 'object') base.lessClueHelpUsed = parsed.lessClueHelpUsed;
       if (parsed.handPref === 'left' || parsed.handPref === 'right') base.handPref = parsed.handPref;
+      if (parsed.returnBookmark && typeof parsed.returnBookmark === 'object' && parsed.returnBookmark.sceneId) {
+        base.returnBookmark = parsed.returnBookmark;
+      }
       if (parsed.course && typeof parsed.course === 'object') {
         base.course = {
           picks: Array.isArray(parsed.course.picks) ? parsed.course.picks.filter(function (id) { return !!getScene(id); }).slice(0, 3) : [],
@@ -285,6 +289,7 @@
         lessClueMode: state.lessClueMode,
         lessClueHelpUsed: state.lessClueHelpUsed,
         handPref: state.handPref,
+        returnBookmark: state.returnBookmark,
         course: state.course,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
@@ -1587,6 +1592,57 @@
     else if (state.step === 'done') body = renderDoneStep(sc);
     else body = renderChooseStep(sc);
 
+    var bmBar = null;
+    if (state.returnBookmark && state.returnBookmark.sceneId && state.returnBookmark.sceneId !== sc.id) {
+      var bm = state.returnBookmark;
+      bmBar = el('div', { class: 'd05-reopen-card', 'data-return-bookmark': bm.sceneId },
+        el('div', { class: 'd01-memory-row' },
+          el('span', { class: 'd01-memory-text', text: '수첩 근거 표식 저장됨: ' + bm.refLabel }),
+          el('button', {
+            class: 'd04-undo-btn',
+            'data-action': 'bookmark-return',
+            on: {
+              click: function () {
+                var back = state.returnBookmark;
+                state.returnBookmark = null;
+                state.view = 'scene';
+                state.sceneId = back.sceneId;
+                state.step = back.step || 'choose';
+                if (Array.isArray(back.orderList)) state.orderList = back.orderList.slice();
+                if (Array.isArray(back.tableFolds)) state.tableFolds = back.tableFolds.slice();
+                saveState();
+                render();
+              }
+            }
+          }, '원래 놀이 자리(' + bm.sceneId + ')로 돌아오기')
+        )
+      );
+    } else if ((sc.id === 'D03' || sc.id === 'D07') && state.step !== 'done') {
+      var targetId = sc.id === 'D03' ? 'D07' : 'D03';
+      var jumpText = sc.id === 'D03'
+        ? '수첩 근거 표식 · D07 왕의 식탁(삼하 9:6–13) 대조하고 돌아오기'
+        : '수첩 근거 표식 · D03 친구가 건넨 겉옷(삼상 18:1–4) 대조하고 돌아오기';
+      bmBar = el('div', { class: 'd01-memory-bar', 'data-bookmark-jump-bar': sc.id },
+        el('button', {
+          class: 'd04-undo-btn',
+          'data-action': 'bookmark-jump',
+          'data-jump-target': targetId,
+          on: {
+            click: function () {
+              state.returnBookmark = {
+                sceneId: sc.id,
+                step: state.step,
+                orderList: (state.orderList || []).slice(),
+                tableFolds: (state.tableFolds || []).slice(),
+                refLabel: sc.id + ' ' + sc.title + ' (' + sc.ref + ')'
+              };
+              openScene(targetId, false);
+            }
+          }
+        }, jumpText)
+      );
+    }
+
     root.replaceChildren(
       renderTopbar(sc.id + ' · ' + sc.title,
         el('button', { class: 'topbtn', 'data-action': 'home', on: { click: goHome } }, '목록'),
@@ -1600,7 +1656,7 @@
             sc.place ? el('span', { class: 'tag', text: sc.place }) : null
           )
         ),
-        el('main', { class: 'sheet' }, body)
+        el('main', { class: 'sheet' }, bmBar, body)
       )
     );
   }
