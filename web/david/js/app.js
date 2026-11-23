@@ -112,7 +112,11 @@
       d02Entry: 'stones', /* A29: D02 접근 경로 ('stones' | 'sectors') */
       d02MarkMode: false, /* A30: D02 관찰 책갈피 모드 */
       d02Marks: [],       /* A30: D02 책갈피 꽂힌 칸 인덱스 */
+      d04Entry: 'tray',   /* A33: D04 접근 경로 ('tray' | 'trace') */
+      d04TraceSeen: ['edge'], /* A34: D04 관찰한 천 조각 부위 */
       d08Entry: 'well',   /* A31: D08 접근 경로 ('well' | 'action') */
+      d09Entry: 'givers', /* A35: D09 혼자 모드 접근 경로 ('givers' | 'joy') */
+      d09SoloBack: false, /* A36: D09 혼자 모드 뒷면(근거) 표시 */
       orderList: [],
       orderPick: null,
       orderMsg: '',
@@ -225,6 +229,13 @@
       if (Array.isArray(parsed.d02Marks)) {
         base.d02Marks = parsed.d02Marks.filter(function (v, i, a) { return typeof v === 'number' && v >= 0 && v <= 7 && a.indexOf(v) === i; });
       }
+      if (parsed.d04Entry === 'tray' || parsed.d04Entry === 'trace') base.d04Entry = parsed.d04Entry;
+      if (Array.isArray(parsed.d04TraceSeen)) {
+        base.d04TraceSeen = parsed.d04TraceSeen.filter(function (v, i, a) { return ['edge', 'trim', 'weave'].indexOf(v) !== -1 && a.indexOf(v) === i; });
+        if (!base.d04TraceSeen.length) base.d04TraceSeen = ['edge'];
+      }
+      if (parsed.d09Entry === 'givers' || parsed.d09Entry === 'joy') base.d09Entry = parsed.d09Entry;
+      base.d09SoloBack = !!parsed.d09SoloBack;
       if (parsed.course && typeof parsed.course === 'object') {
         base.course = {
           picks: Array.isArray(parsed.course.picks) ? parsed.course.picks.filter(function (id) { return !!getScene(id); }).slice(0, 3) : [],
@@ -318,7 +329,11 @@
         d02Entry: state.d02Entry,
         d02MarkMode: state.d02MarkMode,
         d02Marks: state.d02Marks,
+        d04Entry: state.d04Entry,
+        d04TraceSeen: state.d04TraceSeen,
         d08Entry: state.d08Entry,
+        d09Entry: state.d09Entry,
+        d09SoloBack: state.d09SoloBack,
         course: state.course,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,

@@ -277,6 +277,8 @@ window.BO_DAVID = window.BO_DAVID || {};
       }
     ];
     var curTraceId = state.d04TracePart || 'edge';
+    if (!Array.isArray(state.d04TraceSeen) || !state.d04TraceSeen.length) state.d04TraceSeen = ['edge'];
+    if (state.d04TraceSeen.indexOf(curTraceId) === -1) state.d04TraceSeen.push(curTraceId);
     var curTrace = TRACE_PARTS[0];
     for (var ti = 0; ti < TRACE_PARTS.length; ti++) {
       if (TRACE_PARTS[ti].id === curTraceId) { curTrace = TRACE_PARTS[ti]; break; }
@@ -284,13 +286,16 @@ window.BO_DAVID = window.BO_DAVID || {};
 
     var traceBtns = TRACE_PARTS.map(function (pt, idx) {
       var active = curTrace.id === pt.id;
+      var seen = state.d04TraceSeen.indexOf(pt.id) !== -1;
       return el('button', {
         class: 'd04-trace-tab' + (active ? ' active' : ''),
         'data-d04-trace-btn': pt.id,
+        'data-d04-trace-seen': String(seen),
         'aria-pressed': String(active),
         on: {
           click: function () {
             state.d04TracePart = pt.id;
+            if (state.d04TraceSeen.indexOf(pt.id) === -1) state.d04TraceSeen.push(pt.id);
             ctx.recordFirstAction('D04:trace:' + pt.id);
             ctx.saveState();
             ctx.render();
@@ -300,6 +305,7 @@ window.BO_DAVID = window.BO_DAVID || {};
               ev.preventDefault();
               var nextIdx = (idx + (ev.key === 'ArrowRight' ? 1 : TRACE_PARTS.length - 1)) % TRACE_PARTS.length;
               state.d04TracePart = TRACE_PARTS[nextIdx].id;
+              if (state.d04TraceSeen.indexOf(state.d04TracePart) === -1) state.d04TraceSeen.push(state.d04TracePart);
               ctx.saveState();
               ctx.render();
               var nb = ctx.root.querySelector('[data-d04-trace-btn="' + TRACE_PARTS[nextIdx].id + '"]');
@@ -307,17 +313,18 @@ window.BO_DAVID = window.BO_DAVID || {};
             }
           }
         }
-      }, pt.label);
+      }, pt.label + (seen ? ' ✓' : ''));
     });
 
     var traceWindow = el('div', {
       class: 'd04-trace-lens' + (state.d04Mono ? ' mono' : ''),
       'data-d04-trace': 'true',
       'data-d04-trace-active': curTrace.id,
+      'data-d04-trace-seen-count': String(state.d04TraceSeen.length),
       'data-d04-mono': String(!!state.d04Mono)
     },
       el('div', { class: 'd04-trace-head' },
-        el('span', { class: 'd04-trace-title', text: '흔적을 보는 창 (손을 떼도 선택한 부분이 남아요)' }),
+        el('span', { class: 'd04-trace-title', text: '흔적을 보는 창 · 관찰한 부위 ' + state.d04TraceSeen.length + ' / 3' }),
         el('button', {
           class: 'd04-mono-btn' + (state.d04Mono ? ' active' : ''),
           'data-action': 'd04-toggle-mono',
@@ -391,20 +398,43 @@ window.BO_DAVID = window.BO_DAVID || {};
       }, '오른손 한 손 배치')
     );
 
+    var curEntry = state.d04Entry === 'trace' ? 'trace' : 'tray';
+    var entryBar = el('div', { class: 'd05-wing-place-btns', 'data-d04-entry-bar': curEntry },
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'tray' ? ' active' : ''),
+        'data-d04-entry': 'tray',
+        'aria-pressed': String(curEntry === 'tray'),
+        on: { click: function () { state.d04Entry = 'tray'; ctx.saveState(); ctx.render(); } }
+      }, '겉옷 비교대부터 (삼상 18:4 · 24:11)'),
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'trace' ? ' active' : ''),
+        'data-d04-entry': 'trace',
+        'aria-pressed': String(curEntry === 'trace'),
+        on: { click: function () { state.d04Entry = 'trace'; ctx.saveState(); ctx.render(); } }
+      }, '천 조각 흔적부터 (삼상 24:4, 11)')
+    );
+
+    var specimenBlock = el('div', { class: 'd04-specimen-grid' }, specimenNodes);
+    var traceBlock = (!lessOn || helpUsed)
+      ? traceWindow
+      : el('div', { class: 'd01-zoom-empty', 'data-d04-less-hidden': 'true' }, '단서 한 장부터 모드: 추가 흔적 창이 가려져 있어요. 위 표본 모양만으로 해결하거나 도움을 1회 열 수 있어요.');
+
     return el('section', {
       class: 'notebook-map d04-compare-tray hand-' + hand + (state.d04Mono ? ' mono-mode' : ''),
       'data-d04-compare': 'true',
       'data-d04-seed': String(seed),
+      'data-d04-entry': curEntry,
       'data-less-clue': String(lessOn),
       'data-hand-cur': hand
     },
       el('div', { class: 'one-line-guide', text: lessOn
         ? '『탐험대 이야기』 11~13세 단서 한 장부터: 장절 도움 없이 모양만으로 먼저 맞대거나, 필요할 때만 도움을 1회 열어 보세요.'
         : '『탐험대 이야기』 같은 크기의 비교대에서 두 겉옷의 주인과 장절 쪽지를 맞춰 보자. 놓은 쪽지는 끌기·두 번 탭·Backspace로 한 장만 되돌릴 수 있어요.' }),
+      entryBar,
       handBar,
       lessBar,
-      el('div', { class: 'd04-specimen-grid' }, specimenNodes),
-      (!lessOn || helpUsed) ? traceWindow : el('div', { class: 'd01-zoom-empty', 'data-d04-less-hidden': 'true' }, '단서 한 장부터 모드: 추가 흔적 창이 가려져 있어요. 위 표본 모양만으로 해결하거나 도움을 1회 열 수 있어요.'),
+      curEntry === 'trace' ? traceBlock : specimenBlock,
+      curEntry === 'trace' ? specimenBlock : traceBlock,
       el('div', {
         class: 'd04-tag-tray',
         'data-d04-tag-tray': 'true',
@@ -436,9 +466,10 @@ window.BO_DAVID = window.BO_DAVID || {};
         on: {
           click: function () {
             if (state.d04Slots.jonathan === 'jonathan' && state.d04Slots.saul === 'saul') {
+              var entryTag = curEntry === 'trace' ? '천 조각 흔적부터' : '겉옷 비교대부터';
               var solveTag = lessOn
                 ? (helpUsed ? '11~13세 판정: 도움 1회 사용(추가 흔적 창 확인 후 완료)' : '11~13세 판정: 스스로 해결(단서 한 장만으로 완료)')
-                : '『탐험대 이야기』 두 겉옷 맞대기 완료';
+                : ('『탐험대 이야기』 경로(' + entryTag + ') 두 겉옷 맞대기 완료');
               ctx.recordDiscovery(sc, solveTag + ' — 요나단의 겉옷(삼상 18:4) ↔ 사울의 겉옷 자락(삼상 24:4, 11)');
               state.step = 'done';
               state.d04Msg = '';
@@ -1481,11 +1512,41 @@ window.BO_DAVID = window.BO_DAVID || {};
       ctx.render();
     }
 
+    var curEntry = state.d09Entry === 'joy' ? 'joy' : 'givers';
+    var entryBar = el('div', { class: 'd05-wing-place-btns', 'data-d09-entry-bar': curEntry },
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'givers' ? ' active' : ''),
+        'data-d09-entry': 'givers',
+        'aria-pressed': String(curEntry === 'givers'),
+        on: {
+          click: function () {
+            state.d09Entry = 'givers';
+            state.d09SoloBack = false;
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, '가져온 물건부터 (대상 29:6–7)'),
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'joy' ? ' active' : ''),
+        'data-d09-entry': 'joy',
+        'aria-pressed': String(curEntry === 'joy'),
+        on: {
+          click: function () {
+            state.d09Entry = 'joy';
+            state.d09SoloBack = false;
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, '백성의 기쁨부터 (대상 29:9)')
+    );
+
     var slotsMeta = [
       { key: 'givers', head: '가져온 이들 · 지도자들', ref: '대상 29:6–7', hint: '성전을 위해 가져온 사물 카드 놓기' },
       { key: 'joy', head: '백성의 반응 · 기뻐함', ref: '대상 29:9', hint: '백성의 반응 단서 쪽지 놓기' }
     ];
-    if (seed % 2 === 1) slotsMeta.reverse();
+    if (curEntry === 'joy') slotsMeta.reverse();
 
     var slotNodes = slotsMeta.map(function (sm) {
       var placedId = state.d09Slots[sm.key];
@@ -1526,7 +1587,7 @@ window.BO_DAVID = window.BO_DAVID || {};
     var unplaced = D09_CARDS.filter(function (c) {
       return state.d09Slots.givers !== c.id && state.d09Slots.joy !== c.id;
     });
-    if (seed % 2 === 1) unplaced.reverse();
+    if (curEntry === 'joy') unplaced.reverse();
 
     var cardNodes = unplaced.map(function (c) {
       var picked = state.d09Pick === c.id;
@@ -1555,10 +1616,12 @@ window.BO_DAVID = window.BO_DAVID || {};
       class: 'notebook-map d05-hebron-board',
       'data-d09-board': 'true',
       'data-d09-mode-cur': 'solo',
+      'data-d09-entry': curEntry,
       'data-d09-seed': String(seed)
     },
       el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 예물 작업대에서 금·은 사물 카드와 백성의 반응 쪽지를 어느 쪽부터든 옮겨 짝지어 보자.' }),
       modeBar,
+      entryBar,
       el('div', { class: 'd01-memory-row' },
         el('span', { class: 'd01-memory-text', text: soloBack ? '뒷면 · 성경 근거 보기' : '앞면 · 예물 작업대' }),
         el('button', {
@@ -1567,6 +1630,7 @@ window.BO_DAVID = window.BO_DAVID || {};
           on: {
             click: function () {
               state.d09SoloBack = !state.d09SoloBack;
+              ctx.saveState();
               ctx.render();
             }
           }
@@ -1591,12 +1655,14 @@ window.BO_DAVID = window.BO_DAVID || {};
         on: {
           click: function () {
             if (state.d09Slots.givers === 'gold-silver' && state.d09Slots.joy === 'people-joy') {
+              var entryTag = curEntry === 'joy' ? '백성의 기쁨부터' : '가져온 물건부터';
               ctx.recordDiscovery(
                 sc,
-                '『탐험대 이야기』 예물 작업대 짝짓기 완료: 지도자들이 드린 금과 은(대상 29:6–7) · 백성의 기쁨(대상 29:9)'
+                '『탐험대 이야기』 경로(' + entryTag + ') 예물 작업대 짝짓기 완료: 지도자들이 드린 금과 은(대상 29:6–7) · 백성의 기쁨(대상 29:9)'
               );
               state.step = 'done';
               state.d09Msg = '';
+              state.d09SoloBack = false;
               ctx.saveState();
               ctx.render();
             } else {
