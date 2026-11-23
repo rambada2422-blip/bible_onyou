@@ -396,7 +396,173 @@ window.BO_DAVID = window.BO_DAVID || {};
     );
   }
 
+  var D05_WINGS = [
+    {
+      id: 'judah',
+      side: '왼쪽 펼침면',
+      title: '유다 사람들',
+      ref: '삼하 2:4',
+      fact: '유다 사람들이 헤브론에 와서 다윗에게 기름을 부어 유다의 왕으로 세웠어.',
+      icon: 'horn'
+    },
+    {
+      id: 'elders',
+      side: '오른쪽 펼침면',
+      title: '이스라엘의 장로들',
+      ref: '삼하 5:1–5',
+      fact: '유다의 왕이 된 지 칠 년 반 뒤, 이스라엘의 장로들이 헤브론에 와서 이스라엘의 왕으로 세웠어.',
+      icon: 'person'
+    }
+  ];
+
+  function getD05Wing(id) {
+    for (var i = 0; i < D05_WINGS.length; i++) {
+      if (D05_WINGS[i].id === id) return D05_WINGS[i];
+    }
+    return null;
+  }
+
+  /* A05(D05): 헤브론의 두 만남 — 같은 장소에서 두 만남을 양쪽으로 펼쳐 순서를 직접 놓기 */
+  function renderD05Hebron(ctx, sc) {
+    var state = ctx.state;
+    var el = ctx.el;
+    var ART = ctx.ART;
+    var seed = ctx.getSeed(state, 'D05');
+
+    if (!Array.isArray(state.d05Opened)) state.d05Opened = [];
+    if (!Array.isArray(state.d05Order) || state.d05Order.length !== 2) state.d05Order = [null, null];
+
+    var wings = D05_WINGS.slice();
+    if (seed % 2 === 1) wings.reverse();
+
+    function placeInSlot(wingId, slotIdx) {
+      if (state.d05Order[0] === wingId) state.d05Order[0] = null;
+      if (state.d05Order[1] === wingId) state.d05Order[1] = null;
+      state.d05Order[slotIdx] = wingId;
+      state.d05Pick = null;
+      state.d05Msg = '';
+      ctx.saveState();
+      ctx.render();
+    }
+
+    var wingNodes = wings.map(function (w, idx) {
+      var opened = state.d05Opened.indexOf(w.id) !== -1;
+      var sideLabel = idx === 0 ? '왼쪽 펼침면' : '오른쪽 펼침면';
+      return el('div', { class: 'd05-wing-card' + (opened ? ' opened' : ''), 'data-d05-wing-card': w.id },
+        el('button', {
+          class: 'd05-wing-btn',
+          'data-d05-wing': w.id,
+          'aria-expanded': String(opened),
+          on: {
+            click: function () {
+              ctx.recordFirstAction('D05:wing:' + w.id);
+              if (state.d05Opened.indexOf(w.id) === -1) state.d05Opened.push(w.id);
+              if (!state.d05FirstWing) state.d05FirstWing = w.id;
+              state.d05Pick = w.id;
+              state.d05Msg = '';
+              ctx.saveState();
+              ctx.render();
+            }
+          }
+        },
+          el('div', { class: 'fold-dir', text: sideLabel + (opened ? ' · 펼쳐짐 ✓' : ' · 펼치기') }),
+          el('div', { class: 'fold-main' },
+            el('span', { class: 'fold-icon', html: ART.icon(w.icon) }),
+            el('div', { class: 'fold-text' },
+              el('span', { class: 'fold-title', text: w.title }),
+              el('span', { class: 'fold-sub', text: opened ? w.ref : '눌러서 기록 펼치기' })
+            )
+          )
+        ),
+        opened ? el('div', { class: 'd05-wing-detail', 'data-d05-detail': w.id },
+          el('p', { class: 'd05-wing-fact', text: w.fact }),
+          el('div', { class: 'd05-wing-place-btns' },
+            el('button', {
+              class: 'd05-mini-btn' + (state.d05Order[0] === w.id ? ' active' : ''),
+              'data-d05-put': w.id + ':0',
+              on: { click: function () { placeInSlot(w.id, 0); } }
+            }, '1번째에 놓기'),
+            el('button', {
+              class: 'd05-mini-btn' + (state.d05Order[1] === w.id ? ' active' : ''),
+              'data-d05-put': w.id + ':1',
+              on: { click: function () { placeInSlot(w.id, 1); } }
+            }, '2번째에 놓기')
+          )
+        ) : null
+      );
+    });
+
+    var slotLabels = ['1번째 (먼저 일어난 만남)', '2번째 (나중 만남)'];
+    var slotNodes = [0, 1].map(function (sIdx) {
+      var placedId = state.d05Order[sIdx];
+      var placedWing = placedId ? getD05Wing(placedId) : null;
+      return el('div', {
+        class: 'd05-order-slot' + (placedWing ? ' filled' : ''),
+        'data-d05-order-slot': String(sIdx)
+      },
+        el('div', { class: 'd05-slot-head', text: slotLabels[sIdx] }),
+        placedWing
+          ? el('div', { class: 'd05-slot-placed', 'data-d05-slot-val': placedWing.id },
+              el('span', { class: 'd04-chip-owner', text: placedWing.title }),
+              el('span', { class: 'd04-chip-ref', text: placedWing.ref })
+            )
+          : el('button', {
+              class: 'd04-drop-btn' + (state.d05Pick ? ' ready' : ''),
+              'data-d05-slot-btn': String(sIdx),
+              on: {
+                click: function () {
+                  if (state.d05Pick) {
+                    placeInSlot(state.d05Pick, sIdx);
+                  } else {
+                    state.d05Msg = '위에서 만남 펼침면을 먼저 눌러 확인한 뒤 자리에 놓아 보세요.';
+                    ctx.render();
+                  }
+                }
+              }
+            }, state.d05Pick ? ('여기에 \'' + getD05Wing(state.d05Pick).title + '\' 놓기') : '펼친 만남을 놓는 자리')
+      );
+    });
+
+    var bothOpened = state.d05Opened.indexOf('judah') !== -1 && state.d05Opened.indexOf('elders') !== -1;
+    var bothPlaced = !!(state.d05Order[0] && state.d05Order[1]);
+
+    return el('section', {
+      class: 'notebook-map d05-hebron-board',
+      'data-d05-board': 'true',
+      'data-d05-seed': String(seed)
+    },
+      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 같은 장소 헤브론의 두 만남을 양쪽으로 펼쳐 보고, 어느 쪽부터 시작했든 두 기록을 시간순으로 놓아 보자.' }),
+      el('div', { class: 'd05-wings' }, wingNodes),
+      el('div', { class: 'd05-order-slots' }, slotNodes),
+      state.d05Msg ? el('div', { class: 'order-msg', 'data-d05-msg': 'true', text: state.d05Msg }) : null,
+      el('button', {
+        class: 'btn brass d04-check-btn',
+        'data-action': 'd05-check',
+        disabled: !(bothOpened && bothPlaced),
+        on: {
+          click: function () {
+            if (state.d05Order[0] === 'judah' && state.d05Order[1] === 'elders') {
+              var firstW = getD05Wing(state.d05FirstWing) || getD05Wing('judah');
+              ctx.recordDiscovery(
+                sc,
+                '『탐험대 이야기』 헤브론 두 만남(먼저 펼친 쪽: ' + firstW.title + '): 유다 사람들(삼하 2:4) → 이스라엘의 장로들(삼하 5:1–5)'
+              );
+              state.step = 'done';
+              state.d05Msg = '';
+              ctx.saveState();
+              ctx.render();
+            } else {
+              state.d05Msg = '순서가 바뀌었어요. 유다 사람들(삼하 2:4)이 먼저, 이스라엘의 장로들(삼하 5:1–5)이 나중이에요.';
+              ctx.render();
+            }
+          }
+        }
+      }, bothOpened ? '두 만남 순서 확인하기' : '두 만남을 모두 펼친 뒤 확인하기')
+    );
+  }
+
   window.BO_DAVID.boards = {
-    renderD04Compare: renderD04Compare
+    renderD04Compare: renderD04Compare,
+    renderD05Hebron: renderD05Hebron
   };
 })();

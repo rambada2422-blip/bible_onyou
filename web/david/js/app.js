@@ -71,6 +71,11 @@
       d04Msg: '',         /* A03(D04): 비교대 안내 메시지 */
       d04TracePart: 'edge', /* A04(D04): 천 조각 흔적 관찰 창 선택 부분 ('edge'|'trim'|'weave') */
       d04Mono: false,     /* A04(D04): 색 끄기(무채색 모양·이름표 구별) */
+      d05Opened: [],      /* A05(D05): 펼친 헤브론 두 만남 날개 ['judah', 'elders'] */
+      d05FirstWing: null, /* A05(D05): 먼저 펼친 인물 무리 */
+      d05Order: [null, null], /* A05·A06(D05): 1번째·2번째에 놓은 만남 쪽지 */
+      d05Pick: null,      /* A05(D05): 현재 고른 만남 쪽지 */
+      d05Msg: '',         /* A05·A06(D05): 안내 메시지 */
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
@@ -134,6 +139,13 @@
       }
       if (['edge', 'trim', 'weave'].indexOf(parsed.d04TracePart) !== -1) base.d04TracePart = parsed.d04TracePart;
       base.d04Mono = !!parsed.d04Mono;
+      if (Array.isArray(parsed.d05Opened)) {
+        base.d05Opened = parsed.d05Opened.filter(function (v, i, a) { return (v === 'judah' || v === 'elders') && a.indexOf(v) === i; });
+      }
+      if (parsed.d05FirstWing === 'judah' || parsed.d05FirstWing === 'elders') base.d05FirstWing = parsed.d05FirstWing;
+      if (Array.isArray(parsed.d05Order) && parsed.d05Order.length === 2) {
+        base.d05Order = parsed.d05Order.map(function (v) { return (v === 'judah' || v === 'elders') ? v : null; });
+      }
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
@@ -193,6 +205,9 @@
         d04Slots: state.d04Slots,
         d04TracePart: state.d04TracePart,
         d04Mono: state.d04Mono,
+        d05Opened: state.d05Opened,
+        d05FirstWing: state.d05FirstWing,
+        d05Order: state.d05Order,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,
@@ -766,6 +781,7 @@
       sc.artNote ? el('p', { class: 'subnote', text: sc.artNote }) : null,
       sc.id === 'D01' ? renderD01Notebook(sc) : null,
       (sc.id === 'D04' && boards.renderD04Compare) ? boards.renderD04Compare(boardCtx(), sc) : null,
+      (sc.id === 'D05' && boards.renderD05Hebron) ? boards.renderD05Hebron(boardCtx(), sc) : null,
       sc.id === 'D07' ? renderD07FoldMap(sc) : null,
       el('div', { class: 'choices' }, choiceNodes)
     ];
