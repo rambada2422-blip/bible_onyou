@@ -452,7 +452,10 @@
   }
 
   function renderChooseStep(sc) {
-    var choiceNodes = sc.choices.map(function (ch) {
+    var seed = getSeed(state, sc.id);
+    var list = sc.choices.slice();
+    if (seed % 2 === 1) list.reverse();
+    var choiceNodes = list.map(function (ch) {
       return el('button', {
         class: 'choice-card',
         'data-choice': ch.id,
@@ -468,7 +471,8 @@
     return [
       el('div', { class: 'meta-row' },
         el('span', { class: 'ref', text: sc.step1Ref || sc.ref }),
-        sc.place ? el('span', { class: 'tag', text: '장소: ' + sc.place }) : null
+        sc.place ? el('span', { class: 'tag', text: '장소: ' + sc.place }) : null,
+        seed > 0 ? el('span', { class: 'tag', text: '다시 놀기 배치 #' + (seed + 1) }) : null
       ),
       el('h2', { class: 'question', text: sc.question }),
       sc.artNote ? el('p', { class: 'subnote', text: sc.artNote }) : null,
