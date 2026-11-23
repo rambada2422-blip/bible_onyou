@@ -1,0 +1,84 @@
+/* 나일강 물길 지도. 화면 비율에 따라 수첩을 세로로 접거나 양쪽으로 펼친다. */
+.app.river-app {
+  max-width: none;
+  background: #0a252a;
+  background-image: radial-gradient(ellipse at 38% 10%, #244d4a 0, #173c3e 29%, transparent 63%),
+    repeating-linear-gradient(115deg, transparent 0 29px, #a5d6c703 30px 31px);
+  color: #f8ecd1;
+}
+.river-screen {height:100%; overflow:auto; overscroll-behavior:contain; padding: max(8px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(15px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));}
+.river-nav, .river-layout {width: min(100%, 960px); margin-inline:auto;}
+.river-nav {min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:8px; border-bottom:1px solid #a4c1a447; margin-bottom:clamp(7px,2vh,20px);}
+.river-nav > span, .river-kicker {font-size:14px; letter-spacing:.09em; color:#e9c784; font-weight:700;}
+.river-nav-link, .river-tool {min-height:44px; padding:4px 12px; border-radius:9px; font:700 14px var(--f-body); color:#f3ead3;}
+.river-nav-link:hover,.river-tool:hover:not(:disabled) {background:#ffffff13;}
+.river-nav-link:last-child {color:#f4d499;}
+.river-layout {display:grid; gap:clamp(10px,2vw,32px); align-items:center; max-width:520px;}
+.river-name {font:700 clamp(26px,4vw,44px)/1.14 var(--f-verse); letter-spacing:-.035em; margin:3px 0 12px; color:#fff4d6;}
+.river-map {position:relative; width:100%; aspect-ratio:var(--river-cols) / var(--river-rows); border:3px solid #ddbb82; border-radius:11px; overflow:hidden; box-shadow:0 0 0 2px #514833,0 9px 26px #04151966; background:#297773;}
+.river-canvas {display:block; width:100%; height:100%; touch-action:none; user-select:none;}
+.river-stats {display:flex; justify-content:space-between; padding:6px 2px 0; gap:6px; color:#c3dace; font-size:14px;}
+.river-stats .flower-found {color:#ffd0d8;}
+.river-cockpit {text-align:center; min-width:0;}
+.river-goal,.river-result p {font-size:clamp(16px,2vw,20px); line-height:1.48; color:#faf0d9; text-wrap:balance;}
+.river-controls {margin:9px auto 0;}
+.river-pad {margin:auto; width:max-content; display:grid; grid-template-columns:repeat(3,52px); grid-template-rows:repeat(2,44px); gap:5px;}
+.river-key {border-radius:12px; background:linear-gradient(#f8e2ad,#e6bd78); color:#183e41; box-shadow:0 3px 0 #886d46; font:700 24px/1 sans-serif; border:1px solid #f9eac4; touch-action:manipulation;}
+.river-key:active {transform:translateY(2px);box-shadow:none;}
+.river-key[aria-disabled=true] {background:#294b4c; color:#9ab0a6; box-shadow:0 2px 0 #183337; border-color:#526761;}
+.river-key.river-hinted {outline:3px solid #ffe9a2; outline-offset:2px;}
+.key-up {grid-column:2;}
+.key-left {grid-column:1;grid-row:2;}
+.key-down {grid-column:2;grid-row:2;}
+.key-right {grid-column:3;grid-row:2;}
+.river-input-note {font-size:13px;color:#bfd6c8;margin-top:7px;}
+.river-status {font-size:15px;color:#f2d396;line-height:1.4;text-wrap:balance;margin:5px 0;}
+.river-status:empty {display:none;}
+.river-tools {display:flex;justify-content:center;gap:2px;flex-wrap:wrap;}
+.river-tool:disabled {opacity:.55;cursor:default;}
+.river-result {padding:16px; border:1px solid #d0b77a65; border-radius:12px; background:#102f32;}
+.river-result h2,.river-journal h2 {font:700 26px var(--f-verse);color:#ffe2a2; margin-bottom:6px;}
+.river-primary {display:block;min-height:44px;padding:8px 18px;margin:12px auto 2px;border-radius:9px;background:#f2d394;color:#1c3939;font-weight:700;}
+.river-journal {width:min(375px,90vw); max-height:85dvh; overflow:auto; margin:auto; color:#f7ecd1; background:#163c3d; border:2px solid #d7b275; border-radius:15px;padding:22px;}
+.river-journal::backdrop {background:#04171acc;}
+.river-log-list {list-style:none;padding:0;margin:12px 0;}
+.river-log-list li {display:grid;grid-template-columns:1fr auto;border-top:1px solid #f0d69a40;gap:3px;padding:8px 0;}
+.river-log-list li span {font-size:14px;color:#cbdccf;grid-row:2;}
+.river-log-list li button {grid-column:2;grid-row:1 / span 2;}
+.river-screen [hidden] {display:none;}
+.palace-nav .palace-river-link {margin-left:auto;color:#ffe1a2;border:1px solid #b99b65;white-space:nowrap;min-height:44px;}
+@media(max-width:370px){.palace-nav > span {display:none;}}
+@media(min-width:680px), (orientation:landscape) and (min-width:530px) {
+  .river-layout {max-width:960px;grid-template-columns:minmax(0,1.45fr) minmax(190px,.85fr);}
+  .river-cockpit {padding:clamp(10px,2.2vw,26px);border-block:1px solid #c6ad7a66;}
+  .river-chart {width:100%;max-width:min(64vh,570px);margin-inline:auto;}
+  .river-controls {margin-top:22px;}
+  .river-pad {grid-template-columns:repeat(3,58px);grid-template-rows:repeat(2,48px);}
+  .river-input-note,.river-status {margin-top:13px;}
+}
+@media(max-width:679px) and (orientation:portrait) {
+  .river-chart {width:min(100%,max(240px,calc(100dvh - 365px)));margin-inline:auto;}
+}
+@media(max-height:475px) and (orientation:landscape) {
+  .river-nav {margin-bottom:3px;min-height:42px;}
+  .river-chart {max-width:min(100%,calc(100dvh - 135px));}
+  .river-name {font-size:22px;margin:0 0 5px;}
+  .river-controls {margin-top:5px;}
+  .river-cockpit {padding:6px;}
+  .river-status,.river-input-note {margin-top:4px;}
+}
+.river-discovery {margin:6px auto 0;display:block;min-height:44px;color:#f4d397;border-top:1px solid #babb8555;padding:7px 10px;font-size:15px;}
+.river-entry {grid-column:1 / -1;grid-row:3;}
+.river-entry summary {cursor:pointer;min-height:44px;align-content:center;color:#ffda97;font-weight:700;}
+.river-entry summary:focus-visible {outline:2px solid #ffda97;}
+.river-entry p {line-height:1.55;margin:2px 0 8px;color:#f3efdf;}
+.river-entry .ref {margin-bottom:8px;}
+@media(max-width:679px) and (orientation:portrait) {
+  .river-nav {margin-bottom:5px;}
+  .river-name {margin-bottom:7px;}
+  .river-layout {gap:6px;}
+  .river-controls {margin-top:5px;}
+  .river-input-note {display:none;}
+  .river-status {font-size:14px;margin:4px 0 0;}
+  .river-stats {padding-top:3px;}
+}

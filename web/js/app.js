@@ -18,6 +18,16 @@
     });
   }
   app.openPalace = openPalace;
+  app.openNile = function () {
+    function markScene(hash) {
+      try { history.replaceState(null, '', hash); } catch (_) { /* 로컬 파일에서는 주소 변경이 제한될 수 있다. */ }
+    }
+    markScene('#nile');
+    app.nile.open(function () {
+      markScene('#palace');
+      openPalace(app.palace.resuming() ? app.state.palace.from : 'hub');
+    });
+  };
   function continueJourney() {
     if (app.palace.resuming()) { openPalace(app.state.palace.from); return; }
     if (app.passover.resuming()) { app.passover.open(renderHub); return; }
@@ -254,7 +264,8 @@
           el('p', { text: '재앙과 유월절의 세 장면은 시간표의 감수용 미리보기에서 살펴볼 수 있습니다. 본편 공개는 목회자 감수 뒤에 진행합니다.' })))));
   }
 
-  if (location.hash === '#palace' || document.body.dataset.start === 'palace') {
+  if (location.hash === '#nile' || (!location.hash && document.body.dataset.start === 'nile')) app.openNile();
+  else if (location.hash === '#palace' || document.body.dataset.start === 'palace') {
     openPalace(app.palace.resuming() ? app.state.palace.from : 'hub');
   }
   else renderTitle();

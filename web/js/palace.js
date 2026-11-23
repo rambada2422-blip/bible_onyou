@@ -70,10 +70,13 @@
       app.save();
       draw(true);
     }
-    function exit() {
+    function detach() {
       stop();
       document.removeEventListener('visibilitychange', hide);
       window.removeEventListener('pagehide', stopNarration);
+    }
+    function exit() {
+      detach();
       s.active = false;
       app.save();
       leave();
@@ -172,7 +175,10 @@
       const section = el('main', {class:'palace-scroll'}, el('div', {class:'palace-headline'},
         el('p', {class:'palace-chapter'}, (s.chapter + 1) + ' / 10 · ' + when), heading), hero, panel);
       const nav = el('div', {class:'palace-nav pad'}, el('button', {class:'pillbtn', on:{click:exit}},
-        from === 'passover' ? '← 탐험으로' : '← 돌아가기'), el('span', {}, '모세와 바로의 대화'));
+        from === 'passover' ? '← 탐험으로' : '← 돌아가기'), el('span', {}, '모세와 바로의 대화'),
+        el('button', {class:'pillbtn palace-river-link', on:{click:function () {
+          detach(); app.openNile();
+        }}}, '나일강 물길 탐험'));
       app.show(el('div', {class:'screen palace-screen'}, nav, section, footer));
       if (focus) heading.focus({preventScroll:true});
     }
