@@ -83,6 +83,13 @@
       d08Guess: null,     /* A10(D08): 반쯤 되짚을 때 고른 다음 지점 예상 */
       d08GuessOk: false,  /* A10(D08): 예상 확인 완료 여부 */
       d08GuessMsg: '',    /* A10(D08): 예상 안내 문구 */
+      d09Slots: { givers: null, joy: null }, /* A11(D09): 예물 작업대 짝짓기 */
+      d09Pick: null,      /* A11(D09): 현재 고른 카드 */
+      d09Msg: '',         /* A11·A12(D09): 안내 메시지 */
+      d09Mode: 'solo',    /* A12(D09): 'solo' 혼자 앞뒤 전환 | 'coop' 둘이 차례 넘기기 */
+      d09FirstRole: 'object', /* A12(D09): 첫 역할 ('object' 물건 먼저 | 'clue' 근거 먼저) */
+      d09Turn: 0,         /* A12(D09): 0=첫 사람 고르기, 1=차례 넘김 가림막, 2=둘째 사람 고르기, 3=함께 펼치기 */
+      d09CoopPicks: { object: null, clue: null }, /* A12(D09): 둘이 각자 고른 비공개 선택 */
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
@@ -164,6 +171,21 @@
       }
       if (typeof parsed.d08Guess === 'string') base.d08Guess = parsed.d08Guess;
       base.d08GuessOk = !!parsed.d08GuessOk;
+      if (parsed.d09Slots && typeof parsed.d09Slots === 'object') {
+        base.d09Slots = {
+          givers: (parsed.d09Slots.givers === 'gold-silver' || parsed.d09Slots.givers === 'people-joy') ? parsed.d09Slots.givers : null,
+          joy: (parsed.d09Slots.joy === 'gold-silver' || parsed.d09Slots.joy === 'people-joy') ? parsed.d09Slots.joy : null
+        };
+      }
+      if (parsed.d09Mode === 'solo' || parsed.d09Mode === 'coop') base.d09Mode = parsed.d09Mode;
+      if (parsed.d09FirstRole === 'object' || parsed.d09FirstRole === 'clue') base.d09FirstRole = parsed.d09FirstRole;
+      if (typeof parsed.d09Turn === 'number' && parsed.d09Turn >= 0 && parsed.d09Turn <= 3) base.d09Turn = parsed.d09Turn;
+      if (parsed.d09CoopPicks && typeof parsed.d09CoopPicks === 'object') {
+        base.d09CoopPicks = {
+          object: parsed.d09CoopPicks.object || null,
+          clue: parsed.d09CoopPicks.clue || null
+        };
+      }
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
@@ -232,6 +254,11 @@
         d08Visited: state.d08Visited,
         d08Guess: state.d08Guess,
         d08GuessOk: state.d08GuessOk,
+        d09Slots: state.d09Slots,
+        d09Mode: state.d09Mode,
+        d09FirstRole: state.d09FirstRole,
+        d09Turn: state.d09Turn,
+        d09CoopPicks: state.d09CoopPicks,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,
@@ -354,6 +381,11 @@
       state.d08Guess = null;
       state.d08GuessOk = false;
       state.d08GuessMsg = '';
+      state.d09Slots = { givers: null, joy: null };
+      state.d09Pick = null;
+      state.d09Msg = '';
+      state.d09Turn = 0;
+      state.d09CoopPicks = { object: null, clue: null };
     }
     state.d05Pick = null;
     state.d05Msg = '';
@@ -397,6 +429,11 @@
     state.d08Guess = null;
     state.d08GuessOk = false;
     state.d08GuessMsg = '';
+    state.d09Slots = { givers: null, joy: null };
+    state.d09Pick = null;
+    state.d09Msg = '';
+    state.d09Turn = 0;
+    state.d09CoopPicks = { object: null, clue: null };
     state.stonesFound = [];
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
@@ -835,6 +872,7 @@
       (sc.id === 'D06' && boards.renderD06Notebook) ? boards.renderD06Notebook(boardCtx(), sc) : null,
       sc.id === 'D07' ? renderD07FoldMap(sc) : null,
       (sc.id === 'D08' && boards.renderD08Path) ? boards.renderD08Path(boardCtx(), sc) : null,
+      (sc.id === 'D09' && boards.renderD09Workbench) ? boards.renderD09Workbench(boardCtx(), sc) : null,
       el('div', { class: 'choices' }, choiceNodes)
     ];
   }

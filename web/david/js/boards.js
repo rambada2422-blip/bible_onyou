@@ -967,10 +967,175 @@ window.BO_DAVID = window.BO_DAVID || {};
     );
   }
 
+  var D09_CARDS = [
+    {
+      id: 'gold-silver',
+      kind: '사물 카드',
+      title: '금과 은',
+      sub: '성전을 위해 드린 예물',
+      ref: '대상 29:6–7',
+      icon: 'gold'
+    },
+    {
+      id: 'people-joy',
+      kind: '단서 쪽지',
+      title: '기쁜 마음으로 함께 기뻐함',
+      sub: '백성의 반응 기록',
+      ref: '대상 29:9',
+      icon: 'person'
+    }
+  ];
+
+  function getD09Card(id) {
+    for (var i = 0; i < D09_CARDS.length; i++) {
+      if (D09_CARDS[i].id === id) return D09_CARDS[i];
+    }
+    return null;
+  }
+
+  /* A11(D09): 예물 작업대 — 확인된 사물(금·은)과 가져온 이들/백성의 반응 짝짓기 (가치 순위·가격·점수 없음) */
+  function renderD09Workbench(ctx, sc) {
+    var state = ctx.state;
+    var el = ctx.el;
+    var ART = ctx.ART;
+    var seed = ctx.getSeed(state, 'D09');
+
+    if (!state.d09Slots || typeof state.d09Slots !== 'object') {
+      state.d09Slots = { givers: null, joy: null };
+    }
+
+    function placeD09Card(cardId, slotKey) {
+      if (!cardId || !slotKey) return;
+      if (state.d09Slots.givers === cardId) state.d09Slots.givers = null;
+      if (state.d09Slots.joy === cardId) state.d09Slots.joy = null;
+      state.d09Slots[slotKey] = cardId;
+      state.d09Pick = null;
+      state.d09Msg = '';
+      ctx.recordFirstAction('D09:place:' + cardId + '->' + slotKey);
+      ctx.saveState();
+      ctx.render();
+    }
+
+    function undoD09Slot(slotKey) {
+      if (!state.d09Slots[slotKey]) return;
+      state.d09Slots[slotKey] = null;
+      state.d09Pick = null;
+      state.d09Msg = '한 칸만 되돌렸어요.';
+      ctx.saveState();
+      ctx.render();
+    }
+
+    var slotsMeta = [
+      { key: 'givers', head: '가져온 이들 · 지도자들', ref: '대상 29:6–7', hint: '성전을 위해 가져온 사물 카드 놓기' },
+      { key: 'joy', head: '백성의 반응 · 기뻐함', ref: '대상 29:9', hint: '백성의 반응 단서 쪽지 놓기' }
+    ];
+    if (seed % 2 === 1) slotsMeta.reverse();
+
+    var slotNodes = slotsMeta.map(function (sm) {
+      var placedId = state.d09Slots[sm.key];
+      var card = placedId ? getD09Card(placedId) : null;
+      return el('div', {
+        class: 'd05-order-slot' + (card ? ' filled' : ''),
+        'data-d09-slot': sm.key
+      },
+        el('div', { class: 'd05-slot-head', text: sm.head + ' (' + sm.ref + ')' }),
+        card
+          ? el('div', { class: 'd04-placed-wrap' },
+              el('div', { class: 'd05-slot-placed', 'data-d09-placed': sm.key, 'data-d09-card-val': card.id },
+                el('span', { class: 'd04-chip-owner', text: card.title }),
+                el('span', { class: 'd04-chip-ref', text: card.ref })
+              ),
+              el('button', {
+                class: 'd04-undo-btn',
+                'data-d09-undo': sm.key,
+                on: { click: function () { undoD09Slot(sm.key); } }
+              }, '한 장 되돌리기')
+            )
+          : el('button', {
+              class: 'd04-drop-btn' + (state.d09Pick ? ' ready' : ''),
+              'data-d09-slot-btn': sm.key,
+              on: {
+                click: function () {
+                  if (state.d09Pick) placeD09Card(state.d09Pick, sm.key);
+                  else {
+                    state.d09Msg = '아래 카드 두 장 중 어느 것이든 먼저 눌러 고른 뒤 이 칸에 놓아 보세요.';
+                    ctx.render();
+                  }
+                }
+              }
+            }, state.d09Pick ? ('여기에 \'' + getD09Card(state.d09Pick).title + '\' 놓기') : sm.hint)
+      );
+    });
+
+    var unplaced = D09_CARDS.filter(function (c) {
+      return state.d09Slots.givers !== c.id && state.d09Slots.joy !== c.id;
+    });
+    if (seed % 2 === 1) unplaced.reverse();
+
+    var cardNodes = unplaced.map(function (c) {
+      var picked = state.d09Pick === c.id;
+      return el('button', {
+        class: 'd04-tag-chip' + (picked ? ' picked' : ''),
+        'data-d09-card': c.id,
+        'aria-pressed': String(picked),
+        on: {
+          click: function () {
+            state.d09Pick = picked ? null : c.id;
+            state.d09Msg = '';
+            ctx.recordFirstAction('D09:pick:' + c.id);
+            ctx.render();
+          }
+        }
+      },
+        el('span', { class: 'fold-icon', html: ART.icon(c.icon) }),
+        el('span', { class: 'd04-chip-owner', text: c.title }),
+        el('span', { class: 'd04-chip-ref', text: c.kind + ' · ' + c.ref })
+      );
+    });
+
+    var bothPlaced = !!(state.d09Slots.givers && state.d09Slots.joy);
+
+    return el('section', {
+      class: 'notebook-map d05-hebron-board',
+      'data-d09-board': 'true',
+      'data-d09-seed': String(seed)
+    },
+      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 예물 작업대에서 금·은 사물 카드와 백성의 반응 쪽지를 어느 쪽부터든 옮겨 짝지어 보자.' }),
+      el('div', { class: 'd05-order-slots' }, slotNodes),
+      el('div', { class: 'd04-tag-tray', 'data-d09-tray': 'true' },
+        cardNodes.length ? cardNodes : el('span', { class: 'd04-tray-hint', text: '두 카드를 모두 놓았어요. 짝짓기를 확인해 보세요.' })
+      ),
+      state.d09Msg ? el('div', { class: 'order-msg', 'data-d09-msg': 'true', text: state.d09Msg }) : null,
+      el('button', {
+        class: 'btn brass d04-check-btn',
+        'data-action': 'd09-check',
+        disabled: !bothPlaced,
+        on: {
+          click: function () {
+            if (state.d09Slots.givers === 'gold-silver' && state.d09Slots.joy === 'people-joy') {
+              ctx.recordDiscovery(
+                sc,
+                '『탐험대 이야기』 예물 작업대 짝짓기 완료: 지도자들이 드린 금과 은(대상 29:6–7) · 백성의 기쁨(대상 29:9)'
+              );
+              state.step = 'done';
+              state.d09Msg = '';
+              ctx.saveState();
+              ctx.render();
+            } else {
+              state.d09Msg = '짝이 서로 바뀌었어요. 대상 29:6–7(금과 은)과 대상 29:9(백성의 기쁨)을 다시 살펴보세요.';
+              ctx.render();
+            }
+          }
+        }
+      }, '예물 작업대 확인하기 (대상 29:6–9)')
+    );
+  }
+
   window.BO_DAVID.boards = {
     renderD04Compare: renderD04Compare,
     renderD05Hebron: renderD05Hebron,
     renderD06Notebook: renderD06Notebook,
-    renderD08Path: renderD08Path
+    renderD08Path: renderD08Path,
+    renderD09Workbench: renderD09Workbench
   };
 })();
