@@ -163,6 +163,29 @@ window.BO_DAVID = window.BO_DAVID || {};
       '<path d="M44 76 L124 68" stroke="#E9B44C" stroke-width="6"/>' +
       '<path d="M46 84 L126 76" stroke="#F6D98B" stroke-width="2" stroke-dasharray="6 4"/>' +
       '<path d="M34 26 L38 42 L44 58 L38 74 L46 96" fill="none" stroke="#F7EFEA" stroke-width="2" stroke-dasharray="3 3"/>' +
+      '</svg>',
+
+    'd04-trace-edge': '<svg viewBox="0 0 220 84" role="img" aria-label="천 조각의 계단식 베어진 가장자리 확대 모양">' +
+      '<rect width="220" height="84" fill="#F7EFEA"/>' +
+      '<path d="M72 8 L206 8 L206 76 L78 76 L64 60 L78 44 L60 26 Z" fill="#8C3B3B" stroke="#3D1616" stroke-width="3"/>' +
+      '<path d="M72 8 L60 26 L78 44 L64 60 L78 76" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-dasharray="5 3"/>' +
+      '<path d="M98 20 L190 20 M98 36 L190 36 M98 52 L190 52 M98 66 L190 66" stroke="#B66B6B" stroke-width="1.5" stroke-dasharray="4 4"/>' +
+      '</svg>',
+
+    'd04-trace-trim': '<svg viewBox="0 0 220 84" role="img" aria-label="겉옷 아랫단의 두 줄 가로 띠 확대 모양">' +
+      '<rect width="220" height="84" fill="#F7EFEA"/>' +
+      '<rect x="14" y="10" width="192" height="64" rx="6" fill="#8C3B3B" stroke="#3D1616" stroke-width="2.5"/>' +
+      '<rect x="16" y="34" width="188" height="12" fill="#E9B44C" stroke="#3D1616" stroke-width="1.5"/>' +
+      '<path d="M22 40 L34 34 L46 46 L58 34 L70 46 L82 34 L94 46 L106 34 L118 46 L130 34 L142 46 L154 34 L166 46 L178 34 L190 46 L198 40" fill="none" stroke="#541F1F" stroke-width="2"/>' +
+      '<line x1="16" y1="56" x2="204" y2="56" stroke="#F6D98B" stroke-width="3" stroke-dasharray="8 5"/>' +
+      '</svg>',
+
+    'd04-trace-weave': '<svg viewBox="0 0 220 84" role="img" aria-label="온전한 겉옷의 깃과 허리띠 매듭 비교 모양">' +
+      '<rect width="220" height="84" fill="#EEF3F7"/>' +
+      '<path d="M24 12 L84 12 L110 34 L136 12 L196 12 L196 74 L24 74 Z" fill="#3B5B8C" stroke="#1E314F" stroke-width="2.5"/>' +
+      '<path d="M84 12 L110 34 L136 12" fill="none" stroke="#E9B44C" stroke-width="5"/>' +
+      '<rect x="24" y="48" width="172" height="14" fill="#B4532A" stroke="#1E314F" stroke-width="2"/>' +
+      '<rect x="92" y="44" width="36" height="22" rx="4" fill="#E9B44C" stroke="#1E314F" stroke-width="2"/>' +
       '</svg>'
   };
 

@@ -69,6 +69,8 @@
       d04Slots: { jonathan: null, saul: null }, /* A03(D04): 두 겉옷 비교대 쪽지 배치 */
       d04PickTag: null,   /* A03(D04): 현재 집은 쪽지 */
       d04Msg: '',         /* A03(D04): 비교대 안내 메시지 */
+      d04TracePart: 'edge', /* A04(D04): 천 조각 흔적 관찰 창 선택 부분 ('edge'|'trim'|'weave') */
+      d04Mono: false,     /* A04(D04): 색 끄기(무채색 모양·이름표 구별) */
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
@@ -130,6 +132,8 @@
           saul: (parsed.d04Slots.saul === 'jonathan' || parsed.d04Slots.saul === 'saul') ? parsed.d04Slots.saul : null
         };
       }
+      if (['edge', 'trim', 'weave'].indexOf(parsed.d04TracePart) !== -1) base.d04TracePart = parsed.d04TracePart;
+      base.d04Mono = !!parsed.d04Mono;
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
@@ -187,6 +191,8 @@
         d01ShowFirstArt: state.d01ShowFirstArt,
         d01History: state.d01History,
         d04Slots: state.d04Slots,
+        d04TracePart: state.d04TracePart,
+        d04Mono: state.d04Mono,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,

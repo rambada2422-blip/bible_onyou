@@ -250,18 +250,111 @@ window.BO_DAVID = window.BO_DAVID || {};
     });
 
     var bothPlaced = !!(state.d04Slots.jonathan && state.d04Slots.saul);
+    var TRACE_PARTS = [
+      {
+        id: 'edge',
+        label: '베어진 가장자리',
+        shapeCode: '모양 ▲ 계단식 가장자리',
+        ownerHint: '사울의 겉옷 자락 · 삼상 24:4',
+        note: '옷자락 끝이 계단 모양으로 베어져 있는 흔적이 남아 있어요.',
+        art: 'd04-trace-edge'
+      },
+      {
+        id: 'trim',
+        label: '아랫단 띠',
+        shapeCode: '모양 ═ 두 줄 톱니 띠',
+        ownerHint: '사울의 겉옷 자락 · 삼상 24:11',
+        note: '두 줄로 짠 가로 띠와 점선 바느질 무늬가 보여요.',
+        art: 'd04-trace-trim'
+      },
+      {
+        id: 'weave',
+        label: '온전한 겉옷 깃·띠',
+        shapeCode: '모양 ◆ 꺾인 깃과 허리띠 매듭',
+        ownerHint: '요나단의 겉옷 · 삼상 18:4',
+        note: '베어진 곳이 없고 목깃과 허리띠 매듭이 그대로 붙어 있어요.',
+        art: 'd04-trace-weave'
+      }
+    ];
+    var curTraceId = state.d04TracePart || 'edge';
+    var curTrace = TRACE_PARTS[0];
+    for (var ti = 0; ti < TRACE_PARTS.length; ti++) {
+      if (TRACE_PARTS[ti].id === curTraceId) { curTrace = TRACE_PARTS[ti]; break; }
+    }
+
+    var traceBtns = TRACE_PARTS.map(function (pt, idx) {
+      var active = curTrace.id === pt.id;
+      return el('button', {
+        class: 'd04-trace-tab' + (active ? ' active' : ''),
+        'data-d04-trace-btn': pt.id,
+        'aria-pressed': String(active),
+        on: {
+          click: function () {
+            state.d04TracePart = pt.id;
+            ctx.recordFirstAction('D04:trace:' + pt.id);
+            ctx.saveState();
+            ctx.render();
+          },
+          keydown: function (ev) {
+            if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') {
+              ev.preventDefault();
+              var nextIdx = (idx + (ev.key === 'ArrowRight' ? 1 : TRACE_PARTS.length - 1)) % TRACE_PARTS.length;
+              state.d04TracePart = TRACE_PARTS[nextIdx].id;
+              ctx.saveState();
+              ctx.render();
+              var nb = ctx.root.querySelector('[data-d04-trace-btn="' + TRACE_PARTS[nextIdx].id + '"]');
+              if (nb) nb.focus();
+            }
+          }
+        }
+      }, pt.label);
+    });
+
+    var traceWindow = el('div', {
+      class: 'd04-trace-lens' + (state.d04Mono ? ' mono' : ''),
+      'data-d04-trace': 'true',
+      'data-d04-trace-active': curTrace.id,
+      'data-d04-mono': String(!!state.d04Mono)
+    },
+      el('div', { class: 'd04-trace-head' },
+        el('span', { class: 'd04-trace-title', text: '흔적을 보는 창 (손을 떼도 선택한 부분이 남아요)' }),
+        el('button', {
+          class: 'd04-mono-btn' + (state.d04Mono ? ' active' : ''),
+          'data-action': 'd04-toggle-mono',
+          'aria-pressed': String(!!state.d04Mono),
+          on: {
+            click: function () {
+              state.d04Mono = !state.d04Mono;
+              ctx.saveState();
+              ctx.render();
+            }
+          }
+        }, state.d04Mono ? '색 켜기' : '색 끄고 모양 보기')
+      ),
+      el('div', { class: 'd04-trace-tabs', role: 'group', 'aria-label': '천 조각 관찰 부위 선택' }, traceBtns),
+      el('div', { class: 'd04-trace-view' },
+        el('div', { class: 'd04-trace-art', html: ART.zoom(curTrace.art) }),
+        el('div', { class: 'd04-trace-meta' },
+          el('span', { class: 'd04-trace-shape', text: curTrace.shapeCode }),
+          el('span', { class: 'ref', text: curTrace.ownerHint })
+        ),
+        el('p', { class: 'd04-trace-note', text: curTrace.note })
+      )
+    );
 
     return el('section', {
-      class: 'notebook-map d04-compare-tray',
+      class: 'notebook-map d04-compare-tray' + (state.d04Mono ? ' mono-mode' : ''),
       'data-d04-compare': 'true',
       'data-d04-seed': String(seed)
     },
       el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 같은 크기의 비교대에서 두 겉옷의 주인과 장절 쪽지를 맞춰 보자. 놓은 쪽지는 끌기·두 번 탭·Backspace로 한 장만 되돌릴 수 있어요.' }),
       el('div', { class: 'd04-specimen-grid' }, specimenNodes),
+      traceWindow,
       el('div', {
         class: 'd04-tag-tray',
         'data-d04-tag-tray': 'true',
         on: {
+          dragenter: function (ev) { ev.preventDefault(); },
           dragover: function (ev) { ev.preventDefault(); },
           drop: function (ev) {
             ev.preventDefault();
