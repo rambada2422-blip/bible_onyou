@@ -55,8 +55,8 @@ async function check(browser, url) {
       assert(await page.evaluate(() => window.played.every(p=>p.paused)), '다음 대목에 이전 소리가 남음');
     }
   }
-  assert.equal(total,50);
-  console.log(url.split('/').at(-1),'· 대목 44개와 풀이 6개 재생, 자연 종료·취소·영상 전환·이탈 확인');
+  assert.equal(total,51);
+  console.log(url.split('/').at(-1),'· 대목 45개와 풀이 6개 재생, 자연 종료·취소·영상 전환·이탈 확인');
   await page.close();
 }
 (async () => {
