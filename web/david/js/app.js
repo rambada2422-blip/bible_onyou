@@ -95,6 +95,10 @@
       lessClueHelpUsed: {}, /* A13: 장면별 도움 1회 사용 여부 */
       handPref: 'right',  /* A21(D01·D04): 한 손 배치 선택 ('right' 오른손 | 'left' 왼손) */
       returnBookmark: null, /* A23(D03·D07): 수첩 근거 표식으로 원래 놀이 자리 돌아오기 */
+      d03Entry: 'gift',   /* A25(D03): 진입 경로 ('gift' 겉옷부터 | 'farewell' 작별부터) */
+      d03Locked: null,    /* A26(D03): 자리 고정(잠금)한 조각 ID ('gift'|'farewell'|null) */
+      d07Entry: 'promise',/* A27(D07): 진입 경로 ('promise' 약속부터 | 'table' 식탁부터) */
+      d07Seen: [],        /* A28(D07): 펼쳐 확인한 날개 목록(접고 다시 대조 가능) */
       course: {           /* A15·A16: 내가 고르는 세 장면 코스 */
         picks: [],        /* 고른 장면 ID 최대 3개 */
         idx: 0,           /* 현재 진행 중인 코스 순서 (0~2) */
@@ -204,6 +208,12 @@
       if (parsed.returnBookmark && typeof parsed.returnBookmark === 'object' && parsed.returnBookmark.sceneId) {
         base.returnBookmark = parsed.returnBookmark;
       }
+      if (parsed.d03Entry === 'gift' || parsed.d03Entry === 'farewell') base.d03Entry = parsed.d03Entry;
+      if (parsed.d03Locked === 'gift' || parsed.d03Locked === 'farewell') base.d03Locked = parsed.d03Locked;
+      if (parsed.d07Entry === 'promise' || parsed.d07Entry === 'table') base.d07Entry = parsed.d07Entry;
+      if (Array.isArray(parsed.d07Seen)) {
+        base.d07Seen = parsed.d07Seen.filter(function (v, i, a) { return (v === 'son' || v === 'table') && a.indexOf(v) === i; });
+      }
       if (parsed.course && typeof parsed.course === 'object') {
         base.course = {
           picks: Array.isArray(parsed.course.picks) ? parsed.course.picks.filter(function (id) { return !!getScene(id); }).slice(0, 3) : [],
@@ -290,6 +300,10 @@
         lessClueHelpUsed: state.lessClueHelpUsed,
         handPref: state.handPref,
         returnBookmark: state.returnBookmark,
+        d03Entry: state.d03Entry,
+        d03Locked: state.d03Locked,
+        d07Entry: state.d07Entry,
+        d07Seen: state.d07Seen,
         course: state.course,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
@@ -428,8 +442,10 @@
     state.orderList = makeInitialOrderList(sc, seed);
     state.orderPick = null;
     state.orderMsg = '';
+    state.d03Locked = null;
     state.hebronFirstDone = false;
     state.tableFolds = [];
+    state.d07Seen = [];
     saveState();
     render();
   }
@@ -478,8 +494,10 @@
     state.orderList = makeInitialOrderList(sc, seed);
     state.orderPick = null;
     state.orderMsg = '';
+    state.d03Locked = null;
     state.hebronFirstDone = false;
     state.tableFolds = [];
+    state.d07Seen = [];
     /* 다시 놀기에서는 해당 장면의 핵심 수첩 놀이로 바로 들어가 다른 배치를 체험하게 한다 */
     if (sc.mode === 'stones') state.step = 'stones';
     else if (sc.mode === 'order') state.step = 'order';
@@ -851,15 +869,16 @@
     }
   }
 
-  /* 놀이 3(D07): 접힌 수첩을 양방향으로 펼쳐 '요나단의 아들'과 '왕의 식탁' 두 단서를 연결 */
+  /* 놀이 3(D07) + A27·A28: 두 진입 경로(식탁/약속)와 날개 접기·대조 후 연결 확정 */
   function renderD07FoldMap(sc) {
     var seed = getSeed(state, 'D07');
+    var curEntry = state.d07Entry === 'table' ? 'table' : (state.d07Entry === 'promise' ? 'promise' : null);
     var folds = [
       {
         id: 'son',
         dir: (seed % 2 === 0) ? '서쪽 날개' : '북쪽 날개',
         title: '요나단의 아들',
-        sub: '삼하 9:6–7 · 므비보셋',
+        sub: '삼하 9:1, 6–7 · 므비보셋',
         icon: 'person'
       },
       {
@@ -870,43 +889,104 @@
         icon: 'table'
       }
     ];
-    if (seed % 2 === 1) folds.reverse();
+    if (curEntry === 'table' || (!curEntry && seed % 2 === 1)) folds.reverse();
+
+    var entryBar = el('div', { class: 'd05-wing-place-btns', 'data-d07-entry-bar': curEntry || 'none' },
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'promise' ? ' active' : ''),
+        'data-d07-entry': 'promise',
+        'aria-pressed': String(curEntry === 'promise'),
+        on: {
+          click: function () {
+            recordFirstAction('D07:entry:promise');
+            state.d07Entry = 'promise';
+            state.tableFolds = ['son'];
+            if (state.d07Seen.indexOf('son') === -1) state.d07Seen.push('son');
+            saveState();
+            render();
+          }
+        }
+      }, '친구의 약속부터 (삼하 9:1, 6–7)'),
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'table' ? ' active' : ''),
+        'data-d07-entry': 'table',
+        'aria-pressed': String(curEntry === 'table'),
+        on: {
+          click: function () {
+            recordFirstAction('D07:entry:table');
+            state.d07Entry = 'table';
+            state.tableFolds = ['table'];
+            if (state.d07Seen.indexOf('table') === -1) state.d07Seen.push('table');
+            saveState();
+            render();
+          }
+        }
+      }, '식탁 물건부터 (삼하 9:10–13)')
+    );
 
     var foldNodes = folds.map(function (f) {
       var opened = state.tableFolds.indexOf(f.id) !== -1;
+      var seen = state.d07Seen.indexOf(f.id) !== -1;
       return el('button', {
         class: 'fold-wing' + (opened ? ' opened' : ''),
         'data-fold': f.id,
+        'data-fold-seen': String(seen),
         'aria-expanded': String(opened),
         on: {
           click: function () {
             recordFirstAction('D07:fold:' + f.id);
-            if (state.tableFolds.indexOf(f.id) === -1) {
+            var idx = state.tableFolds.indexOf(f.id);
+            if (idx === -1) {
               state.tableFolds.push(f.id);
-            }
-            if (state.tableFolds.indexOf('son') !== -1 && state.tableFolds.indexOf('table') !== -1) {
-              recordDiscovery(sc, '수첩 연결: ' + (state.tableFolds[0] === 'son' ? '요나단의 아들 → 왕의 식탁' : '왕의 식탁 → 요나단의 아들') + ' (삼하 9:6–13)');
-              state.step = 'done';
+              if (state.d07Seen.indexOf(f.id) === -1) state.d07Seen.push(f.id);
+            } else {
+              /* A28: 이미 펼친 날개를 다시 접어 한쪽씩 번갈아 대조할 수 있게 한다 */
+              state.tableFolds.splice(idx, 1);
             }
             saveState();
             render();
           }
         }
       },
-        el('div', { class: 'fold-dir', text: f.dir + (opened ? ' · 펼쳐짐 ✓' : ' · 펼치기') }),
+        el('div', { class: 'fold-dir', text: f.dir + (opened ? ' · 펼쳐짐 (누르면 접기)' : (seen ? ' · 확인함 (다시 펼치기)' : ' · 펼치기')) }),
         el('div', { class: 'fold-main' },
           el('span', { class: 'fold-icon', html: ART.icon(f.icon) }),
           el('div', { class: 'fold-text' },
             el('span', { class: 'fold-title', text: f.title }),
-            el('span', { class: 'fold-sub', text: opened ? f.sub : '눌러서 수첩 펼치기' })
+            el('span', { class: 'fold-sub', text: opened ? f.sub : (seen ? '확인 완료 · 다시 펼쳐 대조 가능' : '눌러서 수첩 펼치기') })
           )
         )
       );
     });
 
-    return el('section', { class: 'notebook-map', 'data-notebook-map': 'D07' },
-      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 수첩의 두 날개를 어느 쪽부터든 펼쳐 두 단서를 이어 보자.' }),
-      el('div', { class: 'fold-grid' }, foldNodes)
+    var bothSeen = state.d07Seen.indexOf('son') !== -1 && state.d07Seen.indexOf('table') !== -1;
+    var entryLabel = curEntry === 'table' ? '식탁 물건부터' : (curEntry === 'promise' ? '친구의 약속부터' : '자유 펼치기');
+
+    return el('section', {
+      class: 'notebook-map',
+      'data-notebook-map': 'D07',
+      'data-d07-seen-count': String(state.d07Seen.length),
+      'data-d07-open-count': String(state.tableFolds.length)
+    },
+      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 수첩의 두 날개를 어느 쪽부터든 펼치고, 필요하면 하나를 접어 대조한 뒤 연결을 확정해 보세요.' }),
+      entryBar,
+      el('div', { class: 'fold-grid' }, foldNodes),
+      el('div', { class: 'actions' },
+        el('button', {
+          class: 'btn ' + (bothSeen ? 'brass' : 'plain'),
+          'data-action': 'd07-confirm-link',
+          disabled: !bothSeen,
+          on: {
+            click: function () {
+              if (!bothSeen) return;
+              recordDiscovery(sc, '수첩 연결(' + entryLabel + '): 요나단의 아들(삼하 9:1, 6–7) ↔ 왕의 식탁(삼하 9:10–13)');
+              state.step = 'done';
+              saveState();
+              render();
+            }
+          }
+        }, bothSeen ? '두 단서 연결 확정하기 (삼하 9:1, 6–7, 10–13)' : '두 날개를 모두 펼쳐 본 뒤 확정할 수 있어요')
+      )
     );
   }
 
@@ -1279,9 +1359,13 @@
     ];
   }
 
-  /* 놀이 2(D03): 수첩 펼침면의 두 장면 조각. 터치/마우스 끌기, 두 번 탭, 한 번 탭 맞바꾸기, 키보드 집기·놓기 지원 */
+  /* 놀이 2(D03) + A25·A26: 수첩 펼침면의 두 장면 조각(이중 진입 경로 + 조각 하나 고정/해제) */
   function swapOrderPieces(idxA, idxB) {
     if (idxA === idxB || idxA < 0 || idxB < 0 || idxA >= state.orderList.length || idxB >= state.orderList.length) return;
+    if (state.d03Locked) {
+      state.orderMsg = '고정된 조각이 있어요. 아래 \'고정 해제\'를 누른 뒤 자리를 바꿔 보세요.';
+      return;
+    }
     var tmp = state.orderList[idxA];
     state.orderList[idxA] = state.orderList[idxB];
     state.orderList[idxB] = tmp;
@@ -1294,106 +1378,161 @@
     var map = {};
     sc.orderItems.forEach(function (it) { map[it.id] = it; });
     var seed = getSeed(state, sc.id);
+    var curEntry = state.d03Entry === 'farewell' ? 'farewell' : 'gift';
     var dragFromIdx = null;
     var pointerStartIdx = null;
+
+    var entryBar = el('div', { class: 'd05-wing-place-btns', 'data-d03-entry-bar': curEntry },
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'gift' ? ' active' : ''),
+        'data-d03-entry': 'gift',
+        'aria-pressed': String(curEntry === 'gift'),
+        on: {
+          click: function () {
+            state.d03Entry = 'gift';
+            state.d03Locked = null;
+            state.orderList = ['farewell', 'gift'];
+            state.orderPick = 1;
+            state.orderMsg = '겉옷 표식(삼상 18:1–4)을 먼저 잡았어요. 1번째 자리와 맞바꿔 보세요.';
+            saveState();
+            render();
+          }
+        }
+      }, '겉옷 표식부터 (삼상 18:1–4)'),
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'farewell' ? ' active' : ''),
+        'data-d03-entry': 'farewell',
+        'aria-pressed': String(curEntry === 'farewell'),
+        on: {
+          click: function () {
+            state.d03Entry = 'farewell';
+            state.d03Locked = null;
+            state.orderList = ['farewell', 'gift'];
+            state.orderPick = 0;
+            state.orderMsg = '작별 장절(삼상 20:41–42)을 먼저 잡았어요. 2번째 자리로 옮겨 보세요.';
+            saveState();
+            render();
+          }
+        }
+      }, '작별 장절부터 (삼상 20:41–42)')
+    );
 
     var nodes = state.orderList.map(function (id, idx) {
       var it = map[id];
       var selected = state.orderPick === idx;
+      var locked = state.d03Locked === it.id;
       var edgeLabel = it.id === 'gift' ? '왼쪽 이음새 · 겉옷' : '오른쪽 이음새 · 작별';
       var iconKey = it.id === 'gift' ? 'robe' : 'person';
 
-      return el('button', {
-        class: 'order-card spread-piece' + (selected ? ' selected' : ''),
-        'data-order-id': it.id,
-        'data-slot-idx': String(idx),
-        draggable: 'true',
-        'aria-pressed': String(selected),
-        on: {
-          click: function () {
-            recordFirstAction('D03:order-click:' + it.id);
-            state.orderMsg = '';
-            if (state.orderPick === null) {
-              state.orderPick = idx;
-            } else if (state.orderPick === idx) {
-              state.orderPick = null;
-            } else {
-              swapOrderPieces(state.orderPick, idx);
-            }
-            render();
-          },
-          dblclick: function () {
-            /* 두 번 탭(더블클릭)하면 다른 칸과 즉시 자리를 맞바꾼다 */
-            recordFirstAction('D03:order-dblclick:' + it.id);
-            swapOrderPieces(idx, (idx + 1) % state.orderList.length);
-            render();
-          },
-          pointerdown: function () {
-            pointerStartIdx = idx;
-          },
-          pointerup: function (ev) {
-            if (pointerStartIdx !== null && typeof document.elementFromPoint === 'function') {
-              var hit = document.elementFromPoint(ev.clientX, ev.clientY);
-              var slotNode = hit && hit.closest ? hit.closest('[data-slot-idx]') : null;
-              if (slotNode) {
-                var targetIdx = Number(slotNode.getAttribute('data-slot-idx'));
-                if (!isNaN(targetIdx) && targetIdx !== pointerStartIdx) {
-                  swapOrderPieces(pointerStartIdx, targetIdx);
-                  pointerStartIdx = null;
-                  render();
+      return el('div', { class: 'd04-placed-wrap', 'data-d03-wrap': it.id },
+        el('button', {
+          class: 'order-card spread-piece' + (selected ? ' selected' : ''),
+          'data-order-id': it.id,
+          'data-slot-idx': String(idx),
+          'data-locked': String(locked),
+          draggable: String(!locked),
+          'aria-pressed': String(selected),
+          on: {
+            click: function () {
+              recordFirstAction('D03:order-click:' + it.id);
+              state.orderMsg = '';
+              if (state.orderPick === null) {
+                state.orderPick = idx;
+              } else if (state.orderPick === idx) {
+                state.orderPick = null;
+              } else {
+                swapOrderPieces(state.orderPick, idx);
+              }
+              render();
+            },
+            dblclick: function () {
+              /* 두 번 탭(더블클릭)하면 다른 칸과 즉시 자리를 맞바꾼다 */
+              recordFirstAction('D03:order-dblclick:' + it.id);
+              swapOrderPieces(idx, (idx + 1) % state.orderList.length);
+              render();
+            },
+            pointerdown: function () {
+              pointerStartIdx = idx;
+            },
+            pointerup: function (ev) {
+              if (pointerStartIdx !== null && typeof document.elementFromPoint === 'function') {
+                var hit = document.elementFromPoint(ev.clientX, ev.clientY);
+                var slotNode = hit && hit.closest ? hit.closest('[data-slot-idx]') : null;
+                if (slotNode) {
+                  var targetIdx = Number(slotNode.getAttribute('data-slot-idx'));
+                  if (!isNaN(targetIdx) && targetIdx !== pointerStartIdx) {
+                    swapOrderPieces(pointerStartIdx, targetIdx);
+                    pointerStartIdx = null;
+                    render();
+                  }
                 }
               }
-            }
-            pointerStartIdx = null;
-          },
-          keydown: function (ev) {
-            if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp' || ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
+              pointerStartIdx = null;
+            },
+            keydown: function (ev) {
+              if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp' || ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
+                ev.preventDefault();
+                var otherIdx = (idx + 1) % state.orderList.length;
+                if (state.orderPick === idx) {
+                  swapOrderPieces(idx, otherIdx);
+                  render();
+                  var moved = root.querySelector('[data-slot-idx="' + otherIdx + '"]');
+                  if (moved) moved.focus();
+                } else {
+                  var target = root.querySelector('[data-slot-idx="' + otherIdx + '"]');
+                  if (target) target.focus();
+                }
+              }
+            },
+            dragstart: function (ev) {
+              dragFromIdx = idx;
+              state.orderPick = idx;
+              if (ev.dataTransfer) {
+                ev.dataTransfer.effectAllowed = 'move';
+                ev.dataTransfer.setData('text/plain', String(idx));
+              }
+            },
+            dragover: function (ev) {
               ev.preventDefault();
-              var otherIdx = (idx + 1) % state.orderList.length;
-              if (state.orderPick === idx) {
-                swapOrderPieces(idx, otherIdx);
+            },
+            drop: function (ev) {
+              ev.preventDefault();
+              var from = dragFromIdx;
+              if (from === null && ev.dataTransfer) {
+                from = Number(ev.dataTransfer.getData('text/plain'));
+              }
+              if (typeof from === 'number' && !isNaN(from) && from !== idx) {
+                swapOrderPieces(from, idx);
                 render();
-                var moved = root.querySelector('[data-slot-idx="' + otherIdx + '"]');
-                if (moved) moved.focus();
-              } else {
-                var target = root.querySelector('[data-slot-idx="' + otherIdx + '"]');
-                if (target) target.focus();
               }
             }
-          },
-          dragstart: function (ev) {
-            dragFromIdx = idx;
-            state.orderPick = idx;
-            if (ev.dataTransfer) {
-              ev.dataTransfer.effectAllowed = 'move';
-              ev.dataTransfer.setData('text/plain', String(idx));
-            }
-          },
-          dragover: function (ev) {
-            ev.preventDefault();
-          },
-          drop: function (ev) {
-            ev.preventDefault();
-            var from = dragFromIdx;
-            if (from === null && ev.dataTransfer) {
-              from = Number(ev.dataTransfer.getData('text/plain'));
-            }
-            if (typeof from === 'number' && !isNaN(from) && from !== idx) {
-              swapOrderPieces(from, idx);
+          }
+        },
+          el('div', { class: 'spread-top' },
+            el('div', { class: 'order-num', text: String(idx + 1) }),
+            el('div', { class: 'piece-icon', html: ART.icon(iconKey) }),
+            el('span', { class: 'seam-badge', text: edgeLabel + (locked ? ' · 고정됨' : '') })
+          ),
+          el('div', { class: 'order-info' },
+            el('span', { class: 'order-title', text: it.label }),
+            el('span', { class: 'order-hint', text: it.ref })
+          )
+        ),
+        el('button', {
+          class: 'd04-undo-btn',
+          'data-d03-lock': it.id,
+          'aria-pressed': String(locked),
+          on: {
+            click: function () {
+              state.d03Locked = locked ? null : it.id;
+              state.orderMsg = state.d03Locked
+                ? ('\'' + it.label + '\' 조각을 고정했어요. 다른 조각의 장절을 대조한 뒤 고정을 풀어 옮길 수 있어요.')
+                : '조각 고정을 풀었어요. 이제 자유롭게 자리를 바꿀 수 있어요.';
+              saveState();
               render();
             }
           }
-        }
-      },
-        el('div', { class: 'spread-top' },
-          el('div', { class: 'order-num', text: String(idx + 1) }),
-          el('div', { class: 'piece-icon', html: ART.icon(iconKey) }),
-          el('span', { class: 'seam-badge', text: edgeLabel })
-        ),
-        el('div', { class: 'order-info' },
-          el('span', { class: 'order-title', text: it.label }),
-          el('span', { class: 'order-hint', text: it.ref })
-        )
+        }, locked ? '고정 해제' : '이 조각 자리 고정')
       );
     });
 
@@ -1404,9 +1543,10 @@
         seed > 0 ? el('span', { class: 'tag', text: '수첩 펼침면 #' + (seed + 1) }) : null
       ),
       el('h2', { class: 'question', text: '수첩 펼침면에서 두 장면 조각을 순서대로 이어 붙여 보자.' }),
-      el('p', { class: 'subnote one-line-guide', text: '조각을 끌거나 탭·두 번 탭·키보드 엔터로 자리를 바꿔 보세요.' }),
+      entryBar,
+      el('p', { class: 'subnote one-line-guide', text: '조각을 끌거나 탭·두 번 탭·키보드 엔터로 자리를 바꿔 보세요. 조각 하나를 고정해 대조할 수도 있어요.' }),
       el('div', { class: 'order-list notebook-spread', 'data-spread-seed': String(seed) }, nodes),
-      state.orderMsg ? el('div', { class: 'order-msg', text: state.orderMsg }) : null,
+      state.orderMsg ? el('div', { class: 'order-msg', 'data-d03-msg': 'true', text: state.orderMsg }) : null,
       el('div', { class: 'actions' },
         el('button', {
           class: 'btn brass',
@@ -1415,7 +1555,9 @@
             var expected = sc.orderItems.map(function (o) { return o.id; });
             var ok = expected.every(function (id, i) { return state.orderList[i] === id; });
             if (ok) {
-              recordDiscovery(sc, sc.orderItems.map(function (o) { return o.label + ' (' + o.ref + ')'; }).join(' → '));
+              var entryName = curEntry === 'farewell' ? '작별 장절부터' : '겉옷 표식부터';
+              recordDiscovery(sc, '경로(' + entryName + '): ' + sc.orderItems.map(function (o) { return o.label + ' (' + o.ref + ')'; }).join(' → '));
+              state.d03Locked = null;
               state.step = 'done';
               state.orderMsg = '';
               saveState();
