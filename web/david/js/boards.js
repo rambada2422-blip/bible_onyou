@@ -697,12 +697,52 @@ window.BO_DAVID = window.BO_DAVID || {};
       );
     }
 
+    if (!state.d05Coop || typeof state.d05Coop !== 'object') {
+      state.d05Coop = { swapped: false, activePlayer: 1, handoffs: 0 };
+    }
+    var d05LeftPlayer = state.d05Coop.swapped ? '2번 사람' : '1번 사람';
+    var d05RightPlayer = state.d05Coop.swapped ? '1번 사람' : '2번 사람';
+    var d05CoopBar = el('div', { class: 'd01-memory-bar', 'data-d05-coop-bar': 'true', 'data-d05-swapped': String(!!state.d05Coop.swapped), 'data-d05-player': String(state.d05Coop.activePlayer) },
+      el('div', { class: 'd01-memory-row' },
+        el('span', { class: 'd01-memory-text', text: '한 화면 협동판 · 왼쪽(' + d05LeftPlayer + ') / 오른쪽(' + d05RightPlayer + ') · 현재 ' + state.d05Coop.activePlayer + '번 차례' }),
+        el('span', { class: 'ref', text: '교대 ' + (state.d05Coop.handoffs || 0) + '회' })
+      ),
+      el('div', { class: 'd05-wing-place-btns' },
+        el('button', {
+          class: 'd05-mini-btn',
+          'data-action': 'd05-coop-swap',
+          on: {
+            click: function () {
+              state.d05Coop.swapped = !state.d05Coop.swapped;
+              state.d05Msg = '협동 역할을 서로 바꿨어요. 이미 놓은 자리는 그대로 유지돼요.';
+              ctx.saveState();
+              ctx.render();
+            }
+          }
+        }, '역할 바꾸기 (1번 ↔ 2번)'),
+        el('button', {
+          class: 'd05-mini-btn',
+          'data-action': 'd05-coop-handoff',
+          on: {
+            click: function () {
+              state.d05Coop.activePlayer = state.d05Coop.activePlayer === 1 ? 2 : 1;
+              state.d05Coop.handoffs = (state.d05Coop.handoffs || 0) + 1;
+              state.d05Msg = '중간 교대 완료! 이제 ' + state.d05Coop.activePlayer + '번 사람이 이어서 진행하세요.';
+              ctx.saveState();
+              ctx.render();
+            }
+          }
+        }, '중간 교대 (차례 넘기기)')
+      )
+    );
+
     return el('section', {
       class: 'notebook-map d05-hebron-board',
       'data-d05-board': 'true',
       'data-d05-seed': String(seed)
     },
       el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 같은 장소 헤브론의 두 만남을 양쪽으로 펼쳐 보고, 어느 쪽부터 시작했든 두 기록을 시간순으로 놓아 보자.' }),
+      d05CoopBar,
       t3Block,
       el('div', { class: 'd05-wings' }, wingNodes),
       el('div', { class: 'd05-order-slots' }, slotNodes),
@@ -1203,23 +1243,46 @@ window.BO_DAVID = window.BO_DAVID || {};
       };
 
       var turn = state.d09Turn || 0;
+      var handoffCount = state.d09Handoffs || 0;
       var bodyNodes = [
-        el('div', { class: 'd01-memory-row' },
-          el('span', { class: 'd01-memory-text', text: '첫 역할: ' + (firstRole === 'object' ? '1번 물건 → 2번 근거' : '1번 근거 → 2번 물건') }),
-          el('button', {
-            class: 'd04-undo-btn',
-            'data-action': 'd09-swap-first',
-            on: {
-              click: function () {
-                state.d09FirstRole = firstRole === 'object' ? 'clue' : 'object';
-                state.d09Turn = 0;
-                state.d09CoopPicks = { object: null, clue: null };
-                state.d09Msg = '';
-                ctx.saveState();
-                ctx.render();
+        el('div', { class: 'd01-memory-bar', 'data-d09-coop-bar': 'true', 'data-d09-handoffs': String(handoffCount) },
+          el('div', { class: 'd01-memory-row' },
+            el('span', { class: 'd01-memory-text', text: '역할 배정: ' + (firstRole === 'object' ? '1번 물건 ↔ 2번 근거' : '1번 근거 ↔ 2번 물건') }),
+            el('span', { class: 'ref', text: '중간 교대 ' + handoffCount + '회' })
+          ),
+          el('div', { class: 'd05-wing-place-btns' },
+            el('button', {
+              class: 'd05-mini-btn',
+              'data-action': 'd09-swap-first',
+              on: {
+                click: function () {
+                  state.d09FirstRole = firstRole === 'object' ? 'clue' : 'object';
+                  state.d09Turn = 0;
+                  state.d09CoopPicks = { object: null, clue: null };
+                  state.d09Msg = '';
+                  ctx.saveState();
+                  ctx.render();
+                }
               }
-            }
-          }, '첫 역할 바꾸기')
+            }, '첫 역할 바꾸기'),
+            el('button', {
+              class: 'd05-mini-btn',
+              'data-action': 'd09-mid-handoff',
+              on: {
+                click: function () {
+                  /* 진행 중인 선택은 유지한 채 가림막(차례 1)을 거쳐 중간 교대한다 */
+                  state.d09Handoffs = (state.d09Handoffs || 0) + 1;
+                  if (state.d09Turn === 0 && state.d09CoopPicks[firstRole]) {
+                    state.d09Turn = 1;
+                  } else if (state.d09Turn === 2 && !state.d09CoopPicks[secondRole]) {
+                    state.d09Turn = 1;
+                  }
+                  ctx.saveState();
+                  ctx.render();
+                }
+              }
+            }, '중간 교대 (진행 유지)')
+          )
         )
       ];
 
