@@ -606,12 +606,86 @@ window.BO_DAVID = window.BO_DAVID || {};
     var bothOpened = state.d05Opened.indexOf('judah') !== -1 && state.d05Opened.indexOf('elders') !== -1;
     var bothPlaced = !!(state.d05Order[0] && state.d05Order[1]);
 
+    var t3Active = state.ageTier === 't3';
+    var t3Block = null;
+    if (t3Active) {
+      var t3Pick = state.d05T3Pick || null;
+      var t3Verified = !!t3Pick;
+      t3Block = el('div', { class: 'd05-reopen-card', 'data-t3-discern': 'D05' },
+        el('div', { class: 'd01-zoom-head' },
+          el('span', { class: 'tag', text: '14~17세 · 어느 기록인지 가려내기 (제한 시간 없음)' }),
+          el('span', { class: 'ref', text: '공개된 단서 1 / 2' })
+        ),
+        el('p', { class: 'd05-wing-fact', text: '먼저 공개된 단서: "장소는 헤브론이고, 사람들이 와서 다윗에게 기름을 부어 왕으로 세웠다."' }),
+        el('div', { class: 'd04-placed-wrap' },
+          el('button', {
+            class: 'd05-mini-btn' + (t3Pick === 'rush-judah' ? ' active' : ''),
+            'data-t3-guess': 'rush-judah',
+            on: {
+              click: function () {
+                state.d05T3Pick = 'rush-judah';
+                ctx.saveState();
+                ctx.render();
+              }
+            }
+          }, '헤브론이니 무조건 유다 사람들(삼하 2:4)로 단정'),
+          el('button', {
+            class: 'd05-mini-btn' + (t3Pick === 'rush-elders' ? ' active' : ''),
+            'data-t3-guess': 'rush-elders',
+            on: {
+              click: function () {
+                state.d05T3Pick = 'rush-elders';
+                ctx.saveState();
+                ctx.render();
+              }
+            }
+          }, '헤브론이니 무조건 이스라엘 장로들(삼하 5:3)로 단정'),
+          el('button', {
+            class: 'd05-mini-btn' + (t3Pick === 'need-second' ? ' active' : ''),
+            'data-t3-guess': 'need-second',
+            on: {
+              click: function () {
+                state.d05T3Pick = 'need-second';
+                ctx.saveState();
+                ctx.render();
+              }
+            }
+          }, '같은 장소만으로는 단정 불가 — 두 번째 단서로 검증하기')
+        ),
+        t3Verified ? el('div', { class: 'd08-card', 'data-t3-verify': t3Pick },
+          el('div', { class: 'd01-zoom-head' },
+            el('span', { class: 'tag', text: '검증용 두 번째 단서 공개 (2 / 2)' }),
+            el('span', { class: 'ref', text: '삼하 2:4 vs 삼하 5:1–5' })
+          ),
+          el('p', { class: 'd05-wing-fact', text: t3Pick === 'need-second'
+            ? '정확해요! 헤브론은 두 만남의 공통 장소이므로 온 사람들(유다 사람들 vs 이스라엘의 장로들)과 시기(칠 년 반 뒤)로 가려야 해요.'
+            : '같은 장소(헤브론)만으로 단정하면 헷갈릴 수 있어요. 두 번째 단서(유다 사람들 삼하 2:4 · 칠 년 반 뒤 이스라엘 장로들 삼하 5:1–5)로 바로 검증해 보세요.' }),
+          el('button', {
+            class: 'btn brass d04-check-btn',
+            'data-action': 't3-d05-finish',
+            on: {
+              click: function () {
+                ctx.recordDiscovery(
+                  sc,
+                  '14~17세 기록 가려내기 완료: 공통 장소(헤브론)만으로 단정하지 않고 두 번째 단서(삼하 2:4 vs 삼하 5:1–5)로 검증'
+                );
+                state.step = 'done';
+                ctx.saveState();
+                ctx.render();
+              }
+            }
+          }, '검증 완료 · 일지에 남기기 (삼하 2:1–4, 5:1–5)')
+        ) : null
+      );
+    }
+
     return el('section', {
       class: 'notebook-map d05-hebron-board',
       'data-d05-board': 'true',
       'data-d05-seed': String(seed)
     },
       el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 같은 장소 헤브론의 두 만남을 양쪽으로 펼쳐 보고, 어느 쪽부터 시작했든 두 기록을 시간순으로 놓아 보자.' }),
+      t3Block,
       el('div', { class: 'd05-wings' }, wingNodes),
       el('div', { class: 'd05-order-slots' }, slotNodes),
       reopenCard,
