@@ -1,0 +1,46 @@
+/* 함께 보는 세 친구는 왕궁 삽화 밖, 탐험대의 수첩 안에 머문다. */
+.watch-strip {display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 1px;}
+.watch-strip button,.watch-dialog button,.watch-after-film {min-height:44px;cursor:pointer;}
+.watch-launch {display:flex;align-items:center;flex-wrap:wrap;gap:5px 12px;color:#244b40;padding:4px 10px 4px 4px;border:1px solid #99b0a3;border-radius:10px;background:#f4f5e9;}
+.watch-launch b,.watch-journal-btn {font-size:14px;}
+.watch-team,.watch-team>span {display:inline-flex;align-items:center;}
+.watch-team {gap:5px;}
+.watch-team>span {gap:2px;font-size:12px;font-weight:700;}
+.watch-team img {width:26px;height:26px;border-radius:50%;}
+.watch-journal-btn,.watch-after-film {color:#345849;text-decoration:underline;text-underline-offset:3px;padding:3px 7px;}
+.watch-intro {font:15px/1.45 var(--f-body);color:#435b4f;margin-top:5px;}
+.watch-dialog {box-sizing:border-box;width:min(94vw,600px);max-width:100%;max-height:90vh;max-height:90dvh;margin:auto;padding:0;overflow:auto;border:1px solid #938568;border-radius:15px;background:#f9f3e3;color:#2a3329;box-shadow:0 14px 60px #10272270;font:16px/1.5 var(--f-body);word-break:keep-all;}
+.watch-dialog::backdrop {background:#102220c9;}
+.watch-head {position:sticky;top:0;z-index:2;padding:10px 14px;display:flex;gap:12px;justify-content:space-between;align-items:center;background:#21443c;color:#fff4d7;}
+.watch-head small,.watch-cite {font-size:13px;}
+.watch-head h2 {font:clamp(21px,5vw,29px)/1.2 var(--f-display);outline:none;}
+.watch-dialog button {border:1px solid #acb2a0;border-radius:8px;background:#fffdf3;color:#2b483c;padding:6px 12px;font:700 15px/1.4 var(--f-body);}
+.watch-dialog .watch-close {color:#fff4d7;border-color:#91a69a;background:transparent;white-space:nowrap;}
+.watch-body {padding:10px 12px 16px;}
+.watch-body>button {margin:6px 6px 0 0;}
+.watch-photo {position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:9px;background:#34443d;}
+.watch-photo>img,.watch-photo>video {display:block;width:100%;height:100%;object-fit:contain;}
+.watch-dialog .watch-spot {position:absolute;transform:translate(-50%,-50%);padding:0;width:44px;height:44px;background:#253c331c;border:2px solid #fff2c4;border-radius:50%;box-shadow:0 0 0 1px #203327,inset 0 0 0 1px #203327;}
+.watch-spot:after {content:'';display:block;width:7px;height:7px;margin:auto;background:#ffe1a1;border-radius:50%;box-shadow:0 1px 4px #254032;}
+.watch-speech {display:flex;align-items:flex-start;gap:10px;padding:12px 0 5px;}
+.watch-speech img {width:44px;height:44px;flex:none;border-radius:50%;}
+.watch-speech strong,.watch-scripture strong {font-size:14px;color:#41604d;}
+.watch-speech p {font-size:17px;line-height:1.45;font-weight:650;}
+.watch-help,.watch-saved {font-size:15px;color:#435749;margin:6px 0;}
+.watch-cite {display:block;color:#645943;margin-top:8px;}
+.watch-body .watch-primary,.watch-tabs button[aria-pressed=true] {background:#2b584a;color:#fff6dc;border-color:#2b584a;}
+.watch-guess {width:100%;text-align:left;}
+.watch-tabs {display:flex;gap:6px;margin-bottom:9px;}
+.watch-scripture,.watch-entry {padding:10px 14px;margin:9px 0;border-left:3px solid #b28843;background:#efe5cd;}
+.watch-scripture .ref,.watch-entry .ref {margin-top:6px;}
+.watch-entry h3 {font:20px/1.25 var(--f-display);margin-bottom:7px;}
+.watch-entry p {margin-bottom:6px;}
+.watch-entry p strong {display:block;font-size:13px;color:#536342;}
+.watch-dialog button:focus-visible,.watch-strip button:focus-visible {outline:3px solid #b16f29;outline-offset:2px;}
+@media(max-width:370px){.watch-strip{gap:4px;}.watch-launch{gap:6px;padding-right:6px;}.watch-team{gap:3px;}.watch-team img{width:23px;height:23px;}.watch-journal-btn{padding-inline:4px;}}
+@media(orientation:landscape) and (max-height:480px){.watch-dialog{max-height:96dvh;}.watch-body .watch-photo{max-width:55vh;}.watch-head{position:static;}}
+.watch-film-control {margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.watch-scripture .readbtn {margin-left:8px;vertical-align:middle;}
+.watch-head .watch-team {margin-top:4px;gap:9px;}
+.watch-head .watch-team img {width:22px;height:22px;}
+@media(orientation:landscape) and (max-height:480px){.watch-body .watch-photo{max-width:min(100%,76vh);}}

@@ -112,7 +112,7 @@ const esc = (js) => js.replace(/<\/script/gi, '<\\/script');
 const fontCss = require('./font-css');
 const scripts = [
   'js/content.js', 'js/icons.js', 'js/order-question.js', 'js/reference-input.js', 'js/art.js',
-  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-rapids.js', 'js/nile-game.js', 'js/palace.js', 'js/passover.js', 'js/app.js',
+  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-rapids.js', 'js/nile-game.js', 'js/palace-watch-scenes.js', 'js/palace-watch.js', 'js/palace.js', 'js/passover.js', 'js/app.js',
 ];
 // 단일 HTML에서도 본문 음성을 인터넷 연결 없이 재생한다.
 const palaceAudio = {};
@@ -120,16 +120,21 @@ for (const file of list('audio/palace', '.mp3')) {
   const audio = fs.readFileSync(path.join(web, 'assets/audio/palace', file));
   palaceAudio[path.basename(file, '.mp3')] = 'data:audio/mpeg;base64,' + audio.toString('base64');
 }
+const watchImages = {};
+for (const file of list('palace-watch', '.jpg')) {
+  const photo = fs.readFileSync(path.join(web, 'assets/palace-watch', file));
+  watchImages[path.basename(file, '.jpg')] = 'data:image/jpeg;base64,' + photo.toString('base64');
+}
 const page = [
   '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
   '<title>성경 탐험대</title>',
   '<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,' + Buffer.from(read('assets/char/timemachine.svg')).toString('base64') + '">',
   '<meta name="claude:viewport-fit-sides" content="cover">',
-  '<style>\n' + read('css/app.css') + '\n' + read('css/nile.css') + '\n</style>',
+  '<style>\n' + read('css/app.css') + '\n' + read('css/nile.css') + '\n' + read('css/palace-watch.css') + '\n</style>',
   '</head><body>',
   '<div id="app" class="app"></div>',
-  '<script>window.BO = window.BO || {}; BO.palaceAudio = ' + JSON.stringify(palaceAudio) + ';</script>',
+  '<script>window.BO = window.BO || {}; BO.palaceAudio = ' + JSON.stringify(palaceAudio) + '; BO.palaceWatchImages = ' + JSON.stringify(watchImages) + ';</script>',
   ...scripts.map((p) => '<script>\n' + esc(read(p)) + '\n</script>'),
   '<style>\n' + fontCss() + '\n</style>',
   '</body></html>'

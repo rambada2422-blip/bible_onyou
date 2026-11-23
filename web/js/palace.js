@@ -90,6 +90,9 @@
       const heading = el('h1', {tabindex:'-1'}, chapter.title);
       const hero = el('div', {class:'palace-picture'}, app.pic(image, '', image === palaceArt ?
         '왕 앞에 선 모세와 아론. 왼쪽의 두 형제와 오른쪽의 바로가 마주 보고 있어요.' : chapter.title));
+      const watch = app.palaceWatch.attach(s.chapter, () => {
+        stopNarration(); app.stopReading(); if (video) video.pause();
+      }, listenButton);
       const panel = el('section', {class:'palace-panel'});
       const role = beat.who || (beat.options ? '단서 맞추기' : beat.film ? '그때 일어난 일' : '이야기');
       const kind = el('p', {class:'palace-speaker'}, role);
@@ -150,7 +153,7 @@
             playButton.textContent = '영상 다시 불러오기'; playButton.hidden = false;
           });
           player.addEventListener('ended', function () {
-            if (video === player) notice.textContent = '영상을 다 보았어요. 다음으로 갈 수 있어요.';
+            if (video === player) notice.replaceChildren(el('button', {type:'button', class:'watch-after-film', on:{click:watch.open}}, '세 친구와 현장 살펴보기'));
           });
           playButton.hidden = true;
           notice.textContent = '';
@@ -173,14 +176,16 @@
       const filmIndex = chapter.beats.findIndex(b => b.film);
       const when = beat.film ? '재앙 장면' : s.beat < filmIndex ? '재앙이 일어나기 전' : '재앙이 일어난 뒤';
       const section = el('main', {class:'palace-scroll'}, el('div', {class:'palace-headline'},
-        el('p', {class:'palace-chapter'}, (s.chapter + 1) + ' / 10 · ' + when), heading), hero, panel);
+        el('p', {class:'palace-chapter'}, (s.chapter + 1) + ' / 10 · ' + when), heading, watch.bar,
+        s.beat === 0 || beat.film ? el('p', {class:'watch-intro'}, '『탐험대 이야기』 최온 · ' + BO.palaceWatchScenes[s.chapter].call) : null), hero, panel);
       const nav = el('div', {class:'palace-nav pad'}, el('button', {class:'pillbtn', on:{click:exit}},
         from === 'passover' ? '← 탐험으로' : '← 돌아가기'), el('span', {}, '모세와 바로의 대화'),
         el('button', {class:'pillbtn palace-river-link', on:{click:function () {
           detach(); app.openNile();
         }}}, '나일강 물길 탐험'));
-      app.show(el('div', {class:'screen palace-screen'}, nav, section, footer));
+      app.show(el('div', {class:'screen palace-screen'}, nav, section, footer, watch.dialog));
       if (focus) heading.focus({preventScroll:true});
+      watch.resume();
     }
     if (s.finished && s.chapter === chapters.length - 1 && s.beat === chapters[s.chapter].beats.length - 1) {
       // 끝에서 나간 다음에는 아이가 다시 처음부터 읽을 수 있다.
