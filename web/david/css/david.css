@@ -519,6 +519,76 @@ h1, h2, h3, p { margin: 0; }
 .fold-text { display: flex; flex-direction: column; min-width: 0; }
 .fold-title { font-family: var(--f-display); font-size: 14px; color: var(--ink); }
 .fold-sub { font-size: 11.5px; color: var(--text-soft); line-height: 1.25; }
+
+/* ── A01(D01) 목자의 물건 찾기 덮개·확대 관찰 창 ── */
+.d01-board { gap: 8px; padding: 8px 10px; }
+.d01-cover {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 60px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #FFF9ED;
+  border: 2px solid var(--paper-line);
+  text-align: left;
+}
+.d01-cover.opened {
+  background: #fff;
+  border-color: var(--teal);
+}
+.d01-cover.active {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+  box-shadow: 0 0 0 2px rgba(45, 117, 72, 0.18);
+}
+.d01-cover-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-family: var(--f-display);
+  font-size: 11.5px;
+}
+.d01-cover-kind { color: var(--teal); }
+.d01-cover-state { color: var(--brass-deep); }
+.d01-cover-main { display: flex; align-items: center; gap: 6px; }
+.d01-zoom-empty {
+  padding: 10px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1.5px dashed var(--paper-line);
+  font-size: 13px;
+  color: var(--text-soft);
+  text-align: center;
+}
+.d01-zoom-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #fff;
+  border: 2px solid var(--brass-deep);
+}
+.d01-zoom-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.d01-zoom-art {
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid var(--paper-line);
+}
+.d01-zoom-art svg { width: 100%; height: auto; display: block; max-height: 110px; }
+.d01-zoom-title { font-family: var(--f-display); font-size: 16px; color: var(--ink); }
+.d01-zoom-detail { font-size: 13.5px; color: var(--text); line-height: 1.4; margin: 0; }
+.d01-take-btn { min-height: 44px; font-size: 15px; width: 100%; }
+
 .journal-title-row { display: flex; align-items: center; gap: 6px; }
 .journal-clue-icon { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; }
 .journal-clue-icon svg { width: 22px; height: 22px; display: block; }

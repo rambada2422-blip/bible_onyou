@@ -129,9 +129,31 @@ window.BO_DAVID = window.BO_DAVID || {};
     gold: '<svg viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="16" cy="25" rx="8" ry="6" fill="#E9B44C" stroke="#A8741F" stroke-width="2"/><ellipse cx="25" cy="21" rx="7" ry="5" fill="#D4DCE8" stroke="#7A8699" stroke-width="2"/></svg>'
   };
 
+  var ZOOMS = {
+    'd01-shepherd': '<svg viewBox="0 0 240 110" role="img" aria-label="베들레헴 들판의 양 떼와 목자 지팡이 확대 그림">' +
+      '<rect width="240" height="110" fill="#89C4E1"/>' +
+      '<path d="M0 64 Q80 48 160 60 T240 54 L240 110 L0 110 Z" fill="#9DAE66"/>' +
+      '<path d="M46 96 L64 26 C67 16 79 16 80 26" fill="none" stroke="#6E4524" stroke-width="6" stroke-linecap="round"/>' +
+      '<g fill="#FBF7EE" stroke="#DDD2BE" stroke-width="1.5">' +
+      '<ellipse cx="122" cy="74" rx="24" ry="15"/><circle cx="144" cy="69" r="8" fill="#4B3B2B" stroke="none"/>' +
+      '<ellipse cx="182" cy="82" rx="22" ry="13"/><circle cx="163" cy="78" r="7" fill="#4B3B2B" stroke="none"/>' +
+      '</g></svg>',
+
+    'd01-horn': '<svg viewBox="0 0 240 110" role="img" aria-label="사무엘이 가져온 기름이 든 뿔 확대 그림">' +
+      '<rect width="240" height="110" fill="#EFE2C4"/>' +
+      '<path d="M0 84 Q120 74 240 84 L240 110 L0 110 Z" fill="#C9A86B"/>' +
+      '<g transform="translate(56,12)">' +
+      '<path d="M24 78 C42 52 74 28 112 8 C102 28 88 58 64 82 Z" fill="#7D4F2A" stroke="#4E3019" stroke-width="2.5"/>' +
+      '<ellipse cx="44" cy="80" rx="20" ry="8" fill="#4E3019"/>' +
+      '<ellipse cx="44" cy="80" rx="11" ry="4.5" fill="#E9B44C"/>' +
+      '<circle cx="44" cy="74" r="4" fill="#F6D172"/>' +
+      '</g></svg>'
+  };
+
   window.BO_DAVID.art = {
     scene: function (id) { return SCENES[id] || SCENES.D01; },
     icon: function (id) { return ICONS[id] || ICONS.stone; },
+    zoom: function (id) { return ZOOMS[id] || SCENES.D01; },
     registerScenes: function (map) {
       Object.keys(map).forEach(function (k) { SCENES[k] = map[k]; });
     }

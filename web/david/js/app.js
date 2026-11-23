@@ -16,12 +16,40 @@
     ['s4', 's1', 'p2', 's5', 'p1', 's3', 'p3', 's2']
   ];
 
+  /* A01(D01): 『탐험대 이야기』 목자의 물건 찾기 — 인물·물건 두 관찰 지점 */
+  var D01_SPOTS = [
+    {
+      id: 'shepherd',
+      kind: '인물 단서',
+      coverLabel: '베들레헴 들판 덮개',
+      title: '양을 치던 다윗',
+      ref: '삼상 16:11',
+      detail: '들판에서 양을 치던 막내아들 다윗이 불려 왔어.',
+      zoomArt: 'd01-shepherd',
+      icon: 'person'
+    },
+    {
+      id: 'horn',
+      kind: '물건 단서',
+      coverLabel: '사무엘의 물건 덮개',
+      title: '기름이 든 뿔',
+      ref: '삼상 16:13',
+      detail: '사무엘이 기름이 든 뿔을 가져와 다윗에게 기름을 부었어.',
+      zoomArt: 'd01-horn',
+      icon: 'horn'
+    }
+  ];
+
   function defaultState() {
     return {
       view: 'home',       /* home | scene | detour | journal | guardian */
       sceneId: null,
       step: 'choose',     /* choose | stones | order | hebron2 | ark2 | done */
       detourId: null,
+      d01Opened: [],      /* A01(D01): 열어 본 덮개 ['shepherd', 'horn'] */
+      d01ZoomId: null,    /* A01(D01): 현재 확대 중인 관찰 지점 */
+      d01FirstCover: null,/* A01(D01): 이번 판에 먼저 연 덮개 */
+      d01PickedClue: null,/* A01(D01): 일지로 가져간 단서 */
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
       brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
@@ -67,6 +95,12 @@
       if (typeof parsed.sceneId === 'string') base.sceneId = parsed.sceneId;
       if (['choose', 'stones', 'order', 'hebron2', 'ark2', 'done'].indexOf(parsed.step) !== -1) base.step = parsed.step;
       if (typeof parsed.detourId === 'string') base.detourId = parsed.detourId;
+      if (Array.isArray(parsed.d01Opened)) {
+        base.d01Opened = parsed.d01Opened.filter(function (v, i, a) { return (v === 'shepherd' || v === 'horn') && a.indexOf(v) === i; });
+      }
+      if (parsed.d01ZoomId === 'shepherd' || parsed.d01ZoomId === 'horn') base.d01ZoomId = parsed.d01ZoomId;
+      if (parsed.d01FirstCover === 'shepherd' || parsed.d01FirstCover === 'horn') base.d01FirstCover = parsed.d01FirstCover;
+      if (parsed.d01PickedClue === 'shepherd' || parsed.d01PickedClue === 'horn') base.d01PickedClue = parsed.d01PickedClue;
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
@@ -115,6 +149,10 @@
         sceneId: state.sceneId,
         step: state.step,
         detourId: state.detourId,
+        d01Opened: state.d01Opened,
+        d01ZoomId: state.d01ZoomId,
+        d01FirstCover: state.d01FirstCover,
+        d01PickedClue: state.d01PickedClue,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,
@@ -219,6 +257,10 @@
     state.sceneId = sc.id;
     state.step = 'choose';
     state.detourId = null;
+    state.d01Opened = [];
+    state.d01ZoomId = null;
+    state.d01FirstCover = null;
+    state.d01PickedClue = null;
     state.stonesFound = [];
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
@@ -240,6 +282,10 @@
     state.telemetry.replayCount = (state.telemetry.replayCount || 0) + 1;
     var seed = getSeed(state, sc.id);
     state.detourId = null;
+    state.d01Opened = [];
+    state.d01ZoomId = null;
+    state.d01FirstCover = null;
+    state.d01PickedClue = null;
     state.stonesFound = [];
     state.brookSpots = makeBrookSpots(seed);
     state.brookOpened = [];
@@ -473,6 +519,103 @@
     );
   }
 
+  /* A01(D01): 『탐험대 이야기』 목자의 물건 찾기 — 수첩 안 두 덮개 관찰 지점과 즉시 확대 창 */
+  function getD01Spot(id) {
+    for (var i = 0; i < D01_SPOTS.length; i++) {
+      if (D01_SPOTS[i].id === id) return D01_SPOTS[i];
+    }
+    return null;
+  }
+
+  function renderD01Notebook(sc) {
+    var seed = getSeed(state, 'D01');
+    var spots = D01_SPOTS.slice();
+    if (seed % 2 === 1) spots.reverse();
+
+    var coverNodes = spots.map(function (sp, idx) {
+      var opened = state.d01Opened.indexOf(sp.id) !== -1;
+      var active = state.d01ZoomId === sp.id;
+      return el('button', {
+        class: 'd01-cover' + (opened ? ' opened' : '') + (active ? ' active' : ''),
+        'data-d01-cover': sp.id,
+        'data-d01-slot': String(idx),
+        'aria-expanded': String(opened),
+        'aria-pressed': String(active),
+        on: {
+          click: function () {
+            recordFirstAction('D01:cover:' + sp.id);
+            if (state.d01Opened.indexOf(sp.id) === -1) state.d01Opened.push(sp.id);
+            if (!state.d01FirstCover) state.d01FirstCover = sp.id;
+            state.d01ZoomId = sp.id;
+            saveState();
+            render();
+          },
+          keydown: function (ev) {
+            if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') {
+              ev.preventDefault();
+              var other = root.querySelector('[data-d01-slot="' + ((idx + 1) % 2) + '"]');
+              if (other) other.focus();
+            }
+          }
+        }
+      },
+        el('div', { class: 'd01-cover-top' },
+          el('span', { class: 'd01-cover-kind', text: sp.kind }),
+          el('span', { class: 'd01-cover-state', text: active ? '확대 중' : (opened ? '열림' : '덮개 열기') })
+        ),
+        el('div', { class: 'd01-cover-main' },
+          el('span', { class: 'fold-icon', html: ART.icon(sp.icon) }),
+          el('div', { class: 'fold-text' },
+            el('span', { class: 'fold-title', text: opened ? sp.title : sp.coverLabel }),
+            el('span', { class: 'fold-sub', text: opened ? (sp.ref + ' · 눌러서 크게 보기') : '눌러서 덮개 들기' })
+          )
+        )
+      );
+    });
+
+    var activeSpot = state.d01ZoomId ? getD01Spot(state.d01ZoomId) : null;
+    var zoomPanel;
+    if (activeSpot) {
+      zoomPanel = el('div', { class: 'd01-zoom-panel', 'data-d01-zoom': activeSpot.id },
+        el('div', { class: 'd01-zoom-head' },
+          el('span', { class: 'tag', text: '확대 관찰 · ' + activeSpot.kind }),
+          el('span', { class: 'ref', text: activeSpot.ref })
+        ),
+        el('div', { class: 'd01-zoom-art', html: ART.zoom(activeSpot.zoomArt) }),
+        el('div', { class: 'd01-zoom-title', text: activeSpot.title }),
+        el('p', { class: 'd01-zoom-detail', text: activeSpot.detail }),
+        el('button', {
+          class: 'btn brass d01-take-btn',
+          'data-action': 'd01-bring-journal',
+          'data-d01-pick': activeSpot.id,
+          on: {
+            click: function () {
+              var firstSpot = getD01Spot(state.d01FirstCover) || activeSpot;
+              state.d01PickedClue = activeSpot.id;
+              recordDiscovery(
+                sc,
+                '『탐험대 이야기』 수첩 관찰: 먼저 연 덮개(' + firstSpot.kind + ') → 일지로 가져온 단서(' + activeSpot.title + ' · ' + activeSpot.ref + ')'
+              );
+              state.step = 'done';
+              saveState();
+              render();
+            }
+          }
+        }, '\'' + activeSpot.title + '\' 단서를 일지로 가져오기')
+      );
+    } else {
+      zoomPanel = el('div', { class: 'd01-zoom-empty', 'data-d01-zoom': 'none' },
+        '덮개를 하나 들면 그 자리의 단서가 바로 확대돼요.'
+      );
+    }
+
+    return el('section', { class: 'notebook-map d01-board', 'data-d01-board': 'true', 'data-d01-seed': String(seed) },
+      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 수첩의 덮개 둘 중 어느 쪽부터든 열어 확대하고, 하나를 골라 일지로 가져가자.' }),
+      el('div', { class: 'fold-grid d01-cover-grid' }, coverNodes),
+      zoomPanel
+    );
+  }
+
   function renderChooseStep(sc) {
     var seed = getSeed(state, sc.id);
     var list = sc.choices.slice();
@@ -499,6 +642,7 @@
       sc.teamNote ? el('p', { class: 'team-note', 'data-team-note': sc.id, text: sc.teamNote }) : null,
       el('h2', { class: 'question', text: sc.question }),
       sc.artNote ? el('p', { class: 'subnote', text: sc.artNote }) : null,
+      sc.id === 'D01' ? renderD01Notebook(sc) : null,
       sc.id === 'D07' ? renderD07FoldMap(sc) : null,
       el('div', { class: 'choices' }, choiceNodes)
     ];
