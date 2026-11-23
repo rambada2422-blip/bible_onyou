@@ -1,5 +1,5 @@
 /* 바이블 온유 · 다윗 탐험 실행 엔진 (독립 실행형, 저장 키: bibleOnyou.david.v1)
- * D01~D09 및 다윗 놀이 1~5 (시냇물 아래 관찰 창, 겉옷의 두 장면 수첩 펼침면, 왕의 식탁 수첩 탐색 지도, 단서 그림 기록과 다시 놀기, 시작 화면 체험 한 판 바로 시작)
+ * D01~D09 및 다윗 놀이 1~5 (시냇가 돌밭 관찰 창, 겉옷의 두 장면 수첩 펼침면, 왕의 식탁 수첩 탐색 지도, 단서 그림 기록과 다시 놀기, 시작 화면 체험 한 판 바로 시작)
  */
 (function () {
   'use strict';
@@ -9,7 +9,7 @@
   var ART = window.BO_DAVID.art;
   var root = document.getElementById('app');
 
-  /* 놀이 1(D02): 판마다 달라지는 시냇물 아래 돌(1~5)과 잔자갈(P1~P3) 배치 3종 */
+  /* 놀이 1(D02): 판마다 달라지는 시냇가 돌밭 돌(1~5)과 잔자갈(P1~P3) 배치 3종 */
   var BROOK_LAYOUTS = [
     ['s1', 'p1', 's2', 's3', 'p2', 's4', 'p3', 's5'],
     ['p1', 's3', 's1', 'p2', 's5', 's2', 's4', 'p3'],
@@ -23,9 +23,9 @@
       step: 'choose',     /* choose | stones | order | hebron2 | ark2 | done */
       detourId: null,
       stonesFound: [],
-      brookSpots: [],     /* 현재 판의 시냇물 아래 배치 (s1~s5, p1~p3) */
-      brookOpened: [],    /* 열어 본 물결 칸 인덱스 */
-      lastSpotIdx: null,  /* 방금 들여다본 물결 관찰 창 위치 */
+      brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
+      brookOpened: [],    /* 열어 본 돌밭 칸 인덱스 */
+      lastSpotIdx: null,  /* 방금 살펴본 돌밭 관찰 창 위치 */
       orderList: [],
       orderPick: null,
       orderMsg: '',
@@ -337,7 +337,7 @@
               class: 'trial-btn',
               'data-action': 'quick-trial',
               on: { click: startQuickTrial }
-            }, '체험 한 판 바로 시작 (시냇물 아래)')
+            }, '체험 한 판 바로 시작 (시냇가 돌밭 · 『탐험대 이야기』)')
           )
         ),
         el('div', { class: 'section-head', text: '다윗의 일곱 관찰 (D01~D07)' }),
@@ -446,7 +446,7 @@
     });
 
     return el('section', { class: 'notebook-map', 'data-notebook-map': 'D07' },
-      el('div', { class: 'one-line-guide', text: '수첩의 두 날개를 어느 쪽부터든 펼쳐 두 단서를 이어 보자.' }),
+      el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 수첩의 두 날개를 어느 쪽부터든 펼쳐 두 단서를 이어 보자.' }),
       el('div', { class: 'fold-grid' }, foldNodes)
     );
   }
@@ -477,7 +477,7 @@
     ];
   }
 
-  /* 놀이 1(D02): 물결이 걷히는 관찰 창. 첫 입력은 반드시 매끄러운 돌 하나를 드러낸다. */
+  /* 놀이 1(D02): 『탐험대 이야기』 시냇가 돌밭 관찰 창. 첫 입력은 반드시 매끄러운 돌 하나를 드러낸다. */
   function activateBrookSpot(sc, spotIdx) {
     if (!state.brookSpots || state.brookSpots.length !== 8) {
       state.brookSpots = makeBrookSpots(getSeed(state, sc.id));
@@ -505,7 +505,7 @@
       if (state.stonesFound.indexOf(num) === -1) {
         state.stonesFound.push(num);
         if (state.stonesFound.length >= 5) {
-          recordDiscovery(sc, '시냇물 아래 관찰 창에서 매끄러운 돌 다섯을 모두 확인함 (배치 #' + (getSeed(state, sc.id) + 1) + ')');
+          recordDiscovery(sc, '『탐험대 이야기』 시냇가 돌밭 관찰 창에서 매끄러운 돌 다섯을 모두 확인함 (배치 #' + (getSeed(state, sc.id) + 1) + ')');
           state.step = 'done';
         }
       }
@@ -522,12 +522,12 @@
     }
     var count = state.stonesFound.length;
     var seed = getSeed(state, sc.id);
-    var lensStatus = '물결 칸을 골라 누르면 물결이 걷히고 시냇물 바닥이 보여요.';
+    var lensStatus = '시냇가 돌밭 칸을 골라 누르면 관찰 창으로 돌을 살펴볼 수 있어요.';
     if (typeof state.lastSpotIdx === 'number' && state.brookSpots[state.lastSpotIdx]) {
       var lastCode = state.brookSpots[state.lastSpotIdx];
       lensStatus = lastCode.charAt(0) === 's'
-        ? ('관찰 창 #' + (state.lastSpotIdx + 1) + ': 물결 아래에서 매끄러운 돌 ' + lastCode.slice(1) + '번을 찾았어요!')
-        : ('관찰 창 #' + (state.lastSpotIdx + 1) + ': 여기는 울퉁불퉁한 잔자갈이에요. 다른 물결을 들여다보세요.');
+        ? ('관찰 창 #' + (state.lastSpotIdx + 1) + ': 시냇가 돌밭에서 매끄러운 돌 ' + lastCode.slice(1) + '번을 찾았어요!')
+        : ('관찰 창 #' + (state.lastSpotIdx + 1) + ': 여기는 울퉁불퉁한 잔자갈이에요. 다른 돌밭 칸을 살펴보세요.');
     }
 
     var spotBtns = state.brookSpots.map(function (code, idx) {
@@ -556,9 +556,9 @@
       };
       if (isStone) attrs['data-stone'] = String(stoneNum);
 
-      /* 열어 보기 전에는 모든 칸이 '물결 1~8'로 보여 아이가 직접 위치를 골라 들여다보게 한다 */
-      var labelText = !opened ? ('물결 ' + (idx + 1)) : (isStone ? ('돌 ' + stoneNum + ' ✓') : '잔자갈');
-      var visualIcon = !opened ? 'water' : 'stone';
+      /* 열어 보기 전에는 모든 칸이 '돌밭 1~8'로 보여 아이가 직접 위치를 골라 살펴보게 한다 */
+      var labelText = !opened ? ('돌밭 ' + (idx + 1)) : (isStone ? ('돌 ' + stoneNum + ' ✓') : '잔자갈');
+      var visualIcon = 'stone';
 
       return el('button', attrs,
         el('span', { class: 'spot-visual', html: ART.icon(visualIcon) }),
@@ -570,9 +570,10 @@
       el('div', { class: 'meta-row' },
         el('span', { class: 'ref', text: sc.ref }),
         el('span', { class: 'tag', text: '관찰한 돌 ' + count + ' / 5' }),
-        seed > 0 ? el('span', { class: 'tag', text: '새 물결 배치 #' + (seed + 1) }) : null
+        el('span', { class: 'tag', text: '『탐험대 이야기』' }),
+        seed > 0 ? el('span', { class: 'tag', text: '새 돌밭 배치 #' + (seed + 1) }) : null
       ),
-      el('h2', { class: 'question', text: '물결이 걷히는 관찰 창으로 매끄러운 돌 다섯을 찾아보자.' }),
+      el('h2', { class: 'question', text: '시냇가 돌밭 관찰 창에서 매끄러운 돌 다섯을 찾아보자.' }),
       el('p', { class: 'subnote one-line-guide', text: lensStatus }),
       el('div', { class: 'stones-grid brook-window', 'data-brook-seed': String(seed) }, spotBtns)
     ];
@@ -699,6 +700,7 @@
     return [
       el('div', { class: 'meta-row' },
         el('span', { class: 'ref', text: sc.ref }),
+        el('span', { class: 'tag', text: '『탐험대 이야기』' }),
         seed > 0 ? el('span', { class: 'tag', text: '수첩 펼침면 #' + (seed + 1) }) : null
       ),
       el('h2', { class: 'question', text: '수첩 펼침면에서 두 장면 조각을 순서대로 이어 붙여 보자.' }),

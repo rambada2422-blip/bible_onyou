@@ -107,7 +107,7 @@ window.BO_DAVID = window.BO_DAVID || {};
         { id: 'gift', label: '선물을 준 때', ref: '삼상 18:1–4' },
         { id: 'farewell', label: '두 친구가 헤어진 때', ref: '삼상 20:41–42' }
       ],
-      discovery: '요나단이 자기 겉옷을 다윗에게 주었고, 두 친구는 나중에 서로 입 맞추고 함께 울며 헤어졌어.',
+      discovery: '요나단이 자기 겉옷을 다윗에게 주었고, 두 친구는 나중에 눈물을 흘리며 작별 인사를 했어.',
       journalRef: '삼상 18:1–4, 20:41–42',
       reviewRequired: false,
       reviewState: '목회자 감수 전',
