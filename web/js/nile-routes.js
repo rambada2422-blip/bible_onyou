@@ -1,4 +1,4 @@
-/* 빙글 도는 물길. 한 번 노를 저으면 다음 둔덕이나 나루까지 간다. */
+/* 빙글 도는 물길. 노를 한 번 저을 때마다 이웃한 한 칸으로 이동한다. */
 (function () {
   'use strict';
   const directions = {
@@ -24,12 +24,12 @@
     ['갈대 나루', ['D....','.....','.S#..','#L..#','..###']],
     ['모래톱 굽이', ['#....#','#.#.D.','.L#.#.','......','#..S..']],
     ['연못 사이로', ['..D...','......','.###.#','#.....','##.S.L','#....#']],
-    ['저녁 등불', ['..#.###','#..D...','#.##...','#....##','....L..','.S..#..']]
+    ['저녁 등불', ['..#####','#..D...','#.##...','#....##','....L..','.S..#..']]
   ].map(makeRoute);
   const locks = [
     ['갈대 수문', ['.S.T.','..#..','.....','..#.#','.L.AD']],
-    ['엇갈린 두 문', ['..#.#.','T....#','.L....','S#....','#D.AB.']],
-    ['두 바퀴의 나루', ['S.#...','T.#..#','..T.#D','......','..ALB#','...##.']]
+    ['엇갈린 두 문', ['..#.##','T....#','.L....','S#....','#D.AB.']],
+    ['두 바퀴의 나루', ['S.#...','T.#..#','..T.#D','......','..ALB#','...###']]
   ].map(makeRoute);
   function sail(route, position, direction) {
     if (position.arrived) return null;
@@ -38,19 +38,10 @@
     }
     if (!Object.hasOwn(directions, direction)) return null;
     const vector = directions[direction];
-    let {x, y, found} = position;
-    const startX = x, startY = y;
-    let arrived = false;
-    while (!arrived) {
-      const tile = route.rows[y + vector.y]?.[x + vector.x];
-      if (!tile || tile === '#' || (tile === 'A' && !position.gateOpen) || (tile === 'B' && position.gateOpen)) break;
-      x += vector.x;
-      y += vector.y;
-      found ||= tile === 'L';
-      arrived = tile === 'D';
-      if (tile === 'T') break;
-    }
-    return x === startX && y === startY ? null : {x, y, found, arrived, gateOpen:position.gateOpen};
+    const x = position.x + vector.x, y = position.y + vector.y;
+    const tile = route.rows[y]?.[x];
+    if (!tile || tile === '#' || (tile === 'A' && !position.gateOpen) || (tile === 'B' && position.gateOpen)) return null;
+    return {x, y, found:position.found || tile === 'L', arrived:tile === 'D', gateOpen:position.gateOpen};
   }
   function start(route) { return {...route.start, found:false, arrived:false, gateOpen:false}; }
   function trace(route, moves) {
@@ -61,6 +52,22 @@
       positions.push(next);
     }
     return positions;
+  }
+  // 예전 한 번의 노 젓기를 실제로 지나간 칸들로 풀어 같은 위치와 수문 상태를 복원한다.
+  function expandGlides(route, actions) {
+    const steps = [];
+    let position = start(route);
+    for (const action of actions) {
+      let next = sail(route, position, action);
+      if (!next) break;
+      while (next) {
+        steps.push(action);
+        position = next;
+        if (action === 'turn' || position.arrived || route.rows[position.y][position.x] === 'T') break;
+        next = sail(route, position, action);
+      }
+    }
+    return steps;
   }
   function hint(route, position) {
     const queue = [{position, first:null}];
@@ -84,5 +91,5 @@
     }
     return null;
   }
-  BO.nileRoutes = {routes, locks, directions, sail, start, trace, hint};
+  BO.nileRoutes = {routes, locks, directions, sail, start, trace, expandGlides, hint};
 })();

@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const app = BO.app2d, el = app.el;
-  const {directions, sail, start, trace, hint} = BO.nileRoutes;
+  const {directions, sail, start, trace, expandGlides, hint} = BO.nileRoutes;
   const last = list => list[list.length - 1];
   // 지도의 놀이와 구분해, 왕궁 본편에서 이미 읽을 수 있는 기록을 순서대로 펼친다.
   const riverPages = [
@@ -22,16 +22,24 @@
     const pages = isLockCourse ? lockPages : riverPages;
     const storageKey = isLockCourse ? 'nileLocks' : 'nile';
     const old = app.state[storageKey] || {};
+    const legacy = old.movement !== 'step';
+    const positive = n => Number.isSafeInteger(n) && n > 0;
     const records = routes.map((route, i) => {
-      const oldRecord = old.records?.[i];
-      return oldRecord && Number.isSafeInteger(oldRecord.best) && oldRecord.best > 0
-        ? {best:oldRecord.best, flower:oldRecord.flower === true} : null;
+      const r = old.records?.[i];
+      if (!r) return null;
+      const glideBest = legacy ? r.best : r.glideBest;
+      const best = !legacy && positive(r.best) ? r.best : null;
+      if (!best && !positive(glideBest)) return null;
+      const record = {best, flower:r.flower === true};
+      if (positive(glideBest)) record.glideBest = glideBest;
+      return record;
     });
     let unlocked = records.findIndex(record => !record);
     if (unlocked < 0) unlocked = routes.length - 1;
     let index = Number.isInteger(old.index) && old.index >= 0 && old.index <= unlocked ? old.index : 0;
     let moves = Array.isArray(old.moves) ? old.moves : [];
     let route = routes[index];
+    if (legacy) moves = expandGlides(route, moves);
     let path = trace(route, moves);
     moves = moves.slice(0, path.length - 1);
     let moving = 0, sound = old.sound === true, context;
@@ -40,7 +48,7 @@
     const events = new AbortController();
     function save() {
       app.state.nileCourse = isLockCourse ? 'locks' : 'river';
-      app.state[storageKey] = {index, moves, records, sound};
+      app.state[storageKey] = {movement:'step', index, moves, records, sound};
       app.save();
     }
     function button(label, css, action) {
@@ -128,7 +136,7 @@
       }
     });
     const tools = el('div', {class:'river-tools'}, undo, assist, soundButton);
-    const goal = el('p', {class:'river-goal'}, '노를 저으면 갈대밭이나 강가까지 미끄러져요. 노란 깃발에 닿으세요.');
+    const goal = el('p', {class:'river-goal'}, '방향을 한 번 누르면 배가 한 칸 가요. 노란 깃발까지 노를 저으세요.');
     const controls = el('div', {class:'river-controls'}, gatePanel, directionsBar,
       el('p', {class:'river-input-note'}, '방향 단추 · 밀기 · 방향키'));
     const result = el('section', {class:'river-result', hidden:true});
@@ -149,7 +157,7 @@
       routes.forEach((r, i) => {
         const rec = records[i];
         const item = el('li', {}, el('strong', {}, r.name), el('span', {}, rec
-          ? '가장 짧은 항해 ' + rec.best + '수 · ' + (rec.flower ? '연꽃 기록' : '연꽃 미발견')
+          ? (rec.best ? '가장 짧은 항해 ' + rec.best : '이전 항해 ' + rec.glideBest) + '수 · ' + (rec.flower ? '연꽃 기록' : '연꽃 미발견')
           : i === index ? '항해 중' : '미탐험'));
         if (rec) {
           const page = pages[i], beat = BO.palaceChapters[isLockCourse ? 1 : 0].beats[page.beat];
@@ -194,7 +202,7 @@
         const blue = route.paired ? (p.gateOpen ? ' · 푸른 수문 닫힘' : ' · 푸른 수문 열림') : '';
         gatePanel.hidden = false;
         gateState.textContent = gold + blue;
-        wheel.disabled = !atWheel || moving || p.arrived;
+        wheel.disabled = !atWheel || p.arrived;
         wheel.classList.remove('river-hinted');
         const gates = route.gates.map(g => (g.type === 'A' ? '황금 수문 ' : '푸른 수문 ') + coord(g));
         mapLabel += ', 바퀴 ' + route.wheels.map(coord).join(', ') + ', ' + gates.join(', ') + ', ' + gold + blue;
@@ -215,8 +223,8 @@
       routeNo.textContent = (isLockCourse ? '수문 탐험' : '나일강 물길') + '  ·  ' +
         String(index + 1).padStart(2, '0') + ' / ' + String(routes.length).padStart(2, '0');
       if (isLockCourse) goal.textContent = route.paired
-        ? '바퀴를 돌리면 두 수문이 번갈아 열려요. 노란 깃발로 가 보세요.'
-        : '구리 바퀴까지 노를 저으세요. 거기서 수문을 열고 노란 깃발로 가요.';
+        ? '한 칸씩 노를 저으세요. 바퀴를 돌리면 두 수문이 번갈아 열려요.'
+        : '한 칸씩 구리 바퀴까지 가세요. 바퀴를 돌려 수문을 열어요.';
       name.textContent = route.name;
       board.style.setProperty('--river-cols', route.rows[0].length);
       board.style.setProperty('--river-rows', route.rows.length);
@@ -252,30 +260,30 @@
       save(); showStage(); status.textContent = action === 'turn' ? '바퀴를 돌리기 전으로 돌아왔어요.' : '노를 젓기 전 자리예요.';
     }
     function move(dir) {
-      if (moving || journal.open || last(path).arrived) return;
+      if (journal.open || last(path).arrived) return;
       const before = last(path), next = sail(route, before, dir);
       if (!next) { status.textContent = '그쪽은 막혔어요. 다른 방향으로 저어 봐요.'; return; }
+      // 연속 입력은 직전 한 칸을 마친 위치에서 받는다. 자동으로 움직일 입력을 쌓지 않는다.
+      if (moving) stopMotion();
       moves.push(dir); path.push(next);
       if (dir === 'turn') {
         save(); describe(); paint(); signalGates(); tone(330); tone(440, .08);
-        status.textContent = '문이 움직였어요. 다음엔 어디에서 배가 멈출까요?';
+        status.textContent = '문이 움직였어요. 열린 물길로 한 칸씩 가 보세요.';
         return;
       }
       direction = dir;
       if (next.arrived) {
         const prior = records[index];
-        records[index] = {best:Math.min(prior?.best ?? Infinity, moves.length), flower:next.found || !!prior?.flower};
+        records[index] = {...prior, best:Math.min(prior?.best ?? Infinity, moves.length), flower:next.found || !!prior?.flower};
       }
       moving = 1; save(); tone(247); describe();
-      const distance = Math.abs(next.x - before.x) + Math.abs(next.y - before.y);
-      const duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 130 + 64 * distance;
+      const duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 105;
       const started = performance.now();
       function frame(time) {
         const part = duration ? Math.min(1, Math.max(0, (time - started) / duration)) : 1;
         const t = part * (2 - part);
         const pos = {x:before.x + (next.x - before.x) * t, y:before.y + (next.y - before.y) * t};
-        const toFlower = Math.abs(route.lotus.x - before.x) + Math.abs(route.lotus.y - before.y);
-        paint(pos, before.found || (next.found && t * distance >= toFlower));
+        paint(pos, before.found || (next.found && part === 1));
         if (part < 1) { animation = requestAnimationFrame(frame); return; }
         animation = 0; moving = 0;
         describe();
@@ -318,7 +326,7 @@
       }
       move(Math.abs(dx) > Math.abs(dy) ? dx > 0 ? 'right' : 'left' : dy > 0 ? 'down' : 'up');
     });
-    if (isLockCourse || selected || app.state.nileCourse) save();
+    if (isLockCourse || selected || app.state.nileCourse || (legacy && old.moves)) save();
     showStage();
   }
   app.nile = {open};

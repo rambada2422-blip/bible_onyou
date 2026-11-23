@@ -7,7 +7,7 @@ const {gameOrigin, proxy} = require('../game-server');
 const out = path.resolve(process.argv[2] || 'dist/nile-proof');
 const keys = {L:'ArrowLeft', R:'ArrowRight', U:'ArrowUp', D:'ArrowDown'};
 const buttons = {L:'왼쪽', R:'오른쪽', U:'위', D:'아래'};
-const flowers = ['DUL', 'LURD', 'RLDRUL', 'RURDUL'];
+const flowers = ['DUUUL', 'ULLUUURRDR', 'RRULUUULL', 'URRRUUUL'];
 const names = ['갈대 나루','모래톱 굽이','연못 사이로','저녁 등불'];
 async function play(browser, origin, entry, width, height, touch) {
   const page = await browser.newPage({viewport:{width,height}, hasTouch:touch, isMobile:touch, reducedMotion:'reduce'});
@@ -43,14 +43,15 @@ async function play(browser, origin, entry, width, height, touch) {
     await cdp.detach();
   } else await page.keyboard.press('s');
   assert.deepEqual((await active()).moves,['down']);
+  assert.match(await page.locator('canvas').getAttribute('aria-label'), /^배 4행 2열,/);
   await page.setViewportSize({width:height,height:width});
   await page.reload();
   assert.deepEqual((await active()).moves,['down']);
   await page.setViewportSize({width,height});
   await tap('한 수 되돌리기');
   assert.deepEqual((await active()).moves,[]);
-  await steer('LU');
-  assert.equal((await active()).records[0].best,2);
+  await steer('LUU');
+  assert.equal((await active()).records[0].best,3);
   assert.equal((await active()).records[0].flower,false);
   await tap('이 물길 다시 타기');
   for (const [i, route] of flowers.entries()) {
@@ -60,7 +61,7 @@ async function play(browser, origin, entry, width, height, touch) {
     assert.equal((await active()).records[i].flower,true);
     if (i < 3) await tap('다음 물길');
   }
-  assert.equal((await active()).records[0].best,2);
+  assert.equal((await active()).records[0].best,3);
   await tap('완성한 항해 일지');
   assert.equal(await page.locator('dialog li').count(),4);
   await page.getByText('모세와 아론의 부탁',{exact:true}).click();

@@ -7,21 +7,25 @@ const {gameOrigin, proxy} = require('../game-server');
 const dirs = {R:'right', L:'left', U:'up', D:'down', T:'turn'};
 const names = {R:'오른쪽', L:'왼쪽', U:'위', D:'아래'};
 const arrows = {R:'ArrowRight', L:'ArrowLeft', U:'ArrowUp', D:'ArrowDown', T:'g'};
-const simple = ['RTDR', 'UTRDLDL', 'DTDRUTDRU'];
-const flowers = ['RTDLR', 'UTURDLURDLDL', 'DTDRUTRDRURU'];
+const simple = ['RRTDDDDR', 'UURRDDDL', 'DDDRRRRRU'];
+const flowers = ['RRTDDDDLLRRR', 'URRDDL', 'DDDRRRDURRU'];
 const out = path.resolve(process.argv[2] || 'dist/nile-lock-proof');
 
 function checkRoutes() {
   global.BO = {};
   require('../../../web/js/nile-routes');
-  const {locks, sail, start, hint, trace} = BO.nileRoutes;
+  const {routes, locks, sail, start, hint, trace} = BO.nileRoutes;
   const id = p => [p.x,p.y,p.found,p.gateOpen].join('/');
-  locks.forEach((route, i) => {
+  const riverSimple = ['UUL','UUUR','URUUULL','UUUURR'];
+  const riverFlowers = ['DUUUL','ULLUUURRDR','RRULUUULL','URRRUUUL'];
+  [...routes,...locks].forEach((route, i) => {
+    const cells = new Set();
     const seen = new Set(), goals = new Map(), queue = [[start(route), 0]];
     for (let j = 0; j < queue.length; j++) {
       const [pos, cost] = queue[j];
       if (seen.has(id(pos))) continue;
       seen.add(id(pos));
+      cells.add([pos.x,pos.y].join());
       if (pos.arrived) {
         if (!goals.has(pos.found)) goals.set(pos.found, cost);
         continue;
@@ -37,12 +41,18 @@ function checkRoutes() {
       }
       for (const act of Object.values(dirs)) {
         const next = sail(route,pos,act);
-        if (next) queue.push([next,cost+1]);
+        if (next) {
+          const distance = Math.abs(next.x-pos.x) + Math.abs(next.y-pos.y);
+          assert.equal(distance,act==='turn' ? 0 : 1);
+          queue.push([next,cost+1]);
+        }
       }
     }
-    assert.equal(goals.get(false),simple[i].length);
-    assert.equal(goals.get(true),flowers[i].length);
-    for (const word of [simple[i],flowers[i]]) {
+    const easy = [...riverSimple,...simple][i], withFlower = [...riverFlowers,...flowers][i];
+    assert.equal(cells.size,route.rows.join('').replaceAll('#','').length);
+    assert.equal(goals.get(false),easy.length);
+    assert.equal(goals.get(true),withFlower.length);
+    for (const word of [easy,withFlower]) {
       const positions = trace(route,Array.from(word,c => dirs[c]));
       assert.equal(positions.length,word.length+1);
       assert(positions.at(-1).arrived);
@@ -71,12 +81,17 @@ async function check(browser, origin, mobile, width, height) {
     await page.evaluate(() => {
       const prior = JSON.parse(localStorage.getItem('bo_demo_v1'));
       delete prior.nileCourse;
+      delete prior.nile.movement;
       prior.nile.records[0] = {best:2,flower:true};
       localStorage.setItem('bo_demo_v1',JSON.stringify(prior));
     });
-    const original = (await state()).nile;
+    const original = {...(await state()).nile, movement:'step', moves:['down','down']};
+    original.records[0] = {best:null, flower:true, glideBest:2};
     await page.goto(origin+'/nile.html?course=locks');
     assert.equal(await page.locator('.river-name').innerText(),'갈대 수문');
+    assert(await button('바퀴 돌리기').isDisabled());
+    await act('R');
+    assert.match(await page.locator('canvas').getAttribute('aria-label'), /^배 1행 3열,/);
     assert(await button('바퀴 돌리기').isDisabled());
     await act('R');
     await tap('물길 힌트');
@@ -88,7 +103,7 @@ async function check(browser, origin, mobile, width, height) {
     assert.match(await page.locator('.river-gate-state').innerText(),/황금 수문 열림/);
     await page.setViewportSize({width:height,height:width});
     await page.reload();
-    assert.deepEqual((await state()).nileLocks.moves,['right','turn']);
+    assert.deepEqual((await state()).nileLocks.moves,['right','right','turn']);
     await tap('한 수 되돌리기');
     assert.match(await page.locator('.river-gate-state').innerText(),/황금 수문 닫힘/);
     await page.setViewportSize({width,height});
@@ -100,23 +115,24 @@ async function check(browser, origin, mobile, width, height) {
     assert.equal(await page.locator('.river-name').innerText(),'갈대 나루');
     await tap('항해 일지');
     await tap('수문 탐험으로');
-    assert.deepEqual((await state()).nileLocks.moves,['right','turn']);
-    await act('DR');
-    assert.equal((await state()).nileLocks.records[0].best,4);
+    assert.deepEqual((await state()).nileLocks.moves,['right','right','turn']);
+    await act('DDDDR');
+    assert.equal((await state()).nileLocks.records[0].best,8);
     await tap('이 물길 다시 타기');
-    for (const [i, sequence] of flowers.entries()) {
+    const wheelVoyages = [flowers[0], 'UUTURDDLURRRRDDLLDL', 'DTDDDDRRUUUTRDDRURU'];
+    for (const [i, sequence] of wheelVoyages.entries()) {
       if (i===1) {
-        await act(sequence.slice(0,2));
+        await act(sequence.slice(0,3));
         assert.equal(await page.locator('.river-gate-state').innerText(),'황금 수문 열림 · 푸른 수문 닫힘');
         await page.screenshot({path:path.join(out,'수문-'+width+'.png')});
-        await act(sequence.slice(2));
+        await act(sequence.slice(3));
       } else await act(sequence);
       await page.getByRole('heading',{name:'나루에 도착했어요!'}).waitFor();
       if (i<flowers.length-1) await tap('다음 물길');
     }
     const records = (await state()).nileLocks.records;
     assert.deepEqual(records.map(r=>r.flower),[true,true,true]);
-    assert.equal(records[0].best,4);
+    assert.equal(records[0].best,8);
     await tap('완성한 항해 일지');
     await page.locator('dialog details').last().locator('summary').click();
     assert.equal(await page.locator('dialog details[open] .ref').innerText(),'출 8:12–15');
@@ -127,6 +143,54 @@ async function check(browser, origin, mobile, width, height) {
     assert.deepEqual((await state()).nile,original);
     assert.deepEqual(errors,[]);
     console.log(width+'×'+height,'수문 3곳·두 항해 저장·이전 저장 복원·일지 통과');
+  } finally { await page.close(); }
+}
+async function precision(browser, origin) {
+  const page = await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  try {
+    await page.goto(origin+'/nile.html?course=locks');
+    const board = page.locator('canvas');
+    const position = (row,col) => '배 '+row+'행 '+col+'열,';
+    const at = async (row,col) => assert((await board.getAttribute('aria-label')).startsWith(position(row,col)));
+    await at(1,2);
+    const box = await board.boundingBox();
+    const x = Math.round(box.x+16), y = Math.round(box.y+22);
+    const cdp = await page.context().newCDPSession(page);
+    const swipe = [['touchStart',[{x,y}]],['touchMove',[{x:x+180,y}]],['touchEnd',[]]];
+    for (const [type,touchPoints] of swipe) await cdp.send('Input.dispatchTouchEvent',{type,touchPoints});
+    await cdp.detach();
+    await page.waitForFunction(() => document.querySelector('.river-status').textContent.includes('배가 멈췄어요'));
+    await at(1,3);
+    await page.keyboard.down('ArrowRight');
+    await page.keyboard.down('ArrowRight'); // 길게 누를 때 오는 반복 이벤트
+    await page.keyboard.up('ArrowRight');
+    await at(1,4);
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowDown');
+    await at(1,3); // 남쪽은 갈대. 입력이 빠르더라도 이 자리에 머문다.
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowDown');
+    await at(2,2); // 애니메이션 중 두 번 누른 방향을 모두 반영한다.
+
+    // 미끄러지던 저장에서 황금 수문을 지나 연꽃이 있는 행까지 간 배를 복원한다.
+    await page.evaluate(() => {
+      const old = JSON.parse(localStorage.getItem('bo_demo_v1'));
+      old.nileLocks = {index:0, moves:['right','turn','down','left'], records:[{best:4,flower:true}], sound:false};
+      localStorage.setItem('bo_demo_v1', JSON.stringify(old));
+    });
+    await page.reload();
+    await at(5,1);
+    const saved = () => page.evaluate(() => BO.app2d.state.nileLocks);
+    const migrated = await saved();
+    assert.deepEqual(migrated.moves,['right','right','turn','down','down','down','down','left','left','left']);
+    assert.deepEqual(migrated.records[0],{best:null,flower:true,glideBest:4});
+    assert.match(await page.locator('.river-gate-state').innerText(),/황금 수문 열림/);
+    assert(await page.locator('.flower-found').isVisible());
+    await page.reload();
+    assert.deepEqual(await saved(),migrated);
+    await page.getByRole('button',{name:'한 수 되돌리기',exact:true}).tap();
+    await at(5,2);
+    console.log('일반 모션에서 긴 밀기·키 반복·빠른 연속 입력·구형 수문 저장 복원 통과');
   } finally { await page.close(); }
 }
 async function layouts(browser, origin) {
@@ -154,6 +218,7 @@ async function layouts(browser, origin) {
   const b = await chromium.launch({proxy});
   try {
     const origin = await gameOrigin(b);
+    await precision(b,origin);
     await layouts(b,origin);
     await check(b,origin,true,320,568);
     await check(b,origin,true,360,640);
