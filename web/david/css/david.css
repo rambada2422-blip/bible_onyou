@@ -492,6 +492,121 @@ h1, h2, h3, p { margin: 0; }
   font-size: 13px;
   color: var(--ink);
 }
+
+.brook-play,
+.brook-observation,
+.brook-camera {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.brook-camera {
+  padding: 10px;
+  border: 1px solid var(--paper-line);
+  border-radius: 16px;
+  background: #fff9ed;
+}
+.brook-camera-heading,
+.brook-camera-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.brook-camera-controls button {
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 10px;
+  font-family: var(--f-display);
+  touch-action: manipulation;
+}
+.brook-camera-move {
+  background: var(--paper-2);
+  font-size: 27px;
+  line-height: 1;
+}
+.brook-camera-move[aria-disabled="true"] { opacity: .45; }
+.brook-shutter {
+  flex: 1;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 17px;
+}
+.brook-shutter:active { background: var(--teal); }
+.brook-viewfinder {
+  position: relative;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--ink);
+}
+.brook-photo {
+  aspect-ratio: 108 / 44;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #5ca8ba;
+}
+.brook-photo svg { display: block; width: 100%; height: 100%; }
+.brook-first-glint::after {
+  content: '';
+  position: absolute;
+  top: 29%;
+  left: 45%;
+  width: 20px;
+  height: 20px;
+  background: #fff2c4;
+  clip-path: polygon(50% 0, 62% 37%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 37%);
+  pointer-events: none;
+  animation: brook-glint 700ms ease-out;
+}
+@keyframes brook-glint {
+  0% { transform: scale(.3); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+.brook-camera-status {
+  font-size: 13.5px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.brook-album { display: grid; gap: 8px; }
+.brook-album:empty { display: none; }
+.brook-photo-picks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.brook-photo-pick,
+.brook-kept-photo {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  margin: 0;
+  padding: 5px;
+  border: 2px solid var(--paper-line);
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+  background: #fff;
+}
+.brook-photo-pick[aria-pressed="true"] {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+}
+.brook-photo-pick { position: relative; line-height: 1.35; }
+.brook-photo-pick[aria-pressed="true"]::after {
+  content: '✓';
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+}
+.brook-kept-photo { width: min(100%, 200px); }
+
 .fold-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1052,6 +1167,8 @@ h1, h2, h3, p { margin: 0; }
   .choice-card { min-height: 50px; padding: 8px 12px; }
   .btn { min-height: 44px; font-size: 16px; }
   .scene-list { display: grid; grid-template-columns: repeat(2, 1fr); }
+  .brook-play { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 12px; align-items: start; }
+  .brook-camera { padding: 8px; gap: 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

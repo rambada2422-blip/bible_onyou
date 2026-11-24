@@ -15,6 +15,11 @@
     ['p1', 's3', 's1', 'p2', 's5', 's2', 's4', 'p3'],
     ['s4', 's1', 'p2', 's5', 'p1', 's3', 'p3', 's2']
   ];
+  var BROOK_CAMERA_VIEWS = [
+    { x: 128, label: '왼쪽' },
+    { x: 180, label: '가운데' },
+    { x: 232, label: '오른쪽' }
+  ];
 
   /* A01(D01): 『탐험대 이야기』 목자의 물건 찾기 — 인물·물건 두 관찰 지점 */
   var D01_SPOTS = [
@@ -116,6 +121,7 @@
       d02Entry: 'stones', /* A29: D02 접근 경로 ('stones' | 'sectors') */
       d02MarkMode: false, /* A30: D02 관찰 책갈피 모드 */
       d02Marks: [],       /* A30: D02 책갈피 꽂힌 칸 인덱스 */
+      d02Camera: { position: 1, photos: [], kept: null },
       d04Entry: 'tray',   /* A33: D04 접근 경로 ('tray' | 'trace') */
       d04TraceSeen: ['edge'], /* A34: D04 관찰한 천 조각 부위 */
       d08Entry: 'well',   /* A31: D08 접근 경로 ('well' | 'action') */
@@ -142,6 +148,10 @@
 
   function makeBrookSpots(seed) {
     return BROOK_LAYOUTS[Math.abs(seed || 0) % BROOK_LAYOUTS.length].slice();
+  }
+
+  function isBrookCameraPosition(value) {
+    return Number.isInteger(value) && value >= 0 && value < BROOK_CAMERA_VIEWS.length;
   }
 
   function makeInitialOrderList(sc, seed) {
@@ -236,6 +246,14 @@
       base.d02MarkMode = !!parsed.d02MarkMode;
       if (Array.isArray(parsed.d02Marks)) {
         base.d02Marks = parsed.d02Marks.filter(function (v, i, a) { return typeof v === 'number' && v >= 0 && v <= 7 && a.indexOf(v) === i; });
+      }
+      var camera = parsed.d02Camera;
+      if (camera && typeof camera === 'object') {
+        if (isBrookCameraPosition(camera.position)) base.d02Camera.position = camera.position;
+        if (isBrookCameraPosition(camera.kept)) base.d02Camera.kept = camera.kept;
+        if (Array.isArray(camera.photos)) {
+          base.d02Camera.photos = Array.from(new Set(camera.photos.filter(isBrookCameraPosition))).slice(-2);
+        }
       }
       if (parsed.d04Entry === 'tray' || parsed.d04Entry === 'trace') base.d04Entry = parsed.d04Entry;
       if (Array.isArray(parsed.d04TraceSeen)) {
@@ -341,6 +359,7 @@
         d02Entry: state.d02Entry,
         d02MarkMode: state.d02MarkMode,
         d02Marks: state.d02Marks,
+        d02Camera: state.d02Camera,
         d04Entry: state.d04Entry,
         d04TraceSeen: state.d04TraceSeen,
         d08Entry: state.d08Entry,
@@ -545,7 +564,11 @@
     state.tableFolds = [];
     state.d07Seen = [];
     /* 다시 놀기에서는 해당 장면의 핵심 수첩 놀이로 바로 들어가 다른 배치를 체험하게 한다 */
-    if (sc.mode === 'stones') state.step = 'stones';
+    if (sc.mode === 'stones') {
+      state.d02Camera.position = 1;
+      state.d02Camera.photos = [];
+      state.step = 'stones';
+    }
     else if (sc.mode === 'order') state.step = 'order';
     else state.step = 'choose';
     saveState();
@@ -1437,6 +1460,128 @@
     render();
   }
 
+  function renderBrookPhoto(position) {
+    var frame = el('div', { class: 'brook-photo', 'aria-hidden': 'true', html: ART.scene('D02') });
+    frame.firstElementChild.setAttribute('viewBox', (BROOK_CAMERA_VIEWS[position].x - 54) + ' 123 108 44');
+    return frame;
+  }
+
+  function renderKeptBrookPhoto(position) {
+    if (position === null) return null;
+    return el('figure', { class: 'brook-kept-photo', 'data-brook-kept': position },
+      renderBrookPhoto(position),
+      el('figcaption', { text: '수첩 사진 · ' + BROOK_CAMERA_VIEWS[position].label + ' 자리' })
+    );
+  }
+
+  function renderBrookCamera() {
+    var camera = state.d02Camera;
+    var view = el('div', { class: 'brook-viewfinder' });
+    var status = el('p', { class: 'brook-camera-status', role: 'status', 'aria-atomic': 'true' });
+    var album = el('div', { class: 'brook-album' });
+
+    function renderAlbum() {
+      album.replaceChildren();
+      if (camera.photos.length) {
+        album.appendChild(el('div', { class: 'brook-photo-picks', role: 'group', 'aria-label': '수첩에 넣을 사진 고르기' },
+          camera.photos.map(function (position, index) {
+            return el('button', {
+              type: 'button',
+              class: 'brook-photo-pick',
+              'data-brook-pick': position,
+              'aria-pressed': String(camera.kept === position),
+              on: { click: function (ev) {
+                camera.kept = position;
+                saveState();
+                Array.from(album.querySelectorAll('[data-brook-pick]')).forEach(function (button) {
+                  button.setAttribute('aria-pressed', String(button === ev.currentTarget));
+                });
+                showKeptPhoto();
+                status.textContent = (index + 1) + '번 사진을 수첩에 넣었어요.';
+              } }
+            }, renderBrookPhoto(position), el('span', { text: (index + 1) + '번 · ' + BROOK_CAMERA_VIEWS[position].label }));
+          })
+        ));
+      }
+      showKeptPhoto();
+    }
+
+    function showKeptPhoto() {
+      var previous = album.querySelector('[data-brook-kept]');
+      if (previous) previous.remove();
+      if (camera.photos.indexOf(camera.kept) !== -1) return;
+      var keptPhoto = renderKeptBrookPhoto(camera.kept);
+      if (keptPhoto) album.appendChild(keptPhoto);
+    }
+
+    function move(direction) {
+      var next = camera.position + direction;
+      if (!isBrookCameraPosition(next)) return;
+      camera.position = next;
+      saveState();
+      updateView();
+      status.textContent = BROOK_CAMERA_VIEWS[next].label + ' 자리로 옮겼어요.';
+    }
+
+    function takePhoto() {
+      if (camera.photos.indexOf(camera.position) !== -1) {
+        status.textContent = '이 자리 사진은 이미 있어요. 옆 자리에서 한 장 더 찍어 봐요.';
+        return;
+      }
+      camera.photos = camera.photos.concat(camera.position).slice(-2);
+      saveState();
+      renderAlbum();
+      updateView();
+      status.textContent = camera.photos.length === 1
+        ? '한 장 찍었어요. 옆 자리에서 한 장 더 찍어 봐요.'
+        : '두 사진 중 한 장을 골라 수첩에 넣어요.';
+    }
+
+    var left = el('button', {
+      type: 'button', class: 'brook-camera-move', 'data-brook-move': 'left', 'aria-label': '왼쪽으로 한 자리',
+      on: { click: function () { move(-1); } }
+    }, '‹');
+    var right = el('button', {
+      type: 'button', class: 'brook-camera-move', 'data-brook-move': 'right', 'aria-label': '오른쪽으로 한 자리',
+      on: { click: function () { move(1); } }
+    }, '›');
+
+    function updateView() {
+      view.replaceChildren(renderBrookPhoto(camera.position));
+      view.classList.toggle('brook-first-glint', camera.photos.length === 0);
+      view.setAttribute('data-brook-position', camera.position);
+      left.setAttribute('aria-disabled', String(!isBrookCameraPosition(camera.position - 1)));
+      right.setAttribute('aria-disabled', String(!isBrookCameraPosition(camera.position + 1)));
+    }
+
+    var controls = el('div', {
+      class: 'brook-camera-controls',
+      on: { keydown: function (ev) {
+        if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') {
+          ev.preventDefault();
+          if (!ev.repeat) move(ev.key === 'ArrowLeft' ? -1 : 1);
+        } else if (ev.repeat && (ev.key === 'Enter' || ev.key === ' ')) {
+          ev.preventDefault();
+        }
+      } }
+    }, left, el('button', {
+      type: 'button', class: 'brook-shutter', 'data-action': 'd02-shutter', on: { click: takePhoto }
+    }, '사진 찍기'), right);
+
+    updateView();
+    renderAlbum();
+    var keptIndex = camera.photos.indexOf(camera.kept);
+    if (keptIndex !== -1) status.textContent = (keptIndex + 1) + '번 사진을 수첩에 넣었어요.';
+    else if (camera.photos.length === 2) status.textContent = '수첩에 넣을 사진을 골라요.';
+    else status.textContent = BROOK_CAMERA_VIEWS[camera.position].label + ' 자리에서 최온과 돌을 찍어 봐요.';
+    return el('section', { class: 'brook-camera', 'aria-label': '최온의 시냇가 사진기' },
+      el('div', { class: 'brook-camera-heading' },
+        el('h2', { class: 'question', text: '시냇가 사진기' }),
+        el('span', { class: 'tag', text: '『탐험대 이야기』' })
+      ), view, controls, status, album
+    );
+  }
+
   function renderStonesStep(sc) {
     if (!state.brookSpots || state.brookSpots.length !== 8) {
       state.brookSpots = makeBrookSpots(getSeed(state, sc.id));
@@ -1567,11 +1712,10 @@
       );
     });
 
-    return [
+    return el('div', { class: 'brook-play' }, renderBrookCamera(), el('section', { class: 'brook-observation' },
       el('div', { class: 'meta-row' },
         el('span', { class: 'ref', text: sc.ref }),
         el('span', { class: 'tag', text: '관찰한 돌 ' + count + ' / 5' }),
-        el('span', { class: 'tag', text: '『탐험대 이야기』' }),
         seed > 0 ? el('span', { class: 'tag', text: '새 돌밭 배치 #' + (seed + 1) }) : null
       ),
       el('h2', { class: 'question', text: '시냇가 돌밭 관찰 창에서 매끄러운 돌 다섯을 찾아보자.' }),
@@ -1580,7 +1724,7 @@
       markBar,
       el('p', { class: 'subnote one-line-guide', text: lensStatus }),
       el('div', { class: 'stones-grid brook-window', 'data-brook-seed': String(seed) }, spotBtns)
-    ];
+    ));
   }
 
   /* 놀이 2(D03) + A25·A26: 수첩 펼침면의 두 장면 조각(이중 진입 경로 + 조각 하나 고정/해제) */
@@ -1902,6 +2046,7 @@
         el('p', { class: 'discovery-text', text: sc.discovery }),
         saved && saved.extra ? el('p', { class: 'discovery-note', text: saved.extra }) : null
       ),
+      sc.id === 'D02' ? renderKeptBrookPhoto(state.d02Camera.kept) : null,
       courseDone ? (function () {
         var traceIds = c.completed.slice(-2);
         var nextUnopened = null;
@@ -2022,13 +2167,13 @@
         el('button', { class: 'topbtn brass', 'data-action': 'journal', on: { click: openJournal } }, '일지 ' + journalCount())
       ),
       el('div', { class: 'play-layout' },
-        el('div', { class: 'stage' },
+        state.step !== 'stones' ? el('div', { class: 'stage' },
           el('div', { html: ART.scene(sc.art) }),
           el('div', { class: 'stage-chips' },
             el('span', { class: 'ref', text: sc.ref }),
             sc.place ? el('span', { class: 'tag', text: sc.place }) : null
           )
-        ),
+        ) : null,
         el('main', { class: 'sheet' }, bmBar, body)
       )
     );
@@ -2086,6 +2231,7 @@
         sc.place ? el('div', { class: 'journal-sub', text: '장소: ' + sc.place }) : null,
         el('p', { class: 'journal-fact', text: sc.discovery }),
         rec.extra ? el('p', { class: 'journal-sub', text: rec.extra }) : null,
+        sc.id === 'D02' ? renderKeptBrookPhoto(state.d02Camera.kept) : null,
         el('button', {
           class: 'journal-open',
           'data-reopen': sc.id,

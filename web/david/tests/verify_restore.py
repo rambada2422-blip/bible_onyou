@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""다윗 A18 회귀 검사: 새 조작(D01·D04·D05·D06·D08·D09) 진행 중 새로고침·가로 회전·탭 이동 복원 및 옛 9/9 일지 열기"""
+"""다윗 회귀 검사: 장면 복원(A18), D02 사진기와 수첩(A41~A42), 옛 9/9 일지"""
 import threading
 import http.server
 import os
@@ -144,9 +144,94 @@ def main():
         page.click('[data-action="open-journal"]')
         _assert(page.locator('[data-journal-id]').count() == 9, 'Journal duplicated after replay')
         _assert(len(errors) == 0, f'Page errors: {errors}')
+        ctx.close()
+        verify_brook_camera(browser, url)
         browser.close()
     httpd.shutdown()
     print('A18 RESTORE & LEGACY 9/9 REGRESSION CHECK PASSED')
+    print('A41–A42 D02 CAMERA, ALBUM & REPLAY CHECK PASSED')
+
+
+def verify_brook_camera(browser, url):
+    mobile = browser.new_context(viewport={'width': 320, 'height': 568}, has_touch=True, is_mobile=True)
+    page = mobile.new_page()
+    errors = []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    page.goto(url)
+    page.tap('[data-action="quick-trial"]')
+    preview = page.locator('.brook-viewfinder')
+    shutter = page.locator('[data-action="d02-shutter"]')
+    left = page.locator('[data-brook-move="left"]')
+    right = page.locator('[data-brook-move="right"]')
+    _assert(preview.get_attribute('data-brook-position') == '1', 'Fresh camera did not start in the middle')
+    shutter_box = shutter.bounding_box()
+    _assert(shutter_box['y'] + shutter_box['height'] <= 568, 'Shutter is below the first phone screen')
+
+    left.tap()
+    _assert(preview.get_attribute('data-brook-position') == '0', 'A short tap did not move exactly one place')
+    first_crop = preview.locator('svg').get_attribute('viewBox')
+    shutter.tap()
+    first = page.locator('[data-brook-pick="0"]')
+    _assert(first.locator('svg').get_attribute('viewBox') == first_crop, 'First photo differs from the viewfinder')
+
+    touch = mobile.new_cdp_session(page)
+    box = right.bounding_box()
+    point = {'x': box['x'] + box['width'] / 2, 'y': box['y'] + box['height'] / 2}
+    touch.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [point]})
+    page.wait_for_timeout(750)
+    touch.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []})
+    _assert(preview.get_attribute('data-brook-position') == '1', 'A long press moved more or less than one place')
+    second_crop = preview.locator('svg').get_attribute('viewBox')
+    shutter.tap()
+    second = page.locator('[data-brook-pick="1"]')
+    _assert(first_crop != second_crop and second.locator('svg').get_attribute('viewBox') == second_crop, 'Second photo is not a distinct matching crop')
+    first.tap()
+    _assert(first.get_attribute('aria-pressed') == 'true', 'First photo could not be selected')
+    second.tap()
+    _assert(second.get_attribute('aria-pressed') == 'true', 'Second photo could not be selected')
+
+    page.set_viewport_size({'width': 640, 'height': 360})
+    page.reload()
+    _assert(page.locator('.brook-photo-pick').count() == 2 and second.get_attribute('aria-pressed') == 'true',
+            'Photos or selection lost after rotation and reload')
+    _assert(preview.get_attribute('data-brook-position') == '1', 'Camera position lost after rotation and reload')
+    _assert(page.get_by_text('관찰한 돌 0 / 5', exact=True).is_visible(), 'Taking photos changed the stone count')
+    _assert(page.evaluate('document.querySelector(".sheet").scrollWidth === document.querySelector(".sheet").clientWidth'), 'Camera overflows the landscape sheet')
+
+    def finish_stones():
+        for _ in range(5):
+            page.locator('[data-spot-kind="stone"][aria-pressed="false"]').first.tap()
+        _assert(page.locator('[data-discovery="D02"]').is_visible(), 'The five-stone game did not finish')
+
+    finish_stones()
+    _assert(page.locator('.sheet [data-brook-kept="1"]').is_visible(), 'The selected photo is missing at completion')
+    page.tap('[data-action="replay-scene"]')
+    _assert(page.locator('.brook-camera [data-brook-kept="1"]').is_visible(), 'The previous notebook photo is missing on replay')
+    right.tap()
+    shutter.tap()
+    page.tap('[data-brook-pick="2"]')
+    finish_stones()
+    page.tap('[data-action="open-journal"]')
+    journal = page.locator('[data-journal-id="D02"]')
+    _assert(page.locator('[data-journal-id]').count() == 1 and journal.locator('.ref').inner_text() == '삼상 17:38–40, 45', 'D02 reference or journal count changed')
+    _assert(journal.locator('[data-brook-kept="2"]').is_visible(), 'The new selection is missing from the journal')
+    _assert(len(errors) == 0, f'Page errors: {errors}')
+    mobile.close()
+
+    desktop = browser.new_context(viewport={'width': 1280, 'height': 800})
+    page = desktop.new_page()
+    page.goto(url)
+    page.click('[data-scene="D02"]')
+    page.click('[data-choice="stones"]')
+    shutter = page.locator('[data-action="d02-shutter"]')
+    shutter.focus()
+    page.keyboard.press('ArrowLeft')
+    page.keyboard.press('Enter')
+    _assert(page.locator('[data-brook-pick="0"]').is_visible(), 'The keyboard did not move the camera and take a photo')
+    page.keyboard.press('ArrowRight')
+    page.keyboard.press('Space')
+    _assert(page.locator('[data-brook-pick="1"]').is_visible(), 'The keyboard lost focus during camera use')
+    desktop.close()
 
 
 def _assert(cond, msg):
