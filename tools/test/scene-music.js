@@ -1,9 +1,7 @@
 /* 실제로 디코딩된 음악의 출력단에 측정기만 연결한다. 게임의 재생 함수는 그대로 사용한다. */
 const assert=require('node:assert/strict');
 
-async function checkMusic(browser,origin,entry){
-  const page=await browser.newPage({viewport:{width:360,height:720},hasTouch:true});
-  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+async function attachScoreMeter(page){
   await page.addInitScript(()=>{
     const wires=new WeakMap(), tracks=[];
     const connect=AudioNode.prototype.connect, start=AudioBufferSourceNode.prototype.start;
@@ -11,7 +9,7 @@ async function checkMusic(browser,origin,entry){
       wires.set(this,target);return connect.call(this,target,...args);
     };
     AudioBufferSourceNode.prototype.start=function(...args){
-      if(this.loop){
+      if(this.loop&&this.buffer.duration>1){
         const bus=wires.get(wires.get(this)),meter=this.context.createAnalyser();
         connect.call(bus,meter);
         const record={source:this,bus,meter,ended:false};tracks.push(record);
@@ -24,11 +22,21 @@ async function checkMusic(browser,origin,entry){
       return {duration:source.buffer.duration,level:bus.gain.value,peak:Math.max(...data.map(Math.abs)),state:source.context.state,ended};
     });
   });
-  const button=name=>page.getByRole('button',{name,exact:true});
-  const waitForCue=duration=>page.waitForFunction(expected=>{
+}
+
+async function waitForAudibleCue(page,duration){
+  return page.waitForFunction(expected=>{
     const latest=window.readScore().at(-1);
     return latest&&!latest.ended&&latest.state==='running'&&Math.abs(latest.duration-expected)<.15&&latest.peak>.001;
   },duration);
+}
+
+async function checkMusic(browser,origin,entry){
+  const page=await browser.newPage({viewport:{width:360,height:720},hasTouch:true});
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await attachScoreMeter(page);
+  const button=name=>page.getByRole('button',{name,exact:true});
+  const waitForCue=duration=>waitForAudibleCue(page,duration);
   try{
     await page.goto(origin+entry+'#redsea');
     assert.deepEqual(await page.evaluate(()=>readScore()),[]);
@@ -62,4 +70,4 @@ async function checkMusic(browser,origin,entry){
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
 }
-module.exports={checkMusic};
+module.exports={checkMusic,attachScoreMeter,waitForAudibleCue};

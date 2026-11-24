@@ -93,3 +93,30 @@
 .wf-record-heading b { margin-right:auto; color:var(--wf-leaf); }
 .wf-record p { line-height:1.65; margin:8px 0; }
 .wf-read-frame { pointer-events:auto; border:1px solid #b9c5a5; text-decoration:underline; text-underline-offset:3px; }
+.wf-nav { flex-wrap:wrap; }
+.wf-nav button:disabled { opacity:.65; }
+.wf-view-strip { display:flex; align-items:center; flex-wrap:wrap; gap:4px 10px; padding:6px 10px; background:#1c4541; color:#fff4d7; }
+.wf-view-strip strong { font-size:.9rem; }
+.wf-view-tabs { display:flex; flex:1; flex-wrap:wrap; gap:4px; }
+.wf-observe-tab { flex:1 0 auto; padding:5px 7px; border:1px solid #77918a; border-radius:7px; font:inherit; font-weight:600; line-height:1.25; color:#244c44; background:#faf6e7; }
+.wf-view-strip .wf-observe-tab { color:#fff4d7; background:#2f5550; }
+.wf-view-tabs .wf-observe-tab[aria-pressed="true"] { color:#fff4d7; background:#27574b; border-color:#224c40; }
+.wf-optics { width:min(94vw,680px); }
+.wf-optics .wf-dialog-body { display:grid; gap:10px; padding:10px; }
+.wf-optics h3 { font:1.4rem var(--f-display); }
+.wf-optics .wf-closeup { display:block; width:100%; max-height:43dvh; object-fit:contain; border-radius:5px; background:#253c35; }
+.wf-optics .wf-dialog-body>button { margin:0; }
+@media(min-width:780px) {
+  .wf-observation-field { margin-left:18px; border-radius:12px; overflow:hidden; }
+  .wf-observation-field .wf-field { margin:0; border-radius:0; }
+}
+.wf-ripple { position:absolute; pointer-events:none; left:40%; top:66%; width:19%; height:4%; }
+.wf-ripple-elim { left:44%; top:68%; width:14%; }
+.wf-ripple::before,.wf-ripple::after { content:''; position:absolute; inset:0; border:1px solid #fff0cd; border-radius:50%; animation:wf-ripple 3.6s ease-out infinite; }
+.wf-ripple::after { animation-delay:-1.8s; }
+@keyframes wf-ripple {
+  from { transform:translate(-50%,-50%) scale(.2); opacity:0; }
+  25% { opacity:.72; }
+  to { transform:translate(-50%,-50%) scale(1.3); opacity:0; }
+}
+@media(prefers-reduced-motion:reduce) { .wf-ripple { display:none; } }

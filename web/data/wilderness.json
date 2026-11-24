@@ -2,6 +2,50 @@
   "stages": [
     {
       "id": "marah",
+      "observations": [
+        {
+          "label": "사흘 길",
+          "caption": "사흘 동안 물을 얻지 못한 때",
+          "sound": "sand",
+          "verse": "15:22",
+          "music": "road",
+          "later": false,
+          "crop": [
+            262,
+            144,
+            294,
+            120
+          ]
+        },
+        {
+          "label": "물가의 백성",
+          "caption": "마시지 못한 물",
+          "sound": "dirt",
+          "verse": "15:23",
+          "music": "bitter",
+          "later": false,
+          "crop": [
+            545,
+            161,
+            241,
+            105
+          ]
+        },
+        {
+          "label": "물결 속 나무",
+          "caption": "물이 달아진 뒤",
+          "sound": "ripple",
+          "verse": "15:25",
+          "music": "water",
+          "later": true,
+          "crop": [
+            207,
+            214,
+            257,
+            106
+          ]
+        }
+      ],
       "trail": [
         [
           "물가에 선 사람들",
@@ -63,6 +107,50 @@
     },
     {
       "id": "elim",
+      "observations": [
+        {
+          "label": "물샘",
+          "caption": "샘과 종려나무",
+          "sound": "ripple",
+          "verse": "15:27",
+          "music": "springs",
+          "later": false,
+          "crop": [
+            202,
+            214,
+            310,
+            137
+          ]
+        },
+        {
+          "label": "종려 그늘",
+          "caption": "종려나무 잎",
+          "sound": "leaves",
+          "verse": "15:27",
+          "music": "springs",
+          "later": false,
+          "crop": [
+            19,
+            119,
+            254,
+            135
+          ]
+        },
+        {
+          "label": "물가의 장막",
+          "caption": "물가의 야영지",
+          "sound": "wood",
+          "verse": "15:27",
+          "music": "tents",
+          "later": true,
+          "crop": [
+            431,
+            162,
+            297,
+            130
+          ]
+        }
+      ],
       "trail": [
         [
           "샘",

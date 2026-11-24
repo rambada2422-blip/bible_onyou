@@ -39,6 +39,22 @@
           const volume=ctx.createGain();volume.gain.value=.035;
           bed.connect(filter);filter.connect(volume);volume.connect(ctx.destination);bed.start();
         }
+        if(key==='ripple'||key==='leaves'){
+          const water=key==='ripple';
+          const sample=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*.42),ctx.sampleRate);
+          const wave=sample.getChannelData(0);
+          // 짧은 물방울 두 번과 잎을 스치는 소리.
+          const drop=(at,pitch)=>at<0?0:Math.sin(2*Math.PI*(pitch*at+220*at*at))*Math.exp(-26*at);
+          for(let i=0;i<wave.length;i++){
+            const time=i/ctx.sampleRate;
+            wave[i]=water?.13*(drop(time,730)+.7*drop(time-.12,930)):
+              (Math.random()-.5)*.12*Math.sin(Math.PI*i/wave.length)**2;
+          }
+          const src=ctx.createBufferSource(),filter=ctx.createBiquadFilter();
+          filter.type=water?'lowpass':'bandpass';filter.frequency.value=water?2300:3100;
+          src.buffer=sample;src.connect(filter);filter.connect(ctx.destination);
+          src.onended=()=>{src.disconnect();filter.disconnect();};src.start();return;
+        }
         const notes=BO.wildField.sounds;
         (notes[key]||notes.tap).forEach((f,i)=>{
           const osc=ctx.createOscillator(),gain=ctx.createGain();

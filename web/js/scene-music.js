@@ -9,7 +9,7 @@
     const button=BO.app2d.el('button',{type:'button',class:'rs-link rs-music'});
     button.hidden=!Audio;
     const buffers=new Map(),voices=new Set();
-    let ctx,bus,current,pending=null,cue=null,active=false,blurred=false,closed=false,failed=false,version=0,attack=.42;
+    let ctx,bus,current,pending=null,cue=null,active=false,held=false,blurred=false,closed=false,failed=false,version=0,attack=.42;
     function label(){
       button.textContent=!enabled?'음악 켜기':failed?'음악 다시 듣기':current||pending?'음악 끄기':'음악 듣기';
     }
@@ -37,7 +37,7 @@
       return buffers.get(key);
     }
     async function play(){
-      if(!Audio||closed||failed||!active||!enabled||blurred||document.hidden||!cue||pending===cue)return;
+      if(!Audio||closed||failed||!active||!enabled||held||blurred||document.hidden||!cue||pending===cue)return;
       if(current?.key===cue&&!pending)return;
       const key=cue,request=++version;
       pending=key;label();
@@ -70,6 +70,11 @@
       cue=key;attack=fadeIn;failed=false;
       if(current?.key===key && pending){version++;pending=null;label();return;}
       play();
+    }
+    function setPaused(value){
+      if(held===value)return;
+      held=value;
+      if(held)pause();else play();
     }
     function gesture(event){
       if(closed||button.contains(event.target)||!enabled)return;
@@ -104,7 +109,7 @@
     window.addEventListener('pagehide',hide);window.addEventListener('pageshow',show);
     window.addEventListener('blur',hide);window.addEventListener('focus',show);
     document.addEventListener('visibilitychange',visibility);
-    return {button,gesture,setCue,duck,close};
+    return {button,gesture,setCue,setPaused,duck,close};
   }
   BO.sceneMusic={create};
 })();

@@ -6,6 +6,8 @@ const { createHash } = require('node:crypto');
 const { chromium } = require('playwright');
 const { gameOrigin } = require('./game-server');
 
+const { checkObservations } = require('./wilderness-observation');
+
 const stopNames = ['마라의 물가', '엘림의 샘', '만나를 거두는 아침', '여섯째 날과 일곱째 날', '반석에서 흐른 물', '시내산 앞의 진영', '금송아지 사건의 진영'];
 const seals = ['15:25', '15:27', '16:18', '16:30', '17:6', '20:18', '32:30'];
 const exact = name => ({name, exact:true});
@@ -138,7 +140,7 @@ async function runRoute(browser, origin, out, entry, width) {
     if(stage.id==='rock'){
       if(width===360){await click('시내산 수첩으로');await click('시내산 본편 답사');}
       else await click('시내산 본편으로');
-    }else await click(stage.id==='calf'?'시내산 수첩으로':stage.id==='sinai'?'금송아지 사건으로':stopNames[i+1]+'로');
+    }else await click(stage.id==='calf'?'시내산 수첩으로':stage.id==='sinai'?'금송아지 사건으로':stopNames[i+1]+' 답사하기');
   }
   assert.equal(seen.size,118);
   assert.equal(await page.locator(':focus').innerText(),'시내산의 기록');
@@ -216,6 +218,7 @@ async function checkHints(browser,origin) {
   const browser=await chromium.launch();
   try {
     const origin=await gameOrigin(browser);
+    for(const entry of ['/index.html','/preview.html'])await checkObservations(browser,origin,entry,out);
     await runRoute(browser,origin,out,'/index.html#redsea',360);
     await runRoute(browser,origin,out,'/preview.html#wilderness',320);
     const direct=await browser.newPage({viewport:{width:320,height:480}});
