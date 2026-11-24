@@ -1496,3 +1496,74 @@ h1, h2, h3, p { margin: 0; }
   .rub-heading, .rub-panel .lookout-film { grid-column: 1 / -1; }
   .rub-paper { width: min(100%,62vh); }
 }
+
+/* D05 · 헤브론의 두 만남을 기억하는 카드 */
+.hm-panel {
+  display: grid; flex: none; gap: 10px; padding: 10px; border: 1px solid #b7af92;
+  border-radius: 16px; color: #253938; background: #f8f5e9;
+}
+.hm-head {
+  display: flex; justify-content: space-between; align-items: end; padding: 12px 14px;
+  min-height: 72px; border-radius: 9px; color: #fff9e8;
+  background: #29433d center 50% / cover;
+}
+.hm-head small { color: #f5dfac; font-size: 12px; }
+.hm-head h2 { font: clamp(21px,4.5vw,27px) var(--f-display); }
+.hm-count { padding: 3px 9px; font: 14px var(--f-display); border-radius: 99px; background: #233f39; color: #fff3d5; }
+.hm-deck, .hm-row, .hm-tools { display: grid; align-content: start; gap: 6px; }
+.hm-deck { gap: 10px; }
+.hm-row h3 { font: 14px var(--f-display); color: #4f5444; }
+.hm-trio, .hm-album { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+.hm-card {
+  position: relative; isolation: isolate; overflow: hidden; width: 100%; aspect-ratio: 1.15;
+  border: 1px solid #a59570; border-radius: 7px; padding: 0; text-align: center;
+  background: #fffaf0; color: #253939; touch-action: manipulation;
+}
+.hm-front, .hm-back { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; }
+.hm-panel [hidden] { display: none; }
+.hm-back {
+  color: #edd4a1; outline: 1px solid #d9cba7; outline-offset: -5px;
+  background: repeating-linear-gradient(45deg,#ffffff0a 0 1px,transparent 1px 5px), #35584f;
+}
+.hm-back i { width: 27px; height: 32px; border: 2px solid currentColor; border-radius: 52% 52% 4px 4px; position: relative; }
+.hm-back i::before { content: ''; position: absolute; inset: 6px 5px 0; border: 1px solid currentColor; border-bottom: 0; border-radius: 50% 50% 0 0; }
+.hm-card[data-kind="clue"] .hm-back { background: repeating-linear-gradient(-45deg,#ffffff0a 0 1px,transparent 1px 5px),#76503d; }
+.hm-card[data-kind="clue"] i { width: 29px; height: 23px; border-radius: 3px; transform: rotate(-7deg); }
+.hm-card[data-kind="clue"] i::before { inset: 5px 4px 6px; border-width: 1px 0; border-style: solid; border-radius: 0; }
+.hm-card:focus-visible { outline: 3px solid #a56417; outline-offset: 1px; }
+.hm-card:disabled { opacity: 1; cursor: default; }
+.hm-front { animation: hm-open .22s ease-out; background: #fff3d9; }
+@keyframes hm-open { from { transform: perspective(450px) rotateY(-65deg); opacity: .55; } }
+.hm-front img { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: cover; }
+.hm-front strong { position: relative; font: 14px var(--f-display); }
+.hm-card[data-kind="picture"] .hm-front { align-content: end; }
+.hm-card[data-kind="picture"] .hm-front strong { width: 100%; padding: 3px; color: white; background: #16342cdd; }
+.hm-card[data-kind="clue"] .hm-front { gap: 4px; padding: 6px; }
+.hm-front small { color: #745330; font-size: 12px; }
+.hm-card.matched::after {
+  content: '✓'; position: absolute; right: 3px; top: 3px; width: 16px; height: 16px; line-height: 16px;
+  border-radius: 50%; background: #275b45; color: white; font: bold 12px/16px sans-serif;
+}
+.hm-retry, .hm-keepsake summary {
+  justify-self: start; min-height: 44px; background: #eee1c6; border: 1px solid #ae9d76;
+  border-radius: 9px; color: #3c412e; padding: 9px 14px; font: 15px var(--f-display); cursor: pointer;
+}
+.hm-tools .field-hint { order: 1; }
+.hm-tools:has(.hm-question:not([hidden])) .field-hint { display: none; }
+.hm-album figure { margin: 0; min-width: 0; border: 1px solid #baaa85; padding: 4px; background: #fffcf3; border-radius: 6px; }
+.hm-album img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 3px; }
+.hm-album figcaption { display: grid; gap: 2px; padding: 4px 1px; font-size: 12px; }
+.hm-album strong { font: 14px var(--f-display); }
+.hm-album small { font-size: 12px; color: #66543b; }
+.hm-keepsake .hm-album { margin-top: 6px; }
+@media (max-width:420px) {
+  .field-starts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+}
+@media (orientation:landscape) and (max-height:460px) {
+  .hm-panel { grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); align-items: start; gap: 5px 10px; }
+  .hm-head { grid-column: 1/-1; align-items: center; min-height: 42px; padding: 4px 12px; }
+  .hm-head small { display: none; }
+  .hm-deck { gap: 4px; }
+  .hm-card { aspect-ratio: 1.35; }
+  .hm-panel .lookout-film { grid-column: 1/-1; }
+}

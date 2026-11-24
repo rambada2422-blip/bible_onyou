@@ -7,6 +7,7 @@
   var STORAGE_KEY = 'bibleOnyou.david.v1';
   var DATA = window.BO_DAVID.data;
   var ART = window.BO_DAVID.art;
+  var hebronCards = window.BO_DAVID.hebronCards;
   var rubbing = window.BO_DAVID.rubbing;
   var robe = window.BO_DAVID.robe;
   var pasture = window.BO_DAVID.pasture;
@@ -125,6 +126,7 @@
       d02Entry: 'stones', /* A29: D02 접근 경로 ('stones' | 'sectors') */
       d02MarkMode: false, /* A30: D02 관찰 책갈피 모드 */
       d02Marks: [],       /* A30: D02 책갈피 꽂힌 칸 인덱스 */
+      hebronCards: hebronCards.restore(),
       rubbing: rubbing.restore(),
       robe: robe.restore(),
       pasture: pasture.restore(),
@@ -256,6 +258,8 @@
       if (Array.isArray(parsed.d02Marks)) {
         base.d02Marks = parsed.d02Marks.filter(function (v, i, a) { return typeof v === 'number' && v >= 0 && v <= 7 && a.indexOf(v) === i; });
       }
+      base.hebronCards = hebronCards.restore(parsed.hebronCards);
+      if (base.sceneId === 'D05' && parsed.step === 'memory') base.step = 'memory';
       base.rubbing = rubbing.restore(parsed.rubbing);
       if (base.sceneId === 'D04' && parsed.step === 'rubbing') base.step = 'rubbing';
       base.robe = robe.restore(parsed.robe);
@@ -378,6 +382,7 @@
         d02Entry: state.d02Entry,
         d02MarkMode: state.d02MarkMode,
         d02Marks: state.d02Marks,
+        hebronCards: state.hebronCards,
         rubbing: state.rubbing,
         robe: state.robe,
         pasture: state.pasture,
@@ -468,6 +473,12 @@
     if (keepsake) Object.assign(entry, keepsake);
     state.journal[scene.id] = entry;
     saveState();
+  }
+
+  function startHebronCards() {
+    recordFirstAction('field:D05');
+    if (state.hebronCards.phase === 'done') state.hebronCards = hebronCards.next(state.hebronCards);
+    openScene('D05', false, 'memory');
   }
 
   function startRubbing() {
@@ -894,6 +905,7 @@
           ),
           el('div', { class: 'field-starts' },
             el('button', { class: 'trial-btn', 'data-field-start': 'D04', on: { click: startRubbing } }, '탁본 뜨기'),
+            el('button', { class: 'trial-btn', 'data-field-start': 'D05', on: { click: startHebronCards } }, '기억 카드'),
             el('button', { class: 'trial-btn', 'data-field-start': 'D06', on: { click: function () {
               recordFirstAction('field:D06');
               openScene('D06', false);
@@ -992,7 +1004,8 @@
       render();
     } else if (sc.mode === 'hebron') {
       state.hebronFirstDone = true;
-      state.step = 'hebron2';
+      if (state.step === 'memory') state.hebronCards.phase = 'later';
+      else state.step = 'hebron2';
       saveState();
       render();
     } else if (sc.mode === 'ark') {
@@ -1487,6 +1500,7 @@
       sc.artNote ? el('p', { class: 'subnote', text: sc.artNote }) : null,
       sc.id === 'D01' ? el('button', { class: 'journal-open', 'data-action': 'open-pasture', on: { click: startPasture } }, '들판 망원경 열기') : null,
       sc.id === 'D01' ? renderD01Notebook(sc) : null,
+      sc.id === 'D05' ? el('button', { class: 'journal-open', 'data-action': 'open-memory', on: { click: startHebronCards } }, '헤브론 기억 카드 열기') : null,
       sc.id === 'D04' ? el('button', { class: 'journal-open', 'data-action': 'open-rubbing', on: { click: startRubbing } }, '엔게디 탁본 뜨기') : null,
       sc.id === 'D03' ? el('button', { class: 'journal-open', 'data-action': 'open-robe', on: { click: startRobe } }, '겉옷 그림 맞추기') : null,
       (sc.id === 'D04' && boards.renderD04Compare) ? boards.renderD04Compare(boardCtx(), sc) : null,
@@ -2027,12 +2041,13 @@
   }
 
   function renderHebron2Step(sc) {
+    var fromCards = state.step === 'memory';
     return [
       el('div', { class: 'meta-row' },
         el('span', { class: 'ref', text: '삼하 2:4 · 첫 번째 만남 완료' }),
         el('span', { class: 'tag', text: '장소: 헤브론' })
       ),
-      el('div', { class: 'discovery-box' },
+      fromCards ? hebronCards.album(el, sc, ['judah', 'elders', 'town']) : el('div', { class: 'discovery-box' },
         el('div', { class: 'discovery-kicker', text: '첫 번째 만남 (삼하 2:4 · 헤브론)' }),
         el('div', { class: 'discovery-text', text: '먼저 유다 사람들이 헤브론에 와서 다윗을 유다의 왕으로 세웠어.' })
       ),
@@ -2042,9 +2057,13 @@
           class: 'choice-card',
           'data-choice': 'israel-elders-next',
           on: { click: function () {
-            recordDiscovery(sc, '첫 번째 만남: 유다 사람들(삼하 2:4 · 헤브론) / 나중 만남: 이스라엘의 장로들(삼하 5:1–5 · 헤브론)');
+            var keepsake;
+            if (fromCards) {
+              state.hebronCards.phase = 'done';
+              keepsake = { hebronMatches: state.hebronCards.found.slice() };
+            }
             state.step = 'done';
-            saveState();
+            recordDiscovery(sc, '첫 번째 만남: 유다 사람들(삼하 2:4 · 헤브론) / 나중 만남: 이스라엘의 장로들(삼하 5:1–5 · 헤브론)', keepsake);
             render();
           } }
         },
@@ -2112,6 +2131,8 @@
           }
         }
       }, '코스 다음 장면 (' + (c.idx + 2) + '/3): ' + nextCourseSc.id + ' ' + nextCourseSc.title);
+    } else if (sc.id === 'D04' && saved && saved.rubbings && !inCourse) {
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: startHebronCards } }, '다음 장면 · 헤브론 기억 카드');
     } else if (sc.id === 'D03' && saved && saved.robePicture && !inCourse) {
       primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: startRubbing } }, '다음 장면 · 엔게디 탁본 뜨기');
     } else if (nextSc) {
@@ -2134,6 +2155,8 @@
         el('p', { class: 'discovery-text', text: sc.discovery }),
         saved && saved.extra ? el('p', { class: 'discovery-note', text: saved.extra }) : null
       ),
+      sc.id === 'D05' && saved && saved.hebronMatches
+        ? el('button', { class: 'journal-open', 'data-action': 'replay-memory', on: { click: startHebronCards } }, state.hebronCards.phase === 'done' ? '새 배치로 카드 찾기' : '기억 카드 이어하기') : null,
       sc.id === 'D04' && saved && saved.rubbings
         ? el('button', { class: 'journal-open', 'data-action': 'replay-rubbing', on: { click: startRubbing } }, state.rubbing.finished ? '다른 천부터 탁본 뜨기' : '탁본 이어 뜨기') : null,
       sc.id === 'D03' && saved && saved.robePicture
@@ -2187,7 +2210,8 @@
               el('button', { class: 'btn plain d08-step-btn', 'data-action': 'replay-same', on: { click: function () { replayCurrentScene(true); } } }, '같은 배치 다시'),
               el('button', { class: 'btn plain d08-step-btn', 'data-action': 'replay-scene', on: { click: function () { replayCurrentScene(false); } } }, '새 배치 도전')
             )
-          : el('button', { class: 'btn plain', 'data-action': 'replay-scene', on: { click: function () { replayCurrentScene(false); } } }, '다른 배치로 다시 놀기'),
+          : el('button', { class: 'btn plain', 'data-action': 'replay-scene', on: { click: function () { replayCurrentScene(false); } } },
+              sc.id === 'D05' && saved && saved.hebronMatches ? '기본 장면 다시 보기' : '다른 배치로 다시 놀기'),
         el('button', { class: 'btn', 'data-action': 'open-journal', on: { click: openJournal } }, '탐험 일지 보기')
       )
     ];
@@ -2202,13 +2226,15 @@
     else if (sc.id === 'D04' && state.step === 'rubbing') body = rubbing.render(boardCtx(), sc, renderChoiceButtons(sc));
     else if (sc.id === 'D03' && state.step === 'robe') body = robe.render(boardCtx(), sc, renderChoiceButtons(sc));
     else if (state.step === 'order' || state.step === 'robe-order') body = renderOrderStep(sc);
-    else if (state.step === 'hebron2') body = renderHebron2Step(sc);
+    else if (sc.id === 'D05' && state.step === 'memory') {
+      body = state.hebronCards.phase === 'later' ? renderHebron2Step(sc) : hebronCards.render(boardCtx(), sc, renderChoiceButtons(sc));
+    } else if (state.step === 'hebron2') body = renderHebron2Step(sc);
     else if (state.step === 'ark2') body = renderArk2Step(sc);
     else if (state.step === 'done') body = renderDoneStep(sc);
     else body = renderChooseStep(sc);
 
     var fieldPanel = state.step === 'choose' ? window.BO_DAVID.boards.renderField(boardCtx(), sc) : null;
-    var showStage = !fieldPanel && ['stones', 'pasture', 'robe', 'robe-order', 'rubbing'].indexOf(state.step) === -1;
+    var showStage = !fieldPanel && ['stones', 'pasture', 'robe', 'robe-order', 'rubbing', 'memory'].indexOf(state.step) === -1;
     var bmBar = null;
     if (state.returnBookmark && state.returnBookmark.sceneId && state.returnBookmark.sceneId !== sc.id) {
       var bm = state.returnBookmark;
@@ -2331,6 +2357,7 @@
         el('p', { class: 'journal-fact', text: sc.discovery }),
         rec.extra ? el('p', { class: 'journal-sub', text: rec.extra }) : null,
         sc.id === 'D03' && rec.robePicture ? robe.journalPicture(el) : null,
+        sc.id === 'D05' && rec.hebronMatches ? hebronCards.journal(el, sc, rec.hebronMatches) : null,
         sc.id === 'D04' && rec.rubbings ? rubbing.journal(el, sc, rec.rubbings) : null,
         sc.id === 'D02' ? renderKeptBrookPhoto(state.d02Camera.kept) : null,
         el('button', {
@@ -2427,6 +2454,7 @@
     var start;
     if (window.location.hash === '#robe-puzzle') start = startRobe;
     else if (window.location.hash === '#engedi-rubbing') start = startRubbing;
+    else if (window.location.hash === '#hebron-cards') start = startHebronCards;
     else return false;
     // Consume the launch link so a later reload restores the child's current step.
     window.history.replaceState(window.history.state, '', window.location.href.split('#')[0]);
