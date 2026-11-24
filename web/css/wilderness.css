@@ -85,3 +85,8 @@
 .wf-cabinet .wf-lit::before { background:#ffcf73; box-shadow:0 0 5px #ffd890; }
 .wf-slot.wf-filled { padding-left:44px; position:relative; }
 .wf-filled>i { position:absolute; left:2px; top:14px; height:32px; width:32px; display:grid; place-items:center; border:2px solid #a38344; border-radius:50%; font:24px Georgia,serif; color:#24473e; background:#e7cc8d; }
+.wf-record { padding:12px; background:#fffaf0; border:1px solid var(--wf-edge); border-radius:8px; }
+.wf-record-heading { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.wf-record-heading b { margin-right:auto; color:var(--wf-leaf); }
+.wf-record p { line-height:1.65; margin:8px 0; }
+.wf-read-frame { pointer-events:auto; border:1px solid #b9c5a5; text-decoration:underline; text-underline-offset:3px; }

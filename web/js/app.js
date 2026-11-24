@@ -20,12 +20,14 @@
   app.openExodusTrail = function () {
     markScene('#exodus'); app.exodusTrail.open(entrance);
   };
-  app.openWilderness = function (showShelf) {
-    markScene('#wilderness');
+  function openField(mountain,showShelf) {
+    markScene(mountain?'#sinai':'#wilderness');
     app.wilderness.open(entrance, function () {
-      markScene('#exodus'); app.exodusTrail.open(entrance, false, true);
-    }, showShelf === true);
-  };
+      markScene('#exodus'); app.exodusTrail.open(entrance, false, true, mountain);
+    }, showShelf === true, mountain);
+  }
+  app.openWilderness = function (showShelf) { openField(false,showShelf); };
+  app.openSinai = function () { openField(true,false); };
   app.openRedSea = function () {
     markScene('#redsea');
     app.redSea.open(entrance, function () {
@@ -83,6 +85,7 @@
       el('div', { class: 'title-actions' },
         el('button', { class: 'btn wide', on: { click: function () { (app.state.tier && app.state.char) ? continueJourney() : renderSetup(); } } },
           (app.state.tier && app.state.char) ? '이어서 탐험하기' : '탐험 시작'),
+        app.state.wilderness?.index>=4 ? el('button', {class:'btn wide quiet', on:{click:app.openSinai}}, '시내산 본편 이어 보기') : null,
         app.state.wilderness ? el('button', {class:'btn wide quiet', on:{click:app.openWilderness}}, '광야 본편 이어 보기') : null,
         app.state.redSea ? el('button', {class:'btn wide quiet', on:{click:app.openRedSea}}, '홍해 본편 이어 보기') : null,
         app.state.exodusTrail ? el('button', {class:'btn wide quiet', on:{click:app.openExodusTrail}}, '세 친구의 길 잇기 계속하기') : null,
@@ -176,6 +179,7 @@
         el('button', { class: 'btn wide', on: { click: function () { openPalace('hub'); } } }, '모세와 바로의 대화 · 열 재앙 영상'),
         el('button', { class: 'btn wide', on: { click: openPassoverFromHub } }, '열 가지 재앙과 유월절 · 감수용 미리보기'),
         el('button', {class:'btn wide', on:{click:app.openRedSea}}, '홍해 본편 · 바닷가에서 미리암의 노래까지'),
+        el('button', {class:'btn wide', on:{click:app.openSinai}}, '시내산 본편 · 산 앞의 진영과 금송아지'),
         el('button', {class:'btn wide', on:{click:app.openWilderness}}, '광야 본편 · 마라에서 반석까지'),
         el('button', {class:'btn wide', on:{click:app.openExodusTrail}}, '홍해에서 성막까지 · 세 친구의 길 잇기'),
         locked.length ? toggle : null,
@@ -311,10 +315,11 @@
 
   // 외부의 같은 페이지 링크도 새 입구로 진입한다. 내부 이동은 replaceState라 이 이벤트를 보내지 않는다.
   window.addEventListener('hashchange', function () {
-    if (['#home','#pillar','#palace','#passover','#redsea','#wilderness','#exodus','#nile',''].includes(location.hash)) location.reload();
+    if (['#home','#pillar','#palace','#passover','#redsea','#wilderness','#sinai','#exodus','#nile',''].includes(location.hash)) location.reload();
   });
   if (location.hash === '#nile' || (!location.hash && document.body.dataset.start === 'nile')) app.openNile();
   else if (location.hash === '#pillar') app.openPillars();
+  else if (location.hash === '#sinai') app.openSinai();
   else if (location.hash === '#wilderness') app.openWilderness();
   else if (location.hash === '#redsea') app.openRedSea();
   else if (location.hash === '#exodus') app.openExodusTrail();

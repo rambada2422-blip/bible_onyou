@@ -58,7 +58,7 @@ if (full) {
     const walks = [
       ['2D 시범판', ['tools/test/walk2d.js', '1', '모세', path.join(out, '2d')]],
       ['홍해 본편', ['tools/test/red-sea.js', path.join(out, 'red-sea')]],
-      ['광야 네 장면', ['tools/test/wilderness.js', path.join(out, 'wilderness')]],
+      ['광야·시내산 본편', ['tools/test/wilderness.js', path.join(out, 'wilderness')]],
       ['출애굽기 수첩', ['tools/test/exodus-trail.js', path.join(out, 'exodus-trail')]],
       ['사진형 배경', ['tools/test/bgraster.js', path.join(out, 'bgraster')]],
       ['3D 호렙 산', ['tools/test/walk3d.js', '1', path.join(out, 'horeb')]],

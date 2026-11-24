@@ -1,7 +1,8 @@
-/* 홍해 다음의 네 관찰 장소. 저장되는 변화는 탐험대의 위치·장비·수집 기록이다. */
+/* 광야와 시내산의 관찰 장소. 저장되는 변화는 탐험대의 위치·장비·수집 기록이다. */
 (function () {
   'use strict';
   const app=BO.app2d, el=app.el, {stages,crew,hintModes,restoration}=BO.wildField, bible=BO.wildScripture;
+  const firstMountain=stages.findIndex(st=>st.id==='sinai');
   const labels=['살펴보기','장비 맞추기','기록 대조'];
   const surfaces=[['흙','dirt'],['모래','sand'],['돌','stone'],['나무 발판','wood']];
   const freshStop=()=>({pos:1,phase:0,dial:1,mapped:0});
@@ -9,17 +10,20 @@
   function load(){
     let s=app.state.wilderness;
     if(!s||typeof s!=='object'||!Array.isArray(s.stops)) s=app.state.wilderness={stops:[]};
-    if(!inRange(s.index,0,3))s.index=0;
+    if(!inRange(s.index,0,stages.length-1))s.index=0;
+    if(!inRange(s.desertIndex,0,firstMountain-1))s.desertIndex=s.index<firstMountain?s.index:0;
+    if(!inRange(s.mountainIndex,firstMountain,stages.length-1))s.mountainIndex=firstMountain;
     if(!inRange(s.mode,0,2))s.mode=Math.max(0,['t1','t2','t3'].indexOf(app.state.tier));
     if(!inRange(s.actor,0,2))s.actor=Math.max(0,crew.findIndex(a=>a.id===app.state.char));
     if(!Array.isArray(s.earned))s.earned=[];
     s.earned=stages.map((_,i)=>s.earned[i]===true);
     if(typeof s.sound!=='boolean')s.sound=true;
-    if(!inRange(s.baseCount,0,10))s.baseCount=0;
+    if(!inRange(s.baseCount,0,6+stages.length))s.baseCount=0;
     stages.forEach((_,i)=>{
       const p=s.stops[i];
       if(!p||!inRange(p.pos,0,8)||!inRange(p.phase,0,3)||!inRange(p.dial,0,2))s.stops[i]=freshStop();
       if(!inRange(s.stops[i].mapped,0,stages[i].trail.length))s.stops[i].mapped=0;
+      if(stages[i].beats&&!inRange(s.stops[i].beat,0,stages[i].beats.length-1))s.stops[i].beat=0;
       if(s.stops[i].phase===3)s.earned[i]=true;
     });
     return s;
@@ -28,11 +32,16 @@
     return el('button',{type:'button',class:cls||'wf-button',on:{click:action}},text);
   }
   function refs(stage){
-    const [c,ns]=stage.range.split(':'),[a,b=a]=ns.split('–').map(Number);
-    return Array.from({length:b-a+1},(_,i)=>c+':'+(a+i));
+    const [first,last=first]=stage.range.split('–');
+    const end=last.includes(':')?last:first.split(':')[0]+':'+last;
+    const keys=Object.keys(bible.verses);
+    return keys.slice(keys.indexOf(first),keys.indexOf(end)+1);
   }
-  function open(leave,trail,showShelf){
+  function open(leave,trail,showShelf,mountain=false){
     const s=load(),sound=BO.wildFeel.audio();
+    const start=mountain?firstMountain:0, end=mountain?stages.length-1:firstMountain-1;
+    const bookmark=mountain?'mountainIndex':'desertIndex';
+    s.index=s[bookmark];
     let dialog,timer,startTime=null,elapsed=0,hint=0,closed=false,ui,stage,p;
     const play=key=>{if(s.sound&&!document.hidden)sound.play(key,stage.id);};
     function pause(){
@@ -96,7 +105,7 @@
           const slot=el('section',{class:'wf-slot'});
           if(s.earned[i]){
             slot.classList.add('wf-filled','wf-slot-'+st.id);
-            slot.append(el('i',{'aria-hidden':'true'},['≈','❧','◒','◈'][i]),el('b',{},st.pin),el('p',{},st.card+' 관찰 카드'),el('p',{},st.notes[s.mode]),button('말씀 인장 · 출 '+st.seal,()=>{
+            slot.append(el('i',{'aria-hidden':'true'},st.glyph),el('b',{},st.pin),el('p',{},st.card+' 관찰 카드'),el('p',{},st.notes[s.mode]),button('말씀 인장 · 출 '+st.seal,()=>{
               const d=dialog;d.addEventListener('close',()=>scrollText(i,true),{once:true});d.close();
             }));
           }else slot.append(el('span',{},st.title+' · 빈 자리'));
@@ -162,6 +171,7 @@
     }
     function advance(){
       p.phase++;resetHints();
+      if(stage.beats)p.beat=[0,2,4,stage.beats.length-1][p.phase];
       if(p.phase===3){s.earned[s.index]=true;baseCount();play('clear');}
       else play('found');
       app.save();draw(true);
@@ -189,7 +199,7 @@
         const sync=()=>{
           value.textContent=stage.units[p.dial];dial.value=String(p.dial);dial.setAttribute('aria-valuetext',stage.units[p.dial]);
           const g=glass.getContext('2d');if(!g)return;
-          const scale=1+(p.dial+1)*.4,px=[325,624,520,465][s.index],py=[260,188,298,215][s.index];
+          const scale=1+(p.dial+1)*.4,[px,py]=stage.lens;
           const w=137/scale,h=66/scale;g.clearRect(0,0,130,60);g.drawImage(ui.canvas,px-w/2+(p.dial-stage.aim)*14,py-h/2,w,h,0,0,130,60);
           g.strokeStyle='#fceaac';g.beginPath();g.moveTo(56,30);g.lineTo(74,30);g.moveTo(65,22);g.lineTo(65,38);g.stroke();
         };
@@ -206,11 +216,28 @@
         })));
       }
     }
+    function storyRecord(){
+      const counter=el('b',{}), copy=el('p',{}), verse=button('',()=>{
+        scrollText(s.index,stage.beats[p.beat].ref.split('–')[0]);
+      });
+      const back=button('앞 대목',()=>turn(-1)), next=button('뒤 대목',()=>turn(1));
+      function render(){
+        const beat=stage.beats[p.beat];
+        counter.textContent='장면 안내 · '+(p.beat+1)+' / '+stage.beats.length;
+        copy.textContent=beat.notes[s.mode];
+        verse.textContent='이 대목의 원문 · 출 '+beat.ref;
+        back.disabled=p.beat===0;next.disabled=p.beat===stage.beats.length-1;
+      }
+      function turn(delta){p.beat+=delta;app.save();render();play('tap');}
+      ui.updateRecord=render;render();
+      return el('section',{class:'wf-record',tabindex:'-1','aria-label':'사건의 앞뒤 기록'},
+        el('div',{class:'wf-record-heading'},counter,back,next),copy,verse);
+    }
     function settings(){
       openDialog('탐사 설정',box=>{
         const mode=el('select',{'aria-label':'플레이어 연령 모드'},hintModes.map(({age},i)=>el('option',{value:String(i)},age+'세 모드')));
         mode.value=String(s.mode);
-        mode.onchange=()=>{s.mode=Number(mode.value);resetHints();app.save();
+        mode.onchange=()=>{s.mode=Number(mode.value);resetHints();app.save();ui.updateRecord?.();
           if(p.phase<3){showFace(s.actor,'neutral');showHint();}else ui.cardText.textContent=stage.notes[s.mode];};
         const toggle=button('',()=>{s.sound=!s.sound;app.save();toggle.textContent=s.sound?'소리 켜짐':'소리 꺼짐';toggle.setAttribute('aria-pressed',String(s.sound));if(s.sound)play('tap');else sound.stop();});
         toggle.textContent=s.sound?'소리 켜짐':'소리 꺼짐';toggle.setAttribute('aria-pressed',String(s.sound));
@@ -218,7 +245,7 @@
       });
     }
     function draw(focus){
-      stage=stages[s.index];p=s.stops[s.index];ui={};
+      s[bookmark]=s.index;stage=stages[s.index];p=s.stops[s.index];ui={};
       const complete=p.phase===3, heading=el('h1',{tabindex:'-1'},stage.title);
       const nav=el('nav',{class:'wf-nav'},button('탐험 입구',()=>route(leave)),button('말씀 두루마리',()=>scrollText(s.index,false)),button('관측대',shelf),button('설정',settings));
       ui.canvas=el('canvas',{class:'wf-picture',role:'img','aria-label':stage.title+' · '+stage.card});
@@ -227,7 +254,9 @@
       ui.sprite=el('div',{class:'wf-sprite','aria-hidden':'true'},app.pic(crew[s.actor].id+'-full','',''));
       ui.friends=crew.map(a=>el('div',{class:'wf-friend','aria-hidden':'true'},app.pic(a.id+'-full','','')));
       ui.field.append(...ui.friends,ui.sprite);ui.sprite.style.left=x(p.pos);placeCrew();
-      ui.field.append(el('span',{class:'wf-frame-label'},(p.phase>=2?'나중 기록':'처음 기록')+' · '+stage.evidence[p.phase>=2?1:0][0]));
+      const frameLabel=(p.phase>=2?'나중 기록':'처음 기록')+' · '+stage.evidence[p.phase>=2?1:0][0];
+      ui.field.append(stage.beats ? button(frameLabel,()=>ui.record.focus(),'wf-frame-label wf-read-frame') :
+        el('span',{class:'wf-frame-label'},frameLabel));
       const content=el('div',{class:'wf-body'});
       if(!complete){
         ui.thought=el('span',{class:'wf-thought','aria-hidden':'true'});ui.field.append(ui.thought);
@@ -269,23 +298,37 @@
           button('말씀 인장 · 출 '+stage.seal,()=>scrollText(s.index,true)),
           button('처음 기록 다시 보기',event=>{
             const earlier=event.currentTarget.textContent==='처음 기록 다시 보기';
+            if(stage.beats){
+              p.beat=earlier?0:stage.beats.length-1;ui.updateRecord();app.save();
+            }
             BO.drawWilderness(ui.canvas,stage.id,!earlier);
             ui.field.querySelector('.wf-frame-label').textContent=(earlier?'처음 기록':'나중 기록')+' · '+stage.evidence[earlier?0:1][0];
             event.currentTarget.textContent=earlier?'나중 기록 다시 보기':'처음 기록 다시 보기';
           }),el('span',{},'고정 선반 · '+stage.pin));
-        const next=button(s.index<3?stages[s.index+1].title+'로':'시내산 수첩으로',()=>{
-          if(s.index===3){route(trail);return;}
-          sound.stop();s.index++;resetHints();app.save();draw(true);
+        const next=button(s.index<end?(mountain?'금송아지 사건으로':stages[s.index+1].title+'로'):mountain?'시내산 수첩으로':'시내산 본편으로',()=>{
+          if(s.index===end){route(mountain?trail:app.openSinai);return;}
+          sound.stop();s.index++;resetHints();draw(true);app.save();
         },'wf-primary');
-        content.append(reward,next,button('이 장소 다시 답사',()=>{s.stops[s.index]=freshStop();resetHints();app.save();draw(true);}));
+        content.append(reward,next);
+        if(!mountain&&s.index===end)content.append(button('시내산 수첩으로',()=>route(trail)));
+        content.append(button('이 장소 다시 답사',()=>{
+          s.stops[s.index]=freshStop();if(stage.beats)s.stops[s.index].beat=0;
+          resetHints();draw(true);app.save();
+        }));
       }
-      const stops=el('details',{class:'wf-stops'},el('summary',{},'광야 답사 경로'));
+      if(stage.beats){
+        ui.record=storyRecord();
+        if(complete)content.insertBefore(ui.record,content.children[1]);else content.append(ui.record);
+      }
+      const regionName=mountain?'시내산':'광야';
+      const stops=el('details',{class:'wf-stops'},el('summary',{},regionName+' 답사 경로'));
       stages.forEach((st,i)=>{
-        const b=button(st.title+(s.earned[i]?' · 기록 있음':''),()=>{sound.stop();s.index=i;resetHints();app.save();draw(true);});
-        b.disabled=i!==0&&!s.earned[i-1];stops.append(b);
+        if(i<start||i>end)return;
+        const b=button(st.title+(s.earned[i]?' · 기록 있음':''),()=>{sound.stop();s.index=i;resetHints();draw(true);app.save();});
+        b.disabled=i!==start&&!s.earned[i-1];stops.append(b);
       });
       content.append(stops);
-      ui.screen=el('main',{class:'screen wf-screen'},nav,el('div',{class:'wf-scroll'},el('header',{class:'wf-heading'},el('p',{},'광야 답사 '+(s.index+1)+' / 4 · 출 '+stage.range),heading),ui.field,content));
+      ui.screen=el('main',{class:'screen wf-screen'},nav,el('div',{class:'wf-scroll'},el('header',{class:'wf-heading'},el('p',{},regionName+' 답사 '+(s.index-start+1)+' / '+(end-start+1)+' · 출 '+stage.range),heading),ui.field,content));
       app.show(ui.screen);if(focus)heading.focus({preventScroll:true});schedule();
     }
     document.addEventListener('visibilitychange',visibility);window.addEventListener('pagehide',pageHide);

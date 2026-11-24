@@ -64,26 +64,25 @@
     return s;
   }
   function btn(text, action, cls) { return el('button', {type:'button', class:cls, on:{click:action}}, text); }
-  function open(leave, fromSea, fromWilderness) {
+  function open(leave, fromSea, fromWilderness, showMountainNotes) {
     const s = state();
-    if (fromWilderness && s.index < 2 && s.review === undefined) { s.index = 2; s.book = false; }
+    if (fromWilderness && !showMountainNotes && s.index < 2 && s.review === undefined) { s.index = 2; s.book = false; }
     if (fromSea && s.index === 0 && !s.book && s.review === undefined) s.index = 1;
-    function recordCount(i) {
-      if (cleared(i) || (i === 0 && app.state.redSea && app.state.redSea.finished === true)) return 3;
-      if (i === 1 && Array.isArray(app.state.wilderness?.earned)) {
-        const earned = app.state.wilderness.earned;
-        let records = 0;
-        while (records < 3 && earned[records + 1] === true) records++;
-        return Math.max(records, s.pages[i].found);
-      }
-      return s.pages[i].found;
+    function recordedEntries(i) {
+      const earned=app.state.wilderness?.earned || [];
+      const complete=cleared(i) || (i===0 && app.state.redSea?.finished===true);
+      const fieldSlots=i===1?[1,2,3]:i===2?[4,null,5]:[];
+      return spreads[i].entries.filter((_,k)=>complete || k<s.pages[i].found ||
+        (Number.isInteger(fieldSlots[k]) && earned[fieldSlots[k]]===true));
     }
+    function recordCount(i) { return recordedEntries(i).length; }
     function count() { return spreads.reduce((n, _, i) => n + recordCount(i), 0); }
     function cleared(i) { return Number.isSafeInteger(s.best[i]) && s.best[i] >= 0; }
     function notebook(focus) {
       s.book = true; app.save();
       const heading = el('h1', {tabindex:'-1'}, count() === 12 ? '완성한 출애굽기 수첩' : '탐험대의 출애굽기 수첩');
       const list = el('div', {class:'xt-pages'});
+      let mountainHeading;
       if (count() === 12) {
         if (s.restored) list.append(el('p', {class:'xt-restored'}, '열두 기록을 시간 순서로 복원했어요.'));
         list.append(btn(s.restored ? '열두 기록 다시 섞기' : '열두 기록 복원하기', () => {
@@ -93,9 +92,11 @@
       spreads.forEach((spread, i) => {
         const available = recordCount(i);
         const group = el('section', {class:'xt-entry'}, el('h2', {}, spread.title), el('small', {}, spread.range));
-        for (const entry of spread.entries.slice(0, available)) {
+        if(i===2) { mountainHeading=group.querySelector('h2'); mountainHeading.tabIndex=-1; }
+        for (const entry of recordedEntries(i)) {
           group.append(el('details', {}, el('summary', {}, entry[0]), app.refChip(entry[1]), entry[2] ? el('p', {}, entry[2]) : null));
         }
+        if (i === 2) group.append(btn('시내산 본편 답사', app.openSinai, 'xt-action'));
         if (i === 1) group.append(btn('광야 본편 답사', app.openWilderness, 'xt-action'));
         if (available < 3) group.append(el('p', {}, '남은 기록 ' + (3 - available) + '장'));
         if (i === 0 || recordCount(i - 1) === 3) group.append(btn(cleared(i) ? '이 판 다시 맞추기' : '이 판 이어 맞추기', () => {
@@ -106,7 +107,8 @@
       });
       app.show(el('main', {class:'screen xt-screen xt-book'}, el('nav', {class:'xt-nav'}, btn('탐험 입구', leave, 'xt-link'), btn('홍해 본편', app.openRedSea, 'xt-link'), btn('놀이판', () => board(true), 'xt-link')),
         el('div', {class:'xt-scroll'}, el('header', {class:'xt-head'}, el('p', {}, '『탐험대 이야기』'), heading, el('p', {}, '모은 기록 ' + count() + ' / 12')), list)));
-      if (focus) heading.focus({preventScroll:true});
+      if(showMountainNotes&&!focus)mountainHeading.focus();
+      else if (focus) heading.focus({preventScroll:true});
     }
     function restore(focus) {
       if (!Number.isInteger(s.review) || s.review < 0 || s.review >= 12 || count() !== 12) {
@@ -221,9 +223,10 @@
           el('div', {class:'xt-byline'}, el('span', {}, spread.range), crew)),
           el('section', {class:'xt-play'}, el('div', {class:'xt-boardlabel'}, el('strong', {}, '수첩 조각 맞추기'), counter), cells, message, stamps, actions))));
       update();
+      if(index===2)actions.parentElement.append(btn('시내산 본편 답사',app.openSinai,'xt-action'));
       if (focus) heading.focus({preventScroll:true});
     }
-    if (s.review !== undefined) restore(false); else if (s.book) notebook(false); else board(false);
+    if (showMountainNotes) notebook(false); else if (s.review !== undefined) restore(false); else if (s.book) notebook(false); else board(false);
   }
   app.exodusTrail = {open};
 })();

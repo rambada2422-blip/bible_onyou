@@ -5,6 +5,8 @@
     marah:['#4a697d','#e8b498','#f6d39b','#b58979','#977164','#ecc48d','#b17b53'],
     elim:['#669eae','#c4dabb','#f5dfaa','#9fa78a','#778d78','#e6c58d','#ac825b'],
     manna:['#666e92','#ddb4b4','#f6d3ac','#ab9296','#8b7e85','#e4be97','#ac8c77'],
+    sinai:['#596e83','#b9c9c8','#edd3a4','#a1988d','#868278','#dcbf8f','#ae8562'],
+    calf:['#617e91','#c9c8ae','#efcd95','#a29c84','#8b8271','#ddbe91','#ac876a'],
     rock:['#537d8d','#c3ced0','#efdcab','#aaa396','#8c877b','#dcb88d','#aa8565']
   };
   BO.drawWilderness = function(canvas,id,later){
@@ -71,6 +73,56 @@
       poly([[x-20*k,y],[x-5*k,y-17*k],[x+1*k,y]],'#d1ae83');
       poly([[x-13*k,y],[x-6*k,y-10*k],[x-4*k,y]],'#65635c');
     }
+    function mountainCamp(){
+      const clouded=id==='sinai'&&later;
+      const peak=[[0,219],[80,190],[137,201],[231,138],[266,155],[353,111],[396,117],
+        [478,57],[504,67],[533,50],[563,83],[601,95],[640,143],[686,163],[743,152],[800,187],[800,244],[0,244]];
+      poly(peak,grad(48,244,clouded?['#4e515b','#717174','#a0947c']:['#a88567','#b79c77','#a18c72']));
+      for(const [a,b,c] of [[0,2,1],[2,4,3],[4,6,5],[6,8,7],[8,10,9],[10,12,11],[12,14,13],[14,16,15]]){
+        const [px,py]=peak[c];
+        poly([peak[a],peak[c],[px-36,py+75],[px-89,222]],clouded?'#384c565e':'#695e5b65');
+        poly([peak[c],peak[b],[px+18,py+39]],clouded?'#c2beb059':'#e2c397aa');
+      }
+      if(clouded){
+        const glow=g.createRadialGradient(507,110,2,507,110,73);
+        glow.addColorStop(0,'#eea56dbd');glow.addColorStop(1,'#ac785300');
+        g.fillStyle=glow;g.fillRect(431,32,155,157);
+        // 서로 겹치는 낮은 구름층과 연무. 산꼭대기는 구름 뒤에 가려진다.
+        for(let i=0;i<65;i++){
+          const x=335+rand()*330,y=38+rand()*64;
+          oval(x,y,24+rand()*62,9+rand()*14,['#566170bb','#667380bf','#475a69a8'][i%3]);
+        }
+        for(let i=0;i<70;i++){
+          const y=99+rand()*57,x=490+Math.sin(y/21)*18+(rand()-.5)*57;
+          oval(x,y,14+rand()*24,3+rand()*6,'#7a716b6e');
+        }
+      }
+      for(let i=0;i<11;i++)tent(26+i*74,226+Math.sin(i*2)*8,.74);
+      tent(119,264,1.25);tent(175,258,.9);tent(449,242,1.05);
+      for(let i=0;i<6;i++)person(311+i*17,242+i%2*4,20+i%3*3,i,false);
+      if(id==='sinai'){
+        if(later){
+          for(let i=0;i<13;i++){
+            const x=536+i*14,y=281+Math.sin(i*2.1)*9+i%4*3;
+            person(x,y,27+i%3*4,i,false);
+          }
+        }
+      }else{
+        // 진 문은 장막 사이의 통로로 남긴다. 판의 글자나 심판 장면을 그리지 않는다.
+        tent(578,284,1.05);tent(713,284,1.1);
+        if(later){
+          person(638,287,37,1,false);
+          for(let i=0;i<6;i++)person(603-i*13,296+i%3*5,27+i%2*4,i,false);
+        }else{
+          const bronze='#a7864c';
+          poly([[301,253],[307,247],[330,246],[343,238],[350,239],[348,248],[341,253],
+            [337,264],[334,264],[334,254],[316,255],[312,265],[309,265],[310,254],[303,254]],bronze);
+          line(302,250,299,258,'#826a44',1.8);
+          line(345,239,346,235,bronze,2);
+          for(let i=0;i<7;i++)person(220+i*12,268+i%3*3,27,i,false);
+        }
+      }
+    }
     g.fillStyle=grad(0,190,c.slice(0,3));g.fillRect(0,0,W,H);
     const sx=id==='manna'?574:172,sy=id==='manna'?130:76;
     for(const [r,color] of [[52,'#fff4cd14'],[34,'#fff0b925'],[19,'#ffedba']])oval(sx,sy,r,r,color);
@@ -84,7 +136,9 @@
       const x=rand()*W,y=204+rand()*200;
       line(x,y,x+1+rand()*8,y-.6,rand()<.5?'#6b53472d':'#ffedbf60',.5+rand());
     }
-    if(id==='marah'){
+    if(id==='sinai'||id==='calf'){
+      mountainCamp();
+    }else if(id==='marah'){
       pool(410,264,281,42);pool(94,312,70,11);
       for(let i=0;later&&i<5;i++){
         g.beginPath();g.ellipse(325,262,8+i*13,2+i*2.9,0,.1,5.75);g.strokeStyle='#ffe5abbd';g.lineWidth=1.6;g.stroke();
