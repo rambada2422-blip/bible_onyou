@@ -1299,3 +1299,81 @@ h1, h2, h3, p { margin: 0; }
   .lamp-lead, .lamp-socket, .lamp-joint::before, .lamp-joint::after { background: CanvasText; }
   .lamp-joint { background: Canvas; border-color: CanvasText; }
 }
+
+/* 베들레헴 들판 망원경 */
+.meadow-start {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  background: linear-gradient(90deg, #193a33 8%, #294a3ce0 48%, transparent),
+    url('../media/pasture.webp') 58% 65% / cover;
+  color: #fff9df; text-align: left; border: 1px solid #decc91; border-radius: 12px;
+  padding: 2px 16px; font: 18px var(--f-display); min-height: 52px;
+}
+.meadow-start img { height: 48px; width: 55px; object-fit: contain; }
+.meadow-panel {
+  flex: none; display: grid; gap: 8px; padding: clamp(8px, 2vw, 16px);
+  color: var(--ink); background: #fbf7ec; border: 1px solid #cbbd96; border-radius: 16px;
+}
+.meadow-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.meadow-heading h2 { font: clamp(18px, 4vw, 24px) var(--f-display); }
+.meadow-heading small { color: #67563b; }
+.meadow-lens {
+  position: relative; isolation: isolate; overflow: hidden; aspect-ratio: 3 / 2; width: 100%;
+  border: 3px solid #405346; border-radius: 14px; background: #d7d4aa;
+  touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab;
+}
+.meadow-lens:active { cursor: grabbing; }
+.meadow-world { position: absolute; inset: 0 auto 0 0; width: 200%; }
+.meadow-land { display: block; width: 100%; height: 100%; }
+.meadow-sheep {
+  position: absolute; width: 13%; height: auto; transform: translateX(-50%); transform-origin: 50% 93%;
+  filter: drop-shadow(1px 2px 1px #4c452761); cursor: pointer;
+  animation: meadow-breathe 4.8s ease-in-out infinite;
+}
+.meadow-sheep[data-sheep="lamb"] { width: 9.5%; animation-delay: -1.4s; }
+.meadow-sheep[data-sheep="resting"] { width: 12%; animation-delay: -3.1s; }
+@keyframes meadow-breathe {
+  50% { transform: translateX(-50%) scaleY(1.018); }
+}
+.meadow-glass, .meadow-frame, .meadow-count { position: absolute; pointer-events: none; }
+.meadow-glass { inset: 0; background: radial-gradient(ellipse at center, transparent 55%, #1e301e45 100%); }
+.meadow-frame {
+  left: 32%; right: 32%; top: 30%; bottom: 9%; border: 2px solid #ffffffa6; border-radius: 18%;
+  box-shadow: 0 0 0 1px #3e453951; opacity: .55;
+}
+.meadow-lens.in-focus .meadow-frame { opacity: 1; }
+.meadow-count {
+  top: 8px; right: 8px; padding: 3px 10px; border-radius: 12px;
+  font: 14px var(--f-display); color: #fff9e7; background: #203b32eb;
+}
+.meadow-controls { display: grid; grid-template-columns: 48px 1fr 48px; gap: 6px; }
+.meadow-button {
+  min-height: 44px; padding: 4px 8px; border-radius: 10px; background: #e6e3ce;
+  color: #273c34; font: 26px/1 var(--f-display); touch-action: manipulation;
+}
+.meadow-button[data-pasture-action="observe"] { color: white; background: #24594b; font-size: 16px; }
+.meadow-button:disabled, .meadow-button[aria-disabled="true"] { background: #e8e3d6; color: #675f4e; }
+.meadow-guide, .meadow-panel > .field-feedback { font-size: 14px; line-height: 1.4; }
+.meadow-panel > .field-feedback { color: #365643; font-weight: 700; }
+.meadow-stamps {
+  display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px;
+  list-style: none; padding: 0; margin: 0;
+}
+.meadow-stamps li {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 4px; gap: 2px; text-align: center; border: 1px dashed #aea78e;
+  border-radius: 9px; font-size: 12px; color: #605945;
+}
+.meadow-stamps img { width: 48px; height: 36px; object-fit: contain; filter: grayscale(1); opacity: .58; }
+.meadow-stamps .recorded { background: #edf2e5; border: 1px solid #84967b; color: #294536; }
+.meadow-stamps .recorded img { filter: none; opacity: 1; }
+.meadow-stamps .recorded::after { content: '✓'; position: absolute; right: 5px; top: 2px; }
+.meadow-question { display: grid; justify-items: start; gap: 7px; margin-top: 4px; }
+.meadow-question h3 { font: 18px var(--f-display); }
+.meadow-question .choices { width: 100%; }
+.meadow-question[hidden] { display: none; }
+@media (orientation: landscape) and (max-height: 460px) {
+  .meadow-panel { grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); align-items: start; gap: 5px 12px; }
+  .meadow-heading, .meadow-question, .meadow-panel .lookout-film { grid-column: 1 / -1; }
+  .meadow-lens { grid-column: 1; grid-row: 2 / span 5; }
+  .meadow-controls, .meadow-guide, .meadow-panel > .field-feedback, .meadow-panel .field-hint, .meadow-stamps { grid-column: 2; }
+}

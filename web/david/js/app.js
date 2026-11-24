@@ -7,6 +7,7 @@
   var STORAGE_KEY = 'bibleOnyou.david.v1';
   var DATA = window.BO_DAVID.data;
   var ART = window.BO_DAVID.art;
+  var pasture = window.BO_DAVID.pasture;
   var field = window.BO_DAVID.field;
   var root = document.getElementById('app');
 
@@ -122,6 +123,7 @@
       d02Entry: 'stones', /* A29: D02 접근 경로 ('stones' | 'sectors') */
       d02MarkMode: false, /* A30: D02 관찰 책갈피 모드 */
       d02Marks: [],       /* A30: D02 책갈피 꽂힌 칸 인덱스 */
+      pasture: pasture.restore(),
       lookout: field.lookoutState(),
       lamp: field.lampState(),
       d02Camera: { position: 1, photos: [], kept: null },
@@ -250,6 +252,8 @@
       if (Array.isArray(parsed.d02Marks)) {
         base.d02Marks = parsed.d02Marks.filter(function (v, i, a) { return typeof v === 'number' && v >= 0 && v <= 7 && a.indexOf(v) === i; });
       }
+      base.pasture = pasture.restore(parsed.pasture);
+      if (parsed.step === 'pasture' && base.sceneId === 'D01') base.step = 'pasture';
       base.lookout = field.lookoutState(parsed.lookout || {});
       base.lamp = field.lampState(parsed.lamp || {});
       var camera = parsed.d02Camera;
@@ -364,6 +368,7 @@
         d02Entry: state.d02Entry,
         d02MarkMode: state.d02MarkMode,
         d02Marks: state.d02Marks,
+        pasture: state.pasture,
         lookout: state.lookout,
         lamp: state.lamp,
         d02Camera: state.d02Camera,
@@ -465,7 +470,15 @@
     saveState();
   }
 
-  function openScene(sceneId, isReplay) {
+  function startPasture() {
+    if (state.pasture.finished) {
+      state.pasture = pasture.restore({ layout: (state.pasture.layout + 1) % 3 });
+    }
+    recordFirstAction('field:D01');
+    openScene('D01', false, 'pasture');
+  }
+
+  function openScene(sceneId, isReplay, initialStep) {
     var sc = getScene(sceneId);
     if (!sc) return;
     if (isReplay || (sc.id === 'D06' && state.lookout.finished) || (sc.id === 'D09' && state.lamp.finished)) {
@@ -478,7 +491,7 @@
     var seed = getSeed(state, sc.id);
     state.view = 'scene';
     state.sceneId = sc.id;
-    state.step = 'choose';
+    state.step = initialStep || 'choose';
     state.detourId = null;
     state.d01Opened = [];
     state.d01ZoomId = null;
@@ -855,6 +868,8 @@
           el('div', { class: 'hero-kicker', text: tierLabels[state.ageTier] || tierLabels.t1 }),
           el('h1', { text: '다윗의 발자취를 살펴보자' }),
           el('p', { text: '장면을 골라 단서를 살펴보고, 성경 장절을 확인해 탐험 일지에 남겨 보세요.' }),
+          el('button', { type: 'button', class: 'meadow-start', 'data-field-start': 'D01', on: { click: startPasture } },
+            el('span', { text: '들판 망원경 열기 ›' }), el('img', { src: 'media/sheep-lamb.webp', alt: '' })),
           el('div', { class: 'field-starts' },
             el('button', { class: 'trial-btn', 'data-field-start': 'D06', on: { click: function () {
               recordFirstAction('field:D06');
@@ -934,6 +949,11 @@
         state.brookSpots = makeBrookSpots(getSeed(state, sc.id));
       }
       saveState();
+      render();
+    } else if (sc.id === 'D01' && state.step === 'pasture') {
+      state.pasture.finished = true;
+      state.step = 'done';
+      recordDiscovery(sc, '『탐험대 이야기』 들판 수첩 · ' + state.pasture.seen.map(pasture.label).join(' → '));
       render();
     } else if (sc.mode === 'order') {
       state.step = 'order';
@@ -1406,11 +1426,11 @@
     };
   }
 
-  function renderChooseStep(sc) {
+  function renderChoiceButtons(sc) {
     var seed = getSeed(state, sc.id);
     var list = sc.choices.slice();
     if (seed % 2 === 1) list.reverse();
-    var choiceNodes = list.map(function (ch) {
+    return list.map(function (ch) {
       return el('button', {
         class: 'choice-card',
         'data-choice': ch.id,
@@ -1423,6 +1443,10 @@
         )
       );
     });
+  }
+
+  function renderChooseStep(sc) {
+    var seed = getSeed(state, sc.id);
     var boards = window.BO_DAVID.boards || {};
     return [
       el('div', { class: 'meta-row' },
@@ -1433,6 +1457,7 @@
       sc.teamNote ? el('p', { class: 'team-note', 'data-team-note': sc.id, text: sc.teamNote }) : null,
       el('h2', { class: 'question', text: sc.question }),
       sc.artNote ? el('p', { class: 'subnote', text: sc.artNote }) : null,
+      sc.id === 'D01' ? el('button', { class: 'journal-open', 'data-action': 'open-pasture', on: { click: startPasture } }, '들판 망원경 열기') : null,
       sc.id === 'D01' ? renderD01Notebook(sc) : null,
       (sc.id === 'D04' && boards.renderD04Compare) ? boards.renderD04Compare(boardCtx(), sc) : null,
       (sc.id === 'D05' && boards.renderD05Hebron) ? boards.renderD05Hebron(boardCtx(), sc) : null,
@@ -1440,7 +1465,7 @@
       sc.id === 'D07' ? renderD07FoldMap(sc) : null,
       (sc.id === 'D08' && boards.renderD08Path) ? boards.renderD08Path(boardCtx(), sc) : null,
       (sc.id === 'D09' && boards.renderD09Workbench) ? boards.renderD09Workbench(boardCtx(), sc) : null,
-      el('div', { class: 'choices' }, choiceNodes)
+      el('div', { class: 'choices' }, renderChoiceButtons(sc))
     ];
   }
 
@@ -2073,6 +2098,8 @@
         el('p', { class: 'discovery-text', text: sc.discovery }),
         saved && saved.extra ? el('p', { class: 'discovery-note', text: saved.extra }) : null
       ),
+      sc.id === 'D01' && state.pasture.finished
+        ? el('button', { class: 'journal-open', 'data-action': 'replay-pasture', on: { click: startPasture } }, '새 자리에서 양 찾기') : null,
       sc.id === 'D02' ? renderKeptBrookPhoto(state.d02Camera.kept) : null,
       courseDone ? (function () {
         var traceIds = c.completed.slice(-2);
@@ -2130,7 +2157,8 @@
     var sc = getScene(state.sceneId);
     if (!sc) { goHome(); return; }
     var body;
-    if (state.step === 'stones') body = renderStonesStep(sc);
+    if (sc.id === 'D01' && state.step === 'pasture') body = pasture.render(boardCtx(), sc, renderChoiceButtons(sc));
+    else if (state.step === 'stones') body = renderStonesStep(sc);
     else if (state.step === 'order') body = renderOrderStep(sc);
     else if (state.step === 'hebron2') body = renderHebron2Step(sc);
     else if (state.step === 'ark2') body = renderArk2Step(sc);
@@ -2195,7 +2223,7 @@
         el('button', { class: 'topbtn brass', 'data-action': 'journal', on: { click: openJournal } }, '일지 ' + journalCount())
       ),
       el('div', { class: 'play-layout' },
-        !fieldPanel && state.step !== 'stones' ? el('div', { class: 'stage' },
+        !fieldPanel && state.step !== 'stones' && state.step !== 'pasture' ? el('div', { class: 'stage' },
           el('div', { html: ART.scene(sc.art) }),
           el('div', { class: 'stage-chips' },
             el('span', { class: 'ref', text: sc.ref }),
