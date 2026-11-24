@@ -8,7 +8,6 @@
 .rs-heading h1 { font:clamp(1.78rem,6.4vw,2.65rem)/1.15 var(--f-display); margin:3px 0; }
 .rs-frame { position:relative; overflow:hidden; background:#385c65; box-shadow:0 2px 0 #e3bd7942; }
 .rs-picture { display:block; width:100%; height:auto; aspect-ratio:800/430; }
-.rs-place { position:absolute; left:12px; bottom:8px; background:#182f39e8; color:#ffedc7; font-size:.88rem; padding:2px 9px; border-radius:4px; }
 .rs-friend { display:flex; align-items:center; gap:9px; line-height:1.4; padding:12px 0 8px; }
 .rs-friend img { width:42px; height:42px; flex:none; border-radius:50%; background:#e4d3ae; border:2px solid #dab575; }
 .rs-friend b { display:block; font-size:.88rem; color:#ebc881; }
@@ -47,8 +46,7 @@
   .rs-story { grid-area:note; margin-top:0; }
   .rs-footer { grid-area:end; }
 }
-.rs-coast .rs-place { display:none; }
-.rs-coast-art { display:block; width:100%; height:auto; aspect-ratio:16/9; }
+.rs-art { display:block; width:100%; height:auto; aspect-ratio:16/9; }
 @media (prefers-reduced-motion:no-preference) {
   .rs-frame[data-view="rear"] .rs-coast-art {
     transform-origin:42% 53%;
@@ -58,7 +56,41 @@
 }
 @media (min-width:780px) {
   /* 가로 화면이 낮아도 그림의 실제 높이만큼 행을 확보하고 아래 글은 스크롤한다. */
-  .rs-coast { grid-auto-rows:max-content; grid-template-areas:"heading heading" "scene scene" "friend note" "controls note" "end note" "status note"; }
-  .rs-coast .rs-frame { width:min(calc(100% - 40px), max(600px, 80vh)); margin-inline:auto; }
-  .rs-coast .rs-story { margin-top:12px; }
+  .rs-scroll { grid-auto-rows:max-content; grid-template-areas:"heading heading" "scene scene" "friend note" "controls note" "end note" "status note"; }
+  .rs-scroll .rs-frame { width:min(calc(100% - 40px), max(600px, 80vh)); margin-inline:auto; }
+  .rs-scroll .rs-story { margin-top:12px; }
 }
+
+.rs-walk { touch-action:manipulation; user-select:none; -webkit-user-select:none; }
+.rs-walk-help { flex-basis:100%; color:#dfd5bd; line-height:1.5; }
+.rs-route { display:flex; flex:1 0 100%; align-items:center; list-style:none; padding:0; margin:0; }
+.rs-route li { color:#c1d5d0; font-size:.9rem; display:flex; align-items:center; }
+.rs-route li+li::before { content:""; width:clamp(8px,2vw,20px); height:1px; background:#899e95; margin:0 6px; }
+.rs-route li[aria-current] { color:#ffe0a0; font-weight:bold; }
+.rs-instrument { display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px; width:100%; }
+.rs-drum {
+  flex:none; width:min(100%,clamp(9rem,34vw,11.125rem)); aspect-ratio:1; position:relative; border-radius:50%;
+  background:radial-gradient(circle,#e2bd82 61%,#96653a 65%,#593c29 70%,transparent 71%);
+  filter:drop-shadow(0 4px 3px #07171985);cursor:pointer;touch-action:manipulation;
+}
+.rs-drumskin { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.rs-pad { position:absolute; left:50%; transform:translateX(-50%); min-height:44px; font:inherit; font-weight:bold; cursor:pointer; touch-action:manipulation; }
+.rs-center { top:16%; height:48%; width:62%; border-radius:50%; color:#513420; background:#ffe9bd35; border:1px solid #80542385; }
+.rs-rim { bottom:4%; width:68%; border-radius:50%; color:#382413; background:#ffe2a9b5; border:1px solid #70502e9c; }
+.rs-pad.hit,.rs-pad:active { background:#fff3c6; box-shadow:0 0 0 4px #e69b3a,inset 0 2px 5px #5b391a55; }
+.rs-pad:focus-visible { outline:3px solid #163e5b; outline-offset:2px; }
+.rs-rhythm-guide { flex:1 1 140px; min-width:0; display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+.rs-rhythm-guide .rs-beats { flex-wrap:wrap; gap:4px; }
+.rs-rhythm-guide .rs-beats span { padding:3px 7px; font-size:.9rem; }
+@media (prefers-reduced-motion:no-preference) {
+  .rs-frame:is([data-view="wind"],[data-view="walls"]) .rs-art {
+    transform:scale(var(--rs-depth,1)); transform-origin:55% 49%; transition:transform .21s ease-out;
+  }
+}
+
+.rs-look { display:flex; align-items:center; flex-wrap:wrap; gap:6px; width:100%; margin-top:4px; }
+.rs-look[hidden] { display:none; }
+.rs-sighting-count { width:100%; color:#ebcd90; }
+.rs-story .rs-journal-look { color:#475b50; font-weight:bold; }
+.rs-frame[data-gaze="water"] .rs-art { transform:scale(1.65); transform-origin:12% 5%; }
+.rs-frame[data-gaze="ground"] .rs-art { transform:scale(1.65); transform-origin:86% 96%; }

@@ -39,11 +39,18 @@ async function visit(browser,origin,entry,viewport,out) {
   assert((await page.locator('.rs-note').innerText()).includes('구원을 지켜보라고'));
   await tap('바다 가운데로');
   assert(await b('건너온 바다 돌아보기').isHidden());
-  await tap('앞으로 걷기');await tap('앞으로 걷기');
+  await visibleArt('wind');
+  for(let i=0;i<8;i++)await tap('앞으로 걷기');
   assert((await page.locator('.rs-story').innerText()).includes('양쪽에서 물이 벽처럼'));
-  const imageBefore=await page.locator('canvas').evaluate(c=>c.toDataURL());
-  await tap('뒤로 걷기');
-  assert.notEqual(await page.locator('canvas').evaluate(c=>c.toDataURL()),imageBefore);
+  await visibleArt('walls');
+  if(raw){
+    await tap('물벽 올려다보기');assert.equal(await page.locator('.rs-frame').getAttribute('data-gaze'),'water');
+    await tap('발밑 내려다보기');await page.reload();
+    assert.equal(await page.locator('.rs-frame').getAttribute('data-gaze'),'ground');
+    assert.equal((await saved()).redSea.looked,3);
+  }
+  const depth=()=>page.locator('.rs-frame').evaluate(e=>e.style.getPropertyValue('--rs-depth'));
+  const before=await depth();await tap('뒤로 걷기');assert.notEqual(await depth(),before);
   await tap('앞으로 걷기');await photo('홍해_마른길');
   await page.setViewportSize({width:viewport.height,height:viewport.width});
   await page.reload();
@@ -56,11 +63,13 @@ async function visit(browser,origin,entry,viewport,out) {
   assert.equal(await page.getByRole('slider').inputValue(),'40');
   await page.getByRole('slider').focus();await page.keyboard.press('End');
   assert.equal(await page.getByRole('slider').inputValue(),'100');
-  await tap('건너온 바다 돌아보기');
+  await visibleArt('bank');await tap('건너온 바다 돌아보기');await visibleArt('return');
   assert((await page.locator('.rs-story').innerText()).includes('하나님이 이스라엘을 애굽 사람의 손에서 구원'));
   await tap('노랫소리를 따라가기');
   await page.setViewportSize(viewport);
   assert.equal(await heading(),'미리암의 소고');
+  await visibleArt('song');
+  assert.equal(await page.locator('.rs-drumskin').evaluate(async e=>{await e.decode();return e.naturalWidth;}),440);
   await photo('미리암_소고');
   if(raw){
     await tap('장단 들어 보기');await tap('가장자리 치기');
@@ -69,11 +78,19 @@ async function visit(browser,origin,entry,viewport,out) {
     assert.equal((await saved()).redSea.beat,1);
     await tap('가장자리 치기');await tap('가운데 치기');
     assert.equal(await page.locator('.struck').count(),3);
+    await tap('메아리 장단 도전');
+    await tap('가장자리 치기');await page.reload();
+    assert.equal((await saved()).redSea.echoBeat,1);
+    for(const key of ['가운데','가운데','가장자리','가운데'])await tap(key+' 치기');
+    assert.equal(await page.locator('.struck').count(),5);
   }
   await tap('홍해 탐험 일지 열기');
   assert((await saved()).redSea.finished);
   assert.equal(await page.locator('.rs-story details').count(),3);
   assert((await page.locator('.rs-story details[open]').innerText()).includes('미리암'));
+  await page.getByText('무엇이 두려웠을까',{exact:true}).click();await visibleArt('rear');
+  await page.getByText('백성은 어떻게 되었을까',{exact:true}).click();await visibleArt('return');
+  if(raw)assert((await page.locator('.rs-journal-look').innerText()).includes('물벽 · 마른 땅'));
   await page.reload();assert.equal(await heading(),'홍해를 건넌 뒤');
   await tap('광야 수첩으로 이어가기');
   assert.equal(await heading(),'광야의 샘');
@@ -129,6 +146,34 @@ async function coastLayout(browser,origin,out) {
     await page.evaluate(()=>document.fonts.ready);
   }
 }
+async function directStages(browser,origin) {
+  const page=await browser.newPage({viewport:{width:820,height:570},hasTouch:true});
+  const b=label=>page.getByRole('button',{name:label,exact:true});
+  await page.goto(origin+'/preview.html#redsea');
+  const original=await page.evaluate(()=>JSON.stringify(BO.app2d.state.redSea));
+  await page.goto(origin+'/preview.html#redsea-walk');
+  const forward=b('앞으로 걷기');
+  await forward.scrollIntoViewIfNeeded();
+  const box=await forward.boundingBox();
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+  await page.waitForFunction(()=>Number(document.querySelector('.rs-range')?.value)>=15);
+  await page.mouse.up();
+  const at=await page.getByRole('slider').inputValue();
+  await page.reload();assert.equal(await page.getByRole('slider').inputValue(),at);
+  await page.getByRole('slider').focus();await page.keyboard.press('End');
+  await b('건너온 바다 돌아보기').click();await b('노랫소리를 따라가기').click();
+  await b('가운데 치기').click();await page.reload();
+  assert.equal(await page.locator('.struck').count(),1);
+  await b('보던 탐험으로 돌아가기').click();
+  assert.equal(await page.evaluate(()=>JSON.stringify(BO.app2d.state.redSea)),original);
+  await page.goto(origin+'/preview.html#redsea-drum');
+  await page.getByRole('heading',{name:'미리암의 소고'}).waitFor();
+  assert.equal(await page.locator('.struck').count(),0);
+  await b('홍해 탐험 일지 열기').click();
+  await b('보던 탐험으로 돌아가기').click();
+  assert.equal(await page.evaluate(()=>JSON.stringify(BO.app2d.state.redSea)),original);
+  await page.close();
+}
 async function bridges(browser,origin) {
   const page=await browser.newPage();
   const b=name=>page.getByRole('button',{name,exact:true});
@@ -167,6 +212,7 @@ async function bridges(browser,origin) {
       ['/preview.html#redsea',{width:1000,height:700}]
     ])await visit(browser,origin,entry,viewport,out);
     await coastLayout(browser,origin,out);
+    await directStages(browser,origin);
     await bridges(browser,origin);
     console.log('홍해 세 장면 · 터치·키보드·무음·회전·복원·일지·본편 진입과 광야 복귀: no errors');
   }finally{await browser.close();}

@@ -30,10 +30,12 @@
   app.openSinai = function () { openField(true,false); };
   app.openRedSea = function (coastEntry) {
     const revisit = coastEntry === true && app.state.redSea?.chapter > 0;
-    if (!revisit) markScene('#redsea');
+    const entry = coastEntry === 'walk' ? 1 : coastEntry === 'drum' ? 2 : 0;
+    const sideTrip = Boolean(entry && app.state.redSea);
+    if (!revisit && !sideTrip) markScene('#redsea');
     app.redSea.open(entrance, function () {
       markScene('#exodus'); app.exodusTrail.open(entrance, true);
-    }, {coastEntry:coastEntry === true,revisit});
+    }, {coastEntry:coastEntry === true,revisit,entry,sideTrip});
   };
   function openPassoverFromHub() {
     if (!location.hash) { app.passover.open(renderHub); return; }
@@ -316,13 +318,15 @@
 
   // 외부의 같은 페이지 링크도 새 입구로 진입한다. 내부 이동은 replaceState라 이 이벤트를 보내지 않는다.
   window.addEventListener('hashchange', function () {
-    if (['#home','#pillar','#palace','#passover','#redsea','#redsea-coast','#wilderness','#manna-rest','#sinai','#exodus','#nile',''].includes(location.hash)) location.reload();
+    if (['#home','#pillar','#palace','#passover','#redsea','#redsea-coast','#redsea-walk','#redsea-drum','#wilderness','#manna-rest','#sinai','#exodus','#nile',''].includes(location.hash)) location.reload();
   });
   if (location.hash === '#nile' || (!location.hash && document.body.dataset.start === 'nile')) app.openNile();
   else if (location.hash === '#pillar') app.openPillars();
   else if (location.hash === '#sinai') app.openSinai();
   else if (location.hash === '#manna-rest') openField(false,false,'sabbath');
   else if (location.hash === '#wilderness') app.openWilderness();
+  else if (location.hash === '#redsea-walk') app.openRedSea('walk');
+  else if (location.hash === '#redsea-drum') app.openRedSea('drum');
   else if (location.hash === '#redsea-coast') app.openRedSea(true);
   else if (location.hash === '#redsea') app.openRedSea();
   else if (location.hash === '#exodus') app.openExodusTrail();
