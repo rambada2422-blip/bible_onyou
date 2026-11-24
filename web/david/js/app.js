@@ -7,6 +7,7 @@
   var STORAGE_KEY = 'bibleOnyou.david.v1';
   var DATA = window.BO_DAVID.data;
   var ART = window.BO_DAVID.art;
+  var tableSearch = window.BO_DAVID.tableSearch;
   var hebronCards = window.BO_DAVID.hebronCards;
   var rubbing = window.BO_DAVID.rubbing;
   var robe = window.BO_DAVID.robe;
@@ -126,6 +127,7 @@
       d02Entry: 'stones', /* A29: D02 접근 경로 ('stones' | 'sectors') */
       d02MarkMode: false, /* A30: D02 관찰 책갈피 모드 */
       d02Marks: [],       /* A30: D02 책갈피 꽂힌 칸 인덱스 */
+      tableSearch: tableSearch.restore(),
       hebronCards: hebronCards.restore(),
       rubbing: rubbing.restore(),
       robe: robe.restore(),
@@ -258,6 +260,8 @@
       if (Array.isArray(parsed.d02Marks)) {
         base.d02Marks = parsed.d02Marks.filter(function (v, i, a) { return typeof v === 'number' && v >= 0 && v <= 7 && a.indexOf(v) === i; });
       }
+      base.tableSearch = tableSearch.restore(parsed.tableSearch);
+      if (base.sceneId === 'D07' && parsed.step === 'table-search') base.step = 'table-search';
       base.hebronCards = hebronCards.restore(parsed.hebronCards);
       if (base.sceneId === 'D05' && parsed.step === 'memory') base.step = 'memory';
       base.rubbing = rubbing.restore(parsed.rubbing);
@@ -382,6 +386,7 @@
         d02Entry: state.d02Entry,
         d02MarkMode: state.d02MarkMode,
         d02Marks: state.d02Marks,
+        tableSearch: state.tableSearch,
         hebronCards: state.hebronCards,
         rubbing: state.rubbing,
         robe: state.robe,
@@ -473,6 +478,12 @@
     if (keepsake) Object.assign(entry, keepsake);
     state.journal[scene.id] = entry;
     saveState();
+  }
+
+  function startTableSearch() {
+    recordFirstAction('field:D07');
+    if (state.tableSearch.finished) state.tableSearch = tableSearch.restore();
+    openScene('D07', false, 'table-search');
   }
 
   function startHebronCards() {
@@ -910,6 +921,7 @@
               recordFirstAction('field:D06');
               openScene('D06', false);
             } } }, '행렬 관찰하기'),
+            el('button', { class: 'trial-btn', 'data-field-start': 'D07', on: { click: startTableSearch } }, '식탁 돋보기'),
             el('button', { class: 'trial-btn', 'data-field-start': 'D09', on: { click: function () {
               recordFirstAction('field:D09');
               state.d09Mode = 'solo';
@@ -1014,9 +1026,13 @@
       render();
     } else if (sc.id === 'D07') {
       state.tableFolds = ['son', 'table'];
-      recordDiscovery(sc, '수첩 연결: 요나단의 아들 므비보셋(삼하 9:6–7) ↔ 왕의 식탁(삼하 9:10–13)');
+      var keepsake;
+      if (state.step === 'table-search') {
+        state.tableSearch.finished = true;
+        keepsake = { tablePictures: state.tableSearch.shots.slice() };
+      }
       state.step = 'done';
-      saveState();
+      recordDiscovery(sc, '수첩 연결: 요나단의 아들 므비보셋(삼하 9:6–7) ↔ 왕의 식탁(삼하 9:10–13)', keepsake);
       render();
     } else {
       recordDiscovery(sc);
@@ -1500,6 +1516,7 @@
       sc.artNote ? el('p', { class: 'subnote', text: sc.artNote }) : null,
       sc.id === 'D01' ? el('button', { class: 'journal-open', 'data-action': 'open-pasture', on: { click: startPasture } }, '들판 망원경 열기') : null,
       sc.id === 'D01' ? renderD01Notebook(sc) : null,
+      sc.id === 'D07' ? el('button', { class: 'journal-open', 'data-action': 'open-table', on: { click: startTableSearch } }, '왕의 식탁 돋보기 열기') : null,
       sc.id === 'D05' ? el('button', { class: 'journal-open', 'data-action': 'open-memory', on: { click: startHebronCards } }, '헤브론 기억 카드 열기') : null,
       sc.id === 'D04' ? el('button', { class: 'journal-open', 'data-action': 'open-rubbing', on: { click: startRubbing } }, '엔게디 탁본 뜨기') : null,
       sc.id === 'D03' ? el('button', { class: 'journal-open', 'data-action': 'open-robe', on: { click: startRobe } }, '겉옷 그림 맞추기') : null,
@@ -2131,6 +2148,8 @@
           }
         }
       }, '코스 다음 장면 (' + (c.idx + 2) + '/3): ' + nextCourseSc.id + ' ' + nextCourseSc.title);
+    } else if (sc.id === 'D06' && state.lookout.finished && !inCourse) {
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: startTableSearch } }, '다음 장면 · 왕의 식탁 돋보기');
     } else if (sc.id === 'D04' && saved && saved.rubbings && !inCourse) {
       primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: startHebronCards } }, '다음 장면 · 헤브론 기억 카드');
     } else if (sc.id === 'D03' && saved && saved.robePicture && !inCourse) {
@@ -2155,6 +2174,8 @@
         el('p', { class: 'discovery-text', text: sc.discovery }),
         saved && saved.extra ? el('p', { class: 'discovery-note', text: saved.extra }) : null
       ),
+      sc.id === 'D07' && saved && saved.tablePictures
+        ? el('button', { class: 'journal-open', 'data-action': 'replay-table', on: { click: startTableSearch } }, state.tableSearch.finished ? '식탁 그림 다시 담기' : '식탁 그림 이어 담기') : null,
       sc.id === 'D05' && saved && saved.hebronMatches
         ? el('button', { class: 'journal-open', 'data-action': 'replay-memory', on: { click: startHebronCards } }, state.hebronCards.phase === 'done' ? '새 배치로 카드 찾기' : '기억 카드 이어하기') : null,
       sc.id === 'D04' && saved && saved.rubbings
@@ -2211,7 +2232,7 @@
               el('button', { class: 'btn plain d08-step-btn', 'data-action': 'replay-scene', on: { click: function () { replayCurrentScene(false); } } }, '새 배치 도전')
             )
           : el('button', { class: 'btn plain', 'data-action': 'replay-scene', on: { click: function () { replayCurrentScene(false); } } },
-              sc.id === 'D05' && saved && saved.hebronMatches ? '기본 장면 다시 보기' : '다른 배치로 다시 놀기'),
+              saved && ((sc.id === 'D05' && saved.hebronMatches) || (sc.id === 'D07' && saved.tablePictures)) ? '기본 장면 다시 보기' : '다른 배치로 다시 놀기'),
         el('button', { class: 'btn', 'data-action': 'open-journal', on: { click: openJournal } }, '탐험 일지 보기')
       )
     ];
@@ -2223,6 +2244,7 @@
     var body;
     if (sc.id === 'D01' && state.step === 'pasture') body = pasture.render(boardCtx(), sc, renderChoiceButtons(sc));
     else if (state.step === 'stones') body = renderStonesStep(sc);
+    else if (sc.id === 'D07' && state.step === 'table-search') body = tableSearch.render(boardCtx(), sc, renderChoiceButtons(sc));
     else if (sc.id === 'D04' && state.step === 'rubbing') body = rubbing.render(boardCtx(), sc, renderChoiceButtons(sc));
     else if (sc.id === 'D03' && state.step === 'robe') body = robe.render(boardCtx(), sc, renderChoiceButtons(sc));
     else if (state.step === 'order' || state.step === 'robe-order') body = renderOrderStep(sc);
@@ -2234,7 +2256,7 @@
     else body = renderChooseStep(sc);
 
     var fieldPanel = state.step === 'choose' ? window.BO_DAVID.boards.renderField(boardCtx(), sc) : null;
-    var showStage = !fieldPanel && ['stones', 'pasture', 'robe', 'robe-order', 'rubbing', 'memory'].indexOf(state.step) === -1;
+    var showStage = !fieldPanel && ['stones', 'pasture', 'robe', 'robe-order', 'rubbing', 'memory', 'table-search'].indexOf(state.step) === -1;
     var bmBar = null;
     if (state.returnBookmark && state.returnBookmark.sceneId && state.returnBookmark.sceneId !== sc.id) {
       var bm = state.returnBookmark;
@@ -2260,7 +2282,7 @@
           }, '원래 놀이 자리(' + bm.sceneId + ')로 돌아오기')
         )
       );
-    } else if ((sc.id === 'D03' || sc.id === 'D07') && state.step !== 'done' && state.step !== 'robe') {
+    } else if ((sc.id === 'D03' || sc.id === 'D07') && state.step !== 'done' && state.step !== 'robe' && state.step !== 'table-search') {
       var targetId = sc.id === 'D03' ? 'D07' : 'D03';
       var jumpText = sc.id === 'D03'
         ? '수첩 근거 표식 · D07 왕의 식탁(삼하 9:6–13) 대조하고 돌아오기'
@@ -2357,6 +2379,7 @@
         el('p', { class: 'journal-fact', text: sc.discovery }),
         rec.extra ? el('p', { class: 'journal-sub', text: rec.extra }) : null,
         sc.id === 'D03' && rec.robePicture ? robe.journalPicture(el) : null,
+        sc.id === 'D07' && rec.tablePictures ? tableSearch.journal(el, rec.tablePictures) : null,
         sc.id === 'D05' && rec.hebronMatches ? hebronCards.journal(el, sc, rec.hebronMatches) : null,
         sc.id === 'D04' && rec.rubbings ? rubbing.journal(el, sc, rec.rubbings) : null,
         sc.id === 'D02' ? renderKeptBrookPhoto(state.d02Camera.kept) : null,
@@ -2454,6 +2477,7 @@
     var start;
     if (window.location.hash === '#robe-puzzle') start = startRobe;
     else if (window.location.hash === '#engedi-rubbing') start = startRubbing;
+    else if (window.location.hash === '#royal-table') start = startTableSearch;
     else if (window.location.hash === '#hebron-cards') start = startHebronCards;
     else return false;
     // Consume the launch link so a later reload restores the child's current step.
