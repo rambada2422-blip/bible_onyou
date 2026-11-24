@@ -13,16 +13,29 @@ async function visit(browser,origin,entry,viewport,out) {
   const saved=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bo_demo_v1')));
   const raw=entry.startsWith('/index');
   const photo=async(name)=>{if(raw && viewport.width===360) await page.screenshot({path:path.join(out,name+'.png')});};
+  const visibleArt=async(key)=>{
+    const img=page.locator('.rs-frame[data-view="'+key+'"] img');
+    await img.evaluate(e=>e.decode());
+    assert.equal(await img.evaluate(e=>e.naturalWidth),1440);
+    assert(await img.isVisible());
+    assert.equal(await img.evaluate(e=>getComputedStyle(e).animationName),'none');
+    return img.getAttribute('src');
+  };
   await page.goto(origin+entry);
   if(entry.endsWith('#exodus')) await tap('홍해 본편');
   assert.equal(await heading(),'바다 앞에 갇히다');
   assert(await b('바다 가운데로').isHidden());
-  await tap('뒤쪽 길 보기');
+  const camp=await visibleArt('camp');
+  await photo('막힌_해안');
+  await b('뒤쪽 길 보기').tap();
+  const rear=await visibleArt('rear');assert.notEqual(rear,camp);
   assert((await page.locator('.rs-note').innerText()).includes('두려워하여'));
   await photo('출발_바닷가');
   await page.reload();
   assert.equal(await b('뒤쪽 길 보기').getAttribute('aria-pressed'),'true');
-  await tap('앞바다 보기');await tap('모세가 전한 말 살피기');
+  assert.equal(await visibleArt('rear'),rear);
+  await tap('앞바다 보기');assert(![camp,rear].includes(await visibleArt('shore')));
+  await tap('모세가 전한 말 살피기');assert.equal(await visibleArt('camp'),camp);
   assert((await page.locator('.rs-note').innerText()).includes('구원을 지켜보라고'));
   await tap('바다 가운데로');
   assert(await b('건너온 바다 돌아보기').isHidden());
@@ -34,6 +47,12 @@ async function visit(browser,origin,entry,viewport,out) {
   await tap('앞으로 걷기');await photo('홍해_마른길');
   await page.setViewportSize({width:viewport.height,height:viewport.width});
   await page.reload();
+  assert.equal(await page.getByRole('slider').inputValue(),'40');
+  const bookmark=(await saved()).redSea;
+  await page.goto(origin+entry.split('#')[0]+'#redsea-coast');
+  await visibleArt('camp');await b('뒤쪽 길 보기').tap();await page.reload();
+  await visibleArt('rear');assert.deepEqual((await saved()).redSea,bookmark);
+  await tap('보던 탐험으로 돌아가기');
   assert.equal(await page.getByRole('slider').inputValue(),'40');
   await page.getByRole('slider').focus();await page.keyboard.press('End');
   assert.equal(await page.getByRole('slider').inputValue(),'100');
@@ -104,7 +123,7 @@ async function bridges(browser,origin) {
     const origin=await gameOrigin(browser);
     for(const [entry,viewport] of [
       ['/index.html#exodus',{width:360,height:720}],
-      ['/preview.html#redsea',{width:320,height:568}],
+      ['/preview.html#redsea-coast',{width:320,height:568}],
       ['/preview.html#redsea',{width:1000,height:700}]
     ])await visit(browser,origin,entry,viewport,out);
     await bridges(browser,origin);

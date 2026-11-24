@@ -47,3 +47,16 @@
   .rs-story { grid-area:note; margin-top:0; }
   .rs-footer { grid-area:end; }
 }
+.rs-coast-art { display:block; width:100%; height:auto; aspect-ratio:16/9; }
+@media (prefers-reduced-motion:no-preference) {
+  .rs-frame[data-view="rear"] .rs-coast-art {
+    transform-origin:42% 53%;
+    animation:rs-approach 1.7s cubic-bezier(.2,.65,.3,1) both;
+  }
+  @keyframes rs-approach { from { transform:scale(1); } to { transform:scale(1.065); } }
+}
+@media (min-width:780px) {
+  .rs-coast { grid-template-areas:"heading heading" "scene scene" "friend note" "controls note" "end note" "status note"; }
+  .rs-coast .rs-frame { width:min(calc(100% - 40px), max(600px, 80vh)); margin-inline:auto; }
+  .rs-coast .rs-story { margin-top:12px; }
+}

@@ -129,6 +129,11 @@ for (const file of list('palace-watch', '.jpg')) {
   const photo = fs.readFileSync(path.join(web, 'assets/palace-watch', file));
   watchImages[path.basename(file, '.jpg')] = 'data:image/jpeg;base64,' + photo.toString('base64');
 }
+const redSeaImages = {};
+for (const key of ['camp', 'shore', 'rear']) {
+  const image = fs.readFileSync(path.join(web, 'assets/red-sea', key + '.webp'));
+  redSeaImages[key] = 'data:image/webp;base64,' + image.toString('base64');
+}
 const page = [
   '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
@@ -138,7 +143,7 @@ const page = [
   '<style>\n' + read('css/app.css') + '\n' + read('css/nile.css') + '\n' + read('css/palace-watch.css') + '\n' + read('css/exodus-trail.css') + '\n' + read('css/red-sea.css') + '\n' + read('css/wilderness.css') + '\n</style>',
   '</head><body>',
   '<div id="app" class="app"></div>',
-  '<script>window.BO = window.BO || {}; BO.palaceAudio = ' + JSON.stringify(palaceAudio) + '; BO.palaceWatchImages = ' + JSON.stringify(watchImages) + ';</script>',
+  '<script>window.BO = window.BO || {}; BO.palaceAudio = ' + JSON.stringify(palaceAudio) + '; BO.palaceWatchImages = ' + JSON.stringify(watchImages) + '; BO.redSeaImages = ' + JSON.stringify(redSeaImages) + ';</script>',
   ...scripts.map((p) => '<script>\n' + esc(read(p)) + '\n</script>'),
   '<style>\n' + fontCss() + '\n</style>',
   '</body></html>'

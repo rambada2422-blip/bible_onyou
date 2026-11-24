@@ -11,6 +11,11 @@
     rear:['뒤따라온 병거', '바로가 이스라엘 자손의 뒤를 쫓아 바닷가에 장막 친 곳에서 따라잡았다. 이스라엘 자손이 심히 두려워하여 여호와께 부르짖었다.', '출 14:8–10'],
     moses:['모세가 전한 말', '모세가 백성에게 두려워하지 말라고 했다. 그 자리에 서서 하나님이 그날 이루실 구원을 지켜보라고 했다.', '출 14:13–14']
   };
+  const coastArt={
+    camp:'좁은 해안을 따라 가족들이 길게 모여 있다. 오른쪽에는 바다, 왼쪽 산길에는 먼지를 일으키는 병거들이 보인다.',
+    shore:'물가에 선 가족들의 어깨 너머로 수평선까지 바다가 이어진다.',
+    rear:'두 말이 끄는 선두 병거의 바퀴가 눈앞에 보이고, 먼지 속으로 다른 병거들이 길게 이어진다.'
+  };
   const crossing=[
     ['밤새 분 동풍','모세가 손을 내밀자 하나님이 밤새 강한 동풍을 불게 하셔서 바닷물이 물러가고 바닥이 마른 땅이 되었다.','출 14:21'],
     ['바다 가운데서','이스라엘 자손이 바다 가운데를 마른 땅으로 걸어갔고, 양쪽에서 물이 벽처럼 섰다.','출 14:22'],
@@ -32,8 +37,20 @@
   function note(record) {
     return el('section',{class:'rs-note'},el('h2',{},record[0]),el('p',{},record[1]),app.refChip(record[2]));
   }
-  function open(leave,onward) {
+  function open(leave,onward,{coastEntry=false,revisit=false}={}) {
     let s=saved(), audio, timers=[];
+    // 이미 건너는 중이면 바닷가 재관람은 이 방문 기록에서만 진행한다.
+    if(revisit){
+      const previous=history.state?.redSeaCoast;
+      s={...fresh()};
+      if(previous && Object.hasOwn(views,previous.view) && [0,1,2,3].includes(previous.seen)){
+        s.view=previous.view;s.seen=previous.seen;
+      }
+    }else if(coastEntry) s.view='camp';
+    function saveCoast(){
+      if(!revisit){app.save();return;}
+      try { history.replaceState({redSeaCoast:{view:s.view,seen:s.seen}},''); } catch (_) {}
+    }
     function quiet() {
       timers.forEach(clearTimeout); timers=[];
       if(audio){ audio.close().catch(()=>{}); audio=null; }
@@ -80,16 +97,29 @@
       if(chapter===0){
         const choices=[['shore','앞바다 보기',1],['rear','뒤쪽 길 보기',2]];
         const knobs=choices.map(([view,label,bit])=>button(label,()=>{
-          s.view=view;s.seen|=bit;app.save();coast();
+          s.view=view;s.seen|=bit;saveCoast();coast();
         }));
         const moses=button('모세가 전한 말 살피기',()=>{
-          s.view='moses';app.save();coast();next.focus({preventScroll:true});
+          s.view='moses';saveCoast();coast();next.focus({preventScroll:true});
         });
-        const next=button('바다 가운데로',()=>turn(1),'rs-primary');
+        const next=button(revisit?'보던 탐험으로 돌아가기':'바다 가운데로',
+          revisit?()=>exit(app.openRedSea):()=>turn(1),'rs-primary');
         function coast(){
-          const r=views[s.view];paint('coast',s.view,0,r[0]);story.replaceChildren(note(r));
+          const r=views[s.view], key=s.view==='moses'?'camp':s.view;
+          if(picture.dataset.view!==key){
+            const art=el('img',{class:'rs-coast-art',alt:coastArt[key],width:1440,height:810});
+            art.addEventListener('error',()=>{
+              if(picture.firstElementChild===art){
+                art.replaceWith(stage);paint('coast',s.view,0,r[0]);
+              }
+            },{once:true});
+            art.src=BO.redSeaImages?.[key] || 'assets/red-sea/'+key+'.webp';
+            picture.firstElementChild.replaceWith(art);
+            picture.dataset.view=key;
+          }
+          place.textContent=r[0];story.replaceChildren(note(r));
           knobs.forEach((b,i)=>{ b.setAttribute('aria-pressed',String(s.view===choices[i][0])); });
-          moses.hidden=s.seen!==3 || s.view==='moses';next.hidden=s.view!=='moses';
+          moses.hidden=s.seen!==3 || s.view==='moses';next.hidden=!revisit && s.view!=='moses';
         }
         controls.append(...knobs);footer.append(moses,next);coast();
       }else if(chapter===1){
@@ -147,7 +177,7 @@
         footer.append(button('마라로 떠나기',()=>exit(app.openWilderness),'rs-primary'),button('광야 수첩으로 이어가기',()=>exit(onward)));
       }
       app.show(el('main',{class:'screen rs-screen'},el('nav',{class:'rs-nav'},button('탐험 입구',()=>exit(leave),'rs-link'),el('span',{},tag)),
-        el('div',{class:'rs-scroll'},el('header',{class:'rs-heading'},el('p',{},['출애굽기 14:1–14','출애굽기 14:15–31','출애굽기 15:1–21','출애굽기 14–15장'][chapter]),heading),
+        el('div',{class:chapter===0?'rs-scroll rs-coast':'rs-scroll'},el('header',{class:'rs-heading'},el('p',{},['출애굽기 14:1–14','출애굽기 14:15–31','출애굽기 15:1–21','출애굽기 14–15장'][chapter]),heading),
           picture,companion,controls,status,story,footer)));
       if(focus) heading.focus({preventScroll:true});
     }
