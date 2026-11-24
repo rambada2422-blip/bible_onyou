@@ -47,6 +47,7 @@
   .rs-story { grid-area:note; margin-top:0; }
   .rs-footer { grid-area:end; }
 }
+.rs-coast .rs-place { display:none; }
 .rs-coast-art { display:block; width:100%; height:auto; aspect-ratio:16/9; }
 @media (prefers-reduced-motion:no-preference) {
   .rs-frame[data-view="rear"] .rs-coast-art {
@@ -56,7 +57,8 @@
   @keyframes rs-approach { from { transform:scale(1); } to { transform:scale(1.065); } }
 }
 @media (min-width:780px) {
-  .rs-coast { grid-template-areas:"heading heading" "scene scene" "friend note" "controls note" "end note" "status note"; }
+  /* 가로 화면이 낮아도 그림의 실제 높이만큼 행을 확보하고 아래 글은 스크롤한다. */
+  .rs-coast { grid-auto-rows:max-content; grid-template-areas:"heading heading" "scene scene" "friend note" "controls note" "end note" "status note"; }
   .rs-coast .rs-frame { width:min(calc(100% - 40px), max(600px, 80vh)); margin-inline:auto; }
   .rs-coast .rs-story { margin-top:12px; }
 }

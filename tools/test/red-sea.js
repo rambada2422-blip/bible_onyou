@@ -89,6 +89,46 @@ async function visit(browser,origin,entry,viewport,out) {
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   assert.deepEqual(errors,[]);await page.close();
 }
+async function coastLayout(browser,origin,out) {
+  const page=await browser.newPage({viewport:{width:820,height:570},hasTouch:true});
+  const button=name=>page.getByRole('button',{name,exact:true});
+  await page.goto(origin+'/preview.html#redsea-coast');
+  await documentReady();
+  // 두 방향을 이미 본 재방문에서는 다음 단추까지 같은 화면에 표시된다.
+  await button('앞바다 보기').click();await button('뒤쪽 길 보기').click();
+  await page.goto(origin+'/preview.html#redsea-coast');
+  await documentReady();
+  for(const [width,height,font] of [[820,570,100],[960,620,100],[780,390,200],[779,390,150],[360,720,100],[320,568,150]]){
+    await page.setViewportSize({width,height});
+    await page.evaluate(size=>{
+      document.documentElement.style.fontSize=size+'%';
+      document.body.style.fontSize='1rem';
+    },font);
+    for(const direction of [null,'앞바다 보기','뒤쪽 길 보기']){
+      if(direction)await button(direction).click();
+      const fits=await page.locator('.rs-coast').evaluate(async root=>{
+        await root.querySelector('.rs-coast-art').decode();
+        const bottom=root.querySelector('.rs-frame').getBoundingClientRect().bottom;
+        return ['.rs-friend','.rs-controls','.rs-story','.rs-footer'].every(selector=>
+          root.querySelector(selector).getBoundingClientRect().top>=bottom-0.5);
+      });
+      assert(fits,`홍해 그림과 대사·설명·단추 겹침 (${width}×${height}, ${font}%)`);
+      if(width===820 && !direction) {
+        await page.locator('.rs-story').scrollIntoViewIfNeeded();
+        await page.screenshot({path:path.join(out,'바닷가_가로화면.png')});
+      }
+    }
+    await button('모세가 전한 말 살피기').click();
+    assert(await button('바다 가운데로').isVisible());
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  }
+  await page.close();
+
+  async function documentReady(){
+    await page.locator('.rs-coast-art').evaluate(e=>e.decode());
+    await page.evaluate(()=>document.fonts.ready);
+  }
+}
 async function bridges(browser,origin) {
   const page=await browser.newPage();
   const b=name=>page.getByRole('button',{name,exact:true});
@@ -126,6 +166,7 @@ async function bridges(browser,origin) {
       ['/preview.html#redsea-coast',{width:320,height:568}],
       ['/preview.html#redsea',{width:1000,height:700}]
     ])await visit(browser,origin,entry,viewport,out);
+    await coastLayout(browser,origin,out);
     await bridges(browser,origin);
     console.log('홍해 세 장면 · 터치·키보드·무음·회전·복원·일지·본편 진입과 광야 복귀: no errors');
   }finally{await browser.close();}
