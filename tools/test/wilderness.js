@@ -6,8 +6,8 @@ const { createHash } = require('node:crypto');
 const { chromium } = require('playwright');
 const { gameOrigin } = require('./game-server');
 
-const stopNames = ['마라의 물가', '엘림의 샘', '만나를 거두는 아침', '반석에서 흐른 물', '시내산 앞의 진영', '금송아지 사건의 진영'];
-const seals = ['15:25', '15:27', '16:18', '17:6', '20:18', '32:30'];
+const stopNames = ['마라의 물가', '엘림의 샘', '만나를 거두는 아침', '여섯째 날과 일곱째 날', '반석에서 흐른 물', '시내산 앞의 진영', '금송아지 사건의 진영'];
+const seals = ['15:25', '15:27', '16:18', '16:30', '17:6', '20:18', '32:30'];
 const exact = name => ({name, exact:true});
 async function runRoute(browser, origin, out, entry, width) {
   const page = await browser.newPage({viewport:{width,height:640}, hasTouch:true, reducedMotion:'reduce'});
@@ -34,19 +34,19 @@ async function runRoute(browser, origin, out, entry, width) {
   assert(page.url().endsWith('#wilderness'));
   const verses = await page.evaluate(() => BO.wildScripture.verses);
   assert.equal(createHash('sha256').update(JSON.stringify(verses)).digest('hex'),
-    '234cbca4c4b5867e030548fcac93cf913acfd24e38a8d71351527baa4363825d');
+    '97aad33e6c6130f76b84f9c1bd64b87953a3be4017aec0a81af5e7b8a731e4d7');
   const data = await page.evaluate(() => BO.wildField);
   const seen = new Set();
   for (const [i,stage] of data.stages.entries()) {
     assert.equal(await heading(),stopNames[i]);
     if(stage.beats){
-      assert(page.url().endsWith('#sinai'));
+      assert(page.url().endsWith(stage.id==='sabbath'?'#wilderness':'#sinai'));
       for(const [j,beat] of stage.beats.entries()){
         assert.equal(await page.locator('.wf-record p').innerText(),beat.notes[2]);
         await click('이 대목의 원문 · 출 '+beat.ref);
         assert.equal(await page.locator(':focus').getAttribute('data-verse'),beat.ref.split('–')[0]);
         await click('닫기');
-        if(j===3){await page.reload();assert.equal((await state()).stops[i].beat,j);}
+        if(j===1){await page.reload();assert.equal((await state()).stops[i].beat,j);}
         if(j<stage.beats.length-1)await click('뒤 대목');
       }
     }
@@ -83,7 +83,7 @@ async function runRoute(browser, origin, out, entry, width) {
     assert.equal((await state()).actor,1);
     await page.setViewportSize({width,height:640});
     await click('장비 고정');
-    assert.notEqual(await page.locator('.wf-picture').evaluate(c=>c.toDataURL()),firstFrame);
+    if(!stage.frames)assert.notEqual(await page.locator('.wf-picture').evaluate(c=>c.toDataURL()),firstFrame);
     await page.locator('.wf-pin').tap();await page.locator('.wf-role').nth(2).tap();
     if (width===360 && (i===1||i===3||i>=4)) {
       await page.locator('.wf-scroll').evaluate(e=>e.scrollTop=0);
@@ -92,11 +92,29 @@ async function runRoute(browser, origin, out, entry, width) {
     assert.equal(await page.locator('.wf-friend:visible').count(),2);
     assert(await page.locator('.wf-talk span').evaluate(s=>s.offsetHeight<=parseFloat(getComputedStyle(s).lineHeight)*2+1));
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-    await click(stage.trail[1][0]+' 관찰');
-    assert.equal((await state()).stops[i].mapped,0);
-    for(const [j,landmark] of stage.trail.entries()){
-      await click(landmark[0]+' 관찰');
-      if(j===0){await page.reload();assert.equal((await state()).stops[i].mapped,1);}
+    if(stage.frames){
+      const order=width===360?[1,0]:[0,1];
+      for(const frame of order){
+        await click(stage.frames[frame]);
+        const picture=await page.locator('.wf-picture').evaluate(c=>c.toDataURL());
+        assert.equal(picture===firstFrame,frame===0);
+        assert.equal(await page.locator('.wf-landmark:visible').count(),1);
+        await click(stage.trail[frame][0]+' 관찰');
+        if(frame===order[0]){
+          await click(stage.trail[frame][0]+' 관찰');
+          await page.setViewportSize({width:640,height:width});await page.reload();
+          assert.equal((await state()).stops[i].observed,1<<frame);
+          assert.equal(await button(stage.frames[frame]).getAttribute('aria-pressed'),'true');
+          await page.setViewportSize({width,height:640});
+        }
+      }
+    }else{
+      await click(stage.trail[1][0]+' 관찰');
+      assert.equal((await state()).stops[i].mapped,0);
+      for(const [j,landmark] of stage.trail.entries()){
+        await click(landmark[0]+' 관찰');
+        if(j===0){await page.reload();assert.equal((await state()).stops[i].mapped,1);}
+      }
     }
     await click(stage.choices[1-stage.match]);
     assert.equal((await state()).stops[i].phase,2);
@@ -117,32 +135,55 @@ async function runRoute(browser, origin, out, entry, width) {
     await page.getByRole('dialog',exact('말씀 두루마리')).waitFor();
     assert.equal(await page.locator(':focus').getAttribute('data-verse'),seals[i]);
     await click('닫기');
-    if(i===3){
-      // 네 장소만 있던 예전 저장에서 수첩 지름길과 새 본편 진입을 모두 확인한다.
-      await page.evaluate(()=>{
-        const a=BO.app2d,s=a.state.wilderness;
-        s.stops.length=4;s.earned.length=4;delete s.mountainIndex;delete s.desertIndex;
-        a.save();
-      });
-      await page.reload();
+    if(stage.id==='rock'){
       if(width===360){await click('시내산 수첩으로');await click('시내산 본편 답사');}
       else await click('시내산 본편으로');
-    }else await click(i===5?'시내산 수첩으로':i===4?'금송아지 사건으로':stopNames[i+1]+'로');
+    }else await click(stage.id==='calf'?'시내산 수첩으로':stage.id==='sinai'?'금송아지 사건으로':stopNames[i+1]+'로');
   }
-  assert.equal(seen.size,100);
+  assert.equal(seen.size,118);
   assert.equal(await page.locator(':focus').innerText(),'시내산의 기록');
   assert.equal(await page.locator('.xt-entry').nth(1).locator('details').count(),3);
   assert.equal(await page.evaluate(()=>BO.app2d.state.exodusTrail.best[1]),undefined);
   const mountEntries=page.locator('.xt-entry').nth(2).locator('details summary');
   assert.deepEqual(await mountEntries.allTextContents(),['십계명을 듣는 백성','금송아지']);
-  await click('시내산 본편 답사');assert.equal(await heading(),stopNames[5]);
+  await click('시내산 본편 답사');assert.equal(await heading(),stopNames[6]);
   await click('시내산 수첩으로');
   await click('광야 본편 답사');await click('이 장소 다시 답사');
   assert((await state()).earned.every(Boolean));
   await click('탐험 입구');
   await click('광야 본편 이어 보기');
-  assert.equal(await heading(),stopNames[3]);
+  assert.equal(await heading(),stopNames[4]);
   assert.deepEqual(errors,[]);await page.close();
+}
+
+async function checkOldSaves(browser,origin){
+  for(const count of [4,6]){
+    const page=await browser.newPage({viewport:{width:320,height:480}});
+    await page.goto(origin+'/index.html#wilderness');
+    await page.evaluate(count=>{
+      const app=BO.app2d;
+      const stops=Array.from({length:count},(_,i)=>({pos:7,phase:i===count-1?2:3,dial:2,mapped:1}));
+      const earned=stops.map(s=>s.phase===3);
+      app.state.wilderness={stops,earned,index:count-1};
+      if(count===6)Object.assign(app.state.wilderness,{desertIndex:3,mountainIndex:5});
+      app.save();
+    },count);
+    await page.goto(origin+'/index.html#home');
+    await page.getByRole('button',exact(count===6?'시내산 본편 이어 보기':'광야 본편 이어 보기')).click();
+    assert.equal(await page.locator('.wf-heading h1').innerText(),count===6?stopNames[6]:stopNames[4]);
+    const oldProgress=await page.evaluate(()=>BO.app2d.state.wilderness);
+    assert.equal(oldProgress.stops[oldProgress.index].phase,2);
+    assert.equal(oldProgress.stops[oldProgress.index].pos,7);
+    assert.equal(oldProgress.earned[3],false);
+    await page.goto(origin+'/index.html#manna-rest');
+    assert.equal(await page.locator('.wf-heading h1').innerText(),stopNames[3]);
+    await page.reload();
+    assert.equal(await page.locator('.wf-heading h1').innerText(),stopNames[3]);
+    const current=await page.evaluate(()=>BO.app2d.state.wilderness);
+    assert.deepEqual(current.earned,oldProgress.earned);
+    assert.deepEqual(current.stops[oldProgress.index],oldProgress.stops[oldProgress.index]);
+    await page.close();
+  }
 }
 
 async function checkHints(browser,origin) {
@@ -179,13 +220,13 @@ async function checkHints(browser,origin) {
     await runRoute(browser,origin,out,'/preview.html#wilderness',320);
     const direct=await browser.newPage({viewport:{width:320,height:480}});
     await direct.goto(origin+'/preview.html#sinai');
-    assert.equal(await direct.locator('h1').innerText(),stopNames[4]);
-    assert.equal(await direct.locator('.wf-record p').innerText(),await direct.evaluate(()=>BO.wildField.stages[4].beats[0].notes[0]));
+    assert.equal(await direct.locator('h1').innerText(),stopNames[5]);
+    assert.equal(await direct.locator('.wf-record p').innerText(),await direct.evaluate(()=>BO.wildField.stages[5].beats[0].notes[0]));
     await direct.getByRole('button',exact('설정')).click();
     await direct.getByRole('combobox').selectOption('1');
     await direct.getByRole('button',exact('닫기')).click();
-    assert.equal(await direct.locator('.wf-record p').innerText(),await direct.evaluate(()=>BO.wildField.stages[4].beats[0].notes[1]));
-    await direct.close();await checkHints(browser,origin);
-    console.log('광야·시내산 여섯 장면 · 터치·키보드·회전·복원·원문 100절·인장·다음 수첩·연령별 힌트: no errors');
+    assert.equal(await direct.locator('.wf-record p').innerText(),await direct.evaluate(()=>BO.wildField.stages[5].beats[0].notes[1]));
+    await direct.close();await checkOldSaves(browser,origin);await checkHints(browser,origin);
+    console.log('광야·시내산 일곱 장면 · 두 날 관찰창·회전·이전 저장·원문 118절·인장·수첩·연령별 힌트: no errors');
   } finally { await browser.close(); }
 })().catch(e=>{console.error(e);process.exitCode=1;});

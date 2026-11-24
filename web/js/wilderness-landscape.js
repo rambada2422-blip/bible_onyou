@@ -5,6 +5,7 @@
     marah:['#4a697d','#e8b498','#f6d39b','#b58979','#977164','#ecc48d','#b17b53'],
     elim:['#669eae','#c4dabb','#f5dfaa','#9fa78a','#778d78','#e6c58d','#ac825b'],
     manna:['#666e92','#ddb4b4','#f6d3ac','#ab9296','#8b7e85','#e4be97','#ac8c77'],
+    sabbath:['#8496ad','#ebc2a5','#fae1ab','#b79585','#967964','#e6c18e','#bb9062'],
     sinai:['#596e83','#b9c9c8','#edd3a4','#a1988d','#868278','#dcbf8f','#ae8562'],
     calf:['#617e91','#c9c8ae','#efcd95','#a29c84','#8b8271','#ddbe91','#ac876a'],
     rock:['#537d8d','#c3ced0','#efdcab','#aaa396','#8c877b','#dcb88d','#aa8565']
@@ -151,6 +152,33 @@
       pool(366,272,242,40);pool(599,306,117,15);
       palm(110,288,109);palm(145,276,85);palm(625,270,102);palm(696,279,137);
       person(485,254,25,2,false);person(506,255,20,3,false);
+    }else if(id==='sabbath'){
+      // 두 기록은 같은 지형과 같은 시점에 겹친다. 움직이는 것은 탐험대의 관찰창이다.
+      for(let i=0;i<7;i++)tent(43+i*111,210+Math.sin(i)*6,.7);
+      tent(600,245,1.9);tent(710,234,1.24);
+      for(const offset of [0,64]){
+        line(555+offset,243,584+offset,208,'#7e614a',1.5);
+        line(555+offset,243,551+offset,248,'#644932',2);
+      }
+      if(later){
+        person(553,246,27,1,false);person(576,249,22,3,false);
+        person(617,248,25,0,false);
+        oval(351,289,61,5,'#95744e44');
+      }else{
+        for(let i=0;i<143;i++){
+          const x=110+rand()*355,y=241+rand()*50;
+          oval(x,y,1.6,.9,'#f5e2bd');
+        }
+        for(const [x,y,h,i] of [[192,255,37,1],[249,268,44,3],[286,265,47,2],[359,246,31,0]]){
+          person(x,y,h,i,true);
+          oval(x+15,y+1,9,4.3,'#856347');oval(x+15,y-1,8,2.3,'#f4dfb6');
+        }
+      }
+      for(let i=0;i<3;i++){
+        const x=100+i*198;
+        poly([[x,315],[x+6,305],[x+19,303],[x+28,311],[x+24,316]],'#aa8d69');
+        line(x+7,306,x+17,304,'#d9bc8f',2);
+      }
     }else if(id==='manna'){
       for(let i=0;i<8;i++)tent(70+i*92,215+Math.sin(i)*6,.8);
       if(!later){g.fillStyle=grad(216,336,['#d0dee7a0','#fcf5de50']);g.beginPath();g.ellipse(397,261,413,43,0,0,Math.PI*2);g.fill();}

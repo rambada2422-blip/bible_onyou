@@ -3,6 +3,8 @@
   'use strict';
   const app=BO.app2d, el=app.el, {stages,crew,hintModes,restoration}=BO.wildField, bible=BO.wildScripture;
   const firstMountain=stages.findIndex(st=>st.id==='sinai');
+  const stageIds=stages.map(st=>st.id);
+  const previousIds=['marah','elim','manna','rock','sinai','calf'];
   const labels=['살펴보기','장비 맞추기','기록 대조'];
   const surfaces=[['흙','dirt'],['모래','sand'],['돌','stone'],['나무 발판','wood']];
   const freshStop=()=>({pos:1,phase:0,dial:1,mapped:0});
@@ -10,6 +12,21 @@
   function load(){
     let s=app.state.wilderness;
     if(!s||typeof s!=='object'||!Array.isArray(s.stops)) s=app.state.wilderness={stops:[]};
+    // 옛 수첩은 순번으로 저장했다. 새 장소가 사이에 들어와도 원래 장소에 기록을 돌려준다.
+    const oldIds=Array.isArray(s.stageIds)?s.stageIds:previousIds;
+    if(oldIds.length!==stageIds.length||stageIds.some((id,i)=>oldIds[i]!==id)){
+      const stops=s.stops, earned=Array.isArray(s.earned)?s.earned:[];
+      s.stops=stageIds.map(id=>{
+        const i=oldIds.indexOf(id);
+        if(i<0)return freshStop();
+        const stop=stops[i]&&typeof stops[i]==='object'?stops[i]:freshStop();
+        if(i>0&&earned[i-1]===true)stop.available=true;
+        return stop;
+      });
+      s.earned=stageIds.map(id=>earned[oldIds.indexOf(id)]===true);
+      for(const key of ['index','desertIndex','mountainIndex'])s[key]=stageIds.indexOf(oldIds[s[key]]);
+    }
+    s.stageIds=stageIds;
     if(!inRange(s.index,0,stages.length-1))s.index=0;
     if(!inRange(s.desertIndex,0,firstMountain-1))s.desertIndex=s.index<firstMountain?s.index:0;
     if(!inRange(s.mountainIndex,firstMountain,stages.length-1))s.mountainIndex=firstMountain;
@@ -23,6 +40,12 @@
       const p=s.stops[i];
       if(!p||!inRange(p.pos,0,8)||!inRange(p.phase,0,3)||!inRange(p.dial,0,2))s.stops[i]=freshStop();
       if(!inRange(s.stops[i].mapped,0,stages[i].trail.length))s.stops[i].mapped=0;
+      if(stages[i].frames){
+        const stop=s.stops[i];
+        if(!inRange(stop.frame,0,1))stop.frame=0;
+        if(!inRange(stop.observed,0,3))stop.observed=0;
+        stop.mapped=Number(!!(stop.observed&1))+Number(!!(stop.observed&2));
+      }
       if(stages[i].beats&&!inRange(s.stops[i].beat,0,stages[i].beats.length-1))s.stops[i].beat=0;
       if(s.stops[i].phase===3)s.earned[i]=true;
     });
@@ -37,11 +60,11 @@
     const keys=Object.keys(bible.verses);
     return keys.slice(keys.indexOf(first),keys.indexOf(end)+1);
   }
-  function open(leave,trail,showShelf,mountain=false){
+  function open(leave,trail,showShelf,mountain=false,entry){
     const s=load(),sound=BO.wildFeel.audio();
     const start=mountain?firstMountain:0, end=mountain?stages.length-1:firstMountain-1;
     const bookmark=mountain?'mountainIndex':'desertIndex';
-    s.index=s[bookmark];
+    s.index=entry?stageIds.indexOf(entry):s[bookmark];
     let dialog,timer,startTime=null,elapsed=0,hint=0,closed=false,ui,stage,p;
     const play=key=>{if(s.sound&&!document.hidden)sound.play(key,stage.id);};
     function pause(){
@@ -120,6 +143,11 @@
       ui.roles.forEach((b,i)=>b.classList.toggle('wf-glow',hint>=2&&i===p.phase));
       ui.pin.classList.toggle('wf-ring',hint>=3&&!ui.pin.hidden);
       ui.landmarks.forEach((b,k)=>b.classList.toggle('wf-ring',hint>=3&&k===p.mapped&&!b.hidden));
+      if(ui.frames&&p.phase===2){
+        const need=stage.trail.findIndex((_,i)=>!(p.observed&(1<<i)));
+        ui.frames.forEach((b,i)=>b.classList.toggle('wf-ring',hint>=3&&i===need&&i!==p.frame));
+        ui.landmarks.forEach((b,i)=>b.classList.toggle('wf-ring',hint>=3&&i===need&&!b.hidden));
+      }
       ui.thought.hidden=!hint;
       ui.thought.textContent=a.name+' · '+['여길 볼까?','눈금을 보자!','기록을 펴 볼까?'][p.phase];
       ui.thought.style.left=x(crewPlace(p.phase));
@@ -157,7 +185,7 @@
       ui.track.textContent=p.pos===target()?'도착 · '+spotName():(p.pos<target()?'오른쪽':'왼쪽')+' '+Math.abs(target()-p.pos)+'칸 · '+spotName();
       ui.panel.hidden=!(s.actor===p.phase&&p.pos===target());
       const charting=p.phase===2&&!ui.panel.hidden&&p.mapped<stage.trail.length;
-      ui.pin.hidden=charting;
+      ui.pin.hidden=charting||!!(stage.frames&&p.phase===2&&!ui.panel.hidden);
       if(charting)ui.track.textContent=stage.trail[p.mapped][0]+' 찾기 · '+(p.mapped+1)+' / '+stage.trail.length;
       ui.landmarks.forEach((b,i)=>{
         b.hidden=!charting;
@@ -165,13 +193,28 @@
       });
       if(p.phase===2){
         ui.prompt.textContent=charting?'풍경에서 '+stage.trail[p.mapped][0]+' 찾기 · '+(p.mapped+1)+' / '+stage.trail.length:'관찰을 담았어요. 수첩에 붙일 이름표를 골라 보세요.';
+        if(ui.frames) {
+          ui.frameBar.hidden=ui.panel.hidden;
+          ui.frames.forEach((b,i)=>{
+            b.setAttribute('aria-pressed',String(p.frame===i));
+            b.textContent=stage.frames[i]+((p.observed&(1<<i))?' ✓':'');
+          });
+          ui.landmarks.forEach((b,i)=>{
+            b.hidden=!charting||i!==p.frame;
+            b.setAttribute('aria-pressed',String(!!(p.observed&(1<<i))));
+          });
+          if(charting){
+            ui.track.textContent='두 날의 풍경 · '+p.mapped+' / 2';
+            ui.prompt.textContent=(p.observed&(1<<p.frame))?'다른 날의 관찰창을 열어 보세요.':stage.frames[p.frame]+' 풍경에서 '+stage.trail[p.frame][0]+' 찾기';
+          }
+        }
         ui.tags.hidden=charting;
       }
       showHint();
     }
     function advance(){
       p.phase++;resetHints();
-      if(stage.beats)p.beat=[0,2,4,stage.beats.length-1][p.phase];
+      if(stage.beats)p.beat=(stage.beatSteps||[0,2,4,stage.beats.length-1])[p.phase];
       if(p.phase===3){s.earned[s.index]=true;baseCount();play('clear');}
       else play('found');
       app.save();draw(true);
@@ -184,13 +227,18 @@
       showFace(i,right&&near?'smile':'surprised');
       ui.status.textContent=!near?'먼저 '+spotName()+'에 가 보세요.':right?'도구를 쓸 준비가 됐어요.':crew[p.phase].name+'의 '+labels[p.phase]+'가 필요해요.';
       position();
+      if(right&&near&&ui.frames)ui.frames[p.frame].focus();
     }
     function showFace(i,expression){
       ui.talk.replaceChildren(BO.wildFeel.portrait(crew[i].id,expression),el('div',{},el('b',{},'『탐험대 이야기』 '+crew[i].name),el('span',{},crew[i].lines[s.mode])));
     }
+    function currentEvidence(){
+      return stage.evidence[p.phase===2?(stage.frames?p.frame:1):0];
+    }
     function controls(){
-      const evidence=stage.evidence[p.phase===2?1:0];
-      ui.panel.append(el('div',{class:'wf-evidence'},button(evidence[0]+' · 출 '+evidence[1],()=>scrollText(s.index,evidence[1]))));
+      const evidence=currentEvidence();
+      ui.evidence=button(evidence[0]+' · 출 '+evidence[1],()=>scrollText(s.index,currentEvidence()[1]));
+      ui.panel.append(el('div',{class:'wf-evidence'},ui.evidence));
       if(p.phase===0){
         ui.panel.append(button('접사 렌즈로 살펴보기',advance,'wf-primary'));
       }else if(p.phase===1){
@@ -249,12 +297,14 @@
       const complete=p.phase===3, heading=el('h1',{tabindex:'-1'},stage.title);
       const nav=el('nav',{class:'wf-nav'},button('탐험 입구',()=>route(leave)),button('말씀 두루마리',()=>scrollText(s.index,false)),button('관측대',shelf),button('설정',settings));
       ui.canvas=el('canvas',{class:'wf-picture',role:'img','aria-label':stage.title+' · '+stage.card});
-      BO.drawWilderness(ui.canvas,stage.id,p.phase>=2);
+      p.available=true;
+      const later=p.phase>=2&&(!stage.frames||complete||p.frame===1);
+      BO.drawWilderness(ui.canvas,stage.id,later);
       ui.field=el('div',{class:'wf-field',tabindex:'0',role:'group'},ui.canvas);
       ui.sprite=el('div',{class:'wf-sprite','aria-hidden':'true'},app.pic(crew[s.actor].id+'-full','',''));
       ui.friends=crew.map(a=>el('div',{class:'wf-friend','aria-hidden':'true'},app.pic(a.id+'-full','','')));
       ui.field.append(...ui.friends,ui.sprite);ui.sprite.style.left=x(p.pos);placeCrew();
-      const frameLabel=(p.phase>=2?'나중 기록':'처음 기록')+' · '+stage.evidence[p.phase>=2?1:0][0];
+      const frameLabel=(stage.frames?stage.frames[Number(later)]:later?'나중 기록':'처음 기록')+' · '+stage.evidence[later?1:0][0];
       ui.field.append(stage.beats ? button(frameLabel,()=>ui.record.focus(),'wf-frame-label wf-read-frame') :
         el('span',{class:'wf-frame-label'},frameLabel));
       const content=el('div',{class:'wf-body'});
@@ -263,7 +313,10 @@
         ui.pin=button(spotName(),()=>walk(target()),'wf-pin');ui.field.append(ui.pin);
         ui.landmarks=stage.trail.map(([name,cx,cy],i)=>{
           const mark=button('⌖',()=>{
-            if(i!==p.mapped){
+            if(stage.frames){
+              if(i!==p.frame||(p.observed&(1<<i)))return;
+              p.observed|=1<<i;
+            }else if(i!==p.mapped){
               ui.status.textContent='먼저 '+stage.trail[p.mapped][0]+' 쪽을 살펴보세요.';
               play('tap');return;
             }
@@ -287,6 +340,17 @@
         ui.roles=crew.map((a,i)=>button(a.name+' · '+a.age+'세',()=>call(i),'wf-role'));
         ui.roles.forEach((b,i)=>{b.setAttribute('aria-pressed',String(s.actor===i));b.setAttribute('aria-label',crew[i].name+' 호출 · '+crew[i].role);});
         ui.panel=el('section',{class:'wf-tool','aria-label':'현장 장비'});controls();
+        if(stage.frames&&p.phase===2){
+          ui.frames=stage.frames.map((label,i)=>button(label,()=>{
+            p.frame=i;app.save();play('tap');
+            BO.drawWilderness(ui.canvas,stage.id,i===1);
+            ui.field.querySelector('.wf-frame-label').textContent=label+' · '+stage.evidence[i][0];
+            const evidence=currentEvidence();ui.evidence.textContent=evidence[0]+' · 출 '+evidence[1];
+            position();
+          }));
+          ui.frames.forEach((b,i)=>b.setAttribute('aria-label',stage.frames[i]));
+          ui.frameBar=el('div',{class:'wf-days',role:'group','aria-label':'두 날의 관찰창'},ui.frames);
+        }
         const ask=button('동료에게 묻기',()=>{hint=Math.min(3,hint+1);showHint();schedule();});
         content.append(el('div',{class:'wf-goal'},el('strong',{},labels[p.phase]+' · '+crew[p.phase].name),ui.track),
           el('div',{class:'wf-row'},ui.left,ui.right,ask),ui.aside,
@@ -299,7 +363,7 @@
           button('처음 기록 다시 보기',event=>{
             const earlier=event.currentTarget.textContent==='처음 기록 다시 보기';
             if(stage.beats){
-              p.beat=earlier?0:stage.beats.length-1;ui.updateRecord();app.save();
+              p.beat=earlier?0:(stage.beatSteps?.[3]??stage.beats.length-1);ui.updateRecord();app.save();
             }
             BO.drawWilderness(ui.canvas,stage.id,!earlier);
             ui.field.querySelector('.wf-frame-label').textContent=(earlier?'처음 기록':'나중 기록')+' · '+stage.evidence[earlier?0:1][0];
@@ -313,6 +377,7 @@
         if(!mountain&&s.index===end)content.append(button('시내산 수첩으로',()=>route(trail)));
         content.append(button('이 장소 다시 답사',()=>{
           s.stops[s.index]=freshStop();if(stage.beats)s.stops[s.index].beat=0;
+          if(stage.frames)Object.assign(s.stops[s.index],{frame:0,observed:0});
           resetHints();draw(true);app.save();
         }));
       }
@@ -325,14 +390,18 @@
       stages.forEach((st,i)=>{
         if(i<start||i>end)return;
         const b=button(st.title+(s.earned[i]?' · 기록 있음':''),()=>{sound.stop();s.index=i;resetHints();draw(true);app.save();});
-        b.disabled=i!==start&&!s.earned[i-1];stops.append(b);
+        b.disabled=i!==start&&!s.earned[i-1]&&!s.stops[i].available&&!s.earned[i];stops.append(b);
       });
       content.append(stops);
-      ui.screen=el('main',{class:'screen wf-screen'},nav,el('div',{class:'wf-scroll'},el('header',{class:'wf-heading'},el('p',{},regionName+' 답사 '+(s.index-start+1)+' / '+(end-start+1)+' · 출 '+stage.range),heading),ui.field,content));
+      const view=ui.frameBar?el('div',{class:'wf-pair'},ui.field,ui.frameBar):ui.field;
+      ui.screen=el('main',{class:'screen wf-screen'},nav,el('div',{class:'wf-scroll'},el('header',{class:'wf-heading'},el('p',{},regionName+' 답사 '+(s.index-start+1)+' / '+(end-start+1)+' · 출 '+stage.range),heading),view,content));
       app.show(ui.screen);if(focus)heading.focus({preventScroll:true});schedule();
     }
     document.addEventListener('visibilitychange',visibility);window.addEventListener('pagehide',pageHide);
-    app.save();draw(false);if(showShelf)shelf();
+    draw(false);app.save();if(showShelf)shelf();
   }
-  app.wilderness={open};
+  app.wilderness={open,
+    hasRecord:id=>!!app.state.wilderness&&load().earned[stageIds.indexOf(id)],
+    inMountain:()=>!!app.state.wilderness&&load().index>=firstMountain
+  };
 })();

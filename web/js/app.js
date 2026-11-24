@@ -20,11 +20,11 @@
   app.openExodusTrail = function () {
     markScene('#exodus'); app.exodusTrail.open(entrance);
   };
-  function openField(mountain,showShelf) {
+  function openField(mountain,showShelf,entry) {
     markScene(mountain?'#sinai':'#wilderness');
     app.wilderness.open(entrance, function () {
       markScene('#exodus'); app.exodusTrail.open(entrance, false, true, mountain);
-    }, showShelf === true, mountain);
+    }, showShelf === true, mountain,entry);
   }
   app.openWilderness = function (showShelf) { openField(false,showShelf); };
   app.openSinai = function () { openField(true,false); };
@@ -85,7 +85,7 @@
       el('div', { class: 'title-actions' },
         el('button', { class: 'btn wide', on: { click: function () { (app.state.tier && app.state.char) ? continueJourney() : renderSetup(); } } },
           (app.state.tier && app.state.char) ? '이어서 탐험하기' : '탐험 시작'),
-        app.state.wilderness?.index>=4 ? el('button', {class:'btn wide quiet', on:{click:app.openSinai}}, '시내산 본편 이어 보기') : null,
+        app.wilderness.inMountain() ? el('button', {class:'btn wide quiet', on:{click:app.openSinai}}, '시내산 본편 이어 보기') : null,
         app.state.wilderness ? el('button', {class:'btn wide quiet', on:{click:app.openWilderness}}, '광야 본편 이어 보기') : null,
         app.state.redSea ? el('button', {class:'btn wide quiet', on:{click:app.openRedSea}}, '홍해 본편 이어 보기') : null,
         app.state.exodusTrail ? el('button', {class:'btn wide quiet', on:{click:app.openExodusTrail}}, '세 친구의 길 잇기 계속하기') : null,
@@ -315,11 +315,12 @@
 
   // 외부의 같은 페이지 링크도 새 입구로 진입한다. 내부 이동은 replaceState라 이 이벤트를 보내지 않는다.
   window.addEventListener('hashchange', function () {
-    if (['#home','#pillar','#palace','#passover','#redsea','#wilderness','#sinai','#exodus','#nile',''].includes(location.hash)) location.reload();
+    if (['#home','#pillar','#palace','#passover','#redsea','#wilderness','#manna-rest','#sinai','#exodus','#nile',''].includes(location.hash)) location.reload();
   });
   if (location.hash === '#nile' || (!location.hash && document.body.dataset.start === 'nile')) app.openNile();
   else if (location.hash === '#pillar') app.openPillars();
   else if (location.hash === '#sinai') app.openSinai();
+  else if (location.hash === '#manna-rest') openField(false,false,'sabbath');
   else if (location.hash === '#wilderness') app.openWilderness();
   else if (location.hash === '#redsea') app.openRedSea();
   else if (location.hash === '#exodus') app.openExodusTrail();

@@ -69,11 +69,10 @@
     if (fromWilderness && !showMountainNotes && s.index < 2 && s.review === undefined) { s.index = 2; s.book = false; }
     if (fromSea && s.index === 0 && !s.book && s.review === undefined) s.index = 1;
     function recordedEntries(i) {
-      const earned=app.state.wilderness?.earned || [];
       const complete=cleared(i) || (i===0 && app.state.redSea?.finished===true);
-      const fieldSlots=i===1?[1,2,3]:i===2?[4,null,5]:[];
+      const fields=i===1?['elim','manna','rock']:i===2?['sinai',null,'calf']:[];
       return spreads[i].entries.filter((_,k)=>complete || k<s.pages[i].found ||
-        (Number.isInteger(fieldSlots[k]) && earned[fieldSlots[k]]===true));
+        (fields[k] && app.wilderness.hasRecord(fields[k])));
     }
     function recordCount(i) { return recordedEntries(i).length; }
     function count() { return spreads.reduce((n, _, i) => n + recordCount(i), 0); }
