@@ -1745,7 +1745,14 @@ window.BO_DAVID = window.BO_DAVID || {};
     );
   }
 
+  function renderField(ctx, sc) {
+    if (sc.id === 'D06') return window.BO_DAVID.field.procession(ctx, sc, D06_PAGES);
+    if (sc.id === 'D09' && ctx.state.d09Mode === 'solo') return window.BO_DAVID.field.lamp(ctx, sc, D09_CARDS);
+    return null;
+  }
+
   window.BO_DAVID.boards = {
+    renderField: renderField,
     renderD04Compare: renderD04Compare,
     renderD05Hebron: renderD05Hebron,
     renderD06Notebook: renderD06Notebook,

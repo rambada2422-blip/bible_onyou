@@ -7,6 +7,7 @@
   var STORAGE_KEY = 'bibleOnyou.david.v1';
   var DATA = window.BO_DAVID.data;
   var ART = window.BO_DAVID.art;
+  var field = window.BO_DAVID.field;
   var root = document.getElementById('app');
 
   /* 놀이 1(D02): 판마다 달라지는 시냇가 돌밭 돌(1~5)과 잔자갈(P1~P3) 배치 3종 */
@@ -121,6 +122,8 @@
       d02Entry: 'stones', /* A29: D02 접근 경로 ('stones' | 'sectors') */
       d02MarkMode: false, /* A30: D02 관찰 책갈피 모드 */
       d02Marks: [],       /* A30: D02 책갈피 꽂힌 칸 인덱스 */
+      lookout: field.lookoutState(),
+      lamp: field.lampState(),
       d02Camera: { position: 1, photos: [], kept: null },
       d04Entry: 'tray',   /* A33: D04 접근 경로 ('tray' | 'trace') */
       d04TraceSeen: ['edge'], /* A34: D04 관찰한 천 조각 부위 */
@@ -247,6 +250,8 @@
       if (Array.isArray(parsed.d02Marks)) {
         base.d02Marks = parsed.d02Marks.filter(function (v, i, a) { return typeof v === 'number' && v >= 0 && v <= 7 && a.indexOf(v) === i; });
       }
+      base.lookout = field.lookoutState(parsed.lookout || {});
+      base.lamp = field.lampState(parsed.lamp || {});
       var camera = parsed.d02Camera;
       if (camera && typeof camera === 'object') {
         if (isBrookCameraPosition(camera.position)) base.d02Camera.position = camera.position;
@@ -359,6 +364,8 @@
         d02Entry: state.d02Entry,
         d02MarkMode: state.d02MarkMode,
         d02Marks: state.d02Marks,
+        lookout: state.lookout,
+        lamp: state.lamp,
         d02Camera: state.d02Camera,
         d04Entry: state.d04Entry,
         d04TraceSeen: state.d04TraceSeen,
@@ -461,6 +468,9 @@
   function openScene(sceneId, isReplay) {
     var sc = getScene(sceneId);
     if (!sc) return;
+    if (isReplay || (sc.id === 'D06' && state.lookout.finished) || (sc.id === 'D09' && state.lamp.finished)) {
+      resetFieldRound(sc.id);
+    }
     if (isReplay) {
       state.seeds[sc.id] = getSeed(state, sc.id) + 1;
       state.telemetry.replayCount = (state.telemetry.replayCount || 0) + 1;
@@ -513,10 +523,16 @@
     render();
   }
 
+  function resetFieldRound(id) {
+    if (id === 'D06') state.lookout = field.lookoutState();
+    if (id === 'D09') state.lamp = field.lampState();
+  }
+
   function replayCurrentScene(sameLayout) {
     if (!state.sceneId) return;
     var sc = getScene(state.sceneId);
     if (!sc) return;
+    resetFieldRound(sc.id);
     if (!sameLayout) {
       state.seeds[sc.id] = getSeed(state, sc.id) + 1;
     }
@@ -839,6 +855,17 @@
           el('div', { class: 'hero-kicker', text: tierLabels[state.ageTier] || tierLabels.t1 }),
           el('h1', { text: '다윗의 발자취를 살펴보자' }),
           el('p', { text: '장면을 골라 단서를 살펴보고, 성경 장절을 확인해 탐험 일지에 남겨 보세요.' }),
+          el('div', { class: 'field-starts' },
+            el('button', { class: 'trial-btn', 'data-field-start': 'D06', on: { click: function () {
+              recordFirstAction('field:D06');
+              openScene('D06', false);
+            } } }, '행렬 관찰하기'),
+            el('button', { class: 'trial-btn', 'data-field-start': 'D09', on: { click: function () {
+              recordFirstAction('field:D09');
+              state.d09Mode = 'solo';
+              openScene('D09', false);
+            } } }, '관찰등 켜기')
+          ),
           tierRow,
           el('div', { class: 'progress-row' },
             el('span', { class: 'progress-pill', text: '발견 기록 ' + doneCount + ' / ' + total }),
@@ -2110,6 +2137,7 @@
     else if (state.step === 'done') body = renderDoneStep(sc);
     else body = renderChooseStep(sc);
 
+    var fieldPanel = state.step === 'choose' ? window.BO_DAVID.boards.renderField(boardCtx(), sc) : null;
     var bmBar = null;
     if (state.returnBookmark && state.returnBookmark.sceneId && state.returnBookmark.sceneId !== sc.id) {
       var bm = state.returnBookmark;
@@ -2167,14 +2195,14 @@
         el('button', { class: 'topbtn brass', 'data-action': 'journal', on: { click: openJournal } }, '일지 ' + journalCount())
       ),
       el('div', { class: 'play-layout' },
-        state.step !== 'stones' ? el('div', { class: 'stage' },
+        !fieldPanel && state.step !== 'stones' ? el('div', { class: 'stage' },
           el('div', { html: ART.scene(sc.art) }),
           el('div', { class: 'stage-chips' },
             el('span', { class: 'ref', text: sc.ref }),
             sc.place ? el('span', { class: 'tag', text: sc.place }) : null
           )
         ) : null,
-        el('main', { class: 'sheet' }, bmBar, body)
+        el('main', { class: 'sheet' }, bmBar, fieldPanel, body)
       )
     );
   }
@@ -2300,6 +2328,8 @@
     else if (state.view === 'journal') renderJournal();
     else if (state.view === 'guardian') renderGuardian();
     else renderHome();
+    var panel = root.querySelector('[data-field], .brook-camera');
+    field.attachHints(boardCtx(), panel, state.sceneId);
   }
 
   window.BO_DAVID.debug = {
