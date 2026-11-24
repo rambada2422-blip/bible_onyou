@@ -66,6 +66,8 @@
       d01LastSlot: null,  /* A02(D01): 이번 판에 고른 자리 정보 { seed, slotIdx, clueId, clueTitle } */
       d01ShowFirstArt: false, /* A02(D01): 처음 본 그림 다시 보기 펼침 여부 */
       d01History: [],     /* A02(D01): 판별 선택 자리 기록 */
+      d01Entry: 'shepherd', /* A37(D01): 접근 경로 ('shepherd' | 'horn') */
+      d01CompareBoth: false, /* A38(D01): 두 단서 나란히 대조 켜짐 여부 */
       d04Slots: { jonathan: null, saul: null }, /* A03(D04): 두 겉옷 비교대 쪽지 배치 */
       d04PickTag: null,   /* A03(D04): 현재 집은 쪽지 */
       d04Msg: '',         /* A03(D04): 비교대 안내 메시지 */
@@ -76,6 +78,8 @@
       d05Order: [null, null], /* A05·A06(D05): 1번째·2번째에 놓은 만남 쪽지 */
       d05Pick: null,      /* A05(D05): 현재 고른 만남 쪽지 */
       d05Msg: '',         /* A05·A06(D05): 안내 메시지 */
+      d05Entry: 'people', /* A39(D05): 접근 경로 ('people' | 'timeline') */
+      d05ShowTable: false,/* A40(D05): 두 만남 한눈에 비교표 표시 여부 */
       d06Opened: [],      /* A07(D06): 펼친 행렬 기록 수첩 면 ['ark', 'tent'] */
       d06Path: null,      /* A08(D06): 관찰 경로 ('object' 물건부터 | 'place' 도착한 곳부터) */
       d08Pos: 0,          /* A09(D08): 우물물 경로 현재 칸 (0~4) */
@@ -168,6 +172,8 @@
       if (parsed.d01LastSlot && typeof parsed.d01LastSlot === 'object') base.d01LastSlot = parsed.d01LastSlot;
       base.d01ShowFirstArt = !!parsed.d01ShowFirstArt;
       if (Array.isArray(parsed.d01History)) base.d01History = parsed.d01History.slice(-10);
+      if (parsed.d01Entry === 'shepherd' || parsed.d01Entry === 'horn') base.d01Entry = parsed.d01Entry;
+      base.d01CompareBoth = !!parsed.d01CompareBoth;
       if (parsed.d04Slots && typeof parsed.d04Slots === 'object') {
         base.d04Slots = {
           jonathan: (parsed.d04Slots.jonathan === 'jonathan' || parsed.d04Slots.jonathan === 'saul') ? parsed.d04Slots.jonathan : null,
@@ -183,6 +189,8 @@
       if (Array.isArray(parsed.d05Order) && parsed.d05Order.length === 2) {
         base.d05Order = parsed.d05Order.map(function (v) { return (v === 'judah' || v === 'elders') ? v : null; });
       }
+      if (parsed.d05Entry === 'people' || parsed.d05Entry === 'timeline') base.d05Entry = parsed.d05Entry;
+      base.d05ShowTable = !!parsed.d05ShowTable;
       if (Array.isArray(parsed.d06Opened)) {
         base.d06Opened = parsed.d06Opened.filter(function (v, i, a) { return (v === 'ark' || v === 'tent') && a.indexOf(v) === i; });
       }
@@ -300,12 +308,16 @@
         d01LastSlot: state.d01LastSlot,
         d01ShowFirstArt: state.d01ShowFirstArt,
         d01History: state.d01History,
+        d01Entry: state.d01Entry,
+        d01CompareBoth: state.d01CompareBoth,
         d04Slots: state.d04Slots,
         d04TracePart: state.d04TracePart,
         d04Mono: state.d04Mono,
         d05Opened: state.d05Opened,
         d05FirstWing: state.d05FirstWing,
         d05Order: state.d05Order,
+        d05Entry: state.d05Entry,
+        d05ShowTable: state.d05ShowTable,
         d06Opened: state.d06Opened,
         d06Path: state.d06Path,
         d08Pos: state.d08Pos,
@@ -1035,47 +1047,101 @@
   function renderD01Notebook(sc) {
     var seed = getSeed(state, 'D01');
     var layout = getD01Layout(seed);
-    var spots = layout.order.map(getD01Spot);
+    var curEntry = state.d01Entry === 'horn' ? 'horn' : 'shepherd';
+    var baseOrder = curEntry === 'horn' ? ['horn', 'shepherd'] : layout.order.slice();
+    var spots = baseOrder.map(getD01Spot);
+
+    var entryBar = el('div', { class: 'd05-wing-place-btns', 'data-d01-entry-bar': curEntry },
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'shepherd' ? ' active' : ''),
+        'data-d01-entry': 'shepherd',
+        'aria-pressed': String(curEntry === 'shepherd'),
+        on: {
+          click: function () {
+            recordFirstAction('D01:entry:shepherd');
+            state.d01Entry = 'shepherd';
+            if (state.d01Opened.indexOf('shepherd') === -1) state.d01Opened.push('shepherd');
+            if (!state.d01FirstCover) state.d01FirstCover = 'shepherd';
+            state.d01ZoomId = 'shepherd';
+            saveState();
+            render();
+          }
+        }
+      }, '들판의 목자부터 (삼상 16:11)'),
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'horn' ? ' active' : ''),
+        'data-d01-entry': 'horn',
+        'aria-pressed': String(curEntry === 'horn'),
+        on: {
+          click: function () {
+            recordFirstAction('D01:entry:horn');
+            state.d01Entry = 'horn';
+            if (state.d01Opened.indexOf('horn') === -1) state.d01Opened.push('horn');
+            if (!state.d01FirstCover) state.d01FirstCover = 'horn';
+            state.d01ZoomId = 'horn';
+            saveState();
+            render();
+          }
+        }
+      }, '사무엘의 기름 뿔부터 (삼상 16:13)')
+    );
 
     var coverNodes = spots.map(function (sp, idx) {
       var opened = state.d01Opened.indexOf(sp.id) !== -1;
       var active = state.d01ZoomId === sp.id;
       var slotLabel = layout.dir === 'col' ? (idx === 0 ? '위쪽 창' : '아래쪽 창') : (idx === 0 ? '왼쪽 창' : '오른쪽 창');
-      return el('button', {
-        class: 'd01-cover' + (opened ? ' opened' : '') + (active ? ' active' : ''),
-        'data-d01-cover': sp.id,
-        'data-d01-slot': String(idx),
-        'aria-expanded': String(opened),
-        'aria-pressed': String(active),
-        on: {
-          click: function () {
-            recordFirstAction('D01:cover:' + sp.id);
-            if (state.d01Opened.indexOf(sp.id) === -1) state.d01Opened.push(sp.id);
-            if (!state.d01FirstCover) state.d01FirstCover = sp.id;
-            state.d01ZoomId = sp.id;
-            saveState();
-            render();
-          },
-          keydown: function (ev) {
-            if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight' || ev.key === 'ArrowUp' || ev.key === 'ArrowDown') {
-              ev.preventDefault();
-              var other = root.querySelector('[data-d01-slot="' + ((idx + 1) % 2) + '"]');
-              if (other) other.focus();
+      return el('div', { class: 'd01-cover-wrap', 'data-d01-cover-wrap': sp.id },
+        el('button', {
+          class: 'd01-cover' + (opened ? ' opened' : '') + (active ? ' active' : ''),
+          'data-d01-cover': sp.id,
+          'data-d01-slot': String(idx),
+          'aria-expanded': String(opened),
+          'aria-pressed': String(active),
+          on: {
+            click: function () {
+              recordFirstAction('D01:cover:' + sp.id);
+              if (state.d01Opened.indexOf(sp.id) === -1) state.d01Opened.push(sp.id);
+              if (!state.d01FirstCover) state.d01FirstCover = sp.id;
+              state.d01ZoomId = sp.id;
+              saveState();
+              render();
+            },
+            keydown: function (ev) {
+              if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight' || ev.key === 'ArrowUp' || ev.key === 'ArrowDown') {
+                ev.preventDefault();
+                var other = root.querySelector('[data-d01-slot="' + ((idx + 1) % 2) + '"]');
+                if (other) other.focus();
+              }
             }
           }
-        }
-      },
-        el('div', { class: 'd01-cover-top' },
-          el('span', { class: 'd01-cover-kind', text: slotLabel + ' · ' + sp.kind }),
-          el('span', { class: 'd01-cover-state', text: active ? '확대 중' : (opened ? '열림' : '덮개 열기') })
-        ),
-        el('div', { class: 'd01-cover-main' },
-          el('span', { class: 'fold-icon', html: ART.icon(sp.icon) }),
-          el('div', { class: 'fold-text' },
-            el('span', { class: 'fold-title', text: opened ? sp.title : sp.coverLabel }),
-            el('span', { class: 'fold-sub', text: opened ? (sp.ref + ' · 눌러서 크게 보기') : '눌러서 덮개 들기' })
+        },
+          el('div', { class: 'd01-cover-top' },
+            el('span', { class: 'd01-cover-kind', text: slotLabel + ' · ' + sp.kind }),
+            el('span', { class: 'd01-cover-state', text: active ? '확대 중' : (opened ? '열림' : '덮개 열기') })
+          ),
+          el('div', { class: 'd01-cover-main' },
+            el('span', { class: 'fold-icon', html: ART.icon(sp.icon) }),
+            el('div', { class: 'fold-text' },
+              el('span', { class: 'fold-title', text: opened ? sp.title : sp.coverLabel }),
+              el('span', { class: 'fold-sub', text: opened ? (sp.ref + ' · 눌러서 크게 보기') : '눌러서 덮개 들기' })
+            )
           )
-        )
+        ),
+        opened ? el('button', {
+          class: 'd04-undo-btn',
+          'data-d01-fold': sp.id,
+          on: {
+            click: function () {
+              var pos = state.d01Opened.indexOf(sp.id);
+              if (pos !== -1) state.d01Opened.splice(pos, 1);
+              if (state.d01ZoomId === sp.id) {
+                state.d01ZoomId = state.d01Opened.length ? state.d01Opened[0] : null;
+              }
+              saveState();
+              render();
+            }
+          }
+        }, '덮개 접기') : null
       );
     });
 
@@ -1217,19 +1283,56 @@
       }, '오른손 한 손 배치')
     );
 
+    var compareToggleBtn = el('button', {
+      class: 'd04-undo-btn',
+      'data-action': 'd01-toggle-compare',
+      'aria-pressed': String(!!state.d01CompareBoth),
+      on: {
+        click: function () {
+          state.d01CompareBoth = !state.d01CompareBoth;
+          if (state.d01CompareBoth) {
+            ['shepherd', 'horn'].forEach(function (id) {
+              if (state.d01Opened.indexOf(id) === -1) state.d01Opened.push(id);
+            });
+          }
+          saveState();
+          render();
+        }
+      }
+    }, state.d01CompareBoth ? '두 단서 나란히 대조 닫기' : '두 단서 나란히 대조하기');
+
+    var compareBothPanel = state.d01CompareBoth ? el('div', { class: 'd01-first-preview', 'data-d01-compare': 'true' },
+      el('div', { class: 'd01-zoom-head' },
+        el('span', { class: 'tag', text: '두 단서 나란히 대조' }),
+        el('span', { class: 'ref', text: '삼상 16:11 vs 삼상 16:13' })
+      ),
+      el('div', { class: 'fold-grid' },
+        spots.map(function (sp) {
+          return el('div', { class: 'd08-card', 'data-d01-compare-item': sp.id },
+            el('span', { class: 'ref', text: sp.title + ' · ' + sp.ref }),
+            el('p', { class: 'd05-wing-fact', text: sp.detail })
+          );
+        })
+      )
+    ) : null;
+
     return el('section', {
       class: 'notebook-map d01-board hand-' + hand,
       'data-d01-board': 'true',
+      'data-d01-entry': curEntry,
+      'data-d01-compare-on': String(!!state.d01CompareBoth),
       'data-d01-seed': String(seed),
-      'data-d01-layout': layout.dir + ':' + layout.order.join(','),
+      'data-d01-layout': layout.dir + ':' + baseOrder.join(','),
       'data-less-clue': String(lessOn),
       'data-hand-cur': hand
     },
       el('div', { class: 'one-line-guide', text: seed > 0
         ? ('『탐험대 이야기』 ' + layout.label + ' — 바뀐 자리에서 다시 펼칠 창을 골라 보자.')
         : '『탐험대 이야기』 수첩의 덮개 둘 중 어느 쪽부터든 열어 확대하고, 하나를 골라 일지로 가져가자.' }),
+      entryBar,
       handBar,
-      lessBar,
+      el('div', { class: 'd01-memory-row' }, lessBar, compareToggleBtn),
+      compareBothPanel,
       firstRecBlock,
       el('div', { class: 'fold-grid d01-cover-grid dir-' + layout.dir }, coverNodes),
       zoomPanel

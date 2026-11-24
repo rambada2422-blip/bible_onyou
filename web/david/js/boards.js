@@ -523,6 +523,56 @@ window.BO_DAVID = window.BO_DAVID || {};
 
     var wings = D05_WINGS.slice();
     if (seed % 2 === 1) wings.reverse();
+    var curEntry = state.d05Entry === 'timeline' ? 'timeline' : 'people';
+
+    var entryBar = el('div', { class: 'd05-wing-place-btns', 'data-d05-entry-bar': curEntry },
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'people' ? ' active' : ''),
+        'data-d05-entry': 'people',
+        'aria-pressed': String(curEntry === 'people'),
+        on: {
+          click: function () {
+            ctx.recordFirstAction('D05:entry:people');
+            state.d05Entry = 'people';
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, '찾아온 무리부터 (삼하 2:4 · 5:3)'),
+      el('button', {
+        class: 'd05-mini-btn' + (curEntry === 'timeline' ? ' active' : ''),
+        'data-d05-entry': 'timeline',
+        'aria-pressed': String(curEntry === 'timeline'),
+        on: {
+          click: function () {
+            ctx.recordFirstAction('D05:entry:timeline');
+            state.d05Entry = 'timeline';
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, '칠 년 반 시간표부터 (삼하 2:4 · 5:5)'),
+      el('button', {
+        class: 'd04-undo-btn',
+        'data-action': 'd05-toggle-table',
+        'aria-pressed': String(!!state.d05ShowTable),
+        on: {
+          click: function () {
+            state.d05ShowTable = !state.d05ShowTable;
+            ctx.saveState();
+            ctx.render();
+          }
+        }
+      }, state.d05ShowTable ? '두 만남 비교표 접기' : '두 만남 한눈에 비교표')
+    );
+
+    var compareTable = state.d05ShowTable ? el('div', { class: 'd05-reopen-card', 'data-d05-compare-table': 'true' },
+      el('div', { class: 'd01-zoom-head' },
+        el('span', { class: 'tag', text: '공통 장소: 헤브론' }),
+        el('span', { class: 'ref', text: '삼하 2:4 ↔ 칠 년 반 뒤 삼하 5:1–5' })
+      ),
+      el('p', { class: 'd05-wing-fact', text: '1번째 만남: 유다 사람들이 먼저 와서 다윗을 유다의 왕으로 세움(삼하 2:4) / 2번째 만남: 칠 년 반 뒤 이스라엘의 장로들이 와서 이스라엘의 왕으로 세움(삼하 5:3, 5).' })
+    ) : null;
 
     function placeInSlot(wingId, slotIdx) {
       if (state.d05Order[0] === wingId) state.d05Order[0] = null;
@@ -589,7 +639,19 @@ window.BO_DAVID = window.BO_DAVID || {};
               class: 'd05-mini-btn' + (state.d05Order[1] === w.id ? ' active' : ''),
               'data-d05-put': w.id + ':1',
               on: { click: function () { placeInSlot(w.id, 1); } }
-            }, '2번째에 놓기')
+            }, '2번째에 놓기'),
+            el('button', {
+              class: 'd04-undo-btn',
+              'data-d05-fold': w.id,
+              on: {
+                click: function () {
+                  var pos = state.d05Opened.indexOf(w.id);
+                  if (pos !== -1) state.d05Opened.splice(pos, 1);
+                  ctx.saveState();
+                  ctx.render();
+                }
+              }
+            }, '날개 접기')
           )
         ) : null
       );
@@ -652,8 +714,8 @@ window.BO_DAVID = window.BO_DAVID || {};
       el('p', { class: 'd05-wing-fact', text: reopenWing.title + ': ' + reopenWing.fact })
     ) : null;
 
-    var bothOpened = state.d05Opened.indexOf('judah') !== -1 && state.d05Opened.indexOf('elders') !== -1;
     var bothPlaced = !!(state.d05Order[0] && state.d05Order[1]);
+    var bothOpened = (state.d05Opened.indexOf('judah') !== -1 && state.d05Opened.indexOf('elders') !== -1) || bothPlaced;
 
     var t3Active = state.ageTier === 't3';
     var t3Block = null;
@@ -767,16 +829,23 @@ window.BO_DAVID = window.BO_DAVID || {};
       )
     );
 
+    var wingsBox = el('div', { class: 'd05-wings', 'data-d05-section': 'wings' }, wingNodes);
+    var slotsBox = el('div', { class: 'd05-order-slots', 'data-d05-section': 'slots' }, slotNodes);
+
     return el('section', {
       class: 'notebook-map d05-hebron-board',
       'data-d05-board': 'true',
+      'data-d05-entry': curEntry,
+      'data-d05-table-on': String(!!state.d05ShowTable),
       'data-d05-seed': String(seed)
     },
       el('div', { class: 'one-line-guide', text: '『탐험대 이야기』 같은 장소 헤브론의 두 만남을 양쪽으로 펼쳐 보고, 어느 쪽부터 시작했든 두 기록을 시간순으로 놓아 보자.' }),
+      entryBar,
+      compareTable,
       d05CoopBar,
       t3Block,
-      el('div', { class: 'd05-wings' }, wingNodes),
-      el('div', { class: 'd05-order-slots' }, slotNodes),
+      curEntry === 'timeline' ? slotsBox : wingsBox,
+      curEntry === 'timeline' ? wingsBox : slotsBox,
       reopenCard,
       state.d05Msg ? el('div', { class: 'order-msg', 'data-d05-msg': 'true', text: state.d05Msg }) : null,
       el('button', {
@@ -787,9 +856,10 @@ window.BO_DAVID = window.BO_DAVID || {};
           click: function () {
             if (state.d05Order[0] === 'judah' && state.d05Order[1] === 'elders') {
               var firstW = getD05Wing(state.d05FirstWing) || getD05Wing('judah');
+              var entryTag = curEntry === 'timeline' ? '칠 년 반 시간표부터' : '찾아온 무리부터';
               ctx.recordDiscovery(
                 sc,
-                '『탐험대 이야기』 헤브론 두 만남(먼저 펼친 쪽: ' + firstW.title + '): 유다 사람들(삼하 2:4) → 이스라엘의 장로들(삼하 5:1–5)'
+                '『탐험대 이야기』 경로(' + entryTag + ' · 먼저 펼친 쪽: ' + firstW.title + '): 유다 사람들(삼하 2:4) → 이스라엘의 장로들(삼하 5:1–5)'
               );
               state.step = 'done';
               state.d05ReopenRef = null;
