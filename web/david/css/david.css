@@ -1445,3 +1445,54 @@ h1, h2, h3, p { margin: 0; }
   .robe-question, .robe-question .choices { gap: 5px; }
   .robe-board { width: min(100%, 65vh); }
 }
+
+/* D04 · 엔게디 탁본 수첩 */
+.rub-panel {
+  flex: none; display: grid; gap: 9px; padding: clamp(10px,2vw,16px);
+  border: 1px solid #c4ac83; border-radius: 16px; background: #fbf5e8; color: #392f29;
+}
+.rub-heading, .rub-progress, .rub-bands { display: flex; align-items: center; gap: 7px; }
+.rub-heading h2 { font: clamp(18px,4vw,24px) var(--f-display); }
+.rub-heading small { margin-left: auto; color: #655244; font-size: 12px; }
+.rub-counter { border-radius: 12px; padding: 3px 10px; color: #fff7e4; background: #754931; font: 14px var(--f-display); }
+.rub-work { display: grid; align-items: center; min-width: 0; }
+.rub-paper {
+  position: relative; width: min(100%, 320px); margin: 0 auto; aspect-ratio: 1;
+  background: #e5d6b7; border: 5px solid #6d503a; border-radius: 7px;
+  box-shadow: 0 2px 5px #68462840;
+}
+.rub-paper img, .rub-paper canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: 2px; }
+.rub-paper img { filter: grayscale(1) sepia(.6) contrast(1.15); transition: filter .4s; }
+.rub-paper.developed img { filter: none; }
+.rub-paper canvas { cursor: grab; touch-action: none; user-select: none; }
+.rub-paper canvas:active { cursor: grabbing; }
+.rub-panel [hidden] { display: none; }
+.rub-tools { display: grid; gap: 6px; align-content: start; }
+.rub-tools .field-hint { order: 1; }
+.rub-tools.developed .field-hint { display: none; }
+.rub-tools .field-feedback { font-size: 14px; line-height: 1.4; }
+.rub-progress progress { flex: 1; min-width: 0; height: 10px; accent-color: #825735; }
+.rub-percent { min-width: 38px; text-align: right; font: 14px var(--f-display); }
+.rub-controls { display: grid; gap: 3px; }
+.rub-controls small { color: #6a5443; }
+.rub-bands button {
+  flex: 1; min-height: 44px; font: 15px var(--f-display); color: #563d29; background: #efe3cb;
+  border: 1px solid #bca37b; border-radius: 9px; touch-action: manipulation;
+}
+.rub-bands button:disabled { color: #48604b; border-color: #acb296; background: #e8eddd; }
+.rub-prints { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px; }
+.rub-prints figure { margin: 0; padding: 5px; border: 1px solid #bcaa87; border-radius: 5px; background: #fffdf6; }
+.rub-prints img { width: 100%; display: block; border-radius: 3px; }
+.rub-prints figcaption { display: grid; gap: 2px; padding: 5px 2px 2px; }
+.rub-prints .rub-paper { border: 0; border-radius: 3px; box-shadow: none; pointer-events: none; }
+.rub-prints strong { font: 14px var(--f-display); }
+.rub-prints small { color: #655442; font-size: 12px; }
+.rub-keepsake summary { cursor: pointer; min-height: 44px; padding: 10px; font: 15px var(--f-display); color: #583f2d; }
+@media (max-width: 370px) {
+  .field-starts .trial-btn { min-width: 0; padding: 5px 3px; }
+}
+@media (orientation: landscape) and (max-height: 460px) {
+  .rub-panel { grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); align-items: start; padding: 8px; gap: 5px 10px; }
+  .rub-heading, .rub-panel .lookout-film { grid-column: 1 / -1; }
+  .rub-paper { width: min(100%,62vh); }
+}

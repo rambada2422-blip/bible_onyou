@@ -7,6 +7,7 @@
   var STORAGE_KEY = 'bibleOnyou.david.v1';
   var DATA = window.BO_DAVID.data;
   var ART = window.BO_DAVID.art;
+  var rubbing = window.BO_DAVID.rubbing;
   var robe = window.BO_DAVID.robe;
   var pasture = window.BO_DAVID.pasture;
   var field = window.BO_DAVID.field;
@@ -124,6 +125,7 @@
       d02Entry: 'stones', /* A29: D02 접근 경로 ('stones' | 'sectors') */
       d02MarkMode: false, /* A30: D02 관찰 책갈피 모드 */
       d02Marks: [],       /* A30: D02 책갈피 꽂힌 칸 인덱스 */
+      rubbing: rubbing.restore(),
       robe: robe.restore(),
       pasture: pasture.restore(),
       lookout: field.lookoutState(),
@@ -254,6 +256,8 @@
       if (Array.isArray(parsed.d02Marks)) {
         base.d02Marks = parsed.d02Marks.filter(function (v, i, a) { return typeof v === 'number' && v >= 0 && v <= 7 && a.indexOf(v) === i; });
       }
+      base.rubbing = rubbing.restore(parsed.rubbing);
+      if (base.sceneId === 'D04' && parsed.step === 'rubbing') base.step = 'rubbing';
       base.robe = robe.restore(parsed.robe);
       if (base.sceneId === 'D03' && (parsed.step === 'robe' || parsed.step === 'robe-order')) {
         base.step = parsed.step === 'robe-order' && base.robe.turns.every(function (n) { return n === 0; }) ? 'robe-order' : 'robe';
@@ -374,6 +378,7 @@
         d02Entry: state.d02Entry,
         d02MarkMode: state.d02MarkMode,
         d02Marks: state.d02Marks,
+        rubbing: state.rubbing,
         robe: state.robe,
         pasture: state.pasture,
         lookout: state.lookout,
@@ -452,29 +457,23 @@
     }
   }
 
-  function recordDiscovery(scene, extra) {
-    var icon = sceneClueIcon(scene);
-    if (state.journal[scene.id]) {
-      /* 이미 기록된 장면은 중복 추가하지 않고 최신 문구와 단서 그림만 유지한다. */
-      state.journal[scene.id].title = scene.title;
-      state.journal[scene.id].ref = scene.journalRef || scene.ref;
-      state.journal[scene.id].place = scene.place || '';
-      state.journal[scene.id].discovery = scene.discovery;
-      state.journal[scene.id].clueIcon = icon;
-      if (extra) state.journal[scene.id].extra = extra;
-      saveState();
-      return;
-    }
-    state.journal[scene.id] = {
-      id: scene.id,
-      title: scene.title,
-      ref: scene.journalRef || scene.ref,
-      place: scene.place || '',
-      discovery: scene.discovery,
-      clueIcon: icon,
-      extra: extra || null
-    };
+  function recordDiscovery(scene, extra, keepsake) {
+    var entry = state.journal[scene.id] || { id: scene.id, extra: null };
+    entry.title = scene.title;
+    entry.ref = scene.journalRef || scene.ref;
+    entry.place = scene.place || '';
+    entry.discovery = scene.discovery;
+    entry.clueIcon = sceneClueIcon(scene);
+    if (extra) entry.extra = extra;
+    if (keepsake) Object.assign(entry, keepsake);
+    state.journal[scene.id] = entry;
     saveState();
+  }
+
+  function startRubbing() {
+    recordFirstAction('field:D04');
+    if (state.rubbing.finished) state.rubbing = rubbing.restore({ first: rubbing.other(state.rubbing.first) });
+    openScene('D04', false, 'rubbing');
   }
 
   function startRobe() {
@@ -894,6 +893,7 @@
             el('button', { type: 'button', class: 'robe-start', 'data-field-start': 'D03', on: { click: startRobe } }, '겉옷 그림 맞추기 ›')
           ),
           el('div', { class: 'field-starts' },
+            el('button', { class: 'trial-btn', 'data-field-start': 'D04', on: { click: startRubbing } }, '탁본 뜨기'),
             el('button', { class: 'trial-btn', 'data-field-start': 'D06', on: { click: function () {
               recordFirstAction('field:D06');
               openScene('D06', false);
@@ -972,6 +972,11 @@
         state.brookSpots = makeBrookSpots(getSeed(state, sc.id));
       }
       saveState();
+      render();
+    } else if (sc.id === 'D04' && state.step === 'rubbing') {
+      state.rubbing.finished = true;
+      state.step = 'done';
+      recordDiscovery(sc, null, { rubbings: rubbing.restore(state.rubbing) });
       render();
     } else if (sc.id === 'D01' && state.step === 'pasture') {
       state.pasture.finished = true;
@@ -1482,6 +1487,7 @@
       sc.artNote ? el('p', { class: 'subnote', text: sc.artNote }) : null,
       sc.id === 'D01' ? el('button', { class: 'journal-open', 'data-action': 'open-pasture', on: { click: startPasture } }, '들판 망원경 열기') : null,
       sc.id === 'D01' ? renderD01Notebook(sc) : null,
+      sc.id === 'D04' ? el('button', { class: 'journal-open', 'data-action': 'open-rubbing', on: { click: startRubbing } }, '엔게디 탁본 뜨기') : null,
       sc.id === 'D03' ? el('button', { class: 'journal-open', 'data-action': 'open-robe', on: { click: startRobe } }, '겉옷 그림 맞추기') : null,
       (sc.id === 'D04' && boards.renderD04Compare) ? boards.renderD04Compare(boardCtx(), sc) : null,
       (sc.id === 'D05' && boards.renderD05Hebron) ? boards.renderD05Hebron(boardCtx(), sc) : null,
@@ -2106,6 +2112,8 @@
           }
         }
       }, '코스 다음 장면 (' + (c.idx + 2) + '/3): ' + nextCourseSc.id + ' ' + nextCourseSc.title);
+    } else if (sc.id === 'D03' && saved && saved.robePicture && !inCourse) {
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: startRubbing } }, '다음 장면 · 엔게디 탁본 뜨기');
     } else if (nextSc) {
       primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { openScene(nextSc.id, false); } } }, '다음 장면: ' + nextSc.title);
     } else {
@@ -2126,6 +2134,8 @@
         el('p', { class: 'discovery-text', text: sc.discovery }),
         saved && saved.extra ? el('p', { class: 'discovery-note', text: saved.extra }) : null
       ),
+      sc.id === 'D04' && saved && saved.rubbings
+        ? el('button', { class: 'journal-open', 'data-action': 'replay-rubbing', on: { click: startRubbing } }, state.rubbing.finished ? '다른 천부터 탁본 뜨기' : '탁본 이어 뜨기') : null,
       sc.id === 'D03' && saved && saved.robePicture
         ? el('button', { class: 'journal-open', 'data-action': 'replay-robe', on: { click: startRobe } }, state.robe.finished ? '새 배치로 그림 맞추기' : '그림 이어 맞추기') : null,
       sc.id === 'D01' && state.pasture.finished
@@ -2189,6 +2199,7 @@
     var body;
     if (sc.id === 'D01' && state.step === 'pasture') body = pasture.render(boardCtx(), sc, renderChoiceButtons(sc));
     else if (state.step === 'stones') body = renderStonesStep(sc);
+    else if (sc.id === 'D04' && state.step === 'rubbing') body = rubbing.render(boardCtx(), sc, renderChoiceButtons(sc));
     else if (sc.id === 'D03' && state.step === 'robe') body = robe.render(boardCtx(), sc, renderChoiceButtons(sc));
     else if (state.step === 'order' || state.step === 'robe-order') body = renderOrderStep(sc);
     else if (state.step === 'hebron2') body = renderHebron2Step(sc);
@@ -2197,7 +2208,7 @@
     else body = renderChooseStep(sc);
 
     var fieldPanel = state.step === 'choose' ? window.BO_DAVID.boards.renderField(boardCtx(), sc) : null;
-    var showStage = !fieldPanel && ['stones', 'pasture', 'robe', 'robe-order'].indexOf(state.step) === -1;
+    var showStage = !fieldPanel && ['stones', 'pasture', 'robe', 'robe-order', 'rubbing'].indexOf(state.step) === -1;
     var bmBar = null;
     if (state.returnBookmark && state.returnBookmark.sceneId && state.returnBookmark.sceneId !== sc.id) {
       var bm = state.returnBookmark;
@@ -2320,6 +2331,7 @@
         el('p', { class: 'journal-fact', text: sc.discovery }),
         rec.extra ? el('p', { class: 'journal-sub', text: rec.extra }) : null,
         sc.id === 'D03' && rec.robePicture ? robe.journalPicture(el) : null,
+        sc.id === 'D04' && rec.rubbings ? rubbing.journal(el, sc, rec.rubbings) : null,
         sc.id === 'D02' ? renderKeptBrookPhoto(state.d02Camera.kept) : null,
         el('button', {
           class: 'journal-open',
@@ -2411,14 +2423,17 @@
     }
   };
 
-  function followRobeLink() {
-    if (window.location.hash !== '#robe-puzzle') return false;
+  function followGameLink() {
+    var start;
+    if (window.location.hash === '#robe-puzzle') start = startRobe;
+    else if (window.location.hash === '#engedi-rubbing') start = startRubbing;
+    else return false;
     // Consume the launch link so a later reload restores the child's current step.
     window.history.replaceState(window.history.state, '', window.location.href.split('#')[0]);
-    startRobe();
+    start();
     return true;
   }
 
-  window.addEventListener('hashchange', followRobeLink);
-  if (!followRobeLink()) render();
+  window.addEventListener('hashchange', followGameLink);
+  if (!followGameLink()) render();
 })();
