@@ -1377,3 +1377,71 @@ h1, h2, h3, p { margin: 0; }
   .meadow-lens { grid-column: 1; grid-row: 2 / span 5; }
   .meadow-controls, .meadow-guide, .meadow-panel > .field-feedback, .meadow-panel .field-hint, .meadow-stamps { grid-column: 2; }
 }
+
+/* D03 · 두 친구의 그림 퍼즐 */
+.picture-starts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.picture-starts button {
+  position: relative; min-width: 0; min-height: 72px; padding: 7px 10px;
+  align-items: end; overflow: hidden; text-align: left;
+  font: 15px var(--f-display); color: white; border: 1px solid #dac99f; border-radius: 12px;
+}
+.picture-starts .meadow-start { background: linear-gradient(0deg,#163e36f5,transparent 85%), url('../media/pasture.webp') 55% 65% / cover; }
+.picture-starts .meadow-start span { z-index: 1; text-shadow: 0 1px 4px #142b23; }
+.picture-starts .meadow-start img { position: absolute; right: 5px; top: 2px; width: 37px; height: 38px; }
+.robe-start { display: flex; background: linear-gradient(0deg,#242b48f5,transparent 83%), url('../media/robe-gift.webp') center 42% / cover; }
+.robe-panel {
+  display: grid; flex: none; gap: 10px; padding: clamp(10px,2vw,16px);
+  background: #fbf6e9; border: 1px solid #cbb993; border-radius: 16px;
+}
+.robe-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.robe-heading small { margin-left: auto; color: #6c5c47; font-size: 12px; }
+.robe-heading h2 { color: #283b59; font: clamp(19px,4vw,24px) var(--f-display); }
+.robe-count { padding: 3px 10px; color: #fff5dc; background: #314461; border-radius: 12px; font: 14px var(--f-display); }
+.robe-board {
+  position: relative; isolation: isolate; display: grid; grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr; gap: 3px; aspect-ratio: 1;
+  width: min(100%, 355px); margin: 0 auto; padding: 5px; border: 1px solid #85734f;
+  background: #2f3743; border-radius: 9px; overflow: hidden;
+  box-shadow: inset 0 0 0 2px #caa96d, 0 2px 6px #34221726;
+}
+.robe-piece {
+  position: relative; overflow: hidden; min-width: 0; min-height: 0; padding: 0;
+  border-radius: 2px; background: #c5ac83; touch-action: manipulation; cursor: pointer;
+}
+.robe-piece:focus-visible { z-index: 1; outline: 3px solid #fff3bb; outline-offset: -4px; }
+.robe-piece[aria-disabled="true"] { cursor: default; }
+.robe-fragment { position: absolute; inset: 0; background: url('../media/robe-gift.webp') no-repeat 0 0 / 200% 200%; transition: transform .25s ease-out; }
+.robe-piece:nth-child(2) .robe-fragment { background-position: 100% 0; }
+.robe-piece:nth-child(3) .robe-fragment { background-position: 0 100%; }
+.robe-piece:nth-child(4) .robe-fragment { background-position: 100% 100%; }
+.robe-mark {
+  position: absolute; right: 5px; bottom: 5px; display: grid; place-items: center;
+  width: 24px; height: 24px; border: 1px solid #f8ebca; border-radius: 50%;
+  font: bold 18px/1 system-ui,sans-serif; color: #fff8e4; background: #26374be8;
+}
+.robe-piece[aria-disabled="true"] .robe-mark { background: #235745ed; }
+.robe-reference { grid-area: 1 / 1 / -1 / -1; display: block; width: 100%; height: 100%; object-fit: contain; }
+.robe-panel [hidden] { display: none; }
+.robe-sidebar { display: grid; gap: 8px; align-content: start; }
+.robe-tools.complete .field-hint { display: none; }
+.robe-board.assembled .robe-reference { animation: robe-reveal .3s ease-out; }
+@keyframes robe-reveal { from { opacity: .55; } to { opacity: 1; } }
+.robe-tools { display: grid; gap: 4px; align-content: start; }
+.robe-tools .field-feedback { line-height: 1.5; color: #384559; }
+.robe-tools .field-hint { order: 1; }
+.robe-compare, .robe-keepsake summary {
+  justify-self: start; min-height: 44px; padding: 10px 14px; border: 1px solid #bba57f;
+  border-radius: 10px; font: 14px var(--f-display); color: #233650; background: #f3e8d0; cursor: pointer;
+}
+.robe-compare[aria-pressed="true"] { color: white; background: #314761; }
+.robe-question { display: grid; justify-items: start; gap: 8px; }
+.robe-question h3 { font: 18px var(--f-display); }
+.robe-question .choices { width: 100%; }
+.robe-panel .lookout-film video { max-height: 52vh; background: #283547; }
+.robe-keepsake img { display: block; width: min(100%, 320px); margin: 8px auto 0; border-radius: 8px; }
+@media (orientation: landscape) and (max-height: 460px) {
+  .robe-panel { grid-template-columns: minmax(0,1fr) minmax(0,1.15fr); align-items: start; padding: 8px; gap: 5px 10px; }
+  .robe-heading, .robe-panel .lookout-film { grid-column: 1 / -1; }
+  .robe-question, .robe-question .choices { gap: 5px; }
+  .robe-board { width: min(100%, 65vh); }
+}
