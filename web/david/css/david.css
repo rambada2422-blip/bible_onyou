@@ -1625,3 +1625,29 @@ h1, h2, h3, p { margin: 0; }
   .table-question .choice-card { min-height: 48px; padding: 5px 8px; }
   .table-question .choice-icon { width: 32px; height: 32px; }
 }
+
+/* D08 · 베들레헴 성문 곁 우물 길 수첩 */
+.well-board {
+  position: relative; width: 100%; aspect-ratio: 3/2; align-self: start; overflow: hidden;
+  border-radius: 9px; background: #e5ce9b; user-select: none;
+}
+.well-board .table-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.well-pin {
+  position: absolute; transform: translate(-50%, -50%);
+  display: inline-flex; flex-direction: column; align-items: center; gap: 3px;
+  min-width: 44px; min-height: 44px; padding: 4px 6px; border-radius: 12px;
+  background: rgba(251, 247, 238, .92); color: #16233F;
+  border: 2px solid #7d5a36; box-shadow: 0 2px 6px rgba(0, 0, 0, .28);
+  touch-action: manipulation;
+}
+.well-pin:focus-visible { outline: 3px solid #E9B44C; outline-offset: 2px; }
+.well-pin.active { background: #E9B44C; color: #0E1730; border-color: #16233F; transform: translate(-50%, -50%) scale(1.06); z-index: 2; }
+.well-pin.collected { background: #DFF1E8; color: #1E6B4F; border-color: #1E6B4F; }
+.well-pin-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+.well-pin-label { font: 11.5px/1.15 var(--f-display); white-space: nowrap; }
+.well-crop { display: block; position: relative; width: 100%; aspect-ratio: 2.4; overflow: hidden; }
+.well-crop img {
+  position: absolute; left: 50%; top: 50%; width: 320%; height: auto; max-width: none;
+  transform: translate(calc(0% - var(--well-x)), calc(0% - var(--well-y)));
+}
+.well-keepsake .well-crop { aspect-ratio: 1.65; }
