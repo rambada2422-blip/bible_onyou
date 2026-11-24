@@ -20,6 +20,7 @@
     return:'건너편 언덕에서 가족들이 방금 건넌 자리로 돌아오는 물결을 바라본다.',
     song:'아침 물가에서 미리암이 둥근 소고를 들고 여인들이 소고를 치며 춤춘다.'
   };
+  const tracks={camp:'coast',shore:'coast',rear:'chase',wind:'passage',walls:'passage',bank:'morning',return:'morning',song:'morning'};
   const crossing=[
     ['밤새 분 동풍','모세가 손을 내밀자 하나님이 밤새 강한 동풍을 불게 하셔서 바닷물이 물러가고 바닥이 마른 땅이 되었다.','출 14:21'],
     ['바다 가운데서','이스라엘 자손이 바다 가운데를 마른 땅으로 걸어갔고, 양쪽에서 물이 벽처럼 섰다.','출 14:22'],
@@ -51,7 +52,11 @@
     }
     if(s.echoBeat!==undefined && (s.beat!==3 || !Number.isInteger(s.echoBeat) || s.echoBeat<0 || s.echoBeat>5))delete s.echoBeat;
     if(s.looked!==undefined && (!Number.isInteger(s.looked)||s.looked<0||s.looked>3))delete s.looked;
-    const sound=BO.redSeaPlay.instrument();
+    const music=BO.sceneMusic.create(),instrument=BO.redSeaPlay.instrument();
+    const sound={close:instrument.close,hit(kind){
+      if(kind!=='step')music.duck();
+      instrument.hit(kind);
+    }};
     let stopAction=()=>{};
     function saveProgress(){
       if(!sideTrip){app.save();return;}
@@ -71,7 +76,7 @@
     }
     function quiet(){stopAction();sound.close();}
     function exit(fn){
-      quiet();window.removeEventListener('pagehide',quiet);window.removeEventListener('blur',quiet);fn();
+      quiet();music.close();window.removeEventListener('pagehide',quiet);window.removeEventListener('blur',quiet);fn();
     }
     function turn(chapter){s.chapter=chapter;if(chapter===3)s.finished=true;saveProgress();draw(true);}
     function draw(focus) {
@@ -93,6 +98,7 @@
       const status=el('p',{class:'rs-status',role:'status'});
       const tag=chapter===3?'탐험 일지':'홍해 본편 · '+(chapter+1)+' / 3';
       function illustrate(key,scene,view='',dist=0){
+        music.setCue('red-sea-'+(chapter===3?'morning':tracks[key]),chapter===0 && key==='rear'?.055:.42);
         const fallback=()=>{
           BO.drawRedSea(stage,scene,view,dist);stage.setAttribute('aria-label',artLabels[key]);
         };
@@ -197,7 +203,7 @@
         footer.append(button('마라로 떠나기',()=>exit(app.openWilderness),'rs-primary'),button('광야 수첩으로 이어가기',()=>exit(onward)));
       }
       if(sideTrip)footer.append(button('보던 탐험으로 돌아가기',()=>exit(app.openRedSea)));
-      app.show(el('main',{class:'screen rs-screen'},el('nav',{class:'rs-nav'},button('탐험 입구',()=>exit(leave),'rs-link'),el('span',{},tag)),
+      app.show(el('main',{class:'screen rs-screen',on:{click:music.gesture,keydown:music.gesture,pointerup:music.gesture}},el('nav',{class:'rs-nav'},button('탐험 입구',()=>exit(leave),'rs-link'),music.button,el('span',{},tag)),
         el('div',{class:chapter===0?'rs-scroll rs-coast':'rs-scroll rs-journey'},el('header',{class:'rs-heading'},el('p',{},['출애굽기 14:1–14','출애굽기 14:15–31','출애굽기 15:1–21','출애굽기 14–15장'][chapter]),heading),
           picture,companion,controls,status,story,footer)));
       if(focus) heading.focus({preventScroll:true});

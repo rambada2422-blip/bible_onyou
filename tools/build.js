@@ -116,13 +116,18 @@ fs.writeFileSync(path.join(web, 'js/wilderness-data.js'),
 const fontCss = require('./font-css');
 const scripts = [
   'js/content.js', 'js/icons.js', 'js/order-question.js', 'js/reference-input.js', 'js/art.js',
-  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-rapids.js', 'js/nile-game.js', 'js/palace-watch-scenes.js', 'js/palace-watch.js', 'js/palace.js', 'js/red-sea-landscape.js', 'js/red-sea-play.js', 'js/red-sea.js', 'js/wilderness-data.js', 'js/wilderness-scripture.js', 'js/wilderness-landscape.js', 'js/wilderness-feel.js', 'js/wilderness.js', 'js/exodus-trail.js', 'js/passover.js', 'js/app.js',
+  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-rapids.js', 'js/nile-game.js', 'js/palace-watch-scenes.js', 'js/palace-watch.js', 'js/palace.js', 'js/red-sea-landscape.js', 'js/scene-music.js', 'js/red-sea-play.js', 'js/red-sea.js', 'js/wilderness-data.js', 'js/wilderness-scripture.js', 'js/wilderness-landscape.js', 'js/wilderness-feel.js', 'js/wilderness.js', 'js/exodus-trail.js', 'js/passover.js', 'js/app.js',
 ];
 // 단일 HTML에서도 본문 음성을 인터넷 연결 없이 재생한다.
 const palaceAudio = {};
 for (const file of list('audio/palace', '.mp3')) {
   const audio = fs.readFileSync(path.join(web, 'assets/audio/palace', file));
   palaceAudio[path.basename(file, '.mp3')] = 'data:audio/mpeg;base64,' + audio.toString('base64');
+}
+const sceneAudio = {};
+for (const file of list('audio/score', '.mp3')) {
+  const audio = fs.readFileSync(path.join(web, 'assets/audio/score', file));
+  sceneAudio[path.basename(file, '.mp3')] = 'data:audio/mpeg;base64,' + audio.toString('base64');
 }
 const watchImages = {};
 for (const file of list('palace-watch', '.jpg')) {
@@ -143,7 +148,7 @@ const page = [
   '<style>\n' + read('css/app.css') + '\n' + read('css/nile.css') + '\n' + read('css/palace-watch.css') + '\n' + read('css/exodus-trail.css') + '\n' + read('css/red-sea.css') + '\n' + read('css/wilderness.css') + '\n</style>',
   '</head><body>',
   '<div id="app" class="app"></div>',
-  '<script>window.BO = window.BO || {}; BO.palaceAudio = ' + JSON.stringify(palaceAudio) + '; BO.palaceWatchImages = ' + JSON.stringify(watchImages) + '; BO.redSeaImages = ' + JSON.stringify(redSeaImages) + ';</script>',
+  '<script>window.BO = window.BO || {}; BO.palaceAudio = ' + JSON.stringify(palaceAudio) + '; BO.palaceWatchImages = ' + JSON.stringify(watchImages) + '; BO.redSeaImages = ' + JSON.stringify(redSeaImages) + '; BO.sceneAudio = ' + JSON.stringify(sceneAudio) + ';</script>',
   ...scripts.map((p) => '<script>\n' + esc(read(p)) + '\n</script>'),
   '<style>\n' + fontCss() + '\n</style>',
   '</body></html>'

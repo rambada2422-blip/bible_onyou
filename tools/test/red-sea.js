@@ -4,6 +4,7 @@ const fs=require('node:fs/promises');
 const path=require('node:path');
 const {chromium}=require('playwright');
 const {gameOrigin}=require('./game-server');
+const {checkMusic}=require('./scene-music');
 async function visit(browser,origin,entry,viewport,out) {
   const page=await browser.newPage({viewport,hasTouch:true,reducedMotion:'reduce'});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -214,6 +215,7 @@ async function bridges(browser,origin) {
     await coastLayout(browser,origin,out);
     await directStages(browser,origin);
     await bridges(browser,origin);
+    for(const entry of ['/index.html','/preview.html'])await checkMusic(browser,origin,entry);
     console.log('홍해 세 장면 · 터치·키보드·무음·회전·복원·일지·본편 진입과 광야 복귀: no errors');
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
