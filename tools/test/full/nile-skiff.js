@@ -23,7 +23,7 @@ async function play(browser, origin, entry, width, height, touch) {
     }
   }
   await page.goto(origin + entry);
-  await tap('다음');
+  await tap('모세와 아론의 말 읽기');
   await tap('나일강 물길 탐험');
   assert.equal(await page.locator('.river-name').innerText(), names[0]);
   if (width === 360 || width >= 1000) await page.screenshot({path:path.join(out, width+'-출항.png')});

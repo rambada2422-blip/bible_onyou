@@ -69,7 +69,8 @@ async function checkManna(browser,origin,entry,out){
     await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await quiet();
     await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await cue(16.875);
     await button('여섯째 날과 일곱째 날 답사하기').tap();
-    await page.waitForFunction(()=>readScore().every(t=>t.state==='closed'));
+    await cue(19.2);
+    await page.waitForFunction(()=>readScore().filter(t=>!t.ended&&t.state==='running').length===1);
     assert.equal(await page.locator('h1').innerText(),'여섯째 날과 일곱째 날');
     assert.deepEqual(errors,[]);
   }finally{await page.close();}

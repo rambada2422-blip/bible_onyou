@@ -7,6 +7,7 @@ const { chromium } = require('playwright');
 const { gameOrigin } = require('./game-server');
 
 const { checkObservations } = require('./wilderness-observation');
+const {checkTwoDays}=require('./wilderness-two-days');
 const { checkManna } = require('./wilderness-manna');
 
 const stopNames = ['마라의 물가', '엘림의 샘', '만나를 거두는 아침', '여섯째 날과 일곱째 날', '반석에서 흐른 물', '시내산 앞의 진영', '금송아지 사건의 진영'];
@@ -43,13 +44,14 @@ async function runRoute(browser, origin, out, entry, width) {
   for (const [i,stage] of data.stages.entries()) {
     assert.equal(await heading(),stopNames[i]);
     if(stage.beats){
+      if(stage.id==='sinai')await page.locator('.wf-library summary').click();
       assert(page.url().endsWith(stage.id==='sabbath'?'#wilderness':'#sinai'));
       for(const [j,beat] of stage.beats.entries()){
         assert.equal(await page.locator('.wf-record p').innerText(),beat.notes[2]);
         await click('이 대목의 원문 · 출 '+beat.ref);
         assert.equal(await page.locator(':focus').getAttribute('data-verse'),beat.ref.split('–')[0]);
         await click('닫기');
-        if(j===1){await page.reload();assert.equal((await state()).stops[i].beat,j);}
+        if(j===1){await page.reload();assert.equal((await state()).stops[i].beat,j);if(stage.id==='sinai')await page.locator('.wf-library summary').click();}
         if(j<stage.beats.length-1)await click('뒤 대목');
       }
     }
@@ -72,15 +74,22 @@ async function runRoute(browser, origin, out, entry, width) {
     }
     const firstFrame = await page.locator('.wf-picture').evaluate(c => c.toDataURL());
     await page.locator('.wf-pin').tap();
-    await page.locator('.wf-role').nth(0).tap();
-    await click('접사 렌즈로 살펴보기');
+    if(stage.id==='sinai'){
+      await page.getByRole('dialog',exact('산 아래의 장막')).waitFor();
+      await page.reload();
+      await click('장막 위치 기록하기');
+      await click('산마루 조준');
+    }else{
+      await page.locator('.wf-role').nth(0).tap();
+      await click('접사 렌즈로 살펴보기');
+    }
     if(stage.groundPoint){
       await page.getByRole('slider',exact('이슬 전후 사진 비교선')).focus();
       await page.keyboard.press('End');await click('알갱이 위치 기록');
       await page.locator('.wf-dialog').waitFor({state:'detached'});
     }
     assert.equal((await state()).stops[i].phase,1);
-    await page.locator('.wf-role').nth(1).tap();
+    if(stage.id!=='sinai')await page.locator('.wf-role').nth(1).tap();
     await click('장비 고정');
     assert.equal((await state()).stops[i].phase,1);
     const dial = page.getByRole('slider');
@@ -92,7 +101,9 @@ async function runRoute(browser, origin, out, entry, width) {
     await page.setViewportSize({width,height:640});
     await click('장비 고정');
     if(!stage.frames)assert.notEqual(await page.locator('.wf-picture').evaluate(c=>c.toDataURL()),firstFrame);
-    await page.locator('.wf-pin').tap();await page.locator('.wf-role').nth(2).tap();
+    await page.locator('.wf-pin').tap();
+    if(stage.id==='sinai')await page.locator('.wf-companions summary').click();
+    await page.locator('.wf-role').nth(2).tap();
     if (width===360 && (i===1||i===3||i>=4)) {
       await page.locator('.wf-scroll').evaluate(e=>e.scrollTop=0);
       await page.screenshot({path:path.join(out,stage.id+'.png')});
@@ -227,9 +238,13 @@ async function checkHints(browser,origin) {
     for(const entry of ['/index.html','/preview.html'])await checkObservations(browser,origin,entry,out);
     await runRoute(browser,origin,out,'/index.html#redsea',360);
     await runRoute(browser,origin,out,'/preview.html#wilderness',320);
-    for(const entry of ['/index.html','/preview.html'])await checkManna(browser,origin,entry,out);
+    for(const entry of ['/index.html','/preview.html']){
+      await checkManna(browser,origin,entry,out);
+      await checkTwoDays(browser,origin,entry);
+    }
     const direct=await browser.newPage({viewport:{width:320,height:480}});
-    await direct.goto(origin+'/preview.html#sinai');
+    await direct.goto(origin+'/preview.html#sinai-camp');
+    await direct.locator('.wf-library summary').click();
     assert.equal(await direct.locator('h1').innerText(),stopNames[5]);
     assert.equal(await direct.locator('.wf-record p').innerText(),await direct.evaluate(()=>BO.wildField.stages[5].beats[0].notes[0]));
     await direct.getByRole('button',exact('설정')).click();

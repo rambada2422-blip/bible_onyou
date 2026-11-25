@@ -86,7 +86,25 @@
     }
     function pageHide(){pause();sound.stop();}
     function route(fn){closed=true;pause();sound.stop();music?.close();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',pageHide);window.removeEventListener('blur',pageHide);window.removeEventListener('focus',schedule);fn();}
+    function sinai(){return stage.id==='sinai';}
+    function laterView(){
+      if(p.phase===3)return !p.reviewEarly;
+      if(stage.frames)return p.frame===1;
+      return p.phase>=(stage.groundPoint?1:2);
+    }
+    function paint(canvas,later){
+      if(sinai())BO.drawSinaiCamp(canvas,later);
+      else BO.drawWilderness(canvas,stage.id,later);
+    }
     function updateScore(){
+      if(!music)return;
+      if(stage.frames||sinai()){
+        const quiet=sinai()&&laterView();
+        music.setPaused(!s.sound||quiet||Boolean(dialog?.querySelector('.wf-edition')));
+        music.setCue(stage.frames?'wild-sabbath-'+(laterView()?'rest':'sixth'):'wild-tents');
+        music.button.disabled=!s.sound;
+        return;
+      }
       if(!stage.observations)return;
       let stopView=Math.min(p.phase,2);
       if(stage.groundPoint){
@@ -181,7 +199,7 @@
           const controls=el('div',{class:'wf-ground-tools'});
           const slider=el('input',{type:'range',min:'0',max:'100',step:'5','aria-label':'이슬 전후 사진 비교선'});
           const tip=el('span',{class:'wf-ground-tip',role:'status'});
-          const mark=button('⌖',()=>{
+          const mark=button(sinai()?name:'⌖',()=>{
             if(mark.disabled)return;
             p.grainMarked=true;app.save();play('found');
             finishClue=p.phase===0&&s.actor===0&&p.pos===target();
@@ -261,7 +279,7 @@
     function showHint(){
       if(!ui||p.phase===3)return;
       const a=crew[p.phase];
-      ui.aside.textContent=hint?a.name+' · '+a.lines[s.mode]:'';
+      ui.aside.textContent=hint?(sinai()?sinaiGuide():a.name+' · '+a.lines[s.mode]):'';
       ui.roles.forEach((b,i)=>b.classList.toggle('wf-glow',hint>=2&&i===p.phase));
       ui.pin.classList.toggle('wf-ring',hint>=3&&!ui.pin.hidden);
       ui.landmarks.forEach((b,k)=>b.classList.toggle('wf-ring',hint>=3&&k===p.mapped&&!b.hidden));
@@ -271,8 +289,29 @@
         ui.landmarks.forEach((b,i)=>b.classList.toggle('wf-ring',hint>=3&&i===need&&!b.hidden));
       }
       ui.thought.hidden=!hint;
-      ui.thought.textContent=a.name+' · '+['여길 볼까?','눈금을 보자!','기록을 펴 볼까?'][p.phase];
+      ui.thought.textContent=a.name+' · '+(sinai()?['왼쪽 장막!','산마루에 초점!','세 자리를 찾자!']:['여길 볼까?','눈금을 보자!','기록을 펴 볼까?'])[p.phase];
       ui.thought.style.left=x(crewPlace(p.phase));
+    }
+    function sinaiGuide(){
+      if(p.phase===0)return '왼쪽의 큰 장막을 눌러 최온과 가까이 보세요.';
+      if(p.phase===1)return '산마루를 눌러 휴의 관측창을 열고 초점을 맞춰 보세요.';
+      if(p.mapped===3)return '세 곳을 찾았어요. 진영에 어울리는 이름표를 고르세요.';
+      return ['산 아래 장막부터 눌러 보세요.','이번에는 산을 덮은 구름을 눌러 보세요.','산에서 멀리 선 백성을 눌러 보세요.'][p.mapped];
+    }
+    function seeTent(){
+      p.tentOpen=true;app.save();
+      openDialog('산 아래의 장막',box=>{
+        const crop=el('canvas',{width:'460',height:'210',class:'wf-tent-photo',role:'img','aria-label':'천 지붕과 열린 입구가 보이는 산 아래 장막들'});
+        crop.getContext('2d').drawImage(ui.canvas,72,354,460,210,0,0,460,210);
+        box.append(crop,el('p',{},stage.beats[0].notes[s.mode]),el('small',{},'장면 안내 · 출 19:1–2'),
+          button('장막 위치 기록하기',()=>{dialog.addEventListener('close',advance,{once:true});dialog.close();},'wf-primary'));
+      },()=>{delete p.tentOpen;app.save();});
+    }
+    function sinaiTarget(){
+      walk(target());call(p.phase);
+      if(p.phase===0)seeTent();
+      if(p.phase===1)ui.panel.querySelector('input').focus();
+      if(p.phase===2)(ui.landmarks[p.mapped]||ui.tags.querySelector('button')).focus();
     }
     function target(){return stage.spots[p.phase===2?1:0];}
     function spotName(){return stage.marks[p.phase===2?1:0];}
@@ -300,9 +339,44 @@
       ui.status.textContent=surface[0]+' · '+(p.pos===target()?spotName()+'에 도착했어요.':'한 걸음 옮겼어요.');
       position();
     }
+    function saveDayPhoto(){
+      const i=p.frame;
+      if(p.observed&(1<<i))return;
+      p.observed|=1<<i;p.mapped++;app.save();play('found');resetHints();position();schedule();
+      ui.status.textContent=stage.frames[i]+'의 '+stage.trail[i][0]+' 사진을 수첩에 붙였어요.';
+      if(p.phase===2&&p.mapped===2&&!ui.panel.hidden)ui.tags.querySelector('button').focus();
+    }
+    function dayPhotos(complete=false){
+      const album=el('div',{class:'wf-album','aria-label':'두 날의 사진 수첩'});
+      const shutter=button('',saveDayPhoto,'wf-primary');
+      let displayed=-1;
+      ui.updatePhotos=()=>{
+        shutter.disabled=!!(p.observed&(1<<p.frame));
+        shutter.textContent=shutter.disabled?'수첩에 담은 사진':'사진 찍기 · '+stage.trail[p.frame][0];
+        if(displayed===p.observed)return;
+        displayed=p.observed;album.replaceChildren();
+        for(const [i,crop] of stage.photoCrops.entries()){
+          if(!(p.observed&(1<<i)))continue;
+          const source=el('canvas',{}),thumb=el('canvas',{width:224,height:123,role:'img','aria-label':stage.trail[i][0]});
+          paint(source,i===1);
+          thumb.getContext('2d').drawImage(source,...crop,0,0,224,123);
+          album.append(el('figure',{},thumb,el('figcaption',{},stage.frames[i]+' · '+stage.trail[i][0],
+            button('출 '+stage.evidence[i][1],()=>scrollText(s.index,stage.evidence[i][1])))));
+        }
+        album.hidden=!album.childElementCount;
+      };
+      ui.updatePhotos();
+      return el('div',{class:'wf-photo-log'},complete?null:shutter,album);
+    }
     function position(){
       ui.sprite.style.left=x(p.pos);ui.pin.style.left=x(target());placeCrew();
-      ui.pin.textContent=spotName();ui.left.disabled=p.pos===0;ui.right.disabled=p.pos===8;
+      ui.pin.textContent=spotName();
+      if(sinai()){
+        ui.pin.replaceChildren(el('span',{class:'wf-pin-caption'},['장막 살펴보기','산마루 조준','백성의 자리 찾기'][p.phase]));
+        const [cx,cy]=[[15,60],[62,21],[80,69]][p.phase];
+        ui.pin.style.left=cx+'%';ui.pin.style.top=cy+'%';
+      }
+      ui.left.disabled=p.pos===0;ui.right.disabled=p.pos===8;
       ui.field.setAttribute('aria-label',stage.title+'의 탐사로. 현재 '+(p.pos+1)+'번째 칸.');
       ui.track.textContent=p.pos===target()?'도착 · '+spotName():(p.pos<target()?'오른쪽':'왼쪽')+' '+Math.abs(target()-p.pos)+'칸 · '+spotName();
       ui.panel.hidden=!(s.actor===p.phase&&p.pos===target());
@@ -313,14 +387,13 @@
         b.hidden=!charting;
         b.setAttribute('aria-pressed',String(i<p.mapped));
       });
+      if(ui.frames)ui.frames.forEach((b,i)=>{
+        b.setAttribute('aria-pressed',String(p.frame===i));
+        b.textContent=stage.frames[i]+((p.observed&(1<<i))?' ✓':'');
+      });
       if(p.phase===2){
         ui.prompt.textContent=charting?'풍경에서 '+stage.trail[p.mapped][0]+' 찾기 · '+(p.mapped+1)+' / '+stage.trail.length:'관찰을 담았어요. 수첩에 붙일 이름표를 골라 보세요.';
         if(ui.frames) {
-          ui.frameBar.hidden=ui.panel.hidden;
-          ui.frames.forEach((b,i)=>{
-            b.setAttribute('aria-pressed',String(p.frame===i));
-            b.textContent=stage.frames[i]+((p.observed&(1<<i))?' ✓':'');
-          });
           ui.landmarks.forEach((b,i)=>{
             b.hidden=!charting||i!==p.frame;
             b.setAttribute('aria-pressed',String(!!(p.observed&(1<<i))));
@@ -332,12 +405,18 @@
         }
         ui.tags.hidden=charting;
       }
+      ui.updatePhotos?.();
+      if(sinai()){
+        ui.goal.textContent=['최온과 산 아래 장막 찾기','휴와 산마루에 초점 맞추기','온우와 장막·구름·백성 찾기'][p.phase];
+        ui.track.textContent=p.phase===2&&ui.panel.hidden?'백성의 자리 표식을 눌러 온우의 수첩을 여세요.':sinaiGuide();
+        if(charting)ui.landmarks.forEach((b,i)=>b.classList.toggle('wf-current',i===p.mapped));
+      }
       showHint();
     }
     function advance(){
       p.phase++;resetHints();
       if(stage.beats)p.beat=(stage.beatSteps||[0,2,4,stage.beats.length-1])[p.phase];
-      if(p.phase===3){s.earned[s.index]=true;baseCount();play('clear');}
+      if(p.phase===3){delete p.reviewEarly;s.earned[s.index]=true;baseCount();play('clear');}
       else play('found');
       app.save();draw(true);
     }
@@ -349,14 +428,14 @@
       showFace(i,right&&near?'smile':'surprised');
       ui.status.textContent=!near?'먼저 '+spotName()+'에 가 보세요.':right?'도구를 쓸 준비가 됐어요.':crew[p.phase].name+'의 '+labels[p.phase]+'가 필요해요.';
       position();
-      if(right&&near&&ui.frames)ui.frames[p.frame].focus();
+      if(right&&near&&ui.frames&&p.phase===2)ui.frames[p.frame].focus();
     }
     function showFace(i,expression){
-      ui.talk.replaceChildren(BO.wildFeel.portrait(crew[i].id,expression),el('div',{},el('b',{},'『탐험대 이야기』 '+crew[i].name),el('span',{},crew[i].lines[s.mode])));
+      ui.talk.replaceChildren(BO.wildFeel.portrait(crew[i].id,expression),el('div',{},el('b',{},'『탐험대 이야기』 '+crew[i].name),el('span',{},(sinai()&&i===p.phase?['산 아래 장막을 함께 들여다보자.','관측창에 산마루를 맞춰 보자.','장막과 구름, 백성이 선 곳을 짚어 보자.'][i]:crew[i].lines[s.mode]))));
     }
     function currentEvidence(){
       if(stage.groundPoint&&p.phase===1){const view=stage.observations[1];return [view.caption,view.verse];}
-      return stage.evidence[p.phase===2?(stage.frames?p.frame:1):0];
+      return stage.evidence[stage.frames?p.frame:p.phase===2?1:0];
     }
     function controls(){
       const evidence=currentEvidence();
@@ -364,21 +443,26 @@
       ui.panel.append(el('div',{class:'wf-evidence'},ui.evidence));
       if(p.phase===0){
         ui.panel.append(button('접사 렌즈로 살펴보기',()=>{
-          if(stage.groundPoint&&!p.grainMarked)inspect(0);
+          if(sinai())seeTent();
+          else if(stage.groundPoint&&!p.grainMarked)inspect(0);
           else advance();
         },'wf-primary'));
       }else if(p.phase===1){
         const value=el('output',{}),glass=el('canvas',{width:'130',height:'60','aria-hidden':'true'});
         const dial=el('input',{type:'range',min:'0',max:'2',step:'1','aria-label':stage.adjust});
+        const aimLabel=el('span',{}),criterion=el('small',{},'기준 눈금 · '+stage.units[stage.aim]);
         const sync=()=>{
+          const label=stage.frames&&p.frame===1?'관측창에 장막 입구 맞추기':stage.adjust;
+          dial.setAttribute('aria-label',label);aimLabel.replaceChildren(label,criterion);
           value.textContent=stage.units[p.dial];dial.value=String(p.dial);dial.setAttribute('aria-valuetext',stage.units[p.dial]);
           const g=glass.getContext('2d');if(!g)return;
-          const scale=1+(p.dial+1)*.4,[px,py]=stage.lens;
-          const w=137/scale,h=66/scale;g.clearRect(0,0,130,60);g.drawImage(ui.canvas,px-w/2+(p.dial-stage.aim)*14,py-h/2,w,h,0,0,130,60);
+          const scale=1+(p.dial+1)*.4,[px,py]=stage.frames&&p.frame===1?[556,222]:stage.lens;
+          const w=137/scale,h=66/scale;g.clearRect(0,0,130,60);const k=ui.canvas.width/800;g.drawImage(ui.canvas,(px-w/2+(p.dial-stage.aim)*14)*k,(py-h/2)*k,w*k,h*k,0,0,130,60);
           g.strokeStyle='#fceaac';g.beginPath();g.moveTo(56,30);g.lineTo(74,30);g.moveTo(65,22);g.lineTo(65,38);g.stroke();
         };
+        ui.syncDial=sync;
         dial.addEventListener('input',()=>{p.dial=Number(dial.value);app.save();sync();play('tap');});
-        ui.panel.append(el('label',{class:'wf-adjust'},glass,el('span',{},stage.adjust,el('small',{},'기준 눈금 · '+stage.units[stage.aim])),dial,value),
+        ui.panel.append(el('label',{class:'wf-adjust'},glass,aimLabel,dial,value),
           button('장비 고정',()=>{if(p.dial===stage.aim)advance();else{ui.status.textContent='기준 눈금은 '+stage.units[stage.aim]+'예요. 다시 맞춰 보세요.';play('tap');}},'wf-primary'));sync();
       }else{
         ui.prompt=el('strong',{'aria-live':'polite'});
@@ -421,7 +505,7 @@
     function draw(focus){
       s[bookmark]=s.index;stage=stages[s.index];p=s.stops[s.index];ui={};
       const complete=p.phase===3, heading=el('h1',{tabindex:'-1'},stage.title);
-      if(stage.observations){
+      if(stage.observations||stage.frames||sinai()){
         if(!music)music=BO.sceneMusic.create();
         updateScore();
       }else if(music){music.close();music=null;}
@@ -429,9 +513,13 @@
       if(music)nav.append(music.button);
       ui.canvas=el('canvas',{class:'wf-picture',role:'img','aria-label':stage.title+' · '+stage.card});
       p.available=true;
-      const later=p.phase>=(stage.groundPoint?1:2)&&(!stage.frames||complete||p.frame===1)&&!(stage.observations&&complete&&p.reviewEarly);
-      BO.drawWilderness(ui.canvas,stage.id,later);
+      const later=laterView();
+      paint(ui.canvas,later);
       ui.field=el('div',{class:'wf-field',tabindex:'0',role:'group'},ui.canvas);
+      if(sinai()){
+        ui.canvas.setAttribute('aria-label',later?'구름에 덮인 시내산과 오른쪽 멀리 모여 선 백성':'가운데 솟은 시내산과 그 아래 왼쪽에 펼쳐진 천 장막');
+        ui.field.classList.add('wf-sinai');ui.field.dataset.phase=p.phase;
+      }
       if(stage.id==='marah'||stage.id==='elim'){
         ui.ripple=el('i',{class:'wf-ripple wf-ripple-'+stage.id,'aria-hidden':'true'});
         ui.ripple.hidden=stage.id==='marah'&&!later;
@@ -442,17 +530,17 @@
       ui.field.append(...ui.friends,ui.sprite);ui.sprite.style.left=x(p.pos);placeCrew();
       const fieldEvidence=stage.groundPoint&&p.phase===1?stage.observations[1].caption:stage.evidence[later?1:0][0];
       const frameLabel=(stage.frames?stage.frames[Number(later)]:later?'나중 기록':'처음 기록')+' · '+fieldEvidence;
-      ui.field.append(stage.beats ? button(frameLabel,()=>ui.record.focus(),'wf-frame-label wf-read-frame') :
+      ui.field.append(stage.beats ? button(frameLabel,()=>{if(ui.library)ui.library.open=true;ui.record.focus();},'wf-frame-label wf-read-frame') :
         el('span',{class:'wf-frame-label'},frameLabel));
       const content=el('div',{class:'wf-body'});
       if(!complete){
         ui.thought=el('span',{class:'wf-thought','aria-hidden':'true'});ui.field.append(ui.thought);
-        ui.pin=button(spotName(),()=>walk(target()),'wf-pin');ui.field.append(ui.pin);
+        ui.pin=button(spotName(),sinai()?sinaiTarget:()=>walk(target()),'wf-pin');ui.field.append(ui.pin);
         ui.landmarks=stage.trail.map(([name,cx,cy],i)=>{
-          const mark=button('⌖',()=>{
+          const mark=button(sinai()?name:'⌖',()=>{
             if(stage.frames){
-              if(i!==p.frame||(p.observed&(1<<i)))return;
-              p.observed|=1<<i;
+              if(i===p.frame)saveDayPhoto();
+              return;
             }else if(i!==p.mapped){
               ui.status.textContent='먼저 '+stage.trail[p.mapped][0]+' 쪽을 살펴보세요.';
               play('tap');return;
@@ -477,33 +565,37 @@
         ui.roles=crew.map((a,i)=>button(a.name+' · '+a.age+'세',()=>call(i),'wf-role'));
         ui.roles.forEach((b,i)=>{b.setAttribute('aria-pressed',String(s.actor===i));b.setAttribute('aria-label',crew[i].name+' 호출 · '+crew[i].role);});
         ui.panel=el('section',{class:'wf-tool','aria-label':'현장 장비'});controls();
-        if(stage.frames&&p.phase===2){
+        if(stage.frames){
           ui.frames=stage.frames.map((label,i)=>button(label,()=>{
             p.frame=i;app.save();play('tap');
             BO.drawWilderness(ui.canvas,stage.id,i===1);
             ui.field.querySelector('.wf-frame-label').textContent=label+' · '+stage.evidence[i][0];
             const evidence=currentEvidence();ui.evidence.textContent=evidence[0]+' · 출 '+evidence[1];
-            position();
+            ui.syncDial?.();updateScore();position();
           }));
-          ui.frames.forEach((b,i)=>b.setAttribute('aria-label',stage.frames[i]));
-          ui.frameBar=el('div',{class:'wf-days',role:'group','aria-label':'두 날의 관찰창'},ui.frames);
+          ui.frames.forEach((b,i)=>{b.setAttribute('aria-label',stage.frames[i]);b.setAttribute('aria-pressed',String(i===p.frame));});
+          ui.frameBar=el('div',{class:'wf-daybook'},el('div',{class:'wf-days',role:'group','aria-label':'두 날의 관찰창'},ui.frames),dayPhotos());
         }
         const ask=button('동료에게 묻기',()=>{hint=Math.min(3,hint+1);showHint();schedule();});
-        content.append(el('div',{class:'wf-goal'},el('strong',{},labels[p.phase]+' · '+crew[p.phase].name),ui.track),
-          el('div',{class:'wf-row'},ui.left,ui.right,ask),ui.aside,
-          el('div',{class:'wf-team','aria-label':'동료 호출'},ui.roles),ui.talk,ui.panel,ui.status);
+        ui.goal=el('strong',{},labels[p.phase]+' · '+crew[p.phase].name);
+        const goal=el('div',{class:'wf-goal'},ui.goal,ui.track);
+        const moves=el('div',{class:'wf-row'},ui.left,ui.right,ask);
+        const team=el('div',{class:'wf-team','aria-label':'동료 호출'},ui.roles);
+        if(sinai()){
+          content.append(goal,ui.panel,ui.status,el('details',{class:'wf-companions'},el('summary',{},'직접 걷기 · 동료 부르기'),moves,ui.aside,team,ui.talk));
+        }else content.append(goal,moves,ui.aside,team,ui.talk,ui.panel,ui.status);
         showFace(s.actor,'neutral');position();showHint();
       }else{
         ui.cardText=el('p',{},stage.notes[s.mode]);
         const reward=el('section',{class:'wf-prize'},el('h2',{},'현장 기록 보관 완료'),el('b',{},stage.card+' 관찰 카드'),ui.cardText,
           button('말씀 인장 · 출 '+stage.seal,()=>scrollText(s.index,true)),
-          button(stage.observations&&p.reviewEarly?'나중 기록 다시 보기':'처음 기록 다시 보기',event=>{
+          button(p.reviewEarly?'나중 기록 다시 보기':'처음 기록 다시 보기',event=>{
             const earlier=event.currentTarget.textContent==='처음 기록 다시 보기';
-            if(stage.observations){p.reviewEarly=earlier;app.save();updateScore();}
+            p.reviewEarly=earlier;app.save();updateScore();
             if(stage.beats){
               p.beat=earlier?0:(stage.beatSteps?.[3]??stage.beats.length-1);ui.updateRecord();app.save();
             }
-            BO.drawWilderness(ui.canvas,stage.id,!earlier);
+            paint(ui.canvas,!earlier);
             if(ui.ripple)ui.ripple.hidden=stage.id==='marah'&&earlier;
             ui.field.querySelector('.wf-frame-label').textContent=(earlier?'처음 기록':'나중 기록')+' · '+stage.evidence[earlier?0:1][0];
             event.currentTarget.textContent=earlier?'나중 기록 다시 보기':'처음 기록 다시 보기';
@@ -522,7 +614,17 @@
       }
       if(stage.beats){
         ui.record=storyRecord();
-        if(complete)content.insertBefore(ui.record,content.children[1]);else content.append(ui.record);
+        if(sinai()){
+          ui.library=el('details',{class:'wf-library'},el('summary',{},'전체 사건 기록 · 출 19–20장'),ui.record);
+          content.append(ui.library);
+        }else if(complete)content.insertBefore(ui.record,content.children[1]);else content.append(ui.record);
+      }
+      if(stage.frames&&complete){
+        if(p.observed)content.append(dayPhotos(true));
+      }
+      if(sinai()&&!complete){
+        const subject=stage.beats[[0,2,3][p.phase]];
+        ui.context=el('p',{class:'wf-arrival'},subject.notes[0],el('small',{},'출 '+subject.ref));
       }
       const regionName=mountain?'시내산':'광야';
       const stops=el('details',{class:'wf-stops'},el('summary',{},regionName+' 답사 경로'));
@@ -539,13 +641,14 @@
           el('strong',{},'관찰경'),el('div',{class:'wf-view-tabs',role:'group','aria-label':'확대할 풍경'},sights)));
       }
       const gesture=e=>music?.gesture(e);
-      ui.screen=el('main',{class:'screen wf-screen',on:{pointerdown:gesture,keydown:gesture,click:gesture}},nav,el('div',{class:'wf-scroll'},el('header',{class:'wf-heading'},el('p',{},regionName+' 답사 '+(s.index-start+1)+' / '+(end-start+1)+' · 출 '+stage.range),heading),view,content));
+      ui.screen=el('main',{class:'screen wf-screen'+(sinai()?' wf-camp-screen':''),on:{pointerdown:gesture,keydown:gesture,click:gesture}},nav,el('div',{class:'wf-scroll'},el('header',{class:'wf-heading'},el('p',{},regionName+' 답사 '+(s.index-start+1)+' / '+(end-start+1)+' · 출 '+stage.range),heading,ui.context),view,content));
       app.show(ui.screen);if(focus)heading.focus({preventScroll:true});schedule();
     }
     document.addEventListener('visibilitychange',visibility);window.addEventListener('pagehide',pageHide);
     window.addEventListener('blur',pageHide);window.addEventListener('focus',schedule);
     draw(false);app.save();
     if(showShelf)shelf();
+    else if(sinai()&&p.phase===0&&p.tentOpen)seeTent();
     else if(stage.observations&&inRange(p.inspection,0,stage.observations.length-1)){
       if(p.readInspection)inspectVerse(p.inspection);else inspect(p.inspection,false);
     }

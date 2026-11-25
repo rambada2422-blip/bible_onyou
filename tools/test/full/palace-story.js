@@ -32,9 +32,11 @@ async function check(browser, origin, entry, width, height) {
     assert.equal(ch.beats.filter(b => b.film).length, 1);
     for (const [i, b] of ch.beats.entries()) {
       assert.equal(await page.locator('.palace-headline h1').innerText(), ch.title);
+      if(b.film)await page.locator('.palace-reading summary').click();
       assert.equal(await page.locator('.palace-words').innerText(), b.words);
       assert.equal(await page.locator('.palace-sources .ref').innerText(), b.ref);
-      assert.equal(await page.locator('video').count(), 0);
+      const autoFilm = b.film && ch.beats[i-1]?.options;
+      assert.equal(await page.locator('video').count(), autoFilm ? 1 : 0);
       if (number === 0 && i === 2) {
         if (shots) await page.screenshot({path:path.join(out,'바로의_첫_대답.png')});
         const position = (await saved()).palace;
@@ -60,8 +62,17 @@ async function check(browser, origin, entry, width, height) {
         if (shots && number === 1) await page.screenshot({path:path.join(out,'개구리_약속_단서.png')});
       }
       if (b.film) {
-        const before = requests.length;
-        await tap('영상 보기 · ' + ch.seconds + '초');
+        const before = autoFilm ? 0 : requests.length;
+        if (!autoFilm) {
+          const watch = page.getByRole('button',{name:'영상 보기 · '+ch.seconds+'초',exact:true});
+          assert(await watch.isHidden());
+          await page.locator('.palace-panel .palace-option').nth(number%2).click();
+          if(number===1){
+            await page.reload();if(fromHub)await tap('이어서 탐험하기');
+            assert.equal(await page.locator('.palace-panel .palace-option').nth(number%2).getAttribute('aria-pressed'),'true');
+          }
+          await watch.click();
+        }
         if (testRetry) {
           await page.getByRole('button', {name:'영상 다시 불러오기'}).waitFor();
           assert.equal(requests[before], ch.url);
@@ -73,6 +84,8 @@ async function check(browser, origin, entry, width, height) {
         } else {
           await playToEnding(page, number + 1, ch.seconds);
           await page.getByRole('button', {name:'세 친구와 현장 살펴보기'}).waitFor();
+          const outcome=await page.evaluate(n=>BO.palaceChapters[n].beats[BO.palaceWatchScenes[n].after.beat].words,number);
+          assert.equal(await page.locator('.palace-status p').innerText(),outcome);
         }
       }
       const footer = await forward.boundingBox();
@@ -86,7 +99,7 @@ async function check(browser, origin, entry, width, height) {
     await tap('← 시간표');
     await tap('모세와 바로의 대화 · 열 재앙 영상');
     assert.equal((await saved()).palace.chapter, 0);
-    await tap('다음'); await tap('이전'); assert.equal((await saved()).palace.beat,0);
+    await forward.click(); await tap('이전'); assert.equal((await saved()).palace.beat,0);
     await tap('← 돌아가기'); assert(await page.getByText('출애굽기 시간표',{exact:true}).isVisible());
   }
   assert.deepEqual(errors,[]);

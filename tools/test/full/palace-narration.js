@@ -25,6 +25,7 @@ async function check(browser, url) {
   let total=0;
   for (const [chapterIndex,chapter] of chapters.entries()) {
     for (const [beatIndex,beat] of chapter.beats.entries()) {
+      if(beat.film)await page.locator('.palace-reading summary').click();
       await hear('읽어 줘');
       total++;
       if (chapterIndex===0 && beatIndex===0) {
@@ -47,6 +48,9 @@ async function check(browser, url) {
       }
       if (chapterIndex===0 && beat.film) {
         await page.route('**/*.mp4',route=>route.abort());
+        await page.reload();
+        await page.locator('.palace-reading summary').click();
+        await hear('읽어 줘');
         await button('영상 보기 · ' + chapter.seconds + '초').click();
         assert(await page.evaluate(() => window.played.at(-1).paused));
         await hear('읽어 줘');

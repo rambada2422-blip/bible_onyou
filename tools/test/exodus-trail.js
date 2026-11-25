@@ -134,7 +134,7 @@ async function walk(page, origin, output) {
     await freshPage.goto(new URL('/index.html#home', page.url()).href);
     const tap = name => freshPage.getByRole('button',{name,exact:true}).click();
     await tap('탐험 시작'); await freshPage.locator('.tier').first().click(); await tap('출발 준비 완료');
-    await tap('모세와 바로의 대화 · 열 재앙 영상'); await tap('다음');
+    await tap('모세와 바로의 대화 · 열 재앙 영상'); await tap('모세와 아론의 말 읽기');
     const words = await freshPage.locator('.palace-words').innerText();
     await freshPage.reload();
     assert.equal(await freshPage.locator('.palace-words').innerText(), words);

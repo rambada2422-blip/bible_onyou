@@ -1,4 +1,4 @@
-"""Original wilderness chamber music. Run with --manna to render only the four morning views."""
+"""Original wilderness music. Use --manna for the morning or --sabbath for the two days."""
 import argparse
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
@@ -10,13 +10,33 @@ score = module_from_spec(spec)
 spec.loader.exec_module(score)
 
 
+def camp_voice(kind, pitch, seconds, rng):
+    if kind not in ("clay", "flute"):
+        return score.voice(kind, pitch, seconds, rng)
+    t = np.arange(round(seconds * score.RATE)) / score.RATE
+    frequency = 440 * 2 ** ((pitch - 69) / 12)
+    phase = 2 * np.pi * frequency * t
+    if kind == "clay":
+        # A pitched hollow strike, with a brief wash of upper, inharmonic modes.
+        wave = (np.sin(phase) * np.exp(-10 * t)
+                + .44 * np.sin(phase * 2.71) * np.exp(-20 * t)
+                + .25 * np.sin(phase * 4.13) * np.exp(-37 * t))
+        attack, release = .004, .045
+    else:
+        phase += .16 * np.sin(2 * np.pi * 4.3 * t) * (1 - np.exp(-2 * t))
+        wave = np.sin(phase) + .12 * np.sin(2 * phase) + .07 * np.sin(3 * phase)
+        wave *= .97 + .03 * np.sin(2 * np.pi * 1.13 * t)
+        attack, release = .15, .25
+    return wave * np.minimum(t / attack, 1) * np.minimum((seconds - t) / release, 1)
+
+
 def record(name, bpm, meter, roots, perform, peak=.66):
     rng = np.random.default_rng(1522 + bpm)
     beat = 60 / bpm
     mix = np.zeros((round(len(roots) * meter * beat * score.RATE), 2))
     for bar, root in enumerate(roots):
         def note(voice, interval, at, beats, volume, pan=.5):
-            wave = score.voice(voice, root + interval, beats * beat, rng) * volume
+            wave = camp_voice(voice, root + interval, beats * beat, rng) * volume
             score.place(mix, wave, (bar * meter + at) * beat, pan)
         perform(note, bar)
     dry = mix.copy()
@@ -129,11 +149,55 @@ def render_manna():
     record("manna-measure", 64, 3, [50, 43, 47, 50, 45, 50], morning_measure, peak=.41)
 
 
+def sixth_day(note, bar):
+    # The two strong beats divide into threes. A rising second falls a fourth.
+    if bar % 2 == 0:
+        for at, pitch, level in ((0, 24, .43), (1/3, 26, .30), (2/3, 21, .37)):
+            note("clay", pitch, at, .43, level, .42)
+    note("pluck", 0, 0, .95, .47, .45)
+    note("low_drum", 0, 1, .29, .31, .5)
+    note("short_strings", 7, 1, .43, .31, .36)
+    if bar % 2 == 0:
+        note("pluck", 16, 1 + 2/3, .46, .36, .65)
+    else:
+        note("flute", 19 if bar % 4 == 1 else 16, 0, .88, .21, .59)
+        note("clay", 12, 1, .45, .31, .61)
+        note("clay", 19, 1 + 1/3, .42, .27, .63)
+        if bar % 4 == 1:
+            note("pluck", 14, 1 + 2/3, .47, .29, .34)
+
+
+def seventh_day(note, bar):
+    # The same three pitches now occupy two bars with breath between phrases.
+    note("bow", 0, 0, 3.72, .17, .43)
+    if bar % 2 == 0:
+        note("flute", 24, .15, 1.47, .26, .54)
+        note("flute", 26, 2.11, 1.12, .21, .56)
+        note("pluck", 7, 3.28, .61, .14, .34)
+    else:
+        note("flute", 21, .08, 2.08, .23, .54)
+        note("bow", 7, .15, 2.30, .10, .65)
+        # The final bar leaves a little clear air before the loop begins again.
+        if bar == 5:
+            note("flute", 19, 2.74, .78, .15, .54)
+
+
+def render_sabbath():
+    record("sabbath-sixth", 100, 2, [43, 48, 40, 50, 43, 47, 48, 50,
+                                     43, 48, 40, 45, 48, 50, 43, 43], sixth_day, peak=.74)
+    record("sabbath-rest", 68, 4, [43, 43, 48, 48, 43, 43], seventh_day, peak=.28)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manna", action="store_true")
-    if parser.parse_args().manna:
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--manna", action="store_true")
+    group.add_argument("--sabbath", action="store_true")
+    args = parser.parse_args()
+    if args.manna:
         render_manna()
+    elif args.sabbath:
+        render_sabbath()
     else:
         record("road", 77, 4, [45, 43, 45, 41, 43, 40], road)
         record("bitter", 66, 3, [45, 45, 43, 45, 46, 45], bitter)

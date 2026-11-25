@@ -49,9 +49,10 @@
       }}}, app.icon('speaker'), caption);
       return button;
     }
-    function hide() { if (document.hidden) stopNarration(); }
+    function pauseMedia() { stopNarration(); if (video) video.pause(); }
+    function hide() { if (document.hidden) pauseMedia(); }
     document.addEventListener('visibilitychange', hide);
-    window.addEventListener('pagehide', stopNarration);
+    window.addEventListener('pagehide', pauseMedia);
     function stop() {
       stopNarration();
       app.stopReading();
@@ -62,18 +63,18 @@
         video = null;
       }
     }
-    function go(chapter, beat) {
+    function go(chapter, beat, startFilm=false) {
       stop();
       s.chapter = chapter;
       s.beat = beat;
       delete s.choice;
       app.save();
-      draw(true);
+      draw(true, startFilm);
     }
     function detach() {
       stop();
       document.removeEventListener('visibilitychange', hide);
-      window.removeEventListener('pagehide', stopNarration);
+      window.removeEventListener('pagehide', pauseMedia);
     }
     function exit() {
       detach();
@@ -81,7 +82,7 @@
       app.save();
       leave();
     }
-    function draw(focus) {
+    function draw(focus, startFilm=false) {
       const chapter = chapters[s.chapter], beat = chapter.beats[s.beat];
       const final = s.chapter === chapters.length - 1 && s.beat === chapter.beats.length - 1;
       // 한밤중의 부름에는 빛이 드는 낮 왕궁 대신 닫힌 문을 보여 준다.
@@ -112,8 +113,18 @@
         else go(s.chapter + 1, 0);
       }
       const nextChapter = s.beat === chapter.beats.length - 1;
-      const next = el('button', {class:'btn onpaper', on:{click:advance}},
-        final ? '이야기 마치기' : nextChapter ? '다음 재앙으로' : chapter.beats[s.beat + 1].film ? '재앙 장면으로' : '다음');
+      const scene = BO.palaceWatchScenes[s.chapter];
+      const upcoming = chapter.beats[s.beat+1];
+      const filmIndex = chapter.beats.findIndex(b => b.film);
+      const quizBeforeFilm = beat.options && upcoming?.film;
+      const watchLabel = '영상 보기 · ' + chapter.seconds + '초';
+      const nextLabel = final ? '이야기 마치기' : nextChapter ? '다음 재앙으로' :
+        upcoming.film ? '현장으로 · ' + scene.place : upcoming.options ? '단서 맞추기' :
+        upcoming.who ? upcoming.who + '의 말 읽기' : '그 뒤의 기록 읽기';
+      const next = el('button', {class:'btn onpaper', on:{click:() => {
+        if (quizBeforeFilm) go(s.chapter,s.beat+1,true); else advance();
+      }}}, quizBeforeFilm ? watchLabel : nextLabel);
+      let playFilm,filmFooter;
       if (beat.options) {
         const options = el('div', {class:'palace-options', role:'group', 'aria-label':beat.words});
         const answer = el('p', {class:'palace-feedback', role:'status'});
@@ -124,6 +135,7 @@
           next.disabled = !chosen || s.choice !== beat.answer;
           answer.textContent = chosen ? s.choice === beat.answer ? beat.evidence : beat.hint : '';
           listenToAnswer.replaceChildren();
+          if (chosen && s.choice === beat.answer) listenToAnswer.append(el('p', {class:'palace-invite'}, quizBeforeFilm ? '그 뒤에 어떤 일이 일어났을까요? 영상에서 확인해 봐요.' : '이 답이 나온 순간을 영상에서 다시 찾아볼까요?'));
           if (chosen) {
             const kind = s.choice === beat.answer ? 'evidence' : 'hint';
             listenToAnswer.append(listenButton(clip + '-' + kind, '풀이 듣기', readStatus));
@@ -136,7 +148,7 @@
         panel.append(options, answer, listenToAnswer);
         showChoice();
       }
-      if (beat.film) {
+      if (beat.film || beat.options && !quizBeforeFilm) {
         // 동의한 장면 한 편만 요청한다. 영상이 막혀도 위의 글로 계속할 수 있다.
         const notice = el('p', {class:'palace-status', role:'status'});
         function play() {
@@ -153,7 +165,13 @@
             playButton.textContent = '영상 다시 불러오기'; playButton.hidden = false;
           });
           player.addEventListener('ended', function () {
-            if (video === player) notice.replaceChildren(el('button', {type:'button', class:'watch-after-film', on:{click:watch.open}}, '세 친구와 현장 살펴보기'));
+            if (video !== player) return;
+            const outcome=chapter.beats[scene.after.beat];
+            notice.replaceChildren(el('strong', {}, '영상 뒤의 기록'),el('p', {}, outcome.words),app.refChip(outcome.ref),
+              el('button', {type:'button', class:'watch-after-film', on:{click:watch.open}}, '세 친구와 현장 살펴보기'));
+            if(beat.film)next.textContent=nextLabel;
+            playButton.textContent='영상 다시 보기'; playButton.hidden=false;
+            notice.scrollIntoView({block:'nearest'});
           });
           playButton.hidden = true;
           notice.textContent = '';
@@ -163,22 +181,55 @@
           });
           player.focus();
         }
-        const playButton = el('button', {class:'palace-film-play', on:{click:play}}, '영상 보기 · ' + chapter.seconds + '초');
-        panel.append(playButton, notice);
+        const playButton = el('button', {class:'palace-film-play', on:{click:()=>{
+          if(beat.film && !chapter.beats[s.beat-1]?.options && ![0,1].includes(s.filmGuesses?.[s.chapter])){
+            panel.querySelector('.palace-option').focus();return;
+          }
+          play();
+        }}},  beat.film ? watchLabel : '이 답의 장면 다시 보기');
+        playFilm=play;
+        if (beat.film) {
+          const reading=el('details',{class:'palace-reading'},el('summary',{},'글로 장면 읽기'),words,sources,readStatus);
+          const invitation=el('p',{class:'palace-invite',role:'status'});
+          const img=BO.palaceWatchImages?.[scene.photo] || 'assets/palace-watch/'+scene.photo+'.jpg';
+          hero.replaceChildren(el('img',{src:img,alt:scene.place}));
+          if (!chapter.beats[s.beat-1]?.options) {
+            if (!Array.isArray(s.filmGuesses)) s.filmGuesses=[];
+            const guesses=el('div',{class:'palace-options',role:'group','aria-label':scene.question});
+            const sync=()=>{
+              const guess=s.filmGuesses[s.chapter], picked=guess===0||guess===1;
+              Array.from(guesses.children).forEach((b,i)=>b.setAttribute('aria-pressed',String(i===guess)));
+              playButton.textContent=picked?watchLabel:'어떻게 될지 예상하기';
+              invitation.textContent=picked?'이제 네 예상과 실제로 일어난 일을 영상에서 비교해 봐요.':'어떻게 되었을지 먼저 예상해 보세요.';
+            };
+            scene.guesses.forEach((label,i)=>guesses.append(el('button',{class:'palace-option',on:{click:()=>{
+              s.filmGuesses[s.chapter]=i;app.save();sync();playButton.focus();
+            }}},label)));
+            panel.append(el('h2',{class:'palace-question'},scene.question),guesses);
+            sync();
+          } else invitation.textContent='강물이 변한 뒤, 사람들과 바로는 어떻게 했을까요?';
+          filmFooter=playButton;
+          panel.append(invitation,notice,reading);
+          next.textContent='글로 이어 보기';
+        } else {
+          panel.append(playButton,notice);
+          const sync=()=>{playButton.hidden=s.choice!==beat.answer;};
+          panel.querySelector('.palace-options').addEventListener('click',sync); sync();
+        }
       }
       const previous = el('button', {class:'btn plain', on:{click:function () {
         if (s.beat) go(s.chapter, s.beat - 1);
         else go(s.chapter - 1, chapters[s.chapter - 1].beats.length - 1);
       }}}, '이전');
       previous.disabled = s.chapter === 0 && s.beat === 0;
-      const footer = el('div', {class:'sheet-foot pad palace-foot'}, previous, next);
+      const footer = el('div', {class:'sheet-foot pad palace-foot'}, previous, next, filmFooter);
+      if(filmFooter)footer.classList.add('palace-cinema-foot');
       if (final) {
         panel.append(el('button', {class:'btn onpaper', on:{click:function () {
           detach(); s.finished = true; s.active = false; app.save(); app.openPassoverRoom();
         }}}, '유월절을 준비한 집 살펴보기'),
           el('button', {class:'palace-restart', on:{click:() => go(0, 0)}}, '첫 대화 다시 읽기'));
       }
-      const filmIndex = chapter.beats.findIndex(b => b.film);
       const when = beat.film ? '재앙 장면' : s.beat < filmIndex ? '재앙이 일어나기 전' : '재앙이 일어난 뒤';
       const section = el('main', {class:'palace-scroll'}, el('div', {class:'palace-headline'},
         el('p', {class:'palace-chapter'}, (s.chapter + 1) + ' / 10 · ' + when), heading, watch.bar,
@@ -191,6 +242,7 @@
       app.show(el('div', {class:'screen palace-screen'}, nav, section, footer, watch.dialog));
       if (focus) heading.focus({preventScroll:true});
       watch.resume();
+      if (startFilm) playFilm?.();
     }
     if (s.finished && s.chapter === chapters.length - 1 && s.beat === chapters[s.chapter].beats.length - 1) {
       // 끝에서 나간 다음에는 아이가 다시 처음부터 읽을 수 있다.

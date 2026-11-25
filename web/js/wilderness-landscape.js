@@ -2,7 +2,6 @@
 (function () {
   'use strict';
   const themes = {
-    sabbath:['#8496ad','#ebc2a5','#fae1ab','#b79585','#967964','#e6c18e','#bb9062'],
     sinai:['#596e83','#b9c9c8','#edd3a4','#a1988d','#868278','#dcbf8f','#ae8562'],
     calf:['#617e91','#c9c8ae','#efcd95','#a29c84','#8b8271','#ddbe91','#ac876a'],
     rock:['#537d8d','#c3ced0','#efdcab','#aaa396','#8c877b','#dcb88d','#aa8565']
@@ -129,6 +128,153 @@
         stroke('M-5 -33 L-5 -30 M-5 -29 Q-21 -12 -44 1 M16 -25 Q27 -12 45 0','#785944',.9);
         g.restore();
       }
+      function grains(x,y,rx,ry,count,size){
+        for(let i=0;i<count;i++){
+          const a=rand()*Math.PI*2,r=Math.sqrt(rand()),xx=x+Math.cos(a)*rx*r,yy=y+Math.sin(a)*ry*r;
+          const k=size*(.4+rand()*.7);
+          oval(xx+.2,yy+.65,k*1.05,k*.55,'#876b5b8a');
+          oval(xx,yy,k,k*.63,['#fff3d4','#eddfc1','#f7e7c5'][i%3]);
+        }
+      }
+      // 옆으로 굽힌 허리와 땅으로 뻗는 팔을 한 윤곽으로 읽을 수 있게 그린다.
+      function gatherer(x,y,k,colours,flip){
+        const [robe,light,wrap]=colours;
+        g.save();g.translate(x,y);g.scale(k*(flip?-1:1),k);
+        shape('M-54 1 Q-34 -4 -6 -4 L28 -3 Q34 -2 27 1 L-28 4Z','#715b653e');
+        shape('M-23 -23 Q-31 -20 -34 -12 L-41 -7 Q-43 -4 -38 -3 L-27 -4 Q-21 -13 -13 -12 L1 -7 L13 -6 L15 -9 L4 -14 L-5 -24Z','#795440');
+        shape('M-27 -25 Q-25 -37 -13 -46 Q-4 -52 6 -48 L13 -40 Q15 -32 2 -25 L-3 -16 L5 -10 L17 -7 Q19 -2 8 -2 L-12 -4 L-21 -9 L-38 -6 Q-42 -6 -42 -11 Q-32 -15 -27 -25Z',robe);
+        shape('M-24 -26 Q-19 -37 -9 -40 L2 -44 L6 -40 Q-3 -33 -11 -24 L-15 -14 L-3 -8 L-15 -10 L-27 -9 L-20 -17Z',light);
+        stroke('M-18 -11 Q-12 -17 -10 -22 M-12 -13 Q-9 -16 -5 -20','#493c472f',1.5);
+        shape('M-6 -45 Q0 -54 9 -53 L17 -48 L18 -42 L21 -37 L18 -36 L16 -33 L9 -34 L5 -39 L0 -38Z','#bb805a');
+        shape('M-14 -43 Q-9 -51 -4 -54 Q7 -61 16 -53 L19 -48 Q12 -49 6 -46 L0 -42 L-3 -35 Q-12 -35 -17 -38Z',wrap);
+        stroke('M-10 -45 Q0 -53 10 -53','#f8d5a783',1.45);
+        stroke('M12 -43 L14 -42','#604d47',.9);
+        shape('M-5 -38 Q-1 -40 3 -39 Q8 -35 12 -28 L18 -23 L13 -19 Q4 -21 -3 -29 Q-6 -33 -5 -38Z',light);
+        stroke('M15 -21 Q17 -17 23 -13 L30 -7 L28 -5 M28 -8 L33 -7','#b47a56',3.4);
+        g.restore();
+      }
+      function dish(x,y,k,full){
+        g.save();g.translate(x,y);g.scale(k,k);
+        oval(-5,1,28,3.8,'#755e5845');
+        shape('M-22 -12 Q-19 -1 -6 1 Q3 4 14 0 L23 -12Z',grad(-12,2,['#c78a59','#a56647','#81513e']));
+        oval(0,-12,22.6,6.2,'#d9a574');oval(0,-12,19.8,4.65,'#76513e');
+        if(full){oval(0,-12.3,18.8,3.9,'#e6d0a6');grains(0,-13,17,3,47,.85);}
+        stroke('M-20 -11 Q0 -1 21 -11','#e5b27d',1.4);g.restore();
+      }
+      function twoDaysInCamp(){
+        // 같은 언덕에서 본 두 기록. 능선, 길, 장막, 그릇 관찰점은 고정한다.
+        g.fillStyle=grad(0,172,later?['#526e86','#acb4b5','#edd4ae']:['#637792','#d2b1ac','#f7d7a5']);
+        g.fillRect(0,0,W,H);
+        const sunlight=g.createRadialGradient(96,114,2,96,114,196);
+        sunlight.addColorStop(0,'#fff1baaf');sunlight.addColorStop(.57,'#ffe1ad45');sunlight.addColorStop(1,'#ffe1ad00');
+        g.fillStyle=sunlight;g.fillRect(0,0,302,207);
+        shape('M0 54 Q51 48 100 52 Q137 55 157 52 Q128 60 87 58 T0 60Z M245 47 Q299 39 331 43 Q359 47 391 43 Q365 53 316 49 T245 47Z M471 77 Q517 71 555 74 Q595 77 625 73 Q603 83 559 80 T471 77Z','#fff0d44f');
+        shape('M0 155 L0 113 L29 115 L55 106 L92 111 L121 98 L147 98 L165 88 L190 92 L216 83 L247 83 L262 75 L278 75 L290 82 L305 80 L334 102 L360 103 L380 111 L400 110 L437 128 L468 124 L496 129 L518 123 L543 127 L569 116 L605 118 L642 103 L670 104 L705 91 L735 94 L753 89 L800 91 L800 187Z',grad(74,176,['#a39aa4','#c5aaa5','#e4c5aa']));
+        shape('M-3 152 L20 146 L38 146 L74 129 L90 127 L113 116 L142 117 L156 111 L180 112 L204 96 L241 96 L253 87 L277 87 L297 101 L316 104 L343 121 L366 122 L390 133 L411 133 L452 151 L485 151 L502 168 L0 180Z',grad(87,177,['#af8f8a','#c09c8c','#cfaf92']));
+        shape('M45 148 L83 132 L97 129 L110 120 L139 120 L124 126 L122 132 L105 139 L99 146 L76 151Z M134 152 L172 131 L186 128 L199 117 L226 109 L240 98 L252 97 L260 90 L275 89 L267 100 L255 105 L250 114 L230 122 L219 132 L197 139 L181 147Z M267 136 L289 117 L301 112 L312 111 L297 122 L292 130Z','#927e80');
+        stroke('M78 129 L96 125 L112 116 L142 117 M180 113 L204 97 L242 97 L254 88 L275 88 M318 106 L343 121 L367 123','#ebc49f',1.7);
+        shape('M425 165 L453 154 L484 156 L509 143 L528 141 L549 131 L576 128 L599 115 L624 116 L644 104 L673 104 L691 92 L711 89 L724 85 L750 85 L774 72 L800 70 L800 179Z',grad(73,174,['#867f8b','#a48e91','#b99f91']));
+        shape('M584 148 L603 133 L619 131 L637 118 L650 116 L661 108 L669 107 L658 118 L653 126 L630 136 L622 143Z M690 133 L710 115 L722 112 L732 100 L746 96 L756 87 L769 84 L753 103 L740 108 L732 118 L714 126Z','#837c86');
+        shape('M0 164 Q143 151 250 159 Q364 170 489 153 Q610 139 802 153 L802 398 L-2 398Z',grad(152,396,later?['#c7ac8c','#d0ae84','#ad8a70','#8b7065']:['#d5b795','#deb98c','#bd9473','#917363']));
+        shape('M0 182 Q125 163 231 173 T452 166 Q554 156 688 159 Q530 153 418 174 Q321 189 208 178 Q113 174 0 194Z','#f5d2a06e');
+        // 가늘어지는 옛길이 들판에서 장막들 사이로 들어간다.
+        shape('M-12 348 Q120 292 242 287 Q377 280 432 251 Q503 215 560 210 Q520 211 461 241 Q395 280 257 274 Q116 267 -12 314Z',grad(210,349,['#e9c79d','#f2ce9d','#d7ac85']));
+        for(let i=0;i<1150;i++){
+          const x=rand()*W,y=167+rand()*229,depth=(y-167)/229;
+          line(x,y,x+1+rand()*8*depth,y-.2-rand()*.5,i%2?'#fff0bd50':'#705c6242',.5+depth*.75);
+        }
+        for(let i=0;i<21;i++){
+          const x=36+i*36+Math.sin(i)*8,y=171+Math.sin(i*.73)*3;
+          stripedTent(x,y,.16+(i%4)*.038);
+        }
+        for(const [x,y,k] of [[17,188,.73],[119,175,.33],[403,182,.49],[458,179,.44],[502,178,.41],[699,178,.4],[771,191,.86]])
+          stripedTent(x,y,k);
+        for(const [x,y,k,id] of [[74,188,.19,2],[79,189,.22,0],[427,184,.22,3],[471,186,.21,2],[726,190,.24,1]])traveller(x,y,k,people[id]);
+        // 횡으로 긴 천막의 햇빛 든 주름과 열린 그늘을 두 날의 공통 표지로 삼는다.
+        shape('M473 225 L512 211 L621 209 Q645 214 705 230 L668 236 L567 228Z','#63576138');
+        shape('M485 222 L508 196 L532 156 L555 151 L612 140 L642 148 L661 173 L687 215 L693 220 L631 224Z',grad(140,224,['#8a564c','#995e49','#714c42']));
+        shape('M488 220 Q516 194 532 156 Q555 156 611 140 Q599 163 589 179 L563 181 Q534 185 522 185 L501 222Z',grad(143,218,['#e7be8c','#c69b74','#b77d57']));
+        shape('M522 185 Q555 185 590 177 L608 219 L521 223Z',grad(176,224,['#493d40','#655049','#80614d']));
+        shape('M587 177 L612 140 Q622 175 633 188 L638 222 Q618 215 610 218Z','#bd8058');
+        shape('M611 142 L642 149 Q655 176 673 196 L690 219 L646 217 Q628 177 611 142Z','#a77158');
+        for(const x of [529,551,572]){
+          const y=157-(x-529)*.26;
+          stroke('M'+x+' '+y+' q-6 13 -17 28','#754c4657',2.4);
+          stroke('M'+(x+3)+' '+y+' q-6 14 -18 28','#f3c99585',1.3);
+        }
+        stroke('M484 226 Q517 189 532 154 M613 137 L612 142 M612 141 Q659 179 704 223 M517 183 L514 223 M599 178 L604 220','#775847',2);
+        stroke('M522 185 Q547 185 568 180 T590 176','#efd0a2',2);
+        jar(652,223,.66);jar(664,226,.44);
+        // 테두리가 있는 자루·토기는 수확물의 다양한 용기다.
+        function sack(x,y,k){
+          g.save();g.translate(x,y);g.scale(k,k);
+          shape('M-13 1 Q-18 -5 -12 -15 L-6 -25 L-10 -31 L0 -29 L8 -32 L5 -25 Q17 -13 17 -4 Q19 1 10 3Z',grad(-30,3,['#ceaf7c','#b58a5b','#8f694c']));
+          stroke('M-6 -24 Q0 -22 6 -25 M-9 -6 Q-11 -13 -7 -17 M4 -13 Q8 -10 8 -4','#845f46',1.5);
+          stroke('M-8 -28 L-1 -25 L5 -29 M-11 0 Q-5 2 3 1','#edd0a0',1.1);
+          g.restore();
+        }
+        // 옷자락을 펼치고 무릎에 손을 얹어, 몸을 굽혀 줍는 자세와 구별한다.
+        function seated(x,y,k,colours,flip){
+          const [robe,light,wrap]=colours;
+          g.save();g.translate(x,y);g.scale((flip?-1:1)*k,k);
+          oval(0,1,23,3,'#51444d38');
+          shape('M-8 -20 Q-2 -21 3 -16 Q12 -22 16 -18 Q21 -13 27 -5 Q31 0 23 1 L-9 1 Q-20 1 -19 -6Z',robe);
+          shape('M2 -13 Q14 -24 18 -15 L26 -5 L17 -5 L9 -11 L-1 -5 L-11 -3Z',light);
+          shape('M-14 -36 Q-14 -42 -5 -43 Q4 -42 7 -35 L8 -24 L4 -14 L-5 -7 L-17 -6 Q-22 -12 -17 -23Z',robe);
+          shape('M-11 -34 Q-12 -29 -10 -22 L-11 -14 L-16 -9 Q-19 -15 -16 -24Z',light);
+          shape('M-8 -44 Q-13 -50 -10 -55 Q-8 -61 0 -60 Q7 -59 6 -53 L9 -49 L7 -48 L6 -45 L1 -44 L1 -41 L-5 -40Z','#bd8762');
+          shape('M-15 -52 Q-16 -59 -9 -63 Q2 -67 6 -58 L7 -56 Q0 -57 -3 -54 L-6 -44 L-13 -38 L-17 -40 Q-14 -46 -15 -52Z',wrap);
+          stroke('M-14 -56 Q-6 -61 3 -59','#f6d6a8aa',1.3);
+          stroke('M-3 -35 Q-1 -29 3 -23 L14 -17',light,5.7);
+          stroke('M12 -18 L17 -16 L21 -17','#c89269',3.3);
+          stroke('M0 -7 Q4 -11 7 -11 M-9 -2 Q-3 -3 1 -7','#4d414748',1.3);
+          g.restore();
+        }
+        if(later){
+          // 안식에 이른 대목. 빈 들을 거쳐 온 흔적은 남기고 장막 그늘의 사람에 시선을 둔다.
+          for(const [x,y,k] of [[328,268,.9],[344,263,.84],[360,263,.78],[376,257,.7],[393,257,.63],[407,252,.54],[425,249,.48],[440,244,.43]]){
+            g.save();g.translate(x,y);g.rotate(-.3);oval(0,0,3.8*k,1.5*k,'#99775e77');g.restore();
+          }
+          for(const [x,y,k,i,flip] of [[446,190,.29,1,false],[463,191,.25,0,true],[722,199,.36,0,true],[734,201,.38,2,false]])seated(x,y,k,people[i],flip);
+          shape('M513 229 L583 224 L625 236 L544 243Z','#876256');
+          stroke('M530 233 L582 229 M542 239 L612 234','#c9a477',1.7);
+          seated(538,233,.65,people[2],false);seated(558,235,.64,people[1],false);
+          seated(583,240,.99,people[0],true);seated(611,233,.65,people[3],true);
+          sack(637,236,.53);dish(626,234,.47,false);
+        }else{
+          for(const [x,y,rx,ry,n,k] of [[95,216,95,11,115,1],[239,230,116,15,175,1.05],[321,263,122,15,210,1.4],[180,269,105,17,147,1.5],[401,222,59,6,62,.85]])
+            grains(x,y,rx,ry,n,k);
+          for(const [x,y,k,i,flip] of [[74,209,.36,1,false],[154,199,.27,2,true],[208,204,.34,0,true],[286,200,.28,3,false],[326,208,.39,2,false],[380,214,.44,1,true],[427,205,.31,0,false]])
+            gatherer(x,y,k,people[i],flip);
+          traveller(102,222,.58,people[3],false,true);sack(115,207,.29);
+          traveller(367,231,.63,people[2],false,true);sack(380,215,.39);
+          traveller(467,226,.52,people[1]);sack(455,212,.34);
+          gatherer(178,239,.67,people[2],false);dish(207,239,.48,false);
+          traveller(222,250,.91,people[1],false,true);sack(241,225,.47);
+          gatherer(267,264,1.12,people[0],false);
+          dish(302,272,.62,true);
+          gatherer(109,280,1.04,people[3],false);sack(149,281,.71);
+        }
+        // 얕은 골과 바위 테두리로 두 엽서가 같은 시점임을 확인할 수 있다.
+        shape('M-2 353 Q79 322 166 331 Q234 346 324 330 T463 324 Q608 335 695 309 Q752 298 802 306 L802 397 L-2 397Z',grad(310,396,['#c5a282','#aa8870','#806962']));
+        stroke('M0 352 Q85 322 162 331 M210 338 Q267 341 321 331 M526 328 Q596 332 659 317','#e8c59b',2);
+        function shale(x,y,k){
+          g.save();g.translate(x,y);g.scale(k,k);
+          shape('M-22 0 L-10 -5 L4 -4 L18 -1 L10 3 L-7 4Z','#74626868');
+          shape('M-14 -1 L-7 -9 L4 -12 L12 -9 L17 -4 L11 0 L0 2Z','#8e7970');
+          shape('M-14 -1 L-7 -9 L4 -12 L12 -9 L3 -8 L-2 -3Z','#c6a78b');
+          stroke('M-8 -8 L4 -11 L10 -9','#e2c09b',1.4);g.restore();
+        }
+        seed=28713;
+        for(let i=0;i<230;i++){
+          const x=rand()*W,y=350+rand()*46;
+          line(x,y,x+2+rand()*9,y-.9,i%2?'#e8c9a66b':'#65546656',.65+rand()*.8);
+        }
+        for(const [x,y,k] of [[34,363,2.5],[55,345,.83],[164,301,.72],[375,277,.4],[477,292,.75],[759,322,1.6],[793,332,2.46]])shale(x,y,k);
+        for(let i=0;i<4500;i++){
+          g.fillStyle=i%2?'#fff7df21':'#51414d19';g.fillRect(rand()*W,rand()*H,1+rand(),.6);
+        }
+      }
       function mannaMorning(){
         // 바닥의 홈과 돌, 장막과 그 그림자는 두 기록에서 같은 자리에 둔다.
         g.fillStyle=grad(0,195,['#435c7e','#ad9aac','#e8b69d','#fae3b4']);g.fillRect(0,0,W,H);
@@ -192,14 +338,6 @@
         }
         shale(156,312,.98);shale(277,290,.71);shale(312,284,.34);shale(39,304,1.15);shale(688,271,.55);
         // 작은 낟알은 타원형 한 줌 단위에서만 그림자와 붓 끝 하이라이트가 구별된다.
-        function grains(x,y,rx,ry,count,size){
-          for(let i=0;i<count;i++){
-            const a=rand()*Math.PI*2,r=Math.sqrt(rand()),xx=x+Math.cos(a)*rx*r,yy=y+Math.sin(a)*ry*r;
-            const k=size*(.4+rand()*.7);
-            oval(xx+.2,yy+.65,k*1.05,k*.55,'#876b5b8a');
-            oval(xx,yy,k,k*.63,['#fff3d4','#eddfc1','#f7e7c5'][i%3]);
-          }
-        }
         if(later){
           for(const [x,y,rx,ry,n,k] of [[80,257,78,12,79,1.15],[222,267,88,11,85,1.25],[380,255,84,15,131,1.15],
               [477,247,69,8,71,1.12],[661,235,96,9,63,1],[219,294,96,18,217,1.65],[461,281,88,18,138,1.6],[672,288,77,15,94,1.45]])grains(x,y,rx,ry,n,k);
@@ -213,31 +351,6 @@
           g.restore();
         }
         herbs(187,304,.86);herbs(268,288,.51);herbs(63,283,.56);herbs(744,277,.78);
-        // 옆으로 굽힌 허리와 땅으로 뻗는 팔을 한 윤곽으로 읽을 수 있게 그린다.
-        function gatherer(x,y,k,colours,flip){
-          const [robe,light,wrap]=colours;
-          g.save();g.translate(x,y);g.scale(k*(flip?-1:1),k);
-          shape('M-54 1 Q-34 -4 -6 -4 L28 -3 Q34 -2 27 1 L-28 4Z','#715b653e');
-          shape('M-23 -23 Q-31 -20 -34 -12 L-41 -7 Q-43 -4 -38 -3 L-27 -4 Q-21 -13 -13 -12 L1 -7 L13 -6 L15 -9 L4 -14 L-5 -24Z','#795440');
-          shape('M-27 -25 Q-25 -37 -13 -46 Q-4 -52 6 -48 L13 -40 Q15 -32 2 -25 L-3 -16 L5 -10 L17 -7 Q19 -2 8 -2 L-12 -4 L-21 -9 L-38 -6 Q-42 -6 -42 -11 Q-32 -15 -27 -25Z',robe);
-          shape('M-24 -26 Q-19 -37 -9 -40 L2 -44 L6 -40 Q-3 -33 -11 -24 L-15 -14 L-3 -8 L-15 -10 L-27 -9 L-20 -17Z',light);
-          stroke('M-18 -11 Q-12 -17 -10 -22 M-12 -13 Q-9 -16 -5 -20','#493c472f',1.5);
-          shape('M-6 -45 Q0 -54 9 -53 L17 -48 L18 -42 L21 -37 L18 -36 L16 -33 L9 -34 L5 -39 L0 -38Z','#bb805a');
-          shape('M-14 -43 Q-9 -51 -4 -54 Q7 -61 16 -53 L19 -48 Q12 -49 6 -46 L0 -42 L-3 -35 Q-12 -35 -17 -38Z',wrap);
-          stroke('M-10 -45 Q0 -53 10 -53','#f8d5a783',1.45);
-          stroke('M12 -43 L14 -42','#604d47',.9);
-          shape('M-5 -38 Q-1 -40 3 -39 Q8 -35 12 -28 L18 -23 L13 -19 Q4 -21 -3 -29 Q-6 -33 -5 -38Z',light);
-          stroke('M15 -21 Q17 -17 23 -13 L30 -7 L28 -5 M28 -8 L33 -7','#b47a56',3.4);
-          g.restore();
-        }
-        function dish(x,y,k,full){
-          g.save();g.translate(x,y);g.scale(k,k);
-          oval(-5,1,28,3.8,'#755e5845');
-          shape('M-22 -12 Q-19 -1 -6 1 Q3 4 14 0 L23 -12Z',grad(-12,2,['#c78a59','#a56647','#81513e']));
-          oval(0,-12,22.6,6.2,'#d9a574');oval(0,-12,19.8,4.65,'#76513e');
-          if(full){oval(0,-12.3,18.8,3.9,'#e6d0a6');grains(0,-13,17,3,47,.85);}
-          stroke('M-20 -11 Q0 -1 21 -11','#e5b27d',1.4);g.restore();
-        }
         if(later){
           for(const [x,y,k,i,flip] of [[70,235,.36,1,false],[166,225,.32,0,true],[243,232,.36,3,false],[327,224,.34,2,false],
               [566,228,.37,0,true],[660,226,.41,2,false],[742,240,.44,3,true]]){
@@ -276,6 +389,7 @@
         }
       }
       if(id==='manna'){mannaMorning();return;}
+      if(id==='sabbath'){twoDaysInCamp();return;}
       function cliffs(y,xStep,amplitude,palette,phase){
         const points=[];
         for(let x=-xStep;x<W+2*xStep;x+=xStep){
@@ -439,7 +553,7 @@
         g.fillStyle=i%2?'#fbe5bf20':'#47344412';g.fillRect(rand()*W,rand()*H,1+rand()*1.4,.6+rand()*.7);
       }
     }
-    if(id==='marah'||id==='elim'||id==='manna'){illustratedCamp();return;}
+    if(id==='marah'||id==='elim'||id==='manna'||id==='sabbath'){illustratedCamp();return;}
     function mountainCamp(){
       const clouded=id==='sinai'&&later;
       const peak=[[0,219],[80,190],[137,201],[231,138],[266,155],[353,111],[396,117],
@@ -505,33 +619,6 @@
     }
     if(id==='sinai'||id==='calf'){
       mountainCamp();
-    }else if(id==='sabbath'){
-      // 두 기록은 같은 지형과 같은 시점에 겹친다. 움직이는 것은 탐험대의 관찰창이다.
-      for(let i=0;i<7;i++)tent(43+i*111,210+Math.sin(i)*6,.7);
-      tent(600,245,1.9);tent(710,234,1.24);
-      for(const offset of [0,64]){
-        line(555+offset,243,584+offset,208,'#7e614a',1.5);
-        line(555+offset,243,551+offset,248,'#644932',2);
-      }
-      if(later){
-        person(553,246,27,1,false);person(576,249,22,3,false);
-        person(617,248,25,0,false);
-        oval(351,289,61,5,'#95744e44');
-      }else{
-        for(let i=0;i<143;i++){
-          const x=110+rand()*355,y=241+rand()*50;
-          oval(x,y,1.6,.9,'#f5e2bd');
-        }
-        for(const [x,y,h,i] of [[192,255,37,1],[249,268,44,3],[286,265,47,2],[359,246,31,0]]){
-          person(x,y,h,i,true);
-          oval(x+15,y+1,9,4.3,'#856347');oval(x+15,y-1,8,2.3,'#f4dfb6');
-        }
-      }
-      for(let i=0;i<3;i++){
-        const x=100+i*198;
-        poly([[x,315],[x+6,305],[x+19,303],[x+28,311],[x+24,316]],'#aa8d69');
-        line(x+7,306,x+17,304,'#d9bc8f',2);
-      }
     }else if(!later){
       for(let i=0;i<10;i++)tent(35+i*74,220+Math.sin(i)*6,.8);
       for(let i=0;i<55;i++){

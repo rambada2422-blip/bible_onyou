@@ -116,7 +116,7 @@ fs.writeFileSync(path.join(web, 'js/wilderness-data.js'),
 const fontCss = require('./font-css');
 const scripts = [
   'js/content.js', 'js/icons.js', 'js/order-question.js', 'js/reference-input.js', 'js/art.js',
-  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-rapids.js', 'js/nile-game.js', 'js/palace-watch-scenes.js', 'js/palace-watch.js', 'js/palace.js', 'js/red-sea-landscape.js', 'js/scene-music.js', 'js/red-sea-play.js', 'js/red-sea.js', 'js/wilderness-data.js', 'js/wilderness-scripture.js', 'js/wilderness-landscape.js', 'js/wilderness-feel.js', 'js/wilderness.js', 'js/exodus-trail.js', 'js/passover.js', 'js/app.js',
+  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-rapids.js', 'js/nile-game.js', 'js/palace-watch-scenes.js', 'js/palace-watch.js', 'js/palace.js', 'js/red-sea-landscape.js', 'js/scene-music.js', 'js/red-sea-play.js', 'js/red-sea.js', 'js/wilderness-data.js', 'js/wilderness-scripture.js', 'js/sinai-landscape.js', 'js/wilderness-landscape.js', 'js/wilderness-feel.js', 'js/wilderness.js', 'js/exodus-trail.js', 'js/passover.js', 'js/app.js',
 ];
 // 단일 HTML에서도 본문 음성을 인터넷 연결 없이 재생한다.
 const palaceAudio = {};
