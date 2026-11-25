@@ -2107,6 +2107,25 @@
       );
     });
 
+    var brookMovie = el('video', {
+      src: 'media/brook-stones.mp4',
+      poster: 'media/brook-stones.webp',
+      controls: true,
+      muted: true,
+      playsinline: true,
+      preload: 'none',
+      'aria-label': '엘라 골짜기 시냇가에서 다윗이 매끄러운 돌 다섯을 주머니에 담는 자막 영상'
+    });
+    brookMovie.muted = true;
+    brookMovie.defaultMuted = true;
+    var brookFilm = el('details', { class: 'lookout-film', 'data-d02-film': 'true' },
+      el('summary', { text: '시냇가 다섯 돌 영상 보기' }),
+      brookMovie
+    );
+    brookFilm.addEventListener('toggle', function () {
+      if (!brookFilm.open) brookMovie.pause();
+    });
+
     return el('div', { class: 'brook-play' }, renderBrookCamera(), el('section', { class: 'brook-observation' },
       el('div', { class: 'meta-row' },
         el('span', { class: 'ref', text: sc.ref }),
@@ -2118,7 +2137,8 @@
       sectorStrip,
       markBar,
       el('p', { class: 'subnote one-line-guide', text: lensStatus }),
-      el('div', { class: 'stones-grid brook-window', 'data-brook-seed': String(seed) }, spotBtns)
+      el('div', { class: 'stones-grid brook-window', 'data-brook-seed': String(seed) }, spotBtns),
+      brookFilm
     ));
   }
 

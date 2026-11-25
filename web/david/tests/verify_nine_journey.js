@@ -78,11 +78,27 @@ async function run() {
     await p.locator('[data-choice="horn"]').click();
     await p.locator('[data-discovery="D01"]').waitFor();
 
-    // D01 완료 -> 다음 장면 -> D02 카메라 진입 확인
+    // D01 완료 -> 다음 장면 -> D02 카메라 진입 및 9초 영상 확인
     await p.locator('[data-action="next-scene"]').click();
     await p.locator('.brook-camera').waitFor();
     assert.equal(await p.evaluate(() => BO_DAVID.debug.state().sceneId), 'D02');
     assert.equal(await p.evaluate(() => BO_DAVID.debug.state().step), 'stones');
+    await p.locator('details[data-d02-film="true"] summary').click();
+    const d02Vid = await p.evaluate(async () => {
+      const v = document.querySelector('details[data-d02-film="true"] video');
+      v.load();
+      await new Promise((res, rej) => {
+        if (v.readyState >= 1) return res();
+        v.addEventListener('loadedmetadata', res, { once: true });
+        v.addEventListener('error', () => rej(new Error('D02 video load error')), { once: true });
+      });
+      return { w: v.videoWidth, h: v.videoHeight, d: v.duration, muted: v.muted };
+    });
+    assert.equal(d02Vid.w, 720);
+    assert.equal(d02Vid.h, 480);
+    assert(d02Vid.d >= 8.5 && d02Vid.d <= 9.5, 'D02 영상 길이 확인');
+    assert.equal(d02Vid.muted, true);
+    await p.locator('details[data-d02-film="true"] summary').click();
 
     // D02 중간 조작(사진 1장 + 돌 2개) 후 첫 화면으로 나가 떠난 자리 확인 및 이어하기 복원
     await p.locator('[data-action="d02-shutter"]').click();
