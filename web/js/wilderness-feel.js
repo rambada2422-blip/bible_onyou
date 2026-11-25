@@ -55,6 +55,21 @@
           src.buffer=sample;src.connect(filter);filter.connect(ctx.destination);
           src.onended=()=>{src.disconnect();filter.disconnect();};src.start();return;
         }
+        if(key==='scoop'||key==='cup'){
+          // 곡식을 쓸어 담을 때의 짧은 마찰과 빈 되 가장자리의 두드림.
+          const brush=key==='scoop',length=brush?.34:.19;
+          const buffer=ctx.createBuffer(1,Math.ceil(length*ctx.sampleRate),ctx.sampleRate);
+          const samples=buffer.getChannelData(0);
+          for(let n=0;n<samples.length;n++){
+            const u=n/ctx.sampleRate;
+            samples[n]=brush?(Math.random()*2-1)*.17*Math.sin(Math.PI*u/length)**2*(.6+.4*Math.cos(u*128)):
+              .10*(Math.sin(2*Math.PI*610*u)+.4*Math.sin(2*Math.PI*1010*u))*Math.exp(-33*u)*Math.min(u/.003,1);
+          }
+          const src=ctx.createBufferSource(),filter=ctx.createBiquadFilter();
+          filter.type=brush?'bandpass':'lowpass';filter.frequency.value=brush?1750:2600;
+          src.buffer=buffer;src.connect(filter);filter.connect(ctx.destination);
+          src.onended=()=>{src.disconnect();filter.disconnect();};src.start();return;
+        }
         const notes=BO.wildField.sounds;
         (notes[key]||notes.tap).forEach((f,i)=>{
           const osc=ctx.createOscillator(),gain=ctx.createGain();

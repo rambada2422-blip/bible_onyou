@@ -7,6 +7,7 @@ const { chromium } = require('playwright');
 const { gameOrigin } = require('./game-server');
 
 const { checkObservations } = require('./wilderness-observation');
+const { checkManna } = require('./wilderness-manna');
 
 const stopNames = ['마라의 물가', '엘림의 샘', '만나를 거두는 아침', '여섯째 날과 일곱째 날', '반석에서 흐른 물', '시내산 앞의 진영', '금송아지 사건의 진영'];
 const seals = ['15:25', '15:27', '16:18', '16:30', '17:6', '20:18', '32:30'];
@@ -73,6 +74,11 @@ async function runRoute(browser, origin, out, entry, width) {
     await page.locator('.wf-pin').tap();
     await page.locator('.wf-role').nth(0).tap();
     await click('접사 렌즈로 살펴보기');
+    if(stage.groundPoint){
+      await page.getByRole('slider',exact('이슬 전후 사진 비교선')).focus();
+      await page.keyboard.press('End');await click('알갱이 위치 기록');
+      await page.locator('.wf-dialog').waitFor({state:'detached'});
+    }
     assert.equal((await state()).stops[i].phase,1);
     await page.locator('.wf-role').nth(1).tap();
     await click('장비 고정');
@@ -221,6 +227,7 @@ async function checkHints(browser,origin) {
     for(const entry of ['/index.html','/preview.html'])await checkObservations(browser,origin,entry,out);
     await runRoute(browser,origin,out,'/index.html#redsea',360);
     await runRoute(browser,origin,out,'/preview.html#wilderness',320);
+    for(const entry of ['/index.html','/preview.html'])await checkManna(browser,origin,entry,out);
     const direct=await browser.newPage({viewport:{width:320,height:480}});
     await direct.goto(origin+'/preview.html#sinai');
     assert.equal(await direct.locator('h1').innerText(),stopNames[5]);

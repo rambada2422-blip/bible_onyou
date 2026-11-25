@@ -1,0 +1,77 @@
+/* 이슬 사진 비교, 표식, 음원, 실제 말씀 복귀를 모바일 터치와 키보드로 확인한다. */
+const assert=require('node:assert/strict');
+const path=require('node:path');
+const {attachScoreMeter,waitForAudibleCue}=require('./scene-music');
+
+async function checkManna(browser,origin,entry,out){
+  const page=await browser.newPage({viewport:{width:360,height:740},hasTouch:true});
+  page.setDefaultTimeout(7000);
+  const errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  const button=(name,scope=page)=>scope.getByRole('button',{name,exact:true});
+  const scope=page.locator('.wf-optics');
+  const tap=name=>button(name,scope).tap();
+  const slide=scope.getByRole('slider',{name:'이슬 전후 사진 비교선'});
+  const cue=duration=>waitForAudibleCue(page,duration);
+  const quiet=()=>page.waitForFunction(()=>readScore().every(t=>t.ended||t.state!=='running'));
+  const image=()=>scope.locator('canvas').evaluate(canvas=>canvas.toDataURL());
+  const stop=()=>page.evaluate(()=>BO.app2d.state.wilderness.stops[2]);
+  try{
+    await attachScoreMeter(page);
+    await page.goto(origin+entry+'#manna');
+    assert.equal(await page.locator('.wf-heading h1').innerText(),'만나를 거두는 아침');
+    assert.deepEqual(await page.evaluate(()=>readScore()),[]);
+    await button('아침 이슬').tap();await cue(20);
+    const dew=await image();
+    assert(await button('알갱이 위치 기록',scope).isHidden());
+    await slide.focus();await page.keyboard.press('End');await cue(15);
+    const grain=await image();assert.notEqual(grain,dew);
+    await page.keyboard.press('ArrowLeft');await page.keyboard.press('ArrowLeft');
+    assert.equal(await slide.inputValue(),'90');assert.notEqual(await image(),grain);
+    await page.setViewportSize({width:640,height:360});await page.reload();
+    assert.equal(await slide.inputValue(),'90');assert.deepEqual(await page.evaluate(()=>readScore()),[]);
+    await slide.focus();await page.keyboard.press('Home');await cue(20);
+    assert.equal(await image(),dew);
+    await tap('작은 알갱이');await cue(15);
+    await tap('거두는 백성');await cue(18.113);
+    await tap('거둔 뒤의 양');await cue(16.875);
+    assert.match(await scope.locator('.wf-view-notes').innerText(),/모자라지/);
+    await tap('두루마리 열기 · 출 16:18');
+    await page.waitForFunction(()=>document.activeElement.dataset.verse==='16:18');await quiet();
+    await page.reload();await page.waitForFunction(()=>document.activeElement.dataset.verse==='16:18');
+    await page.keyboard.press('Escape');await cue(16.875);
+    await tap('거두는 백성');await cue(18.113);
+    await page.setViewportSize({width:360,height:740});
+    await page.screenshot({path:path.join(out,'manna-gather.png')});
+    await tap('작은 알갱이');await cue(15);
+    const rect=await slide.boundingBox();
+    await page.touchscreen.tap(rect.x+rect.width*.72,rect.y+rect.height/2);
+    assert(Number(await slide.inputValue())>=60 && Number(await slide.inputValue())<100);
+    await page.screenshot({path:path.join(out,'manna-ground.png')});
+    await tap('알갱이 위치 기록');assert((await stop()).grainMarked);
+    await page.reload();assert(await button('알갱이 위치 기록',scope).isDisabled());
+    await tap('닫기');await scope.waitFor({state:'detached'});await cue(20);
+    await page.locator('.wf-pin').tap();await page.locator('.wf-role').first().tap();
+    await button('접사 렌즈로 살펴보기').tap();assert.equal((await stop()).phase,1);await cue(15);
+    await page.locator('.wf-role').nth(1).tap();
+    await page.getByRole('slider').focus();await page.keyboard.press('End');
+    await button('장비 고정').tap();await cue(15);
+    await page.locator('.wf-pin').tap();await page.locator('.wf-role').nth(2).tap();
+    await button('땅 위 알갱이 관찰').tap();await cue(18.113);
+    await button('거두는 사람들 관찰').tap();await cue(16.875);
+    await button('담은 그릇 관찰').tap();await button('땅 위의 작은 알갱이').tap();
+    assert.equal((await stop()).phase,3);await cue(16.875);
+    await button('처음 기록 다시 보기').tap();await cue(20);
+    await page.reload();await button('나중 기록 다시 보기').tap();await cue(16.875);
+    await button('음악 끄기').tap();await quiet();
+    await page.reload();await button('거둔 뒤의 양').tap();assert.deepEqual(await page.evaluate(()=>readScore()),[]);
+    await tap('닫기');await button('음악 켜기').tap();await cue(16.875);
+    await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await quiet();
+    await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await cue(16.875);
+    await button('여섯째 날과 일곱째 날 답사하기').tap();
+    await page.waitForFunction(()=>readScore().every(t=>t.state==='closed'));
+    assert.equal(await page.locator('h1').innerText(),'여섯째 날과 일곱째 날');
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+}
+module.exports={checkManna};

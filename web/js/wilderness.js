@@ -85,15 +85,19 @@
       if(document.hidden){pause();sound.stop();}else schedule();
     }
     function pageHide(){pause();sound.stop();}
-    function route(fn){closed=true;pause();sound.stop();music?.close();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',pageHide);fn();}
+    function route(fn){closed=true;pause();sound.stop();music?.close();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',pageHide);window.removeEventListener('blur',pageHide);window.removeEventListener('focus',schedule);fn();}
     function updateScore(){
       if(!stage.observations)return;
       let stopView=Math.min(p.phase,2);
-      if(p.phase===0&&p.pos===stage.spots[0])stopView=1;
+      if(stage.groundPoint){
+        if(p.phase===2)stopView=Math.min(1+p.mapped,3);
+        if(p.phase===3)stopView=3;
+      }else if(p.phase===0&&p.pos===stage.spots[0])stopView=1;
       if(p.phase===3&&p.reviewEarly)stopView=0;
       const index=inRange(p.inspection,0,stage.observations.length-1)?p.inspection:stopView;
       music.setPaused(!s.sound||Boolean(dialog?.querySelector('.wf-edition')));
-      music.setCue('wild-'+stage.observations[index].music);
+      const cue=stage.observations[index].music;
+      music.setCue('wild-'+cue,cue==='manna-grain'?.065:.42);
       music.button.disabled=!s.sound;
       music.button.title=s.sound?'':'탐사 설정에서 소리 켜기';
     }
@@ -119,7 +123,7 @@
     }
     function inspectVerse(index){
       p.inspection=index;p.readInspection=true;app.save();
-      scrollText(s.index,stage.observations[index].verse);
+      scrollText(s.index,stage.observations[index].verse.split('–')[0]);
       dialog.addEventListener('close',()=>{
         delete p.readInspection;
         inspect(index,false);
@@ -127,36 +131,100 @@
     }
     function inspect(index,feedback=true){
       const views=stage.observations;
-      let openVerse=false;
+      const resume=index===p.inspection&&inRange(p.groundSplit,0,100);
+      let openVerse=false,finishClue=false;
       p.inspection=index;app.save();
       const body=openDialog('탐험대 관찰경',box=>{
         const picture=el('canvas',{class:'wf-closeup',role:'img'});
-        const title=el('h3',{'aria-live':'polite'}), sourceFrames=new Map();
+        const title=el('h3',{'aria-live':'polite'}),sourceFrames=new Map();
+        const notes=el('p',{class:'wf-view-notes','aria-label':'장면 안내'});
         const tabs=views.map((view,i)=>button(view.label,()=>select(i),'wf-observe-tab'));
         const verse=button('',()=>{openVerse=true;dialog.close();});
-        function select(i,withSound=true){
-          const view=views[i];
-          if(!sourceFrames.has(view.later)){
+        let ground;
+        function frame(later){
+          if(!sourceFrames.has(later)){
             const source=el('canvas',{});
-            BO.drawWilderness(source,stage.id,view.later);
-            sourceFrames.set(view.later,source);
+            BO.drawWilderness(source,stage.id,later);
+            sourceFrames.set(later,source);
           }
+          return sourceFrames.get(later);
+        }
+        function drawCrop(view){
           const [x,y,w,h]=view.crop;
           picture.width=w*2;picture.height=h*2;
-          picture.getContext('2d')?.drawImage(sourceFrames.get(view.later),x,y,w,h,0,0,w*2,h*2);
+          picture.getContext('2d')?.drawImage(frame(view.later),x,y,w,h,0,0,w*2,h*2);
+        }
+        function describe(i,feedback){
+          const view=views[i];
           picture.setAttribute('aria-label',stage.title+' · '+view.label+' 확대');
           title.textContent=view.caption;
+          notes.hidden=!view.notes;notes.textContent=view.notes?.[s.mode]||'';
           verse.textContent='두루마리 열기 · 출 '+view.verse;
           tabs.forEach((tab,k)=>tab.setAttribute('aria-pressed',String(k===i)));
           p.inspection=i;app.save();updateScore();
-          if(withSound)play(view.sound);
+          if(feedback)play(view.sound);
         }
-        box.append(title,picture,el('div',{class:'wf-view-tabs',role:'group','aria-label':'관찰 시점'},tabs),verse);
-        select(index,feedback);
+        function select(i,feedback=true,restore=false){
+          if(ground){
+            ground.controls.hidden=i>1;
+            ground.photo.classList.toggle('wf-comparing',i<2);
+            if(i<2){
+              ground.set(restore?p.groundSplit:i*100,feedback);
+              return;
+            }
+          }
+          drawCrop(views[i]);describe(i,feedback);
+        }
+        if(stage.groundPoint){
+          // 두 기록을 같은 지형에 겹친다. 표식은 탐험대의 수첩에만 남는다.
+          const photo=el('div',{class:'wf-ground-photo'},picture);
+          const controls=el('div',{class:'wf-ground-tools'});
+          const slider=el('input',{type:'range',min:'0',max:'100',step:'5','aria-label':'이슬 전후 사진 비교선'});
+          const tip=el('span',{class:'wf-ground-tip',role:'status'});
+          const mark=button('⌖',()=>{
+            if(mark.disabled)return;
+            p.grainMarked=true;app.save();play('found');
+            finishClue=p.phase===0&&s.actor===0&&p.pos===target();
+            if(finishClue)dialog.close();else ground.set(p.groundSplit,false);
+          },'wf-grain-mark');
+          mark.setAttribute('aria-label','알갱이 위치 기록');
+          const [x,y,w,h]=views[0].crop;
+          const markerX=100*(stage.groundPoint[0]-x)/w;
+          mark.style.left=markerX+'%';mark.style.top=(100*(stage.groundPoint[1]-y)/h)+'%';
+          photo.append(mark);
+          controls.append(el('label',{},el('span',{},'두 기록 포개기'),slider),tip);
+          ground={controls,photo,set(percent,feedback){
+            const i=percent>=markerX?1:0;
+            p.groundSplit=percent;slider.value=String(percent);
+            slider.setAttribute('aria-valuetext','이슬이 걷힌 기록 '+percent+'%');
+            drawCrop(views[0]);
+            const g=picture.getContext('2d');
+            if(g&&percent>0){
+              const cut=picture.width*percent/100;
+              g.drawImage(frame(true),x,y,w*percent/100,h,0,0,cut,picture.height);
+              if(percent<100){g.fillStyle='#ffe292';g.fillRect(cut-1,0,2,picture.height);}
+            }
+            mark.hidden=!i;
+            mark.disabled=p.grainMarked===true;
+            tip.textContent=p.grainMarked?'알갱이 위치를 수첩에 표시했어요.':
+              i?'알갱이가 보이면 동그라미에 표식을 남겨 보세요.':'비교선을 오른쪽으로 밀어 같은 자리의 땅을 살펴보세요.';
+            describe(i,feedback);
+          }};
+          slider.addEventListener('input',()=>{
+            const percent=Number(slider.value);
+            ground.set(percent,(percent>=markerX)!==(p.inspection===1));
+          });
+          box.append(title,photo,controls);
+        }else box.append(title,picture);
+        box.append(el('div',{class:'wf-view-tabs',role:'group','aria-label':'관찰 시점'},tabs),notes,verse);
+        select(index,feedback,resume);
       },()=>{
         const last=p.inspection;
         if(openVerse)inspectVerse(last);
-        else{delete p.inspection;app.save();}
+        else{
+          delete p.inspection;app.save();
+          if(finishClue)advance();
+        }
       });
       body.closest('dialog').classList.add('wf-optics');
     }
@@ -287,6 +355,7 @@
       ui.talk.replaceChildren(BO.wildFeel.portrait(crew[i].id,expression),el('div',{},el('b',{},'『탐험대 이야기』 '+crew[i].name),el('span',{},crew[i].lines[s.mode])));
     }
     function currentEvidence(){
+      if(stage.groundPoint&&p.phase===1){const view=stage.observations[1];return [view.caption,view.verse];}
       return stage.evidence[p.phase===2?(stage.frames?p.frame:1):0];
     }
     function controls(){
@@ -294,7 +363,10 @@
       ui.evidence=button(evidence[0]+' · 출 '+evidence[1],()=>scrollText(s.index,currentEvidence()[1]));
       ui.panel.append(el('div',{class:'wf-evidence'},ui.evidence));
       if(p.phase===0){
-        ui.panel.append(button('접사 렌즈로 살펴보기',advance,'wf-primary'));
+        ui.panel.append(button('접사 렌즈로 살펴보기',()=>{
+          if(stage.groundPoint&&!p.grainMarked)inspect(0);
+          else advance();
+        },'wf-primary'));
       }else if(p.phase===1){
         const value=el('output',{}),glass=el('canvas',{width:'130',height:'60','aria-hidden':'true'});
         const dial=el('input',{type:'range',min:'0',max:'2',step:'1','aria-label':stage.adjust});
@@ -357,10 +429,10 @@
       if(music)nav.append(music.button);
       ui.canvas=el('canvas',{class:'wf-picture',role:'img','aria-label':stage.title+' · '+stage.card});
       p.available=true;
-      const later=p.phase>=2&&(!stage.frames||complete||p.frame===1)&&!(stage.observations&&complete&&p.reviewEarly);
+      const later=p.phase>=(stage.groundPoint?1:2)&&(!stage.frames||complete||p.frame===1)&&!(stage.observations&&complete&&p.reviewEarly);
       BO.drawWilderness(ui.canvas,stage.id,later);
       ui.field=el('div',{class:'wf-field',tabindex:'0',role:'group'},ui.canvas);
-      if(stage.observations){
+      if(stage.id==='marah'||stage.id==='elim'){
         ui.ripple=el('i',{class:'wf-ripple wf-ripple-'+stage.id,'aria-hidden':'true'});
         ui.ripple.hidden=stage.id==='marah'&&!later;
         ui.field.append(ui.ripple);
@@ -368,7 +440,8 @@
       ui.sprite=el('div',{class:'wf-sprite','aria-hidden':'true'},app.pic(crew[s.actor].id+'-full','',''));
       ui.friends=crew.map(a=>el('div',{class:'wf-friend','aria-hidden':'true'},app.pic(a.id+'-full','','')));
       ui.field.append(...ui.friends,ui.sprite);ui.sprite.style.left=x(p.pos);placeCrew();
-      const frameLabel=(stage.frames?stage.frames[Number(later)]:later?'나중 기록':'처음 기록')+' · '+stage.evidence[later?1:0][0];
+      const fieldEvidence=stage.groundPoint&&p.phase===1?stage.observations[1].caption:stage.evidence[later?1:0][0];
+      const frameLabel=(stage.frames?stage.frames[Number(later)]:later?'나중 기록':'처음 기록')+' · '+fieldEvidence;
       ui.field.append(stage.beats ? button(frameLabel,()=>ui.record.focus(),'wf-frame-label wf-read-frame') :
         el('span',{class:'wf-frame-label'},frameLabel));
       const content=el('div',{class:'wf-body'});
@@ -384,7 +457,7 @@
               ui.status.textContent='먼저 '+stage.trail[p.mapped][0]+' 쪽을 살펴보세요.';
               play('tap');return;
             }
-            p.mapped++;app.save();play('found');resetHints();position();schedule();
+            p.mapped++;app.save();updateScore();play('found');resetHints();position();schedule();
             ui.status.textContent=name+' 위치를 수첩에 표시했어요.';
             if(p.mapped===stage.trail.length)ui.tags.querySelector('button').focus({preventScroll:true});
           },'wf-landmark');
@@ -470,6 +543,7 @@
       app.show(ui.screen);if(focus)heading.focus({preventScroll:true});schedule();
     }
     document.addEventListener('visibilitychange',visibility);window.addEventListener('pagehide',pageHide);
+    window.addEventListener('blur',pageHide);window.addEventListener('focus',schedule);
     draw(false);app.save();
     if(showShelf)shelf();
     else if(stage.observations&&inRange(p.inspection,0,stage.observations.length-1)){

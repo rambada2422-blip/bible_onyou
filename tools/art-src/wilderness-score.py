@@ -1,4 +1,5 @@
-"""Original Marah and Elim chamber score. Render locally with the Red Sea instrument voices."""
+"""Original wilderness chamber music. Run with --manna to render only the four morning views."""
+import argparse
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
@@ -9,7 +10,7 @@ score = module_from_spec(spec)
 spec.loader.exec_module(score)
 
 
-def record(name, bpm, meter, roots, perform):
+def record(name, bpm, meter, roots, perform, peak=.66):
     rng = np.random.default_rng(1522 + bpm)
     beat = 60 / bpm
     mix = np.zeros((round(len(roots) * meter * beat * score.RATE), 2))
@@ -21,7 +22,7 @@ def record(name, bpm, meter, roots, perform):
     dry = mix.copy()
     for seconds, level in ((.073, .12), (.177, .065)):
         mix += np.roll(dry[:, ::-1], round(seconds * score.RATE), axis=0) * level
-    score.encode("wild-" + name, mix, peak=.66)
+    score.encode("wild-" + name, mix, peak=peak)
 
 
 def road(note, bar):
@@ -70,9 +71,72 @@ def tents(note, bar):
     note("reed", (19, 16, 14, 12, 16, 14)[bar], .32, 2.88, .22, .55)
 
 
+# Four views follow the same family of pitches (D, E, F sharp, A, B).
+# The sustained open fifth, bright plucked answer, hand rhythm and closing duet
+# each have their own entrance so a player can turn the observation lens either way.
+def morning_dew(note, bar):
+    note("bow", 0, 0, 4.15, .20, .43)
+    note("bow", 7, .12, 3.65, .09, .62)
+    if bar in (0, 2, 4):
+        note("reed", (19, 16, 14)[bar // 2], .24, 2.25, .16, .60)
+        note("pluck", 26, 3.20, 1.25, .12, .32)
+    else:
+        note("reed", 14, .56, .98, .16, .60)
+        note("reed", 12, 1.82, 1.66, .18, .57)
+
+
+def morning_grain(note, bar):
+    # Two plucked registers act like a single struck harmonic, then answer to the left.
+    top = (24, 23, 24, 26, 24, 21, 26, 24)[bar]
+    note("pluck", top, 0, 1.42, .52, .53)
+    note("pluck", top + 12, .028, 1.06, .21, .67)
+    note("pluck", 19, .64, 1.12, .28, .30)
+    note("short_strings", 0, .99, .67, .22, .40)
+    if bar % 2 == 0:
+        note("pluck", 14, 1.64, .87, .25, .36)
+        note("pluck", 19, 2.13, 1.22, .31, .54)
+    else:
+        note("reed", 12, 1.39, 1.44, .16, .57)
+
+
+def morning_gather(note, bar):
+    # Two interlocking figures work across a four-beat bar in a 3+3+2 grouping.
+    for at, pitch, weight in ((0, 0, .38), (1.5, 7, .33), (3, 12, .28)):
+        note("short_strings", pitch, at, .48, weight, .36)
+        note("low_drum", 0, at, .28, weight * .68, .49)
+    for at, pitch in ((.5, 12), (1.25, 19), (2.25, 16), (2.75, 12)):
+        note("pluck", pitch, at, .58, .34, .64)
+    if bar in (1, 3, 5, 7):
+        note("reed", (19, 16, 21, 14)[bar // 2], .75, 1.34, .19, .51)
+        note("pluck", 19, 3.52, .58, .29, .66)
+
+
+def morning_measure(note, bar):
+    # Two voices resolve the questioning opening motif together. The last reed note
+    # carries over the bar line while the work rhythm gives way to breathing room.
+    note("bow", 0, 0, 3.18, .19, .44)
+    note("pluck", 7, .04, 1.48, .42, .32)
+    melody = ((19, 16), (19, 21), (16, 14), (19, 16), (14, 16), (14, 12))[bar]
+    note("reed", melody[0], .12, .91, .23, .63)
+    note("reed", melody[1], 1.2, 1.91, .22, .64)
+    note("bow", (12, 16, 7, 12, 7, 4)[bar], 1.18, 1.96, .14, .37)
+
+
+def render_manna():
+    record("manna-dew", 72, 4, [50, 50, 55, 45, 47, 50], morning_dew, peak=.32)
+    record("manna-grain", 96, 3, [50, 55, 47, 45, 50, 43, 45, 50], morning_grain, peak=.75)
+    record("manna-gather", 106, 4, [50, 55, 50, 45, 47, 55, 45, 50], morning_gather, peak=.63)
+    record("manna-measure", 64, 3, [50, 43, 47, 50, 45, 50], morning_measure, peak=.41)
+
+
 if __name__ == "__main__":
-    record("road", 77, 4, [45, 43, 45, 41, 43, 40], road)
-    record("bitter", 66, 3, [45, 45, 43, 45, 46, 45], bitter)
-    record("water", 84, 4, [50, 43, 48, 43, 45, 50], water)
-    record("springs", 89, 3, [50, 55, 50, 48, 43, 50, 55, 48], springs)
-    record("tents", 63, 4, [50, 43, 48, 50, 43, 50], tents)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manna", action="store_true")
+    if parser.parse_args().manna:
+        render_manna()
+    else:
+        record("road", 77, 4, [45, 43, 45, 41, 43, 40], road)
+        record("bitter", 66, 3, [45, 45, 43, 45, 46, 45], bitter)
+        record("water", 84, 4, [50, 43, 48, 43, 45, 50], water)
+        record("springs", 89, 3, [50, 55, 50, 48, 43, 50, 55, 48], springs)
+        record("tents", 63, 4, [50, 43, 48, 50, 43, 50], tents)

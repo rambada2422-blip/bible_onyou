@@ -2,7 +2,6 @@
 (function () {
   'use strict';
   const themes = {
-    manna:['#666e92','#ddb4b4','#f6d3ac','#ab9296','#8b7e85','#e4be97','#ac8c77'],
     sabbath:['#8496ad','#ebc2a5','#fae1ab','#b79585','#967964','#e6c18e','#bb9062'],
     sinai:['#596e83','#b9c9c8','#edd3a4','#a1988d','#868278','#dcbf8f','#ae8562'],
     calf:['#617e91','#c9c8ae','#efcd95','#a29c84','#8b8271','#ddbe91','#ac876a'],
@@ -49,7 +48,7 @@
       poly([[x-20*k,y],[x-5*k,y-17*k],[x+1*k,y]],'#d1ae83');
       poly([[x-13*k,y],[x-6*k,y-10*k],[x-4*k,y]],'#65635c');
     }
-    function springs(){
+    function illustratedCamp(){
       const oasis=id==='elim';
       const shape=(path,ink)=>{g.fillStyle=ink;g.fill(new Path2D(path));};
       function stroke(path,ink,width){
@@ -130,6 +129,153 @@
         stroke('M-5 -33 L-5 -30 M-5 -29 Q-21 -12 -44 1 M16 -25 Q27 -12 45 0','#785944',.9);
         g.restore();
       }
+      function mannaMorning(){
+        // 바닥의 홈과 돌, 장막과 그 그림자는 두 기록에서 같은 자리에 둔다.
+        g.fillStyle=grad(0,195,['#435c7e','#ad9aac','#e8b69d','#fae3b4']);g.fillRect(0,0,W,H);
+        const dawn=g.createRadialGradient(610,139,6,610,139,190);
+        dawn.addColorStop(0,'#fff8d9dc');dawn.addColorStop(.42,'#ffdaac81');dawn.addColorStop(1,'#f8d49d00');
+        g.fillStyle=dawn;g.fillRect(420,0,380,236);oval(610,139,14,14,'#fff2c6');
+        for(let i=0;i<32;i++){
+          const x=rand()*860-45,y=14+rand()*116,w=18+rand()*109;
+          shape('M'+x+' '+y+' q'+(w*.27)+' -5 '+w+' -2 q-'+(w*.37)+' .2 -'+(w*.84)+' 3Z','#fce4d225');
+        }
+        shape('M0 169 L46 152 L78 154 L123 138 L164 143 L190 135 L223 139 L268 117 L283 119 L301 112 L342 125 L391 121 L425 132 L472 121 L509 141 L556 135 L603 148 L653 137 L692 144 L738 119 L798 124 L803 207 L0 207Z',
+          grad(115,190,['#b6a2a4','#e9c1a8']));
+        shape('M0 167 L25 149 L64 147 L78 136 L117 137 L125 128 L142 125 L166 125 L176 117 L205 118 L224 132 L247 132 L269 145 L284 145 L308 154 L337 153 L360 164 L402 163 L459 179 L478 193 L0 193Z',
+          grad(119,195,['#a7898d','#b08e8e','#c4a49a']));
+        shape('M-2 173 L53 153 L66 153 L84 139 L119 139 L111 145 L111 153 L89 159 L78 170 L51 175 L30 186 L-2 190Z M111 169 L129 154 L138 146 L149 144 L155 136 L164 134 L170 125 L179 119 L202 120 L196 131 L184 138 L175 149 L164 151 L152 160 L135 165 L126 175Z M208 158 L218 142 L227 140 L237 138 L245 137 L234 149 L222 153 L214 163Z','#917c87');
+        stroke('M67 149 L82 138 L118 138 M127 129 L143 126 L165 126 L177 118 L201 119 M173 137 L181 132 L184 126 M248 135 L269 146 L282 146','#ecc2a3a8',1.6);
+        shape('M438 192 L481 180 L516 179 L551 170 L591 172 L620 164 L655 163 L675 156 L710 155 L730 142 L759 141 L775 130 L802 128 L802 204 L438 204Z',
+          grad(131,201,['#bd9390','#d5ac93']));
+        shape('M685 175 L714 159 L733 155 L748 146 L765 145 L760 153 L743 158 L731 166 L712 170 L697 177Z M773 159 L785 142 L802 133 L802 155Z','#a88a86');
+        shape('M0 191 Q98 178 186 188 Q295 200 390 187 T570 185 Q701 173 801 186 L801 396 L0 396Z',
+          grad(185,396,['#c8a38a','#d5aa83','#c39472','#a17b68']));
+        shape('M0 209 Q160 189 285 200 T486 190 Q604 182 721 190 Q658 187 527 200 Q424 211 319 206 T110 208 L0 221Z','#e9c69c');
+        for(let i=0;i<1200;i++){
+          const x=rand()*800,y=194+rand()*202,d=(y-194)/202;
+          line(x,y,x+1+rand()*8*d,y-.2-rand()*.7,i%2?'#f8d5a366':'#765d6136',.5+d*.6);
+        }
+        for(let i=0;i<20;i++)stripedTent(27+i*39,196+Math.sin(i*.45)*4,.23+(i%5)*.034);
+        for(const [x,y,k] of [[45,212,.95],[108,206,.68],[173,203,.56],[486,198,.41],[700,209,.88],[774,212,1.13]])stripedTent(x,y,k);
+        jar(67,213,.37);jar(747,216,.42);
+        // 동일한 지형의 밝은 턱과 자갈은 아이가 관찰경의 같은 부분을 찾는 기준점이다.
+        const swale='M-7 256 Q89 236 149 247 Q245 261 329 244 Q386 230 464 236 T597 223 Q644 216 706 223 Q741 227 805 216 L805 244 Q756 249 680 242 Q595 241 535 263 Q470 280 384 273 Q323 270 283 290 Q218 315 167 312 Q80 305 -7 332Z';
+        shape(swale,grad(229,328,['#bb997e','#bf9979','#ad8166']));
+        stroke('M0 333 Q76 306 152 312 M168 313 Q219 318 274 295 M390 273 Q457 281 508 270','#f1c59a',1.8);
+        if(!later){
+          // 이슬은 지면과 풀에 얇게 맺힌다. 햇볕 든 마른 흙이 서리빛 사이로 비친다.
+          for(const [x,y,rx,ry] of [[62,259,119,16],[220,272,118,19],[283,252,109,13],[450,249,101,12],
+              [645,230,141,11],[201,295,103,20],[647,282,98,15]]){
+            g.save();g.translate(x,y);g.scale(rx,ry);
+            const sheen=g.createRadialGradient(0,0,.03,0,0,1);
+            sheen.addColorStop(0,'#bdc7c9c7');sheen.addColorStop(.55,'#b8c3ca8f');sheen.addColorStop(1,'#bad0d000');
+            oval(0,0,1,1,sheen);g.restore();
+            for(let i=0;i<86;i++){
+              const angle=rand()*Math.PI*2,r=Math.sqrt(rand()),dx=x+Math.cos(angle)*r*rx,dy=y+Math.sin(angle)*r*ry;
+              const drop=.4+rand()*.85;
+              oval(dx,dy,drop*1.15,drop*.8,'#a0aba9');oval(dx-.25,dy-.15,drop*.67,drop*.48,'#fff5dd');
+            }
+          }
+        }
+        function shale(x,y,k){
+          g.save();g.translate(x,y);g.scale(k,k);
+          shape('M-22 1 L-13 -2 L2 -3 L16 0 L9 3Z','#826a655f');
+          shape('M-12 0 L-6 -7 L5 -9 L13 -4 L10 0 L2 2Z','#a08574');
+          shape('M-12 0 L-6 -7 L5 -9 L1 -4 L-7 0Z','#b99e85');
+          stroke('M-6 -6 L4 -8 L11 -4','#e2c19c',1.2);g.restore();
+        }
+        const fixedSeed=83081;
+        seed=fixedSeed;
+        for(let i=0;i<34;i++){
+          const x=rand()*800,y=218+rand()*108;
+          shale(x,y,.1+(y-218)*.003);
+        }
+        shale(156,312,.98);shale(277,290,.71);shale(312,284,.34);shale(39,304,1.15);shale(688,271,.55);
+        // 작은 낟알은 타원형 한 줌 단위에서만 그림자와 붓 끝 하이라이트가 구별된다.
+        function grains(x,y,rx,ry,count,size){
+          for(let i=0;i<count;i++){
+            const a=rand()*Math.PI*2,r=Math.sqrt(rand()),xx=x+Math.cos(a)*rx*r,yy=y+Math.sin(a)*ry*r;
+            const k=size*(.4+rand()*.7);
+            oval(xx+.2,yy+.65,k*1.05,k*.55,'#876b5b8a');
+            oval(xx,yy,k,k*.63,['#fff3d4','#eddfc1','#f7e7c5'][i%3]);
+          }
+        }
+        if(later){
+          for(const [x,y,rx,ry,n,k] of [[80,257,78,12,79,1.15],[222,267,88,11,85,1.25],[380,255,84,15,131,1.15],
+              [477,247,69,8,71,1.12],[661,235,96,9,63,1],[219,294,96,18,217,1.65],[461,281,88,18,138,1.6],[672,288,77,15,94,1.45]])grains(x,y,rx,ry,n,k);
+        }
+        function herbs(x,y,k){
+          g.save();g.translate(x,y);g.scale(k,k);
+          stroke('M0 0 Q-4 -15 -18 -20 M-1 -1 Q1 -16 -4 -30 M1 -1 Q5 -12 13 -19 M-2 -8 L-12 -9 M5 -9 L16 -12','#847a61',1.4);
+          if(!later)for(const [dx,dy] of [[-18,-19],[-4,-29],[13,-18],[-12,-8],[16,-11]]){
+            oval(dx,dy+1,2,2.7,'#71929a');oval(dx-.4,dy+.4,1.25,1.5,'#f1ece0');
+          }
+          g.restore();
+        }
+        herbs(187,304,.86);herbs(268,288,.51);herbs(63,283,.56);herbs(744,277,.78);
+        // 옆으로 굽힌 허리와 땅으로 뻗는 팔을 한 윤곽으로 읽을 수 있게 그린다.
+        function gatherer(x,y,k,colours,flip){
+          const [robe,light,wrap]=colours;
+          g.save();g.translate(x,y);g.scale(k*(flip?-1:1),k);
+          shape('M-54 1 Q-34 -4 -6 -4 L28 -3 Q34 -2 27 1 L-28 4Z','#715b653e');
+          shape('M-23 -23 Q-31 -20 -34 -12 L-41 -7 Q-43 -4 -38 -3 L-27 -4 Q-21 -13 -13 -12 L1 -7 L13 -6 L15 -9 L4 -14 L-5 -24Z','#795440');
+          shape('M-27 -25 Q-25 -37 -13 -46 Q-4 -52 6 -48 L13 -40 Q15 -32 2 -25 L-3 -16 L5 -10 L17 -7 Q19 -2 8 -2 L-12 -4 L-21 -9 L-38 -6 Q-42 -6 -42 -11 Q-32 -15 -27 -25Z',robe);
+          shape('M-24 -26 Q-19 -37 -9 -40 L2 -44 L6 -40 Q-3 -33 -11 -24 L-15 -14 L-3 -8 L-15 -10 L-27 -9 L-20 -17Z',light);
+          stroke('M-18 -11 Q-12 -17 -10 -22 M-12 -13 Q-9 -16 -5 -20','#493c472f',1.5);
+          shape('M-6 -45 Q0 -54 9 -53 L17 -48 L18 -42 L21 -37 L18 -36 L16 -33 L9 -34 L5 -39 L0 -38Z','#bb805a');
+          shape('M-14 -43 Q-9 -51 -4 -54 Q7 -61 16 -53 L19 -48 Q12 -49 6 -46 L0 -42 L-3 -35 Q-12 -35 -17 -38Z',wrap);
+          stroke('M-10 -45 Q0 -53 10 -53','#f8d5a783',1.45);
+          stroke('M12 -43 L14 -42','#604d47',.9);
+          shape('M-5 -38 Q-1 -40 3 -39 Q8 -35 12 -28 L18 -23 L13 -19 Q4 -21 -3 -29 Q-6 -33 -5 -38Z',light);
+          stroke('M15 -21 Q17 -17 23 -13 L30 -7 L28 -5 M28 -8 L33 -7','#b47a56',3.4);
+          g.restore();
+        }
+        function dish(x,y,k,full){
+          g.save();g.translate(x,y);g.scale(k,k);
+          oval(-5,1,28,3.8,'#755e5845');
+          shape('M-22 -12 Q-19 -1 -6 1 Q3 4 14 0 L23 -12Z',grad(-12,2,['#c78a59','#a56647','#81513e']));
+          oval(0,-12,22.6,6.2,'#d9a574');oval(0,-12,19.8,4.65,'#76513e');
+          if(full){oval(0,-12.3,18.8,3.9,'#e6d0a6');grains(0,-13,17,3,47,.85);}
+          stroke('M-20 -11 Q0 -1 21 -11','#e5b27d',1.4);g.restore();
+        }
+        if(later){
+          for(const [x,y,k,i,flip] of [[70,235,.36,1,false],[166,225,.32,0,true],[243,232,.36,3,false],[327,224,.34,2,false],
+              [566,228,.37,0,true],[660,226,.41,2,false],[742,240,.44,3,true]]){
+            if(x===166||x===566){
+              traveller(x,y,k*.96,people[i],false,flip);dish(x+(flip?7:-7),y-10*k,k*.51,true);
+            }else{
+              gatherer(x,y,k,people[i],flip);dish(x+(flip?-16:16),y+1,k*.65,false);
+            }
+          }
+          gatherer(367,246,.65,people[3],true);dish(341,247,.49,true);
+          gatherer(418,263,1.03,people[0],false);dish(469,264,.76,true);
+          traveller(485,245,.78,people[1],false,true);
+          // 물건과 사람의 크기 관계만 나타낸다. 그릇 크기가 곧 한 오멜이라는 눈금은 그리지 않는다.
+          traveller(622,305,1.42,people[2],true);
+          stroke('M612 268 Q609 275 600 277 L591 274','#e4b983',8);
+          stroke('M603 277 Q596 279 589 275 L580 274','#bd855f',5);
+          g.save();g.translate(580,263);g.rotate(-.38);
+          shape('M-11 -4 L11 -4 L9 13 Q0 16 -8 12Z',grad(-4,14,['#cfa276','#966748']));
+          oval(0,-4,11.5,3.6,'#e9c299');oval(0,-4,9,2.4,'#906740');grains(-1,-4,7,1.2,17,.65);g.restore();
+          stroke('M581 275 Q584 278 590 275 M581 272 Q585 275 590 272','#ce996e',1.9);
+          dish(550,309,1.54,true);dish(503,306,.72,true);jar(675,297,.73);
+        }else{
+          traveller(339,213,.25,people[3]);traveller(362,214,.28,people[1],false,true);
+          traveller(654,216,.31,people[0]);jar(637,217,.32);
+        }
+        shape('M-2 367 Q114 334 230 346 T458 355 Q593 335 802 343 L802 398 L-2 398Z',grad(339,396,['#ceaa84','#b88f72','#987564']));
+        stroke('M0 365 Q93 341 154 344 M341 355 Q419 362 487 351 M594 344 Q643 341 683 343','#e7c69c',1.6);
+        seed=349822;
+        for(let i=0;i<360;i++){
+          const x=rand()*W,y=362+rand()*38;
+          line(x,y,x+1+rand()*7,y-.5,i%2?'#e5c79880':'#76585c42',.55+rand()*.8);
+        }
+        shale(10,365,2.2);shale(786,352,1.9);herbs(20,366,1.14);
+        for(let i=0;i<5400;i++){
+          g.fillStyle=i%2?'#fff8d71c':'#46384d15';g.fillRect(rand()*W,rand()*H,.8+rand()*1.4,.6);
+        }
+      }
+      if(id==='manna'){mannaMorning();return;}
       function cliffs(y,xStep,amplitude,palette,phase){
         const points=[];
         for(let x=-xStep;x<W+2*xStep;x+=xStep){
@@ -293,7 +439,7 @@
         g.fillStyle=i%2?'#fbe5bf20':'#47344412';g.fillRect(rand()*W,rand()*H,1+rand()*1.4,.6+rand()*.7);
       }
     }
-    if(id==='marah'||id==='elim'){springs();return;}
+    if(id==='marah'||id==='elim'||id==='manna'){illustratedCamp();return;}
     function mountainCamp(){
       const clouded=id==='sinai'&&later;
       const peak=[[0,219],[80,190],[137,201],[231,138],[266,155],[353,111],[396,117],
@@ -345,7 +491,7 @@
       }
     }
     g.fillStyle=grad(0,190,c.slice(0,3));g.fillRect(0,0,W,H);
-    const sx=id==='manna'?574:172,sy=id==='manna'?130:76;
+    const sx=172,sy=76;
     for(const [r,color] of [[52,'#fff4cd14'],[34,'#fff0b925'],[19,'#ffedba']])oval(sx,sy,r,r,color);
     for(let i=0;i<28;i++){
       const x=rand()*W,y=rand()*130;
@@ -386,18 +532,6 @@
         poly([[x,315],[x+6,305],[x+19,303],[x+28,311],[x+24,316]],'#aa8d69');
         line(x+7,306,x+17,304,'#d9bc8f',2);
       }
-    }else if(id==='manna'){
-      for(let i=0;i<8;i++)tent(70+i*92,215+Math.sin(i)*6,.8);
-      if(!later){g.fillStyle=grad(216,336,['#d0dee7a0','#fcf5de50']);g.beginPath();g.ellipse(397,261,413,43,0,0,Math.PI*2);g.fill();}
-      for(let i=0;later&&i<250;i++){
-        const x=rand()*W,y=228+rand()*115; const r=.7+(y-228)/76;
-        oval(x,y,r*1.5,r*.7,'#f9e6c6');line(x-1,y+1,x+1,y+1,'#98847788',.65);
-      }
-      for(let i=0;later&&i<12;i++){
-        const x=50+i*61,y=247+18*Math.sin(i*2.1);person(x,y,30+i%4*5,i,i%3!==0);
-        oval(x+12,y+1,7.5,3.5,'#936e54');oval(x+12,y-1,7,2,'#e6cbae');
-      }
-      if(later){person(519,304,65,2,true);oval(545,303,13,6,'#906c54');oval(545,300,12,3,'#ebceaa');}
     }else if(!later){
       for(let i=0;i<10;i++)tent(35+i*74,220+Math.sin(i)*6,.8);
       for(let i=0;i<55;i++){

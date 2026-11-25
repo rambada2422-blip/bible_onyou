@@ -318,13 +318,13 @@
 
   // 외부의 같은 페이지 링크도 새 입구로 진입한다. 내부 이동은 replaceState라 이 이벤트를 보내지 않는다.
   window.addEventListener('hashchange', function () {
-    if (['#home','#pillar','#palace','#passover','#redsea','#redsea-coast','#redsea-walk','#redsea-drum','#wilderness','#marah','#elim','#manna-rest','#sinai','#exodus','#nile',''].includes(location.hash)) location.reload();
+    if (['#home','#pillar','#palace','#passover','#redsea','#redsea-coast','#redsea-walk','#redsea-drum','#wilderness','#marah','#elim','#manna','#manna-rest','#sinai','#exodus','#nile',''].includes(location.hash)) location.reload();
   });
   if (location.hash === '#nile' || (!location.hash && document.body.dataset.start === 'nile')) app.openNile();
   else if (location.hash === '#pillar') app.openPillars();
   else if (location.hash === '#sinai') app.openSinai();
   else if (location.hash === '#manna-rest') openField(false,false,'sabbath');
-  else if (location.hash === '#marah' || location.hash === '#elim') openField(false,false,location.hash.slice(1));
+  else if (['#marah','#elim','#manna'].includes(location.hash)) openField(false,false,location.hash.slice(1));
   else if (location.hash === '#wilderness') app.openWilderness();
   else if (location.hash === '#redsea-walk') app.openRedSea('walk');
   else if (location.hash === '#redsea-drum') app.openRedSea('drum');
