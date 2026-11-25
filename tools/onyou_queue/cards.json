@@ -1,0 +1,29 @@
+[
+  {
+    "id": "genesis-index-66", "branch": "claude/genesis-week", "services": ["local"],
+    "job": "index", "title": "감수 색인 66회와 원고 링크 전수 대조"
+  },
+  {
+    "id": "david-offline-baseline", "branch": "antigravity/david-week", "services": ["local"],
+    "after": ["genesis-index-66"], "job": "bundle", "title": "다윗 오프라인 실행본 제작과 D09 조작 점검"
+  },
+  {
+    "id": "genesis-c29", "branch": "claude/genesis-week", "services": ["claude", "antigravity"],
+    "after": ["genesis-index-66"], "job": "pdf", "title": "C29 E59·E60 인쇄 놀이와 별도 답지",
+    "prompt": "docs/일감/창세기_감수와_인쇄놀이.md의 C29 한 건을 완성하세요. E59, E60의 검증된 문구만 사용하세요. docs/창세기/연속/C29.md, 아이용 C29.pdf, 진행자용 C29_답지.pdf를 만드세요. 이미 있는 작업은 검토하고 이어 쓰세요. 각 PDF에 해당 회차 번호와 장절을 표기하세요. 아이 면에는 답을 미리 노출하지 마세요. 새 대사나 미감수 본문 수정은 담당 목회자에게 남기세요. PDF 생성 도구가 필요하면 같은 폴더에 C29_인쇄.json을 쓰세요. child와 leader 키 각각의 값은 면 배열이고, 각 면은 title 문자열과 blocks 문자열 배열입니다. 실행기가 로컬에서 두 PDF를 생성합니다. 각 면은 A4 한 쪽입니다."
+  },
+  {
+    "id": "david-nine-scenes", "branch": "antigravity/david-week", "services": ["antigravity", "claude"],
+    "after": ["david-offline-baseline"], "job": "journey", "title": "다윗 아홉 그림 놀이 이어하기",
+    "prompt": "docs/일감/다윗_아홉장면_이어하기.md의 아홉 장면 연속 플레이를 구현하세요. 새 게임의 기존 들판 망원경 시작 버튼에서도 D01을 마치고 다음 장면을 누르면 D02 카메라가 열려야 합니다. 이 경로의 첫 이동은 외부에서 검증합니다. 일반 시작부터 D09 일지까지, 중간 재시작, 기존 9/9 일지와 세 장면 코스를 실제로 검사하는 web/david/tests/verify_nine_journey.js를 추가하세요. 원고나 감수 여부는 변경하지 마세요."
+  },
+  {
+    "id": "genesis-c29-print-proof", "branch": "claude/genesis-week", "services": ["local"],
+    "after": ["genesis-c29"], "job": "proof", "title": "검증된 C29 아이용·진행자용 PDF 인쇄면 미리보기 제작"
+  },
+  {
+    "id": "genesis-c29-content-check", "branch": "claude/genesis-week", "services": ["claude"],
+    "after": ["genesis-c29"], "job": "content", "title": "C29 별도 검증 지적을 인쇄 원고와 두 PDF에 반영",
+    "prompt": "담당 인계 맨 위와 C29.md의 별도 내용 검증 절을 확인하세요. 진행 중인 검증이 올라왔으면 그 지적을 C29 원고와 PDF에 반영하세요. 실제 별도 검증 결과가 없으면 새 세션에서 E59·E60 원고와 인쇄면을 독립 대조해 두 선택 경로, 장절, 답 노출을 점검하고 확인한 근거와 수정 사항을 C29.md의 별도 내용 검증 절에 남기세요. 목회자 감수와 실물 시험은 확인된 범위 그대로 두세요. 기존 제작자에게서 넘겨받은 C29 파일만 편집하세요."
+  }
+]
