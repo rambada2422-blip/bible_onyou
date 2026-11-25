@@ -1273,8 +1273,8 @@ h1, h2, h3, p { margin: 0; }
 .hero {
   background: linear-gradient(100deg, #192c40f5 5%, #263a46c7 60%, #263a46aa), url('../media/david-hills.webp') center / cover;
 }
-.field-starts { display: flex; gap: 8px; }
-.field-starts button { flex: 1; background: var(--paper); }
+.field-starts { display: flex; flex-wrap: wrap; gap: 6px; }
+.field-starts button { flex: 1 1 110px; background: var(--paper); }
 .lamp-head {
   position: absolute; left: calc(15% - 15px); top: calc(50% - 20px);
   width: 30px; height: 40px; border: 3px solid #394751; border-radius: 9px 9px 13px 13px;
@@ -1645,9 +1645,14 @@ h1, h2, h3, p { margin: 0; }
 .well-pin.collected { background: #DFF1E8; color: #1E6B4F; border-color: #1E6B4F; }
 .well-pin-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
 .well-pin-label { font: 11.5px/1.15 var(--f-display); white-space: nowrap; }
-.well-crop { display: block; position: relative; width: 100%; aspect-ratio: 2.4; overflow: hidden; }
+.well-collection li.collected { align-content: start; }
+.well-crop { display: block; position: relative; width: 100%; aspect-ratio: 2.2; overflow: hidden; }
 .well-crop img {
   position: absolute; left: 50%; top: 50%; width: 320%; height: auto; max-width: none;
   transform: translate(calc(0% - var(--well-x)), calc(0% - var(--well-y)));
 }
 .well-keepsake .well-crop { aspect-ratio: 1.65; }
+
+/* D09 · 성전 예물 빛수첩 */
+.gifts-panel { background: #fff9eb; border-color: #c7b17e; }
+.gifts-pin.active { background: #f6c453; color: #19253a; border-color: #19253a; box-shadow: 0 0 0 4px rgba(246, 196, 83, .38); }
