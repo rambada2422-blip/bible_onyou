@@ -1,0 +1,42 @@
+.cf-scene { background:#201d1c; border-color:#9a805c; }
+.cf-game .sf-scene-title,.cf-game .sf-scripture { background:#282422; }
+.cf-board { position:relative; aspect-ratio:1672/941; background:#483832; }
+.cf-board>img { width:100%; height:100%; display:block; }
+.cf-game [hidden] { display:none!important; }
+.cf-pin { position:absolute; left:31%; top:82%; width:46px; height:46px; transform:translate(-50%,-50%); border:2px solid #ffe3a1; box-shadow:0 0 0 3px #3f241fab,inset 0 0 0 2px #3f241f99; border-radius:50%; color:#fff4bf; background:#38221c25; cursor:zoom-in; font:bold 24px/1 sans-serif; }
+.cf-bar { display:grid; gap:9px; padding:12px clamp(10px,2vw,20px); color:#f7e6c7; }
+.cf-bar>strong,.cf-account { line-height:1.5; overflow-wrap:anywhere; }
+.cf-bar .sf-verse { justify-self:start; text-align:start; }
+.cf-bar .sf-shutter { justify-self:start; }
+.cf-bar button:disabled { opacity:.53; cursor:default; }
+.cf-rub,.cf-strips,.cf-rail { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); border-radius:5px; }
+.cf-rub { background-repeat:no-repeat; background-size:330% auto; background-position:23% 84%; min-height:clamp(90px,12vw,165px); overflow:hidden; touch-action:none; border:2px solid #ad8e5c; }
+.cf-paper { min-width:0; cursor:crosshair; border:1px dashed #816439; background:repeating-linear-gradient(152deg,#cfb98e,#d2bc94 6px,#dac69f 8px); }
+.cf-clear { background:transparent; }
+.cf-strips { gap:3px; aspect-ratio:1672/941; border-block:7px dotted #aea28d; background:#382d23; }
+.cf-strip { min-width:0; background-size:300% 100%; background-repeat:no-repeat; cursor:pointer; }
+.cf-strip[aria-pressed="true"] { outline:4px solid #ffd572; outline-offset:-4px; }
+.cf-rail { gap:6px; }
+.cf-card { display:grid; align-content:start; min-width:0; padding:3px; text-align:center; background:#ded0b1; color:#251e19; border:1px solid #a69572; border-radius:4px; cursor:pointer; }
+.cf-card img { width:100%; height:auto; display:block; }
+.cf-card span { padding:5px 2px; font-size:.92rem; font-weight:650; overflow-wrap:anywhere; }
+.cf-views { display:flex; flex-wrap:wrap; gap:4px; padding:4px; }
+.cf-views button { flex:1; min-width:0; padding:5px; background:#3a332c; border-color:#78674f; color:#ede4cf; }
+.cf-views [aria-pressed="true"] { background:#e2bf80; color:#241c17; }
+.cf-story { padding:clamp(12px,2vw,22px); border-left:3px solid #ad8f58; background:#252d29; }
+.cf-story>b { color:#f3d6a1; }
+.cf-account { margin:8px 0 0; }
+.cf-ending { display:flex; flex-wrap:wrap; gap:5px 15px; }
+.cf-panel>*+button { margin-top:7px; }
+.cf-feedback,.cf-hint { color:#ffdb93; line-height:1.45; }
+.cf-feedback:empty { display:none; }
+.cf-guide,.cf-game button:focus-visible { outline:3px solid #ffdf76; outline-offset:-3px; }
+@media(max-width:899px){ .cf-game .sf-desk { margin-top:12px; } }
+@media(prefers-reduced-motion:no-preference){
+  .cf-board>img { animation:sf-develop .32s ease-out; }
+  .cf-pin { animation:cf-pulse 2.1s ease-in-out infinite; }
+  @keyframes cf-pulse { 50% { box-shadow:0 0 0 7px #ffcd7945,inset 0 0 0 2px #3f241fa8; } }
+}
+.cf-inspect summary { min-height:44px; padding:9px 12px; color:#f4d49c; cursor:pointer; }
+.cf-crop { aspect-ratio:3/1; background-size:400% auto; background-position:88.7% 37%; background-repeat:no-repeat; }
+.cf-caption { margin:0; padding:9px 12px; line-height:1.45; background:#36302c; color:#f8edd7; word-break:keep-all; overflow-wrap:anywhere; }

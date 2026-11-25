@@ -87,6 +87,7 @@
     function pageHide(){pause();sound.stop();}
     function route(fn){closed=true;pause();sound.stop();music?.close();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',pageHide);window.removeEventListener('blur',pageHide);window.removeEventListener('focus',schedule);fn();}
     function sinai(){return stage.id==='sinai';}
+    function calf(){return stage.id==='calf';}
     function rock(){return stage.id==='rock';}
     function laterView(){
       if(p.phase===3)return !p.reviewEarly;
@@ -98,9 +99,9 @@
     }
     function updateScore(){
       if(!music)return;
-      if(rock()){
+      if(rock()||calf()){
         music.setPaused(!s.sound||Boolean(dialog?.querySelector('.wf-edition')));
-        music.setCue(p.phase===0||p.reviewEarly?'wild-rock-dry':'wild-rock-flow',.12);
+        music.setCue(calf()?BO.calfField.view(p).music:(p.phase===0||p.reviewEarly?'wild-rock-dry':'wild-rock-flow'),.12);
         music.button.disabled=!s.sound;
         return;
       }
@@ -391,7 +392,7 @@
     }
     function advance(){
       p.phase++;resetHints();
-      if(stage.beats)p.beat=(stage.beatSteps||[0,2,4,stage.beats.length-1])[p.phase];
+      if(stage.beats)p.beat=calf()?BO.calfField.view(p).beat:(stage.beatSteps||[0,2,4,stage.beats.length-1])[p.phase];
       if(p.phase===3){delete p.reviewEarly;s.earned[s.index]=true;baseCount();play('clear');}
       else play('found');
       app.save();draw(true);
@@ -476,7 +477,7 @@
         const toggle=button('',()=>{s.sound=!s.sound;app.save();toggle.textContent=s.sound?'소리 켜짐':'소리 꺼짐';toggle.setAttribute('aria-pressed',String(s.sound));if(s.sound)play('tap');else sound.stop();updateScore();});
         toggle.textContent=s.sound?'소리 켜짐':'소리 꺼짐';toggle.setAttribute('aria-pressed',String(s.sound));
         box.append(el('label',{},'플레이어 연령 ',mode),toggle);
-        if(!sinai()&&!rock())box.append(el('p',{},'동료는 현장에서 따로 선택할 수 있어요.'));
+        if(!mountain&&!rock())box.append(el('p',{},'동료는 현장에서 따로 선택할 수 있어요.'));
       });
     }
     function stopList(){
@@ -492,7 +493,7 @@
     function draw(focus){
       s[bookmark]=s.index;stage=stages[s.index];p=s.stops[s.index];ui={};
       const complete=p.phase===3, heading=el('h1',{tabindex:'-1'},stage.title);
-      if(stage.observations||stage.frames||sinai()||rock()){
+      if(stage.observations||stage.frames||mountain||rock()){
         if(!music)music=BO.sceneMusic.create();
         updateScore();
       }else if(music){music.close();music=null;}
@@ -512,21 +513,20 @@
             el('p',{},'광야 답사 · 출애굽기 17:1–7'),heading),ui.camp.root,stopList()));
         app.show(ui.screen);if(focus)ui.camp.head.focus({preventScroll:true});schedule();return;
       }
-      if(sinai()){
+      if(mountain){
         delete p.tentOpen;
-        const revisit=()=>{s.stops[s.index]=freshStop();s.stops[s.index].beat=0;resetHints();draw(true);app.save();};
-        const openNext=()=>{sound.stop();s.index++;resetHints();draw(true);app.save();};
-        ui.camp=BO.sinaiField.mount({p,stage,s,advance,book:ref=>scrollText(s.index,ref),play,save:app.save,
+        const restart=()=>{s.stops[s.index]=freshStop();s.stops[s.index].beat=0;resetHints();draw(true);app.save();};
+        const next=()=>{sound.stop();s.index++;resetHints();draw(true);app.save();};
+        const scene=sinai()?BO.sinaiField:BO.calfField;
+        ui.camp=scene.mount({p,stage,s,advance,book:ref=>scrollText(s.index,ref),play,save:app.save,
           redraw:()=>draw(true),ask:()=>{hint=Math.min(3,hint+1);showHint();schedule();},
-          refreshHints:resetHints,next:openNext,restart:revisit});
-        const records=el('details',{class:'wf-library sf-library'},el('summary',{},'출애굽기 19–20장 사건 기록'),storyRecord());
-        const journal=el('details',{class:'wf-stops sf-library'},el('summary',{},'시내산 답사 경로'));
-        const calf=button(stages[s.index+1].title,openNext);
-        calf.disabled=!s.earned[s.index]&&!s.stops[s.index+1].available&&!s.earned[s.index+1];journal.append(calf);
+          refreshHints:resetHints,progress:()=>{resetHints();showHint();schedule();},next,restart,journal:()=>route(trail)});
+        const chapter=sinai()?'출애굽기 19–20장':'출애굽기 32장';
+        const records=el('details',{class:'wf-library sf-library'},el('summary',{},chapter+' 사건 기록'),storyRecord());
         const gesture=e=>music?.gesture(e);
-        ui.screen=el('main',{class:'screen wf-screen sf-screen',on:{pointerdown:gesture,keydown:gesture,click:gesture}},nav,
+        ui.screen=el('main',{class:'screen wf-screen sf-screen'+(calf()?' cf-screen':''),on:{pointerdown:gesture,keydown:gesture,click:gesture}},nav,
           el('div',{class:'sf-scroll wf-scroll'},el('header',{class:'sf-heading wf-heading'},
-            el('p',{},'출애굽기 19–20장 · 십계명을 듣는 백성'),heading),ui.camp.root,el('footer',{class:'sf-footer'},records,journal)));
+            el('p',{},chapter+(sinai()?' · 십계명을 듣는 백성':' · 시내산 아래')),heading),ui.camp.root,el('footer',{class:'sf-footer'},records,stopList())));
         app.show(ui.screen);if(focus)ui.camp.head.focus({preventScroll:true});schedule();return;
       }
       ui.canvas=el('canvas',{class:'wf-picture',role:'img','aria-label':stage.title+' · '+stage.card});

@@ -8,6 +8,7 @@ const { gameOrigin } = require('./game-server');
 
 const { checkObservations } = require('./wilderness-observation');
 const {playRock,checkRockSound,checkRockLegacy}=require('./rephidim-field');
+const {playCalf,checkCalfSound}=require('./calf-field');
 const {playSinai}=require('./sinai-field');
 const {checkTwoDays}=require('./wilderness-two-days');
 const { checkManna } = require('./wilderness-manna');
@@ -46,14 +47,14 @@ async function runRoute(browser, origin, out, entry, width) {
   for (const [i,stage] of data.stages.entries()) {
     assert.equal(await heading(),stopNames[i]);
     if(stage.beats){
-      if(stage.id==='sinai')await page.locator('.wf-library summary').click();
+      if(stage.id==='sinai'||stage.id==='calf')await page.locator('.wf-library summary').click();
       assert(page.url().endsWith(stage.id==='sabbath'?'#wilderness':'#sinai'));
       for(const [j,beat] of stage.beats.entries()){
         assert.equal(await page.locator('.wf-record p').innerText(),beat.notes[2]);
         await click('이 대목의 원문 · 출 '+beat.ref);
         assert.equal(await page.locator(':focus').getAttribute('data-verse'),beat.ref.split('–')[0]);
         await click('닫기');
-        if(j===1){await page.reload();assert.equal((await state()).stops[i].beat,j);if(stage.id==='sinai')await page.locator('.wf-library summary').click();}
+        if(j===1){await page.reload();assert.equal((await state()).stops[i].beat,j);if(stage.id==='sinai'||stage.id==='calf')await page.locator('.wf-library summary').click();}
         if(j<stage.beats.length-1)await click('뒤 대목');
       }
     }
@@ -92,6 +93,15 @@ async function runRoute(browser, origin, out, entry, width) {
       if(width===360){await click('시내산 수첩으로');await click('시내산 본편 답사');}
       else await click('시내산 본편으로');
       continue;
+    }
+    if(stage.id==='calf'){
+      await playCalf(page,width===360?out:null);
+      await click('관측대');
+      assert.equal(await page.locator('.wf-slot button').count(),i+1);
+      await page.getByRole('dialog').getByRole('button',exact('말씀 인장 · 출 32:30')).click();
+      await page.getByRole('dialog',exact('말씀 두루마리')).waitFor();
+      assert.equal(await page.locator(':focus').getAttribute('data-verse'),'32:30');
+      await click('닫기');await click('시내산 수첩으로');continue;
     }
     const firstFrame = await page.locator('.wf-picture').evaluate(c => c.toDataURL());
     await page.locator('.wf-pin').tap();
@@ -167,7 +177,7 @@ async function runRoute(browser, origin, out, entry, width) {
     await page.getByRole('dialog',exact('말씀 두루마리')).waitFor();
     assert.equal(await page.locator(':focus').getAttribute('data-verse'),seals[i]);
     await click('닫기');
-    await click(stage.id==='calf'?'시내산 수첩으로':stopNames[i+1]+' 답사하기');
+    await click(stopNames[i+1]+' 답사하기');
   }
   assert.equal(seen.size,118);
   assert.equal(await page.locator(':focus').innerText(),'시내산의 기록');
@@ -252,6 +262,7 @@ async function checkHints(browser,origin) {
       await checkManna(browser,origin,entry,out);
       await checkTwoDays(browser,origin,entry);
       await checkRockSound(browser,origin,entry);
+      await checkCalfSound(browser,origin,entry);
     }
     const direct=await browser.newPage({viewport:{width:320,height:480}});
     await direct.goto(origin+'/preview.html#sinai-camp');
