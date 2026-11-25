@@ -1656,3 +1656,26 @@ h1, h2, h3, p { margin: 0; }
 /* D09 · 성전 예물 빛수첩 */
 .gifts-panel { background: #fff9eb; border-color: #c7b17e; }
 .gifts-pin.active { background: #f6c453; color: #19253a; border-color: #19253a; box-shadow: 0 0 0 4px rgba(246, 196, 83, .38); }
+
+/* 아홉 장면 이어하기 (D01~D09) */
+.journey-box {
+  display: flex; flex-direction: column; gap: 7px; padding: 9px 10px;
+  border-radius: 12px; background: #FAF3E2; border: 1.5px solid #D3B474; color: var(--ink);
+}
+.journey-strip {
+  display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px;
+}
+.journey-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 26px; padding: 2px 1px; border-radius: 6px;
+  font: 10.5px/1.1 var(--f-display); text-align: center;
+  background: #fff; color: var(--text-soft); border: 1px solid var(--paper-line);
+}
+.journey-pill.done { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+.journey-pill.current { background: #E9B44C; color: #0E1730; border-color: #16233F; font-weight: 700; }
+.scene-card.journey-here { border-color: #E9B44C; box-shadow: 0 0 0 2px rgba(233, 180, 76, .35); }
+.scene-card.journey-here .scene-badge { background: #E9B44C; color: #0E1730; }
+.journey-here-tag { background: #FFF2CC; color: #6B4707; border: 1px solid #D3A33A; }
+@media (max-width: 380px) {
+  .journey-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}

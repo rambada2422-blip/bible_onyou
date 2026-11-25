@@ -28,6 +28,20 @@
     { x: 180, label: '가운데' },
     { x: 232, label: '오른쪽' }
   ];
+  var JOURNEY_SCENES = ['D01', 'D02', 'D03', 'D04', 'D05', 'D06', 'D07', 'D08', 'D09'];
+
+  function journeyInitialStep(sceneId) {
+    if (sceneId === 'D01') return 'pasture';
+    if (sceneId === 'D02') return 'stones';
+    if (sceneId === 'D03') return 'robe';
+    if (sceneId === 'D04') return 'rubbing';
+    if (sceneId === 'D05') return 'memory';
+    if (sceneId === 'D06') return 'choose';
+    if (sceneId === 'D07') return 'table-search';
+    if (sceneId === 'D08') return 'well-trail';
+    if (sceneId === 'D09') return 'temple-gifts';
+    return 'choose';
+  }
 
   /* A01(D01): 『탐험대 이야기』 목자의 물건 찾기 — 인물·물건 두 관찰 지점 */
   var D01_SPOTS = [
@@ -121,6 +135,12 @@
         idx: 0,           /* 현재 진행 중인 코스 순서 (0~2) */
         active: false,
         completed: []     /* 이번 코스에서 마친 장면 ID */
+      },
+      journey: {          /* 아홉 장면 연속 여정 (D01~D09) */
+        active: false,
+        sceneId: 'D01',
+        step: 'pasture',
+        completed: []
       },
       stonesFound: [],
       brookSpots: [],     /* 현재 판의 시냇가 돌밭 배치 (s1~s5, p1~p3) */
@@ -305,6 +325,20 @@
           completed: Array.isArray(parsed.course.completed) ? parsed.course.completed.slice(0, 3) : []
         };
       }
+      if (parsed.journey && typeof parsed.journey === 'object') {
+        var jSc = (typeof parsed.journey.sceneId === 'string' && getScene(parsed.journey.sceneId)) ? parsed.journey.sceneId : 'D01';
+        var validSteps = ['choose', 'pasture', 'stones', 'robe', 'robe-order', 'order', 'rubbing', 'memory', 'hebron2', 'ark2', 'table-search', 'well-trail', 'temple-gifts', 'done'];
+        var jStep = validSteps.indexOf(parsed.journey.step) !== -1 ? parsed.journey.step : journeyInitialStep(jSc);
+        var jComp = Array.isArray(parsed.journey.completed)
+          ? parsed.journey.completed.filter(function (id, i, a) { return !!getScene(id) && a.indexOf(id) === i; })
+          : [];
+        base.journey = {
+          active: !!parsed.journey.active,
+          sceneId: jSc,
+          step: jStep,
+          completed: jComp
+        };
+      }
       if (Array.isArray(parsed.stonesFound)) {
         base.stonesFound = parsed.stonesFound.filter(function (v, i, a) { return typeof v === 'number' && a.indexOf(v) === i; });
       }
@@ -347,6 +381,9 @@
   var state = loadState();
 
   function saveState() {
+    if (state.view === 'scene' && state.journey && state.journey.active && state.sceneId === state.journey.sceneId) {
+      state.journey.step = state.step;
+    }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         view: state.view,
@@ -410,6 +447,7 @@
         d09Entry: state.d09Entry,
         d09SoloBack: state.d09SoloBack,
         course: state.course,
+        journey: state.journey,
         stonesFound: state.stonesFound,
         brookSpots: state.brookSpots,
         brookOpened: state.brookOpened,
@@ -487,7 +525,134 @@
     if (extra) entry.extra = extra;
     if (keepsake) Object.assign(entry, keepsake);
     state.journal[scene.id] = entry;
+    if (state.journey && state.journey.active && state.journey.sceneId === scene.id) {
+      if (state.journey.completed.indexOf(scene.id) === -1) {
+        state.journey.completed.push(scene.id);
+      }
+      state.journey.step = 'done';
+    }
     saveState();
+  }
+
+  function resetAllJourneyRounds() {
+    state.pasture = pasture.restore({ layout: state.pasture.finished ? ((state.pasture.layout + 1) % 3) : state.pasture.layout });
+    state.stonesFound = [];
+    state.brookSpots = makeBrookSpots(getSeed(state, 'D02'));
+    state.brookOpened = [];
+    state.lastSpotIdx = null;
+    state.d02Marks = [];
+    state.d02MarkMode = false;
+    state.d02Camera = { position: 1, photos: [], kept: state.d02Camera ? state.d02Camera.kept : null };
+    state.robe = state.robe.finished ? robe.next(state.robe) : robe.restore();
+    state.orderList = makeInitialOrderList(getScene('D03'), getSeed(state, 'D03'));
+    state.orderPick = null;
+    state.orderMsg = '';
+    state.d03Locked = null;
+    state.rubbing = rubbing.restore({ first: state.rubbing.finished ? rubbing.other(state.rubbing.first) : state.rubbing.first });
+    state.hebronCards = state.hebronCards.phase === 'done' ? hebronCards.next(state.hebronCards) : hebronCards.restore();
+    state.lookout = field.lookoutState();
+    state.tableSearch = tableSearch.restore();
+    state.wellTrail = state.wellTrail.finished ? wellTrail.next(state.wellTrail) : wellTrail.restore();
+    state.templeGifts = state.templeGifts.finished ? templeGifts.next(state.templeGifts) : templeGifts.restore();
+  }
+
+  function startJourney() {
+    recordFirstAction('journey:start:D01');
+    resetAllJourneyRounds();
+    state.journey = {
+      active: true,
+      sceneId: 'D01',
+      step: 'pasture',
+      completed: []
+    };
+    openScene('D01', false, 'pasture');
+  }
+
+  function startBrookCamera() {
+    recordFirstAction('field:D02:camera');
+    if (state.stonesFound.length >= 5) {
+      state.stonesFound = [];
+      state.brookSpots = makeBrookSpots(getSeed(state, 'D02'));
+      state.brookOpened = [];
+      state.lastSpotIdx = null;
+      state.d02Marks = [];
+      state.d02MarkMode = false;
+      state.d02Camera.position = 1;
+      state.d02Camera.photos = [];
+    }
+    openScene('D02', false, 'stones');
+  }
+
+  function startLookout() {
+    recordFirstAction('field:D06');
+    if (state.lookout.finished) state.lookout = field.lookoutState();
+    openScene('D06', false, 'choose');
+  }
+
+  function advanceJourneyTo(nextSceneId, startFn) {
+    if (!state.journey) {
+      state.journey = { active: true, sceneId: nextSceneId, step: journeyInitialStep(nextSceneId), completed: [] };
+    }
+    state.journey.active = true;
+    if (state.sceneId && state.journey.completed.indexOf(state.sceneId) === -1) {
+      state.journey.completed.push(state.sceneId);
+    }
+    state.journey.sceneId = nextSceneId;
+    state.journey.step = journeyInitialStep(nextSceneId);
+    startFn();
+  }
+
+  function finishJourneyToJournal() {
+    if (state.journey && state.journey.active) {
+      if (state.journey.completed.indexOf('D09') === -1) {
+        state.journey.completed.push('D09');
+      }
+      state.journey.active = false;
+      state.journey.step = 'done';
+    }
+    openJournal();
+  }
+
+  function resumeJourney() {
+    if (!state.journey || !state.journey.active || !getScene(state.journey.sceneId)) {
+      startJourney();
+      return;
+    }
+    recordFirstAction('journey:resume:' + state.journey.sceneId);
+    var scId = state.journey.sceneId;
+    var step = state.journey.step || journeyInitialStep(scId);
+    if (step === 'done' && scId !== 'D09') {
+      var nextIdx = JOURNEY_SCENES.indexOf(scId) + 1;
+      if (nextIdx > 0 && nextIdx < JOURNEY_SCENES.length) {
+        var nextId = JOURNEY_SCENES[nextIdx];
+        var nextStartMap = {
+          D02: startBrookCamera,
+          D03: startRobe,
+          D04: startRubbing,
+          D05: startHebronCards,
+          D06: startLookout,
+          D07: startTableSearch,
+          D08: startWellTrail,
+          D09: startTempleGifts
+        };
+        if (nextStartMap[nextId]) {
+          advanceJourneyTo(nextId, nextStartMap[nextId]);
+          return;
+        }
+      }
+    }
+    state.view = 'scene';
+    state.sceneId = scId;
+    state.step = step;
+    state.detourId = null;
+    if (scId === 'D02' && (!state.brookSpots || state.brookSpots.length !== 8)) {
+      state.brookSpots = makeBrookSpots(getSeed(state, 'D02'));
+    }
+    if (scId === 'D03' && (step === 'order' || step === 'robe-order') && (!state.orderList || !state.orderList.length)) {
+      state.orderList = makeInitialOrderList(getScene('D03'), getSeed(state, 'D03'));
+    }
+    saveState();
+    render();
   }
 
   function startTempleGifts() {
@@ -537,6 +702,14 @@
     if (state.pasture.finished) {
       state.pasture = pasture.restore({ layout: (state.pasture.layout + 1) % 3 });
     }
+    if (!state.journey || !state.journey.active) {
+      state.journey = {
+        active: true,
+        sceneId: 'D01',
+        step: 'pasture',
+        completed: []
+      };
+    }
     recordFirstAction('field:D01');
     openScene('D01', false, 'pasture');
   }
@@ -582,16 +755,21 @@
     }
     state.d05Pick = null;
     state.d05Msg = '';
-    state.stonesFound = [];
-    state.brookSpots = makeBrookSpots(seed);
-    state.brookOpened = [];
-    state.lastSpotIdx = null;
-    state.d02Marks = [];
-    state.d02MarkMode = false;
-    state.orderList = makeInitialOrderList(sc, seed);
-    state.orderPick = null;
-    state.orderMsg = '';
-    state.d03Locked = null;
+    var d02Done = state.stonesFound.length >= 5;
+    if (isReplay || sc.id !== 'D02' || d02Done || !state.brookSpots || state.brookSpots.length !== 8) {
+      state.stonesFound = [];
+      state.brookSpots = makeBrookSpots(seed);
+      state.brookOpened = [];
+      state.lastSpotIdx = null;
+      state.d02Marks = [];
+      state.d02MarkMode = false;
+    }
+    if (isReplay || sc.id !== 'D03' || !state.orderList || state.orderList.length !== 2 || state.robe.finished) {
+      state.orderList = makeInitialOrderList(sc, seed);
+      state.orderPick = null;
+      state.orderMsg = '';
+      state.d03Locked = null;
+    }
     state.hebronFirstDone = false;
     state.tableFolds = [];
     state.d07Seen = [];
@@ -720,20 +898,33 @@
     );
   }
 
+  function currentJourneySceneId() {
+    if (!state.journey || !state.journey.active) return null;
+    var scId = state.journey.sceneId || 'D01';
+    if (state.journey.step === 'done' && scId !== 'D09') {
+      var nextIdx = JOURNEY_SCENES.indexOf(scId) + 1;
+      if (nextIdx > 0 && nextIdx < JOURNEY_SCENES.length) return JOURNEY_SCENES[nextIdx];
+    }
+    return scId;
+  }
+
   function renderSceneCard(sc) {
     var done = !!state.journal[sc.id];
     var rec = state.journal[sc.id];
+    var isJourneyHere = currentJourneySceneId() === sc.id;
     return el('button', {
-      class: 'scene-card' + (done ? ' done' : ''),
+      class: 'scene-card' + (done ? ' done' : '') + (isJourneyHere ? ' journey-here' : ''),
       'data-scene': sc.id,
+      'data-journey-here': isJourneyHere ? 'true' : null,
       on: { click: function () { recordFirstAction('scene:' + sc.id); openScene(sc.id, false); } }
     },
-      el('div', { class: 'scene-badge', text: done ? '완료' : sc.id }),
+      el('div', { class: 'scene-badge', text: isJourneyHere ? '이어하기' : (done ? '완료' : sc.id) }),
       el('div', { class: 'scene-info' },
         el('div', { class: 'scene-name', text: sc.title }),
         el('div', { class: 'scene-meta' },
           el('span', { class: 'ref', text: sc.ref }),
           sc.place ? el('span', { class: 'tag', text: sc.place }) : null,
+          isJourneyHere ? el('span', { class: 'tag journey-here-tag', text: '아홉 장면 떠난 자리' }) : null,
           done ? el('span', { class: 'scene-state', text: '일지에 기록됨' }) : null
         )
       ),
@@ -922,6 +1113,60 @@
 
     var tracesHomeCard = doneCount > 0 ? renderTracesCard() : null;
 
+    var jr = state.journey || { active: false, sceneId: 'D01', step: 'pasture', completed: [] };
+    var jrCompleted = Array.isArray(jr.completed) ? jr.completed : [];
+    var jrCurId = currentJourneySceneId();
+    var jrCurSc = jrCurId ? getScene(jrCurId) : null;
+    var jrPosNum = jrCurSc ? (JOURNEY_SCENES.indexOf(jrCurSc.id) + 1) : 1;
+
+    var journeyBox = el('section', {
+      class: 'notebook-map journey-box',
+      'data-journey-box': 'true',
+      'data-journey-active': String(!!jr.active),
+      'data-journey-current': jrCurSc ? jrCurSc.id : 'none',
+      'data-journey-completed': jrCompleted.join(',')
+    },
+      el('div', { class: 'd01-zoom-head' },
+        el('span', { class: 'tag', text: '『탐험대 이야기』 아홉 장면 이어하기 (D01~D09)' }),
+        el('span', { class: 'ref', 'data-journey-status': 'true', text: jrCurSc
+          ? ('떠난 자리: ' + jrCurSc.id + ' · ' + jrCurSc.title + ' (' + jrPosNum + ' / 9)')
+          : (jrCompleted.length === 9 ? '이번 여정 9 / 9 완주 ✓' : '처음부터 순서대로 출발') })
+      ),
+      el('div', { class: 'journey-strip', role: 'list', 'aria-label': '아홉 장면 연속 여정 현황' },
+        JOURNEY_SCENES.map(function (id) {
+          var isCur = !!(jrCurSc && jrCurSc.id === id);
+          var isDone = jrCompleted.indexOf(id) !== -1 && !isCur;
+          var stName = isCur ? 'current' : (isDone ? 'done' : 'pending');
+          return el('span', {
+            class: 'journey-pill ' + stName,
+            role: 'listitem',
+            'data-journey-pill': id,
+            'data-journey-state': stName,
+            text: id + (isCur ? ' ●' : (isDone ? ' ✓' : ''))
+          });
+        })
+      ),
+      jrCurSc
+        ? el('div', { class: 'd05-wing-place-btns' },
+            el('button', {
+              class: 'btn brass d08-step-btn',
+              'data-action': 'journey-resume',
+              'data-resume-scene': jrCurSc.id,
+              on: { click: resumeJourney }
+            }, '떠난 자리 이어하기 (' + jrPosNum + '/9 · ' + jrCurSc.id + ' ' + jrCurSc.title + ')'),
+            el('button', {
+              class: 'btn plain d08-step-btn',
+              'data-action': 'journey-start',
+              on: { click: startJourney }
+            }, '처음(D01)부터 새 여정 시작')
+          )
+        : el('button', {
+            class: 'btn brass d04-check-btn',
+            'data-action': 'journey-start',
+            on: { click: startJourney }
+          }, '아홉 장면 처음부터 시작하기 (D01 → D09)')
+    );
+
     root.replaceChildren(
       renderTopbar('다윗의 일곱 관찰', null,
         el('button', { class: 'topbtn brass', 'data-action': 'journal', on: { click: openJournal } }, '탐험 일지 ' + doneCount + '/' + total)
@@ -931,6 +1176,7 @@
           el('div', { class: 'hero-kicker', text: tierLabels[state.ageTier] || tierLabels.t1 }),
           el('h1', { text: '다윗의 발자취를 살펴보자' }),
           el('p', { text: '장면을 골라 단서를 살펴보고, 성경 장절을 확인해 탐험 일지에 남겨 보세요.' }),
+          journeyBox,
           el('div', { class: 'picture-starts' },
             el('button', { type: 'button', class: 'meadow-start', 'data-field-start': 'D01', on: { click: startPasture } },
               el('span', { text: '들판 망원경 열기 ›' }), el('img', { src: 'media/sheep-lamb.webp', alt: '' })),
@@ -2184,16 +2430,24 @@
           }
         }
       }, '코스 다음 장면 (' + (c.idx + 2) + '/3): ' + nextCourseSc.id + ' ' + nextCourseSc.title);
+    } else if (sc.id === 'D09' && !inCourse) {
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: finishJourneyToJournal } }, '모은 탐험 일지 열기 (' + journalCount() + '/' + DATA.scenes.length + ')');
     } else if (sc.id === 'D08' && saved && saved.wellPictures && !inCourse) {
-      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: startTempleGifts } }, '다음 장면 · 성전 예물 빛수첩');
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { advanceJourneyTo('D09', startTempleGifts); } } }, '다음 장면 · 성전 예물 빛수첩');
     } else if (sc.id === 'D07' && saved && saved.tablePictures && !inCourse) {
-      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: startWellTrail } }, '다음 장면 · 우물 길 수첩');
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { advanceJourneyTo('D08', startWellTrail); } } }, '다음 장면 · 우물 길 수첩');
     } else if (sc.id === 'D06' && state.lookout.finished && !inCourse) {
-      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: startTableSearch } }, '다음 장면 · 왕의 식탁 돋보기');
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { advanceJourneyTo('D07', startTableSearch); } } }, '다음 장면 · 왕의 식탁 돋보기');
+    } else if (sc.id === 'D05' && saved && saved.hebronMatches && !inCourse) {
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { advanceJourneyTo('D06', startLookout); } } }, '다음 장면 · 행렬 두 자리 관찰');
     } else if (sc.id === 'D04' && saved && saved.rubbings && !inCourse) {
-      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: startHebronCards } }, '다음 장면 · 헤브론 기억 카드');
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { advanceJourneyTo('D05', startHebronCards); } } }, '다음 장면 · 헤브론 기억 카드');
     } else if (sc.id === 'D03' && saved && saved.robePicture && !inCourse) {
-      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: startRubbing } }, '다음 장면 · 엔게디 탁본 뜨기');
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { advanceJourneyTo('D04', startRubbing); } } }, '다음 장면 · 엔게디 탁본 뜨기');
+    } else if (sc.id === 'D02' && !inCourse) {
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { advanceJourneyTo('D03', startRobe); } } }, '다음 장면 · 겉옷 그림 맞추기');
+    } else if (sc.id === 'D01' && state.pasture.finished && !inCourse) {
+      primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { advanceJourneyTo('D02', startBrookCamera); } } }, '다음 장면 · 시냇가 사진기');
     } else if (nextSc) {
       primaryBtn = el('button', { class: 'btn brass', 'data-action': 'next-scene', on: { click: function () { openScene(nextSc.id, false); } } }, '다음 장면: ' + nextSc.title);
     } else {
