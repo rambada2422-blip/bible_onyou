@@ -188,7 +188,7 @@
     }
     card.append(reading(early?'17:1':phase===1?'17:5':'17:6'));
     root.append(card,el('div',{class:'sf-desk'},panel));
-    return {root,head,onMode(){if(modeText)modeText.textContent=stage.notes[s.mode];},hint(level){
+    return {root,head,onMode(){this.hint(0);if(modeText)modeText.textContent=stage.notes[s.mode];},hint(level){
       hintText.hidden=!level;
       hintText.textContent=level?active.name+' · '+(viewOnly?'호렙 물길을 다시 펼쳐 봐.':['항아리 안을 들여다볼까?','물줄기가 바위에서 나오는 곳을 찾아봐.','그림에서 물을 뜨는 자리부터 거꾸로 따라가 봐.'][phase]):'';
       credit.classList.toggle('sf-pulse',level>=2);askButton.classList.toggle('sf-pulse',level>=2);

@@ -73,6 +73,15 @@ async function checkRockLegacy(browser,origin){
   const btn=name=>button(page,name);
   try{
     await page.goto(origin+'/index.html#rock');
+    await page.clock.install();await page.reload();
+    await page.clock.runFor(30100);assert.equal(await page.locator('.rp-highlight').count(),1);
+    await btn('설정').click();await page.getByRole('combobox').selectOption('2');await btn('닫기').click();
+    await page.locator('dialog').waitFor({state:'detached'});
+    assert.equal(await page.locator('.rp-highlight').count(),0);
+    await page.clock.runFor(25100);assert(await page.locator('.rp-aside').isVisible());
+    assert.equal(await page.locator('.rp-highlight').count(),0);
+    await btn('동료에게 묻기').click();await btn('동료에게 묻기').click();
+    assert.equal(await page.locator('.rp-highlight').count(),1);
     for(const phase of [0,1,2,3]){
       await page.evaluate(phase=>{
         const app=BO.app2d,w=app.state.wilderness;
