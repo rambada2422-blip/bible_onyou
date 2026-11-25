@@ -34,7 +34,7 @@ Get-Content "$env:LOCALAPPDATA\BibleOnyou\events.jsonl" -Tail 15 -Encoding UTF8
 | `%LOCALAPPDATA%\BibleOnyou\tasks\작업ID\` | 전용 Git 작업 폴더 `work`, 중간 변경·남은 일 `handoff.txt`, 결과 파일 |
 | `onyou-queue/작업ID` | 검증을 통과한 담당 서비스 작업의 **집 PC 로컬 Git 브랜치**. `git branch --list 'onyou-queue/*'`로 확인 |
 
-예를 들어 `tasks\david-offline-baseline\work\dist\david.html`은 외부 연결 없이 열 수 있다. C29의 아이용·진행자용 PDF는 `tasks\genesis-c29\work\docs\창세기\연속\`에, 인쇄면 미리보기 PNG는 `tasks\genesis-c29-print-proof\`에 생긴다.
+예를 들어 `tasks\david-offline-baseline\work\dist\david.html`은 외부 연결 없이 열 수 있다. C29의 아이용·진행자용 PDF는 `tasks\genesis-c29\work\docs\창세기\연속\`에, 인쇄면 미리보기 PNG는 `tasks\genesis-c29-print-proof\`에 생긴다. 수정판의 A4 덮개는 `tasks\genesis-c29-cutouts\C29_덮개_실제크기.pdf`에 저장한다.
 
 ## 실행 규칙
 
@@ -52,3 +52,13 @@ Get-Content "$env:LOCALAPPDATA\BibleOnyou\events.jsonl" -Tail 15 -Encoding UTF8
 총괄 작업 환경에서 창세기 색인 66/66 대조가 통과하자 다윗 HTML 제작이 자동으로 시작됐고 D09 실조작도 통과했다. 이어 담당 브랜치의 실제 C29 놀이판과 답지를 읽어 한글 렌더·네 보기·두 정답과 장절을 확인했고, 다음 카드에서 아이용 1면과 진행자용 2면의 미리보기 PNG를 만들었다. 같은 상태 DB를 다시 연 실행은 이미 통과한 카드를 건너뛰었다. C29 내용 검증과 목회자 감수는 별도로 추적한다. [검사한 C29 원고와 PDF 폴더](https://github.com/rambada2422-blip/bible_onyou/tree/97ad500ee268ec90c53556e703ca396bf04aa857/docs/창세기/연속)
 
 한쪽 한도 후 다른 서비스 인수, 양쪽 한도 후 예약 시각 도래, 검증 단계에서 재시작, 실패한 카드의 후속 차단, API 인증 거부는 모의 서비스 응답으로 점검했다. 이 환경에는 집 PC와 두 공식 CLI의 로그인 세션이 연결돼 있지 않아 실제 구독 호출·집 PC 예약 작업 가동은 집에서 확인해야 한다.
+
+
+이후 클로드 브랜치에 별도 지적을 반영한 수정판이 올라왔다. 실행기는 이를 인수해 PDF를 다시 검사하고 세 면의 미리보기와 덮개를 만들었다. 덮개 PDF에서 잰 네 재단선은 각각 190×45, 190×70, 190×55, 190×40mm였다. 다음 담당 카드는 클로드의 수정판 두 우회 경로 재검증과 안티그래비티의 다윗 아홉 장면 연결이다. [수정판](https://github.com/rambada2422-blip/bible_onyou/tree/dc2393655c364e731e99cd2e3d5b1106025d126d/docs/창세기/연속)
+
+구독 대기·인계·재시작 관련 자동 시험 6건과 PowerShell 설치 스크립트 구문 검사를 통과했다. Windows 작업 등록은 집 PC에서 실행할 단계다. 저장소의 기존 게임 자동 검사는 다음 결과로 끝났다.
+
+```text
+점검 종류: 전체 · 통과 8/8
+점검 결과: 합격
+```

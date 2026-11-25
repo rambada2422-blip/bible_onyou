@@ -122,7 +122,7 @@ def catalogue(source=None):
             raise ValueError('중복되거나 유효하지 않은 작업 ID')
         if not set(c.get('after',[])) <= ids or not c['services'] or not set(c['services']) <= set(SERVICES):
             raise ValueError('카드 순서 또는 담당 확인 필요')
-        if c['job'] not in ('index','bundle','pdf','journey','proof','content') or not re.fullmatch(r'[\w/-]+',c['branch']):
+        if c['job'] not in ('index','bundle','pdf','journey','proof','content','masks','routes') or not re.fullmatch(r'[\w/-]+',c['branch']):
             raise ValueError('지원하지 않는 카드')
         ids.add(c['id'])
     return cards
@@ -176,13 +176,15 @@ def checkout(card, out, update=True):
 
 
 def preserve_result(card, out, work):
-    if card['job'] not in ('pdf','journey','content'):
+    if card['job'] not in ('pdf','journey','content','routes'):
         return
     base=(out/'base.txt').read_text().strip()
     changed=git(work,'-c','core.quotepath=false','diff','--name-only',base).splitlines()
     changed+=git(work,'-c','core.quotepath=false','ls-files','--others','--exclude-standard').splitlines()
-    if card['job'] in ('pdf','content'):
-        ok=lambda name: name in ('docs/창세기/연속/C29.md','docs/창세기/연속/C29.pdf','docs/창세기/연속/C29_판.pdf','docs/창세기/연속/C29_답지.pdf','docs/창세기/연속/C29_인쇄.json')
+    if card['job']=='routes':
+        ok=lambda name: name=='docs/창세기/연속/C29_재검증.md'
+    elif card['job'] in ('pdf','content'):
+        ok=lambda name: name in ('docs/창세기/연속/C29.md','docs/창세기/연속/C29.pdf','docs/창세기/연속/C29_판.pdf','docs/창세기/연속/C29_답지.pdf','docs/창세기/연속/C29_인쇄.json') or bool(re.fullmatch(r'docs/인계/사진/C29_[^/]+\.png',name))
     else:
         ok=lambda name: name.startswith(('web/david/','docs/인계/사진/다윗/')) or name in ('tools/build-david.js','docs/인계/다윗_Antigravity.md')
     wrong=[p for p in changed if not ok(p)]

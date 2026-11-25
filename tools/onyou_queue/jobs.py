@@ -9,8 +9,10 @@ TOOLS = Path(__file__).resolve().parent
 
 
 def run(args, cwd, timeout=300):
+    from providers import safe_env
     result = subprocess.run(args, cwd=cwd, capture_output=True, encoding='utf-8',
-                            errors='replace', timeout=timeout, check=False)
+                            errors='replace', timeout=timeout, check=False,
+                            env=None if args[0]=='git' else safe_env())
     if result.returncode:
         raise ValueError((result.stderr or result.stdout)[-2000:] or f'exit {result.returncode}')
     return result.stdout
@@ -58,6 +60,9 @@ def execute(job, cwd, out):
             with fitz.open(file) as doc:
                 for number,page in enumerate(doc,1):
                     page.get_pixmap(matrix=fitz.Matrix(1,1)).save(out/f'{label}-{number}.png')
+    elif job == 'masks':
+        from print_cards import masks
+        masks(cwd,out)
     else:
         raise ValueError('unknown local card')
 
@@ -69,6 +74,17 @@ def pdf_files(cwd):
 
 
 def verify(job, cwd, out):
+    if job == 'masks':
+        from print_cards import verify_masks
+        return verify_masks(cwd,out)
+    if job == 'routes':
+        verify('pdf',cwd,out)
+        report=(cwd/'docs/창세기/연속/C29_재검증.md').read_text(encoding='utf-8')
+        text=re.sub(r'\s+','',report)
+        if not all(word in text for word in ('시므온','안방','실물')) or not all(
+                re.search(r'43(?::|장)'+v,text) for v in ('23','30')):
+            raise ValueError('수정판 두 우회 경로·근거 절·실물 확인 상태를 대조하세요')
+        return '수정판 PDF 재검사 및 두 우회 경로의 근거·관찰 기록 수신'
     if job == 'content':
         verify('pdf',cwd,out)
         doc=(cwd/'docs/창세기/연속/C29.md').read_text(encoding='utf-8')

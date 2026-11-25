@@ -70,6 +70,9 @@ class QueueTest(unittest.TestCase):
         with self.assertRaises(providers.Waiting) as err:
             providers.interpret(1,'','network error',2)
         self.assertEqual((err.exception.kind,err.exception.delay),('transient',30))
+        with self.assertRaises(providers.Waiting) as err:
+            providers.interpret(1,'{"error":{"status":"RESOURCE_EXHAUSTED","details":[{"retryDelay":"91s"}]}}','',1)
+        self.assertEqual((err.exception.kind,err.exception.delay),('quota',92))
 
     def test_verified_phase_is_recovered_without_model(self):
         self.store.change('sample','claude','verify')
@@ -103,6 +106,18 @@ class QueueTest(unittest.TestCase):
             with self.assertRaises(providers.Waiting):
                 providers.command('claude',{'claude'},self.work)
         providers.interpret(0,json.dumps({'result':'quota reached in a test'}),'',1)
+
+    def test_personal_settings_preserve_other_keys_and_reject_cloud(self):
+        with patch.object(Path,'home',return_value=self.folder):
+            path=self.folder/'.gemini/antigravity-cli/settings.json'
+            path.parent.mkdir(parents=True)
+            path.write_text('{"colorScheme":"light","useG1Credits":true}')
+            providers.configure_personal_antigravity()
+            self.assertEqual(json.loads(path.read_text()),{'colorScheme':'light','useG1Credits':False,'auth':{'type':'oauth-personal'}})
+            path.write_text('{"auth":{"type":"oauth-business"}}')
+            with self.assertRaises(providers.Waiting):
+                providers.configure_personal_antigravity()
+            self.assertIn('oauth-business',path.read_text())
 
 if __name__ == '__main__':
     unittest.main()

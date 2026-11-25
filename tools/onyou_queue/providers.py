@@ -55,7 +55,8 @@ def configure_personal_antigravity():
 
 
 def command(service, enabled, cwd):
-    exe = shutil.which('claude' if service == 'claude' else 'agy')
+    name = 'claude' if service == 'claude' else 'agy'
+    exe = shutil.which(name + '.exe' if os.name == 'nt' else name)
     if not exe:
         raise Waiting(f'{service} 공식 CLI 설치·로그인 대기')
     if service not in enabled:
@@ -87,12 +88,17 @@ def command(service, enabled, cwd):
 def reset_delay(payload, message, attempt):
     # Prefer an explicit server-supplied interval or timestamp. A failed probe only backs off this service.
     now = time.time()
+    if isinstance(payload, list):
+        return max((reset_delay(v,'',0) for v in payload),default=0) or (min(3600,300*2**min(4,attempt-1)) if attempt else 0)
     if isinstance(payload, dict):
         for name in ('retry_after','retryAfter','retry_after_seconds'):
             value = payload.get(name)
-            if isinstance(value,(int,float)) and value > 0:
-                return max(2, int(value)+1)
-        for name in ('resetsAt','reset_at','resetAt','resets_at'):
+            if isinstance(value,(int,float,str)) and re.fullmatch(r'\d+(?:\.\d+)?',str(value)) and float(value)>0:
+                return max(2, int(float(value))+1)
+        duration = re.fullmatch(r'(\d+(?:\.\d+)?)s',str(payload.get('retryDelay','')))
+        if duration:
+            return max(2,int(float(duration[1]))+1)
+        for name in ('resetsAt','reset_at','resetAt','resets_at','resetTime'):
             value = payload.get(name)
             try:
                 until = float(value) if isinstance(value,(int,float)) else datetime.fromisoformat(value.replace('Z','+00:00')).timestamp()
@@ -103,7 +109,7 @@ def reset_delay(payload, message, attempt):
             except (TypeError, ValueError, AttributeError):
                 pass
         for v in payload.values():
-            if isinstance(v,dict):
+            if isinstance(v,(dict,list)):
                 nested = reset_delay(v, '', 0)
                 if nested:
                     return nested
@@ -121,8 +127,10 @@ def interpret(code, stdout, stderr, attempt):
     is_error = isinstance(payload,dict) and (payload.get('is_error') or payload.get('error') or
                str(payload.get('subtype','')).startswith('error') or payload.get('status') == 'error')
     # A successful model's answer may discuss quotas. Only interpret CLI diagnostics as failures.
-    message = stderr + (' '+stdout[-6000:] if code or is_error else '')
-    if re.search(r'rate.limit|usage.limit|quota.exhaust|resource.exhaust|(?:limit|quota).{0,15}(?:reached|exceeded)|hit your (?:session |weekly )?limit|too many requests|\b429\b|사용량 한도', message, re.I):
+    banner = str(payload.get('result','')) if isinstance(payload,dict) else ''
+    limit_banner = re.match(r"^(?:you(?:'ve| have) (?:hit|reached) your (?:[^.\n]{0,45})limit|your quota (?:has been |is )?exhausted)",banner,re.I)
+    message = stderr + (' '+stdout[-6000:] if code or is_error or limit_banner else '')
+    if re.search(r'rate.limit|usage.limit|quota.exhaust|resource.exhaust|insufficient.quota|(?:limit|quota).{0,15}(?:reached|exceeded)|hit your (?:session |weekly )?limit|too many requests|\b429\b|사용량 한도', message, re.I) or limit_banner:
         raise Waiting('구독 사용 한도',reset_delay(payload,message,attempt),'quota')
     if re.search(r'authentication required|not logged in|please (?:log|sign) in|invalid credentials|unauthenticated|login required',message,re.I):
         raise Waiting('서비스 재로그인 대기')

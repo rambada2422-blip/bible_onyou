@@ -25,5 +25,18 @@
     "id": "genesis-c29-content-check", "branch": "claude/genesis-week", "services": ["claude"],
     "after": ["genesis-c29"], "job": "content", "title": "C29 별도 검증 지적을 인쇄 원고와 두 PDF에 반영",
     "prompt": "담당 인계 맨 위와 C29.md의 별도 내용 검증 절을 확인하세요. 진행 중인 검증이 올라왔으면 그 지적을 C29 원고와 PDF에 반영하세요. 실제 별도 검증 결과가 없으면 새 세션에서 E59·E60 원고와 인쇄면을 독립 대조해 두 선택 경로, 장절, 답 노출을 점검하고 확인한 근거와 수정 사항을 C29.md의 별도 내용 검증 절에 남기세요. 목회자 감수와 실물 시험은 확인된 범위 그대로 두세요. 기존 제작자에게서 넘겨받은 C29 파일만 편집하세요."
+  },
+  {
+    "id": "genesis-c29-reviewed-proof", "branch": "claude/genesis-week", "services": ["local"],
+    "after": ["genesis-c29-content-check"], "job": "proof", "title": "별도 내용 검증을 반영한 C29 최종 검토용 인쇄면 출력"
+  },
+  {
+    "id": "genesis-c29-cutouts", "branch": "claude/genesis-week", "services": ["local"],
+    "after": ["genesis-c29-content-check"], "job": "masks", "title": "수정 원고의 치수로 A4 실물 크기 덮개 PDF 제작"
+  },
+  {
+    "id": "genesis-c29-two-routes", "branch": "claude/genesis-week", "services": ["claude"],
+    "after": ["genesis-c29-cutouts"], "job": "routes", "title": "수정한 C29 인쇄판의 두 우회 경로 재검증",
+    "prompt": "수정판 C29.md와 실제 C29_판.pdf·C29_답지.pdf를 열어 시므온과 안방 카드를 각각 고른 뒤 해당 본문에서 확인하고 원래 고르기로 돌아오는 전 과정을 재검증하세요. 각 경로에서 판의 몇 칸을 언제 가리고 여는지, 아이 면에서 뒤의 답이 보이는지 확인하세요. docs/창세기/연속/C29_재검증.md에 경로별 조작과 근거 장절, 확인된 문제나 통과 여부를 쓰세요. 디지털 검토와 실물·아동·목회자 확인을 구분하세요. 원고나 PDF를 고칠 필요가 있으면 별도로 기록하세요."
   }
 ]
