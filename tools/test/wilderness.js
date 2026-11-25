@@ -7,6 +7,7 @@ const { chromium } = require('playwright');
 const { gameOrigin } = require('./game-server');
 
 const { checkObservations } = require('./wilderness-observation');
+const {playSinai}=require('./sinai-field');
 const {checkTwoDays}=require('./wilderness-two-days');
 const { checkManna } = require('./wilderness-manna');
 
@@ -72,24 +73,27 @@ async function runRoute(browser, origin, out, entry, width) {
       await page.keyboard.press('ArrowRight');
       assert.equal((await state()).stops[0].pos,before+1);
     }
+    if(stage.id==='sinai'){
+      await playSinai(page,out);
+      await click('관측대');
+      await page.getByRole('dialog').getByRole('button',exact('말씀 인장 · 출 20:18')).click();
+      await page.getByRole('dialog',exact('말씀 두루마리')).waitFor();
+      assert.equal(await page.locator(':focus').getAttribute('data-verse'),'20:18');
+      await click('닫기');
+      await click('금송아지 사건으로');
+      continue;
+    }
     const firstFrame = await page.locator('.wf-picture').evaluate(c => c.toDataURL());
     await page.locator('.wf-pin').tap();
-    if(stage.id==='sinai'){
-      await page.getByRole('dialog',exact('산 아래의 장막')).waitFor();
-      await page.reload();
-      await click('장막 위치 기록하기');
-      await click('산마루 조준');
-    }else{
-      await page.locator('.wf-role').nth(0).tap();
-      await click('접사 렌즈로 살펴보기');
-    }
+    await page.locator('.wf-role').nth(0).tap();
+    await click('접사 렌즈로 살펴보기');
     if(stage.groundPoint){
       await page.getByRole('slider',exact('이슬 전후 사진 비교선')).focus();
       await page.keyboard.press('End');await click('알갱이 위치 기록');
       await page.locator('.wf-dialog').waitFor({state:'detached'});
     }
     assert.equal((await state()).stops[i].phase,1);
-    if(stage.id!=='sinai')await page.locator('.wf-role').nth(1).tap();
+    await page.locator('.wf-role').nth(1).tap();
     await click('장비 고정');
     assert.equal((await state()).stops[i].phase,1);
     const dial = page.getByRole('slider');
@@ -102,7 +106,6 @@ async function runRoute(browser, origin, out, entry, width) {
     await click('장비 고정');
     if(!stage.frames)assert.notEqual(await page.locator('.wf-picture').evaluate(c=>c.toDataURL()),firstFrame);
     await page.locator('.wf-pin').tap();
-    if(stage.id==='sinai')await page.locator('.wf-companions summary').click();
     await page.locator('.wf-role').nth(2).tap();
     if (width===360 && (i===1||i===3||i>=4)) {
       await page.locator('.wf-scroll').evaluate(e=>e.scrollTop=0);
@@ -157,7 +160,7 @@ async function runRoute(browser, origin, out, entry, width) {
     if(stage.id==='rock'){
       if(width===360){await click('시내산 수첩으로');await click('시내산 본편 답사');}
       else await click('시내산 본편으로');
-    }else await click(stage.id==='calf'?'시내산 수첩으로':stage.id==='sinai'?'금송아지 사건으로':stopNames[i+1]+' 답사하기');
+    }else await click(stage.id==='calf'?'시내산 수첩으로':stopNames[i+1]+' 답사하기');
   }
   assert.equal(seen.size,118);
   assert.equal(await page.locator(':focus').innerText(),'시내산의 기록');

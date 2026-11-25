@@ -39,6 +39,19 @@
           const volume=ctx.createGain();volume.gain.value=.035;
           bed.connect(filter);filter.connect(volume);volume.connect(ctx.destination);bed.start();
         }
+        if(key==='shutter'){
+          const sample=ctx.createBuffer(1,Math.round(ctx.sampleRate*.13),ctx.sampleRate);
+          const wave=sample.getChannelData(0);
+          for(let i=0;i<wave.length;i++){
+            const t=i/ctx.sampleRate;
+            const close=t>.055?Math.exp(-100*(t-.055)):0;
+            wave[i]=(Math.random()*2-1)*(.17*Math.exp(-145*t)+.1*close);
+          }
+          const src=ctx.createBufferSource(),filter=ctx.createBiquadFilter();
+          filter.type='bandpass';filter.frequency.value=1550;
+          src.buffer=sample;src.connect(filter);filter.connect(ctx.destination);
+          src.onended=()=>{src.disconnect();filter.disconnect();};src.start();return;
+        }
         if(key==='ripple'||key==='leaves'){
           const water=key==='ripple';
           const sample=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*.42),ctx.sampleRate);

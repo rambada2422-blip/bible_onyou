@@ -116,7 +116,7 @@ fs.writeFileSync(path.join(web, 'js/wilderness-data.js'),
 const fontCss = require('./font-css');
 const scripts = [
   'js/content.js', 'js/icons.js', 'js/order-question.js', 'js/reference-input.js', 'js/art.js',
-  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-rapids.js', 'js/nile-game.js', 'js/palace-watch-scenes.js', 'js/palace-watch.js', 'js/palace.js', 'js/red-sea-landscape.js', 'js/scene-music.js', 'js/red-sea-play.js', 'js/red-sea.js', 'js/wilderness-data.js', 'js/wilderness-scripture.js', 'js/sinai-landscape.js', 'js/wilderness-landscape.js', 'js/wilderness-feel.js', 'js/wilderness.js', 'js/exodus-trail.js', 'js/passover.js', 'js/app.js',
+  'js/app-core.js', 'js/app-questions.js', 'js/app-scene.js', 'js/palace-story.js', 'js/nile-routes.js', 'js/nile-art.js', 'js/nile-rapids.js', 'js/nile-game.js', 'js/palace-watch-scenes.js', 'js/palace-watch.js', 'js/palace.js', 'js/red-sea-landscape.js', 'js/scene-music.js', 'js/red-sea-play.js', 'js/red-sea.js', 'js/wilderness-data.js', 'js/wilderness-scripture.js', 'js/sinai-field.js', 'js/wilderness-landscape.js', 'js/wilderness-feel.js', 'js/wilderness.js', 'js/exodus-trail.js', 'js/passover.js', 'js/app.js',
 ];
 // 단일 HTML에서도 본문 음성을 인터넷 연결 없이 재생한다.
 const palaceAudio = {};
@@ -139,16 +139,21 @@ for (const key of ['camp', 'shore', 'rear', 'wind', 'walls', 'bank', 'return', '
   const image = fs.readFileSync(path.join(web, 'assets/red-sea', key + '.webp'));
   redSeaImages[key] = 'data:image/webp;base64,' + image.toString('base64');
 }
+const sinaiImages = {};
+for (const key of ['arrival','witness']) {
+  const image=fs.readFileSync(path.join(web,'assets/sinai',key+'.webp'));
+  sinaiImages[key]='data:image/webp;base64,'+image.toString('base64');
+}
 const page = [
   '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
   '<title>성경 탐험대</title>',
   '<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,' + Buffer.from(read('assets/char/timemachine.svg')).toString('base64') + '">',
   '<meta name="claude:viewport-fit-sides" content="cover">',
-  '<style>\n' + read('css/app.css') + '\n' + read('css/nile.css') + '\n' + read('css/palace-watch.css') + '\n' + read('css/exodus-trail.css') + '\n' + read('css/red-sea.css') + '\n' + read('css/wilderness.css') + '\n</style>',
+  '<style>\n' + read('css/app.css') + '\n' + read('css/nile.css') + '\n' + read('css/palace-watch.css') + '\n' + read('css/exodus-trail.css') + '\n' + read('css/red-sea.css') + '\n' + read('css/wilderness.css') + '\n' + read('css/sinai.css') + '\n</style>',
   '</head><body>',
   '<div id="app" class="app"></div>',
-  '<script>window.BO = window.BO || {}; BO.palaceAudio = ' + JSON.stringify(palaceAudio) + '; BO.palaceWatchImages = ' + JSON.stringify(watchImages) + '; BO.redSeaImages = ' + JSON.stringify(redSeaImages) + '; BO.sceneAudio = ' + JSON.stringify(sceneAudio) + ';</script>',
+  '<script>window.BO = window.BO || {}; BO.palaceAudio = ' + JSON.stringify(palaceAudio) + '; BO.palaceWatchImages = ' + JSON.stringify(watchImages) + '; BO.redSeaImages = ' + JSON.stringify(redSeaImages) + '; BO.sinaiImages = ' + JSON.stringify(sinaiImages) + '; BO.sceneAudio = ' + JSON.stringify(sceneAudio) + ';</script>',
   ...scripts.map((p) => '<script>\n' + esc(read(p)) + '\n</script>'),
   '<style>\n' + fontCss() + '\n</style>',
   '</body></html>'

@@ -93,15 +93,14 @@
       return p.phase>=(stage.groundPoint?1:2);
     }
     function paint(canvas,later){
-      if(sinai())BO.drawSinaiCamp(canvas,later);
-      else BO.drawWilderness(canvas,stage.id,later);
+      BO.drawWilderness(canvas,stage.id,later);
     }
     function updateScore(){
       if(!music)return;
       if(stage.frames||sinai()){
-        const quiet=sinai()&&laterView();
-        music.setPaused(!s.sound||quiet||Boolean(dialog?.querySelector('.wf-edition')));
-        music.setCue(stage.frames?'wild-sabbath-'+(laterView()?'rest':'sixth'):'wild-tents');
+        const mountainCue=laterView()&&!p.backLook?'wild-sinai-witness':'wild-tents';
+        music.setPaused(!s.sound||Boolean(dialog?.querySelector('.wf-edition')));
+        music.setCue(stage.frames?'wild-sabbath-'+(laterView()?'rest':'sixth'):mountainCue);
         music.button.disabled=!s.sound;
         return;
       }
@@ -199,7 +198,7 @@
           const controls=el('div',{class:'wf-ground-tools'});
           const slider=el('input',{type:'range',min:'0',max:'100',step:'5','aria-label':'이슬 전후 사진 비교선'});
           const tip=el('span',{class:'wf-ground-tip',role:'status'});
-          const mark=button(sinai()?name:'⌖',()=>{
+          const mark=button('⌖',()=>{
             if(mark.disabled)return;
             p.grainMarked=true;app.save();play('found');
             finishClue=p.phase===0&&s.actor===0&&p.pos===target();
@@ -278,8 +277,9 @@
     }
     function showHint(){
       if(!ui||p.phase===3)return;
+      if(ui.camp){ui.camp.hint(hint);return;}
       const a=crew[p.phase];
-      ui.aside.textContent=hint?(sinai()?sinaiGuide():a.name+' · '+a.lines[s.mode]):'';
+      ui.aside.textContent=hint?a.name+' · '+a.lines[s.mode]:'';
       ui.roles.forEach((b,i)=>b.classList.toggle('wf-glow',hint>=2&&i===p.phase));
       ui.pin.classList.toggle('wf-ring',hint>=3&&!ui.pin.hidden);
       ui.landmarks.forEach((b,k)=>b.classList.toggle('wf-ring',hint>=3&&k===p.mapped&&!b.hidden));
@@ -289,29 +289,8 @@
         ui.landmarks.forEach((b,i)=>b.classList.toggle('wf-ring',hint>=3&&i===need&&!b.hidden));
       }
       ui.thought.hidden=!hint;
-      ui.thought.textContent=a.name+' · '+(sinai()?['왼쪽 장막!','산마루에 초점!','세 자리를 찾자!']:['여길 볼까?','눈금을 보자!','기록을 펴 볼까?'])[p.phase];
+      ui.thought.textContent=a.name+' · '+['여길 볼까?','눈금을 보자!','기록을 펴 볼까?'][p.phase];
       ui.thought.style.left=x(crewPlace(p.phase));
-    }
-    function sinaiGuide(){
-      if(p.phase===0)return '왼쪽의 큰 장막을 눌러 최온과 가까이 보세요.';
-      if(p.phase===1)return '산마루를 눌러 휴의 관측창을 열고 초점을 맞춰 보세요.';
-      if(p.mapped===3)return '세 곳을 찾았어요. 진영에 어울리는 이름표를 고르세요.';
-      return ['산 아래 장막부터 눌러 보세요.','이번에는 산을 덮은 구름을 눌러 보세요.','산에서 멀리 선 백성을 눌러 보세요.'][p.mapped];
-    }
-    function seeTent(){
-      p.tentOpen=true;app.save();
-      openDialog('산 아래의 장막',box=>{
-        const crop=el('canvas',{width:'460',height:'210',class:'wf-tent-photo',role:'img','aria-label':'천 지붕과 열린 입구가 보이는 산 아래 장막들'});
-        crop.getContext('2d').drawImage(ui.canvas,72,354,460,210,0,0,460,210);
-        box.append(crop,el('p',{},stage.beats[0].notes[s.mode]),el('small',{},'장면 안내 · 출 19:1–2'),
-          button('장막 위치 기록하기',()=>{dialog.addEventListener('close',advance,{once:true});dialog.close();},'wf-primary'));
-      },()=>{delete p.tentOpen;app.save();});
-    }
-    function sinaiTarget(){
-      walk(target());call(p.phase);
-      if(p.phase===0)seeTent();
-      if(p.phase===1)ui.panel.querySelector('input').focus();
-      if(p.phase===2)(ui.landmarks[p.mapped]||ui.tags.querySelector('button')).focus();
     }
     function target(){return stage.spots[p.phase===2?1:0];}
     function spotName(){return stage.marks[p.phase===2?1:0];}
@@ -371,11 +350,6 @@
     function position(){
       ui.sprite.style.left=x(p.pos);ui.pin.style.left=x(target());placeCrew();
       ui.pin.textContent=spotName();
-      if(sinai()){
-        ui.pin.replaceChildren(el('span',{class:'wf-pin-caption'},['장막 살펴보기','산마루 조준','백성의 자리 찾기'][p.phase]));
-        const [cx,cy]=[[15,60],[62,21],[80,69]][p.phase];
-        ui.pin.style.left=cx+'%';ui.pin.style.top=cy+'%';
-      }
       ui.left.disabled=p.pos===0;ui.right.disabled=p.pos===8;
       ui.field.setAttribute('aria-label',stage.title+'의 탐사로. 현재 '+(p.pos+1)+'번째 칸.');
       ui.track.textContent=p.pos===target()?'도착 · '+spotName():(p.pos<target()?'오른쪽':'왼쪽')+' '+Math.abs(target()-p.pos)+'칸 · '+spotName();
@@ -406,11 +380,6 @@
         ui.tags.hidden=charting;
       }
       ui.updatePhotos?.();
-      if(sinai()){
-        ui.goal.textContent=['최온과 산 아래 장막 찾기','휴와 산마루에 초점 맞추기','온우와 장막·구름·백성 찾기'][p.phase];
-        ui.track.textContent=p.phase===2&&ui.panel.hidden?'백성의 자리 표식을 눌러 온우의 수첩을 여세요.':sinaiGuide();
-        if(charting)ui.landmarks.forEach((b,i)=>b.classList.toggle('wf-current',i===p.mapped));
-      }
       showHint();
     }
     function advance(){
@@ -431,7 +400,7 @@
       if(right&&near&&ui.frames&&p.phase===2)ui.frames[p.frame].focus();
     }
     function showFace(i,expression){
-      ui.talk.replaceChildren(BO.wildFeel.portrait(crew[i].id,expression),el('div',{},el('b',{},'『탐험대 이야기』 '+crew[i].name),el('span',{},(sinai()&&i===p.phase?['산 아래 장막을 함께 들여다보자.','관측창에 산마루를 맞춰 보자.','장막과 구름, 백성이 선 곳을 짚어 보자.'][i]:crew[i].lines[s.mode]))));
+      ui.talk.replaceChildren(BO.wildFeel.portrait(crew[i].id,expression),el('div',{},el('b',{},'『탐험대 이야기』 '+crew[i].name),el('span',{},crew[i].lines[s.mode])));
     }
     function currentEvidence(){
       if(stage.groundPoint&&p.phase===1){const view=stage.observations[1];return [view.caption,view.verse];}
@@ -443,8 +412,7 @@
       ui.panel.append(el('div',{class:'wf-evidence'},ui.evidence));
       if(p.phase===0){
         ui.panel.append(button('접사 렌즈로 살펴보기',()=>{
-          if(sinai())seeTent();
-          else if(stage.groundPoint&&!p.grainMarked)inspect(0);
+          if(stage.groundPoint&&!p.grainMarked)inspect(0);
           else advance();
         },'wf-primary'));
       }else if(p.phase===1){
@@ -496,10 +464,12 @@
         const mode=el('select',{'aria-label':'플레이어 연령 모드'},hintModes.map(({age},i)=>el('option',{value:String(i)},age+'세 모드')));
         mode.value=String(s.mode);
         mode.onchange=()=>{s.mode=Number(mode.value);resetHints();app.save();ui.updateRecord?.();
-          if(p.phase<3){showFace(s.actor,'neutral');showHint();}else ui.cardText.textContent=stage.notes[s.mode];};
+          if(ui.camp)ui.camp.onMode();
+          else if(p.phase<3){showFace(s.actor,'neutral');showHint();}else ui.cardText.textContent=stage.notes[s.mode];};
         const toggle=button('',()=>{s.sound=!s.sound;app.save();toggle.textContent=s.sound?'소리 켜짐':'소리 꺼짐';toggle.setAttribute('aria-pressed',String(s.sound));if(s.sound)play('tap');else sound.stop();updateScore();});
         toggle.textContent=s.sound?'소리 켜짐':'소리 꺼짐';toggle.setAttribute('aria-pressed',String(s.sound));
-        box.append(el('label',{},'플레이어 연령 ',mode),toggle,el('p',{},'동료는 현장에서 따로 선택할 수 있어요.'));
+        box.append(el('label',{},'플레이어 연령 ',mode),toggle);
+        if(!sinai())box.append(el('p',{},'동료는 현장에서 따로 선택할 수 있어요.'));
       });
     }
     function draw(focus){
@@ -511,15 +481,29 @@
       }else if(music){music.close();music=null;}
       const nav=el('nav',{class:'wf-nav'},button('탐험 입구',()=>route(leave)),button('말씀 두루마리',()=>scrollText(s.index,false)),button('관측대',shelf),button('설정',settings));
       if(music)nav.append(music.button);
+      p.available=true;
+      if(sinai()){
+        delete p.tentOpen;
+        const revisit=()=>{s.stops[s.index]=freshStop();s.stops[s.index].beat=0;resetHints();draw(true);app.save();};
+        const openNext=()=>{sound.stop();s.index++;resetHints();draw(true);app.save();};
+        ui.camp=BO.sinaiField.mount({p,stage,s,advance,book:ref=>scrollText(s.index,ref),play,save:app.save,
+          redraw:()=>draw(true),ask:()=>{hint=Math.min(3,hint+1);showHint();schedule();},
+          refreshHints:resetHints,next:openNext,restart:revisit});
+        const records=el('details',{class:'wf-library sf-library'},el('summary',{},'출애굽기 19–20장 사건 기록'),storyRecord());
+        const journal=el('details',{class:'wf-stops sf-library'},el('summary',{},'시내산 답사 경로'));
+        const calf=button(stages[s.index+1].title,openNext);
+        calf.disabled=!s.earned[s.index]&&!s.stops[s.index+1].available&&!s.earned[s.index+1];journal.append(calf);
+        const gesture=e=>music?.gesture(e);
+        ui.screen=el('main',{class:'screen wf-screen sf-screen',on:{pointerdown:gesture,keydown:gesture,click:gesture}},nav,
+          el('div',{class:'sf-scroll wf-scroll'},el('header',{class:'sf-heading wf-heading'},
+            el('p',{},'출애굽기 19–20장 · 십계명을 듣는 백성'),heading),ui.camp.root,el('footer',{class:'sf-footer'},records,journal)));
+        app.show(ui.screen);if(focus)ui.camp.head.focus({preventScroll:true});schedule();return;
+      }
       ui.canvas=el('canvas',{class:'wf-picture',role:'img','aria-label':stage.title+' · '+stage.card});
       p.available=true;
       const later=laterView();
       paint(ui.canvas,later);
       ui.field=el('div',{class:'wf-field',tabindex:'0',role:'group'},ui.canvas);
-      if(sinai()){
-        ui.canvas.setAttribute('aria-label',later?'구름에 덮인 시내산과 오른쪽 멀리 모여 선 백성':'가운데 솟은 시내산과 그 아래 왼쪽에 펼쳐진 천 장막');
-        ui.field.classList.add('wf-sinai');ui.field.dataset.phase=p.phase;
-      }
       if(stage.id==='marah'||stage.id==='elim'){
         ui.ripple=el('i',{class:'wf-ripple wf-ripple-'+stage.id,'aria-hidden':'true'});
         ui.ripple.hidden=stage.id==='marah'&&!later;
@@ -535,9 +519,9 @@
       const content=el('div',{class:'wf-body'});
       if(!complete){
         ui.thought=el('span',{class:'wf-thought','aria-hidden':'true'});ui.field.append(ui.thought);
-        ui.pin=button(spotName(),sinai()?sinaiTarget:()=>walk(target()),'wf-pin');ui.field.append(ui.pin);
+        ui.pin=button(spotName(),()=>walk(target()),'wf-pin');ui.field.append(ui.pin);
         ui.landmarks=stage.trail.map(([name,cx,cy],i)=>{
-          const mark=button(sinai()?name:'⌖',()=>{
+          const mark=button('⌖',()=>{
             if(stage.frames){
               if(i===p.frame)saveDayPhoto();
               return;
@@ -581,9 +565,7 @@
         const goal=el('div',{class:'wf-goal'},ui.goal,ui.track);
         const moves=el('div',{class:'wf-row'},ui.left,ui.right,ask);
         const team=el('div',{class:'wf-team','aria-label':'동료 호출'},ui.roles);
-        if(sinai()){
-          content.append(goal,ui.panel,ui.status,el('details',{class:'wf-companions'},el('summary',{},'직접 걷기 · 동료 부르기'),moves,ui.aside,team,ui.talk));
-        }else content.append(goal,moves,ui.aside,team,ui.talk,ui.panel,ui.status);
+        content.append(goal,moves,ui.aside,team,ui.talk,ui.panel,ui.status);
         showFace(s.actor,'neutral');position();showHint();
       }else{
         ui.cardText=el('p',{},stage.notes[s.mode]);
@@ -614,17 +596,10 @@
       }
       if(stage.beats){
         ui.record=storyRecord();
-        if(sinai()){
-          ui.library=el('details',{class:'wf-library'},el('summary',{},'전체 사건 기록 · 출 19–20장'),ui.record);
-          content.append(ui.library);
-        }else if(complete)content.insertBefore(ui.record,content.children[1]);else content.append(ui.record);
+        if(complete)content.insertBefore(ui.record,content.children[1]);else content.append(ui.record);
       }
       if(stage.frames&&complete){
         if(p.observed)content.append(dayPhotos(true));
-      }
-      if(sinai()&&!complete){
-        const subject=stage.beats[[0,2,3][p.phase]];
-        ui.context=el('p',{class:'wf-arrival'},subject.notes[0],el('small',{},'출 '+subject.ref));
       }
       const regionName=mountain?'시내산':'광야';
       const stops=el('details',{class:'wf-stops'},el('summary',{},regionName+' 답사 경로'));
@@ -641,14 +616,13 @@
           el('strong',{},'관찰경'),el('div',{class:'wf-view-tabs',role:'group','aria-label':'확대할 풍경'},sights)));
       }
       const gesture=e=>music?.gesture(e);
-      ui.screen=el('main',{class:'screen wf-screen'+(sinai()?' wf-camp-screen':''),on:{pointerdown:gesture,keydown:gesture,click:gesture}},nav,el('div',{class:'wf-scroll'},el('header',{class:'wf-heading'},el('p',{},regionName+' 답사 '+(s.index-start+1)+' / '+(end-start+1)+' · 출 '+stage.range),heading,ui.context),view,content));
+      ui.screen=el('main',{class:'screen wf-screen',on:{pointerdown:gesture,keydown:gesture,click:gesture}},nav,el('div',{class:'wf-scroll'},el('header',{class:'wf-heading'},el('p',{},regionName+' 답사 '+(s.index-start+1)+' / '+(end-start+1)+' · 출 '+stage.range),heading),view,content));
       app.show(ui.screen);if(focus)heading.focus({preventScroll:true});schedule();
     }
     document.addEventListener('visibilitychange',visibility);window.addEventListener('pagehide',pageHide);
     window.addEventListener('blur',pageHide);window.addEventListener('focus',schedule);
     draw(false);app.save();
     if(showShelf)shelf();
-    else if(sinai()&&p.phase===0&&p.tentOpen)seeTent();
     else if(stage.observations&&inRange(p.inspection,0,stage.observations.length-1)){
       if(p.readInspection)inspectVerse(p.inspection);else inspect(p.inspection,false);
     }
