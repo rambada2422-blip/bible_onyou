@@ -7,6 +7,7 @@ const { chromium } = require('playwright');
 const { gameOrigin } = require('./game-server');
 
 const { checkObservations } = require('./wilderness-observation');
+const {playRock,checkRockSound,checkRockLegacy}=require('./rephidim-field');
 const {playSinai}=require('./sinai-field');
 const {checkTwoDays}=require('./wilderness-two-days');
 const { checkManna } = require('./wilderness-manna');
@@ -83,6 +84,15 @@ async function runRoute(browser, origin, out, entry, width) {
       await click('금송아지 사건으로');
       continue;
     }
+    if(stage.id==='rock'){
+      await playRock(page,width===360?out:null);
+      await click('관측대');
+      assert.equal(await page.locator('.wf-slot button').count(),i+1);
+      await click('닫기');
+      if(width===360){await click('시내산 수첩으로');await click('시내산 본편 답사');}
+      else await click('시내산 본편으로');
+      continue;
+    }
     const firstFrame = await page.locator('.wf-picture').evaluate(c => c.toDataURL());
     await page.locator('.wf-pin').tap();
     await page.locator('.wf-role').nth(0).tap();
@@ -157,10 +167,7 @@ async function runRoute(browser, origin, out, entry, width) {
     await page.getByRole('dialog',exact('말씀 두루마리')).waitFor();
     assert.equal(await page.locator(':focus').getAttribute('data-verse'),seals[i]);
     await click('닫기');
-    if(stage.id==='rock'){
-      if(width===360){await click('시내산 수첩으로');await click('시내산 본편 답사');}
-      else await click('시내산 본편으로');
-    }else await click(stage.id==='calf'?'시내산 수첩으로':stopNames[i+1]+' 답사하기');
+    await click(stage.id==='calf'?'시내산 수첩으로':stopNames[i+1]+' 답사하기');
   }
   assert.equal(seen.size,118);
   assert.equal(await page.locator(':focus').innerText(),'시내산의 기록');
@@ -244,6 +251,7 @@ async function checkHints(browser,origin) {
     for(const entry of ['/index.html','/preview.html']){
       await checkManna(browser,origin,entry,out);
       await checkTwoDays(browser,origin,entry);
+      await checkRockSound(browser,origin,entry);
     }
     const direct=await browser.newPage({viewport:{width:320,height:480}});
     await direct.goto(origin+'/preview.html#sinai-camp');
@@ -254,7 +262,7 @@ async function checkHints(browser,origin) {
     await direct.getByRole('combobox').selectOption('1');
     await direct.getByRole('button',exact('닫기')).click();
     assert.equal(await direct.locator('.wf-record p').innerText(),await direct.evaluate(()=>BO.wildField.stages[5].beats[0].notes[1]));
-    await direct.close();await checkOldSaves(browser,origin);await checkHints(browser,origin);
+    await direct.close();await checkRockLegacy(browser,origin);await checkOldSaves(browser,origin);await checkHints(browser,origin);
     console.log('광야·시내산 일곱 장면 · 두 날 관찰창·회전·이전 저장·원문 118절·인장·수첩·연령별 힌트: no errors');
   } finally { await browser.close(); }
 })().catch(e=>{console.error(e);process.exitCode=1;});

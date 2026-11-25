@@ -52,6 +52,19 @@
           src.buffer=sample;src.connect(filter);filter.connect(ctx.destination);
           src.onended=()=>{src.disconnect();filter.disconnect();};src.start();return;
         }
+        if(key==='brook'){
+          // 탐험대 집음기로 가까이 듣는 짧은 여울. 외부 샘플과 마이크 입력은 쓰지 않는다.
+          const length=1.15, buffer=ctx.createBuffer(1,Math.ceil(length*ctx.sampleRate),ctx.sampleRate);
+          const wave=buffer.getChannelData(0);let current=0,last=0;
+          for(let i=0;i<wave.length;i++){
+            const u=i/ctx.sampleRate;
+            current=.89*current+.11*(Math.random()*2-1);
+            const ripple=current-last;last=.96*last+.04*current;
+            wave[i]=ripple*(.50+.11*Math.sin(u*23)+.10*Math.cos(u*33))*Math.min(u/.07,1,(length-u)/.20);
+          }
+          const src=ctx.createBufferSource();src.buffer=buffer;src.connect(ctx.destination);
+          src.onended=()=>src.disconnect();src.start();return;
+        }
         if(key==='ripple'||key==='leaves'){
           const water=key==='ripple';
           const sample=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*.42),ctx.sampleRate);

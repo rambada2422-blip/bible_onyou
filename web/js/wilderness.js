@@ -87,6 +87,7 @@
     function pageHide(){pause();sound.stop();}
     function route(fn){closed=true;pause();sound.stop();music?.close();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',pageHide);window.removeEventListener('blur',pageHide);window.removeEventListener('focus',schedule);fn();}
     function sinai(){return stage.id==='sinai';}
+    function rock(){return stage.id==='rock';}
     function laterView(){
       if(p.phase===3)return !p.reviewEarly;
       if(stage.frames)return p.frame===1;
@@ -97,6 +98,12 @@
     }
     function updateScore(){
       if(!music)return;
+      if(rock()){
+        music.setPaused(!s.sound||Boolean(dialog?.querySelector('.wf-edition')));
+        music.setCue(p.phase===0||p.reviewEarly?'wild-rock-dry':'wild-rock-flow',.12);
+        music.button.disabled=!s.sound;
+        return;
+      }
       if(stage.frames||sinai()){
         const mountainCue=laterView()&&!p.backLook?'wild-sinai-witness':'wild-tents';
         music.setPaused(!s.sound||Boolean(dialog?.querySelector('.wf-edition')));
@@ -469,19 +476,42 @@
         const toggle=button('',()=>{s.sound=!s.sound;app.save();toggle.textContent=s.sound?'소리 켜짐':'소리 꺼짐';toggle.setAttribute('aria-pressed',String(s.sound));if(s.sound)play('tap');else sound.stop();updateScore();});
         toggle.textContent=s.sound?'소리 켜짐':'소리 꺼짐';toggle.setAttribute('aria-pressed',String(s.sound));
         box.append(el('label',{},'플레이어 연령 ',mode),toggle);
-        if(!sinai())box.append(el('p',{},'동료는 현장에서 따로 선택할 수 있어요.'));
+        if(!sinai()&&!rock())box.append(el('p',{},'동료는 현장에서 따로 선택할 수 있어요.'));
       });
+    }
+    function stopList(){
+      const regionName=mountain?'시내산':'광야';
+      const stops=el('details',{class:'wf-stops'},el('summary',{},regionName+' 답사 경로'));
+      stages.forEach((st,i)=>{
+        if(i<start||i>end)return;
+        const b=button(st.title+(s.earned[i]?' · 기록 있음':''),()=>{sound.stop();s.index=i;resetHints();draw(true);app.save();});
+        b.disabled=i!==start&&!s.earned[i-1]&&!s.stops[i].available&&!s.earned[i];stops.append(b);
+      });
+      return stops;
     }
     function draw(focus){
       s[bookmark]=s.index;stage=stages[s.index];p=s.stops[s.index];ui={};
       const complete=p.phase===3, heading=el('h1',{tabindex:'-1'},stage.title);
-      if(stage.observations||stage.frames||sinai()){
+      if(stage.observations||stage.frames||sinai()||rock()){
         if(!music)music=BO.sceneMusic.create();
         updateScore();
       }else if(music){music.close();music=null;}
       const nav=el('nav',{class:'wf-nav'},button('탐험 입구',()=>route(leave)),button('말씀 두루마리',()=>scrollText(s.index,false)),button('관측대',shelf),button('설정',settings));
       if(music)nav.append(music.button);
       p.available=true;
+      if(rock()){
+        ui.camp=BO.rephidimField.mount({p,stage,s,advance,book:ref=>scrollText(s.index,ref),play,save:app.save,
+          review:early=>{p.reviewEarly=early;sound.stop();resetHints();app.save();draw(true);},
+          ask:()=>{hint=Math.min(3,hint+1);showHint();schedule();},
+          progress:()=>{resetHints();showHint();schedule();},
+          restart:()=>{s.stops[s.index]=freshStop();resetHints();draw(true);app.save();},
+          next:()=>route(app.openSinai),journal:()=>route(trail)});
+        const gesture=e=>music?.gesture(e);
+        ui.screen=el('main',{class:'screen wf-screen sf-screen rp-screen',on:{pointerdown:gesture,keydown:gesture,click:gesture}},nav,
+          el('div',{class:'sf-scroll wf-scroll'},el('header',{class:'sf-heading wf-heading'},
+            el('p',{},'광야 답사 · 출애굽기 17:1–7'),heading),ui.camp.root,stopList()));
+        app.show(ui.screen);if(focus)ui.camp.head.focus({preventScroll:true});schedule();return;
+      }
       if(sinai()){
         delete p.tentOpen;
         const revisit=()=>{s.stops[s.index]=freshStop();s.stops[s.index].beat=0;resetHints();draw(true);app.save();};
@@ -602,13 +632,7 @@
         if(p.observed)content.append(dayPhotos(true));
       }
       const regionName=mountain?'시내산':'광야';
-      const stops=el('details',{class:'wf-stops'},el('summary',{},regionName+' 답사 경로'));
-      stages.forEach((st,i)=>{
-        if(i<start||i>end)return;
-        const b=button(st.title+(s.earned[i]?' · 기록 있음':''),()=>{sound.stop();s.index=i;resetHints();draw(true);app.save();});
-        b.disabled=i!==start&&!s.earned[i-1]&&!s.stops[i].available&&!s.earned[i];stops.append(b);
-      });
-      content.append(stops);
+      content.append(stopList());
       let view=ui.frameBar?el('div',{class:'wf-pair'},ui.field,ui.frameBar):ui.field;
       if(stage.observations){
         const sights=stage.observations.map((v,i)=>button(v.label,()=>inspect(i),'wf-observe-tab'));
