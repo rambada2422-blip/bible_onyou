@@ -1,3 +1,4 @@
+const {collectBrickPair}=require('../bondage-field');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -31,6 +32,7 @@ async function checkSize(browser, width, height) {
   async function advanceTo(selector) {
     for (let step = 0; step < 20; step++) {
       if (await page.locator(selector).count()) return;
+      await collectBrickPair(page);
       await next.click();
     }
     throw new Error(`지정한 화면에 도착하지 못했습니다. ${selector}`);
@@ -146,14 +148,10 @@ async function checkSize(browser, width, height) {
     await page.locator('.node.play').first().click();
     await page.getByRole('button', { name: '짓고 있는 성 살펴보기' }).waitFor();
     await capture('03-egypt-arrival');
-    // 성벽과 중앙 건물을 실제 그림 좌표로 눌러 본다.
-    const city = await page.locator('#ex00-city').evaluate(g => [[520, 555], [670, 563]].map(([x, y]) => {
-      const pt = new DOMPoint(x, y).matrixTransform(g.getScreenCTM());
-      return { x: pt.x, y: pt.y, canTap: !!document.elementFromPoint(pt.x, pt.y)?.closest('.look-target') };
-    }));
-    assert(city.every(p => p.canTap), '성벽과 중앙 건물을 모두 누를 수 있어야 한다');
-    await page.touchscreen.tap(city[0].x, city[0].y);
-    assert.match(await page.locator('.sheet .narr').innerText(), /새 왕/);
+    const wall = await page.locator('.by-pin[data-spot="wall"]').boundingBox();
+    assert(wall.width >= 44 && wall.height >= 44);
+    await page.touchscreen.tap(wall.x+wall.width/2,wall.y+wall.height/2);
+    assert.match(await page.locator('.by-caption').innerText(), /새 왕/);
     await capture('04-scene');
     await advanceTo('.q-prompt');
     await capture('05-question');

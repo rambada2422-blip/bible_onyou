@@ -1,3 +1,4 @@
+const {collectBrickPair}=require('../bondage-field');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -39,7 +40,7 @@ async function finishFirstScene(page, note) {
   await button(page, '둘러보기').click();
   const beats = await page.evaluate(() => BO.content.scenes['EX-00'].beats.length);
   const next = page.locator('.sheet-foot .btn.onpaper');
-  for (let i = 0; i < beats; i++) await next.click();
+  for (let i = 0; i < beats; i++) { await collectBrickPair(page); await next.click(); }
   const [chapter, verse] = await page.evaluate(() =>
     BO.content.scenes['EX-00'].gates.t3[0].accept[0].split(':'));
   await page.getByRole('textbox', { name: '장', exact: true }).fill(chapter);
@@ -238,7 +239,7 @@ const readSave = (page) => page.evaluate((storageKey) => localStorage.getItem(st
       }
       await page.locator('.node.play').first().click(); await button(page, '둘러보기').click();
       await page.evaluate(([k, s]) => localStorage.setItem(k, JSON.stringify(s)), [key, data]);
-      await button(page, '다음').click();
+      await button(page, '운반 중인 벽돌 바구니 살펴보기').click();
       assert.deepEqual(JSON.parse(await readSave(page)), data, '오래 열린 탭이 다른 탭의 진행을 덮었다');
     }));
 

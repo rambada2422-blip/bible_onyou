@@ -1,3 +1,4 @@
+const {collectBrickPair}=require('../bondage-field');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -125,7 +126,7 @@ async function checkScreen(browser, [width, height], age) {
       const scene = BO.content.scenes['EX-00'];
       return { beats: scene.beats.length, questions: scene.gates[BO.content.tiers[index].id] };
     }, age);
-    for (let step = 0; step < beats; step++) await next.click();
+    for (let step = 0; step < beats; step++) { await collectBrickPair(page); await next.click(); }
     for (const [index, question] of questions.entries()) {
       await capture(`06-question-${index + 1}`);
       if (question.type === 'findref') {

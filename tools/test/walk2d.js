@@ -1,4 +1,5 @@
 // 사용: node walk.js <tierIndex 0-2> <routeLabel> <outDir> [url] [dsf]
+const {playBrickField}=require('./bondage-field');
 const { chromium } = require('playwright');
 const { gameOrigin, proxy } = require('./game-server');
 const path = require('path');
@@ -98,6 +99,7 @@ fs.mkdirSync(out, { recursive: true });
   async function playScene(label) {
     await p.waitForSelector('.screen.scene', { timeout: 8000 });
     await p.waitForTimeout(700);
+    if(await p.locator('.by-screen').count())await playBrickField(p,out);
     for (let guard = 0; guard < 60; guard++) {
       if (!(await p.$('.screen.scene'))) return;
       const look = await p.$('.sheet-foot .look-help');

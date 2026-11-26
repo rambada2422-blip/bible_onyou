@@ -1,3 +1,4 @@
+const {collectBrickPair}=require('../bondage-field');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -130,6 +131,7 @@ async function checkScreen(browser, { width, height, age, destination }) {
   async function advanceTo(selector) {
     for (let step = 0; step < 20; step++) {
       if (await page.locator(selector).count()) return;
+      await collectBrickPair(page);
       await next.click();
     }
     throw new Error(`지정한 화면에 도착하지 못했습니다. ${selector}`);

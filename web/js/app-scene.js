@@ -6,7 +6,6 @@
   var show = app.show, bookName = app.bookName, warp = app.warp, save = app.save, questions = app.questions;
 
   var arrivalPrompts = {
-    'EX-00': '그림에서 짓고 있는 성을 찾아 눌러 보세요.',
     'EX-01': '그림에서 양 떼를 찾아 눌러 보세요.'
   };
 
@@ -15,20 +14,23 @@
   function stopReading() {
     if (!reading) return;
     reading.label.textContent = '읽어 줘';
+    reading.onPlay?.(false);
     reading = null;
     try { window.speechSynthesis.cancel(); } catch (e) { /* 기기에서 음성 기능을 닫은 경우 */ }
   }
-  function readButton(text, status) {
+  function readButton(text, status, onPlay) {
     var label = el('span', { text: '읽어 줘' });
     return el('button', { class: 'readbtn', on: { click: function () {
       if (reading) { stopReading(); return; }
       status.hidden = true;
-      var current = { label: label, utterance: null };
+      var current = { label: label, utterance: null, onPlay: onPlay };
       reading = current;
+      onPlay?.(true);
       label.textContent = '그만 듣기';
       function finish(failed) {
         if (reading !== current) return;
         reading = null;
+        onPlay?.(false);
         label.textContent = '읽어 줘';
         if (failed) {
           status.hidden = false;
@@ -139,8 +141,13 @@
     var found = clueItems.map(function (item) { return item.region; }).filter(function (region) {
       return journey && Array.isArray(journey.found) && journey.found.includes(region);
     });
+    var field = null;
+    var marks = journey && Number.isInteger(journey.brickMarks) ? journey.brickMarks & 3 : 0;
+    var yardReview = !!(journey && journey.step === 'beat-3' && journey.yardReview);
     function remember(st) {
       var progress = { id: id, tier: app.state.tier, step: stepName(st) };
+      if (id === 'EX-00' && marks) progress.brickMarks = marks;
+      if (id === 'EX-00' && st.k === 'beat' && st.i === 3 && yardReview) progress.yardReview = true;
       if (found.length) progress.found = found.slice();
       if (st.k === 'arrive' && nightOnArrival) progress.nightOnArrival = true;
       rememberJourney(progress);
@@ -150,7 +157,9 @@
       remember(steps[idx + 1]);
     }
 
-    var artBox = el('div', { class: 'art', html: ART[sc.art] || '' });
+    var artBox = id === 'EX-00'
+      ? el('div', {class:'art'}, el('img', {class:'by-last-photo',src:BO.bondageImages?.cry || 'assets/bondage/cry.webp',alt:'일터에서 함께 앉은 백성'}))
+      : el('div', { class: 'art', html: ART[sc.art] || '' });
     var svg = artBox.querySelector('svg');
     var dots = el('div', { class: 'dots' });
     var hots = el('div', { class: 'hot-layer' });
@@ -161,7 +170,8 @@
       dots, hots);
     var body = el('div', { class: 'sheet-body pad' });
     var foot = el('div', { class: 'sheet-foot pad' });
-    show(el('div', { class: 'screen scene' }, stage, el('div', { class: 'sheet' }, body, foot)));
+    var normalScene = el('div', { class: 'screen scene' }, stage, el('div', { class: 'sheet' }, body, foot));
+    if (id !== 'EX-00') show(normalScene);
 
     function setState(name) {
       if (!svg || !name) return;
@@ -257,6 +267,18 @@
       lookSpot = null;
       var st = steps[idx];
       remember(st);
+      if (id === 'EX-00' && (st.k === 'arrive' || st.k === 'beat')) {
+        if (!field) field = BO.bondageField.create(sc, {
+          next: next, prev: prev, leave: function () { field.close(); renderHub(); },
+          mark: function (value) { marks = value; remember(steps[idx]); },
+          review: function (value) { yardReview = value; remember(steps[idx]); }
+        });
+        if (st.k !== 'beat' || st.i !== 3) yardReview = false;
+        field.render(st.k === 'arrive' ? -1 : st.i, marks, yardReview);
+        return;
+      }
+      if (field) { field.close(); field = null; }
+      if (!normalScene.isConnected) show(normalScene);
       if (st.k === 'arrive') return stepArrive();
       if (st.k === 'beat') return stepBeat(sc.beats[st.i], st.i);
       if (st.k === 'gate') return stepGate(st.g, st.i, sc.gates[app.state.tier].length);
@@ -429,10 +451,12 @@
   }
 
   function cardNode(c, sc, pop) {
-    return el('div', { class: 'vcard' + (pop ? ' pop' : '') },
+    var card = el('div', { class: 'vcard' + (pop ? ' pop' : '') },
       el('div', { class: 'r', text: c.ref }), el('div', { class: 't', text: c.title }),
       el('div', { class: 'm', text: (sc ? sc.title : c.scene) + ' · 성경책에서 직접 읽어 보세요' }),
       c.bonus ? el('span', { class: 'tag', text: '돌아가는 길에 찾은 말씀' }) : null);
+    if (c.ref === '출 2:24') card.append(el('button', {type:'button',class:'by-verse',on:{click:function () { BO.bondageField.scroll('2:24'); }}}, '말씀 인장 열기 · 출 2:24'));
+    return card;
   }
 
   restoreJournalClues();
