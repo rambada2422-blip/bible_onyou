@@ -1,0 +1,39 @@
+{
+  "measure": "5x5 rendered luminance; left, center, right",
+  "normalizedPoints": [
+    [
+      0.22,
+      0.42
+    ],
+    [
+      0.52,
+      0.21
+    ],
+    [
+      0.81,
+      0.43
+    ]
+  ],
+  "pixelLevels": {
+    "initial": [
+      89.8,
+      158,
+      127.6
+    ],
+    "toCrowd": [
+      63.0,
+      224.0,
+      127.6
+    ],
+    "crowdKept": [
+      63.0,
+      224.0,
+      175.9
+    ],
+    "complete": [
+      91.5,
+      225.2,
+      182.6
+    ]
+  }
+}

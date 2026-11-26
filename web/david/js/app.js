@@ -1168,7 +1168,7 @@
     );
 
     root.replaceChildren(
-      renderTopbar('다윗의 일곱 관찰', null,
+      renderTopbar('다윗의 아홉 장면', null,
         el('button', { class: 'topbtn brass', 'data-action': 'journal', on: { click: openJournal } }, '탐험 일지 ' + doneCount + '/' + total)
       ),
       el('main', { class: 'home-body' },

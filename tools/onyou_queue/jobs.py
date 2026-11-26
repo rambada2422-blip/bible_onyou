@@ -74,6 +74,24 @@ def pdf_files(cwd):
 
 
 def verify(job, cwd, out):
+    if job == 'entry':
+        run(['node','tools/build-david.js'],cwd)
+        run(['node',str(TOOLS/'dot-check.cjs'),job,str(cwd/'dist/david.html')],cwd)
+        verify('journey',cwd,out)
+        return '휴대폰 첫 화면 시작·이어하기, 아홉 장면 및 D09 두 입구 조작 통과'
+    if job == 'pacing':
+        report = (cwd/'docs/인계/E58_조작검토.md').read_text(encoding='utf-8')
+        html = 'docs/인계/창세기_E58_플레이검토.html'
+        base = (out/'base.txt').read_text().strip()
+        run(['git','diff','--exit-code',base,'--',html,'docs/창세기/본편/E58.md'],cwd)
+        measured = json.loads(run(['node',str(TOOLS/'dot-check.cjs'),job,str(cwd/html)],cwd))
+        for prior, route, count in measured:
+            if not re.search(rf'^\|\s*{prior}\s*\|\s*{route}\s*\|\s*{count}\s*\|',report,re.M):
+                raise ValueError(f'E58 {prior}·{route} 진행 단추 횟수와 실행 기록 불일치')
+        if not all(word in report for word in ('칸','목회자','아동')):
+            raise ValueError('구체적 칸과 후속 확인 사항을 적으세요')
+        (out/'pacing.json').write_text(json.dumps(measured,ensure_ascii=False),encoding='utf-8')
+        return 'E58 네 경로 진행 횟수 실측 일치 · 진행자 제안 수신'
     if job == 'masks':
         from print_cards import verify_masks
         return verify_masks(cwd,out)

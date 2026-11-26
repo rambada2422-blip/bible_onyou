@@ -114,15 +114,19 @@ class Store:
         self.last_export=last
 
 
-def catalogue(source=None):
+def catalogue(source=None, extension=None):
     cards = json.loads(source if source is not None else (HERE/'cards.json').read_text(encoding='utf-8'))
+    if source is None:
+        extension = (HERE/'cards-dot.json').read_text(encoding='utf-8')
+    if extension is not None:
+        cards.extend(json.loads(extension))
     ids = set()
     for c in cards:
         if not re.fullmatch(r'[a-z0-9-]+',c['id']) or c['id'] in ids:
             raise ValueError('중복되거나 유효하지 않은 작업 ID')
         if not set(c.get('after',[])) <= ids or not c['services'] or not set(c['services']) <= set(SERVICES):
             raise ValueError('카드 순서 또는 담당 확인 필요')
-        if c['job'] not in ('index','bundle','pdf','journey','proof','content','masks','routes') or not re.fullmatch(r'[\w/-]+',c['branch']):
+        if c['job'] not in ('index','bundle','pdf','journey','proof','content','masks','routes','entry','pacing') or not re.fullmatch(r'[\w/-]+',c['branch']):
             raise ValueError('지원하지 않는 카드')
         ids.add(c['id'])
     return cards
@@ -135,6 +139,8 @@ def refresh_backlog(store):
         git(ROOT,'fetch','--no-write-fetch-head','origin','refs/heads/antigravity/david-week:'+ref)
         registry = git(ROOT,'show',ref+':tools/onyou_queue/cards.json')
         store.register(catalogue(registry))
+        extension = git(ROOT,'show',ref+':tools/onyou_queue/cards-dot.json')
+        store.register(catalogue(registry,extension))
     except (OSError,ValueError,TypeError, KeyError, subprocess.TimeoutExpired) as exc:
         store.log('catalogue-wait','저장된 목록으로 진행 · '+str(exc)[-240:],'','local')
 

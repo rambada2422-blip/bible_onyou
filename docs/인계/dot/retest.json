@@ -1,0 +1,112 @@
+{
+  "states": {
+    "initial": {
+      "filter": "saturate(0.62) brightness(0.7)",
+      "visible": [
+        true,
+        false,
+        false
+      ],
+      "masks": [
+        "radial-gradient(24% 34% at 23% 60%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 50% 38%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 82% 62%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))"
+      ],
+      "selected": [
+        "vessels"
+      ]
+    },
+    "toCrowd": {
+      "filter": "saturate(0.62) brightness(0.7)",
+      "visible": [
+        false,
+        true,
+        false
+      ],
+      "masks": [
+        "radial-gradient(24% 34% at 23% 60%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 50% 38%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 82% 62%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))"
+      ],
+      "selected": [
+        "rejoice"
+      ]
+    },
+    "crowdKept": {
+      "filter": "saturate(0.62) brightness(0.7)",
+      "visible": [
+        false,
+        true,
+        true
+      ],
+      "masks": [
+        "radial-gradient(24% 34% at 23% 60%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 50% 38%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 82% 62%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))"
+      ],
+      "selected": [
+        "materials"
+      ]
+    },
+    "reloaded": {
+      "filter": "saturate(0.62) brightness(0.7)",
+      "visible": [
+        false,
+        true,
+        true
+      ],
+      "masks": [
+        "radial-gradient(24% 34% at 23% 60%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 50% 38%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 82% 62%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))"
+      ],
+      "selected": [
+        "materials"
+      ]
+    },
+    "backToVessels": {
+      "filter": "saturate(0.62) brightness(0.7)",
+      "visible": [
+        true,
+        true,
+        true
+      ],
+      "masks": [
+        "radial-gradient(24% 34% at 23% 60%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 50% 38%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 82% 62%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))"
+      ],
+      "selected": [
+        "vessels"
+      ]
+    },
+    "complete": {
+      "filter": "none",
+      "visible": [
+        false,
+        false,
+        false
+      ],
+      "masks": [
+        "radial-gradient(24% 34% at 23% 60%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 50% 38%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))",
+        "radial-gradient(24% 34% at 82% 62%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0))"
+      ],
+      "selected": []
+    }
+  },
+  "hints": {
+    "D09": [
+      "휴 · 왼쪽 선과 아래 홈을 살펴봐.",
+      "조각을 돌려 두 끝이 맞으면 끼워 봐.",
+      "불이 켜지면 두 그림에 차례로 비춰 봐."
+    ],
+    "D09-gifts": [
+      "휴 · 그림에서 비추고 싶은 곳을 골라 봐.",
+      "밝아진 모습을 수첩에 담아 봐.",
+      "다른 곳을 비춰 봐. 세 모습을 담으면 물음이 열려."
+    ]
+  },
+  "errors": [],
+  "matchingScreens": true
+}

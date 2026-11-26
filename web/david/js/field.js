@@ -215,6 +215,7 @@
   }
 
   const hints = {
+    'temple-gifts': ['휴 · 그림에서 비추고 싶은 곳을 골라 봐.', '밝아진 모습을 수첩에 담아 봐.', '다른 곳을 비춰 봐. 세 모습을 담으면 물음이 열려.'],
     D08: ['온우 · 왼쪽 성문 곁 우물부터 눌러 살펴봐.', '가운데 언덕길을 걷는 세 사람도 수첩에 담아 봐.', '오른쪽 아둘람 굴 산성까지 담으면 물음이 열려.'],
     D07: ['휴 · 식탁에 놓인 둥근 빵을 찾아봐.', '그릇 안에 보랏빛 포도가 보여.', '식탁 앞에 걸친 천의 줄무늬도 살펴봐.'],
     D05: ['휴 · 그림 한 장과 단서 한 장을 뒤집어 봐.', '첫 번째 만남과 나중 만남의 장절이 달라.', '장소 그림과 짝이 되는 단서도 있어.'],
@@ -229,15 +230,16 @@
   function clearTimers() { hintTimers.forEach(clearTimeout); hintTimers = []; }
   function attachHints(ctx, panel, sceneId) {
     clearTimers();
-    const key = panel ? sceneId + ctx.state.ageTier : '';
+    const activity = panel && (panel.dataset.hints || sceneId);
+    const key = panel ? activity + ctx.state.ageTier : '';
     if (key !== activeKey) { activeKey = key; acted = false; }
     if (!panel) return;
     const el = ctx.el;
     let index = 0;
     const note = el('span', { role: 'status' });
     function reveal() {
-      note.textContent = hints[sceneId][index];
-      index = (index + 1) % hints[sceneId].length;
+      note.textContent = hints[activity][index];
+      index = (index + 1) % hints[activity].length;
     }
     const help = button(el, 'hint', '동료 힌트', reveal);
     const hintRow = el('div', { class: 'field-hint' }, help, note);

@@ -1632,6 +1632,11 @@ h1, h2, h3, p { margin: 0; }
   border-radius: 9px; background: #e5ce9b; user-select: none;
 }
 .well-board .table-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.gifts-board:not(.fully-lit) .table-art { filter: saturate(.62) brightness(.70); }
+.gifts-light {
+  position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+  mask-image: radial-gradient(ellipse 24% 34% at var(--well-x) var(--well-y), #000 50%, transparent);
+}
 .well-pin {
   position: absolute; transform: translate(-50%, -50%);
   display: inline-flex; flex-direction: column; align-items: center; gap: 3px;
@@ -1655,6 +1660,14 @@ h1, h2, h3, p { margin: 0; }
 
 /* D09 · 성전 예물 빛수첩 */
 .gifts-panel { background: #fff9eb; border-color: #c7b17e; }
+.gifts-cover {
+  display: inline-block; width: 78px; height: 54px; overflow: hidden; position: relative;
+  margin-inline: 4px 8px; vertical-align: middle; border-radius: 4px;
+}
+.gifts-cover img {
+  position: absolute; width: 240%; height: auto; max-width: none; left: 50%; top: 50%;
+  transform: translate(calc(0% - var(--well-x)), calc(0% - var(--well-y)));
+}
 .gifts-pin.active { background: #f6c453; color: #19253a; border-color: #19253a; box-shadow: 0 0 0 4px rgba(246, 196, 83, .38); }
 
 /* 아홉 장면 이어하기 (D01~D09) */

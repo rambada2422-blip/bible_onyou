@@ -38,5 +38,9 @@
     "id": "genesis-c29-two-routes", "branch": "claude/genesis-week", "services": ["claude"],
     "after": ["genesis-c29-cutouts"], "job": "routes", "title": "수정한 C29 인쇄판의 두 우회 경로 재검증",
     "prompt": "수정판 C29.md와 실제 C29_판.pdf·C29_답지.pdf를 열어 시므온과 안방 카드를 각각 고른 뒤 해당 본문에서 확인하고 원래 고르기로 돌아오는 전 과정을 재검증하세요. 각 경로에서 판의 몇 칸을 언제 가리고 여는지, 아이 면에서 뒤의 답이 보이는지 확인하세요. docs/창세기/연속/C29_재검증.md에 경로별 조작과 근거 장절, 확인된 문제나 통과 여부를 쓰세요. 디지털 검토와 실물·아동·목회자 확인을 구분하세요. 원고나 PDF를 고칠 필요가 있으면 별도로 기록하세요."
+  },
+  {
+    "id": "david-dot-offline", "branch": "antigravity/david-week", "services": ["local"],
+    "after": ["david-nine-scenes", "genesis-c29-two-routes"], "job": "bundle", "title": "dot 지적 반영본의 D09 안내·두 일지 표지 오프라인 회귀 검사"
   }
 ]

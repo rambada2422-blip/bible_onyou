@@ -41,7 +41,7 @@
       const done = shots.indexOf(stop.id) !== -1;
       const tile = el('li', { class: done ? 'collected' : '' },
         done ? el('span', { class: 'well-crop gifts-crop' }, el('img', { src: art, alt: '' })) : null,
-        el('span', { class: 'table-caption', text: (done ? (i + 1) + '. ' : '') + stop.name }));
+        el('span', { class: 'table-caption', text: (done ? (i === 0 ? '표지 · ' : (i + 1) + '. ') : '') + stop.name }));
       if (done) position(tile, stop.x, stop.y);
       return tile;
     }));
@@ -50,8 +50,11 @@
   function journal(el, rawShots) {
     const { shots } = restore({ shots: rawShots });
     if (shots.length !== stops.length) return null;
+    const first = stops.find(stop => stop.id === shots[0]);
+    const cover = el('span', { class: 'gifts-cover' }, el('img', { src: art, alt: '' }));
+    position(cover, first.x, first.y);
     return el('details', { class: 'table-keepsake well-keepsake gifts-keepsake' },
-      el('summary', { text: '내가 비춘 성전 예물 세 장면' }),
+      el('summary', {}, cover, el('span', { text: '내가 비춘 성전 예물 세 장면 · 표지 ' + first.name })),
       collection(el, shots));
   }
 
@@ -81,9 +84,14 @@
       return pin;
     });
 
+    const lights = stops.map(stop => {
+      const light = el('img', { class: 'gifts-light', src: art, alt: '', draggable: 'false' });
+      position(light, stop.x, stop.y);
+      return light;
+    });
     const board = el('div', { class: 'well-board gifts-board', role: 'group', 'aria-label': '성전을 위해 드린 예물과 기뻐하는 백성 관찰판' },
       el('img', { class: 'table-art', src: art, draggable: 'false', alt: '성전을 위해 드린 금과 은 예물과 함께 기뻐하는 백성 삽화' }),
-      pins);
+      lights, pins);
 
     board.addEventListener('keydown', event => {
       if (run.shots.length === stops.length) return;
@@ -117,7 +125,8 @@
     function describe() {
       const stop = stops[run.focus];
       const has = run.shots.indexOf(stop.id) !== -1;
-      return stop.name + ' (' + stop.ref + ') · ' + (has ? '이미 수첩에 담았어요.' : stop.note);
+      const detail = has ? '이미 수첩에 담았어요.' : stop.note;
+      return stop.name + ' (' + stop.ref + ') · ' + detail + (run.shots.length ? '' : ' 처음 담은 모습이 일지 표지가 돼요.');
     }
 
     function capture() {
@@ -140,12 +149,14 @@
 
     function paint() {
       const solved = run.shots.length === stops.length;
+      board.classList.toggle('fully-lit', solved);
       count.textContent = run.shots.length + ' / ' + stops.length + '곳';
       controls.hidden = solved;
       question.hidden = !solved;
       pins.forEach((pin, idx) => {
         const stop = stops[idx];
         const done = run.shots.indexOf(stop.id) !== -1;
+        lights[idx].hidden = solved || (!done && run.focus !== idx);
         pin.classList.toggle('active', !solved && run.focus === idx);
         pin.classList.toggle('collected', done);
         pin.disabled = solved;
@@ -161,7 +172,7 @@
     film.addEventListener('toggle', () => { if (!film.open) movie.pause(); });
 
     paint();
-    return el('section', { class: 'table-panel well-panel gifts-panel', 'data-field': 'D09' },
+    return el('section', { class: 'table-panel well-panel gifts-panel', 'data-field': 'D09', 'data-hints': 'temple-gifts' },
       el('header', { class: 'table-heading' },
         el('div', {}, el('small', { text: '탐험대 그림 놀이 · ' + (run.dir === 'reverse' ? '재료에서 예물로' : '예물에서 재료로') }),
           el('h2', { text: '성전 예물 빛수첩' })),

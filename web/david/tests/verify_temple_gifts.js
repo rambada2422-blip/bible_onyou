@@ -51,9 +51,23 @@ async function run() {
 
     await p.goto(baseUrl);
     await p.evaluate(() => document.fonts.ready);
+    await p.locator('[data-field-start="D09"]').click();
+    const hint = p.getByRole('button', { name: '동료 힌트' });
+    const note = p.locator('.field-hint [role="status"]');
+    for (const phrase of ['아래 홈', '돌려', '불이 켜지면']) {
+      await hint.click();
+      assert((await note.innerText()).includes(phrase));
+    }
+    await p.locator('[data-action="home"]').click();
     await p.locator('[data-field-start="D09-gifts"]').click();
     await p.locator('.gifts-panel[data-field="D09"]').waitFor();
     await noOverflow(p, 'D09 portrait start');
+    for (const phrase of ['비추고 싶은 곳', '수첩에 담아', '세 모습을 담으면']) {
+      await hint.click();
+      assert((await note.innerText()).includes(phrase));
+    }
+    const lights = p.locator('.gifts-light:visible');
+    assert.equal(await lights.count(), 1);
 
     // 첫 모습 담기 + 같은 모습 중복 방지
     await p.locator('[data-gifts-action="take"]').click();
@@ -73,11 +87,15 @@ async function run() {
     // 키보드 이동 + 핀 탭으로 나머지 2곳 담기
     await p.locator('[data-gifts-pin="vessels"]').focus();
     await p.keyboard.press('ArrowRight');
+    assert.equal(await lights.count(), 2);
     await p.locator('[data-gifts-action="take"]').click();
     await p.locator('[data-gifts-pin="materials"]').click();
+    assert.equal(await lights.count(), 3);
     await p.locator('[data-gifts-pin="materials"]').click();
     assert.deepEqual(await p.evaluate(() => BO_DAVID.debug.state().templeGifts.shots), ['vessels', 'rejoice', 'materials']);
     await p.locator('.table-question').waitFor({ state: 'visible' });
+    assert.equal(await p.locator('.gifts-board.fully-lit').count(), 1);
+    assert.equal(await lights.count(), 0);
     await p.screenshot({ path: path.join(shotDir, '성전_예물_세_장면.png') });
 
     // 다른 단서(시냇가의 돌) 왕복 후 상태 유지
@@ -91,6 +109,7 @@ async function run() {
     await p.locator('[data-choice="gold-silver"]').click();
     await p.locator('[data-discovery="D09"]').waitFor();
     await p.locator('[data-action="open-journal"]').click();
+    assert((await p.locator('.gifts-keepsake summary').innerText()).includes('표지 금과 은 예물'));
     await p.locator('.gifts-keepsake summary').click();
     assert.equal(await p.locator('.gifts-keepsake .gifts-crop').count(), 3);
 
@@ -99,6 +118,14 @@ async function run() {
     await p.locator('[data-action="open-gifts"]').click();
     assert.equal(await p.evaluate(() => BO_DAVID.debug.state().templeGifts.dir), 'reverse');
     assert.equal(await p.evaluate(() => BO_DAVID.debug.state().templeGifts.focus), 2);
+    for (let i = 0; i < 3; i++) {
+      await p.locator('[data-gifts-action="take"]').click();
+      if (i < 2) await p.locator('[data-gifts-action="move"]').click();
+    }
+    await p.locator('[data-choice="gold-silver"]').click();
+    await p.locator('[data-action="open-journal"]').click();
+    await p.reload();
+    assert((await p.locator('.gifts-keepsake summary').innerText()).includes('표지 성전 건축 재료'));
     await ctx.close();
 
     // 2) D08 우물 길 수첩 완료 뒤 '다음 장면 · 성전 예물 빛수첩' 연결 확인
