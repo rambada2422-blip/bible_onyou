@@ -107,5 +107,6 @@ async function play(browser, origin, entry, out) {
   try {
     const origin=await gameOrigin(browser);
     for (const entry of ['/index.html','/preview.html']) await play(browser,origin,entry,out);
+    console.log('호렙 현장과 말씀 인장 · no errors');
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exitCode=1; });
