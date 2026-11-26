@@ -6,6 +6,7 @@ const fs = require('node:fs/promises');
 const { chromium } = require('playwright');
 const { gameOrigin, proxy } = require('../game-server');
 const layoutIssues = require('../layout-issues');
+const { passFindWords } = require('../find-words2d');
 
 const out = path.resolve(process.argv[2] || 'dist/check/look-beats2d');
 const key = 'bo_demo_v1';
@@ -93,12 +94,18 @@ async function play(browser, origin, entry, tier, size, label) {
     await page.getByRole('button', { name: '떨기나무 살펴보기', exact: true }).tap();
     await page.locator('.narr', { hasText: beats[1].text[tier] }).waitFor();
 
-    // 관문까지 아래 단추를 이어서 누르는 횟수를 센다.
-    let run = 0, longest = 0, guard = 0;
+    // 관문까지 아래 단추를 이어서 누르는 횟수를 센다. 8~10세는 글에서 찾기 대목 (출 3:5, 3:6, 3:10-12)에서 끊긴다.
+    let run = 0, longest = 0, guard = 0, finds = 0;
     while (guard++ < 20) {
       // 하나님이 말씀하시는 대목 (출 3:4-12)은 그림을 눌러 열지 않는다.
       assert.equal(await page.locator('.sheet-foot .look-help').count(), 0, '말씀 대목에서 그림 찾기가 나오면 안 된다');
       if (guard === 3) await shot('03-beat2');
+      if (await page.locator('.narr.findtext').count()) {
+        assert.equal(await page.locator('.sheet-foot .btn.onpaper').count(), 0, '글에서 찾기 대목에는 다음 단추가 없다');
+        finds += await passFindWords(page);
+        run = 0;
+        continue;
+      }
       const next = page.locator('.sheet-foot .btn.onpaper');
       const text = (await next.innerText()).trim();
       await next.click();
@@ -107,9 +114,11 @@ async function play(browser, origin, entry, tier, size, label) {
       await page.locator('.narr').waitFor();
     }
     await page.locator('.q-kicker', { hasText: '다음으로 가는 관문 1' }).waitFor();
-    assert.equal(longest, 6, `떨기나무를 찾은 뒤 관문까지 아래 단추 ${longest}번`);
+    const expected = tier === 't1' ? { longest: 2, finds: 3 } : { longest: 6, finds: 0 };
+    assert.equal(finds, expected.finds, `글에서 찾기 대목 ${finds}개`);
+    assert.equal(longest, expected.longest, `떨기나무를 찾은 뒤 관문까지 아래 단추를 이어 누른 횟수 ${longest}번`);
     assert.deepEqual(errors, []);
-    return `${label} · 떨기나무를 그림에서 찾아 관문까지 (떨기나무 뒤 관문까지 아래 단추 ${longest}번)`;
+    return `${label} · 떨기나무를 그림에서 찾아 관문까지 (떨기나무 뒤 아래 단추를 이어 누른 횟수 최대 ${longest}번, 글에서 찾기 ${finds}곳)`;
   } finally {
     await page.close();
   }

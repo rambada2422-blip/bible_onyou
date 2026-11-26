@@ -4,6 +4,7 @@ const { chromium } = require('playwright');
 const { gameOrigin, proxy } = require('./game-server');
 const path = require('path');
 const fs = require('fs');
+const { passFindWords } = require('./find-words2d');
 const args = process.argv.slice(2);
 const ti = args[0], routeLabel = args[1], out = args[2];
 const dsf = Number(args[4] || '1');
@@ -111,6 +112,13 @@ fs.mkdirSync(out, { recursive: true });
         await shot(label + '-look');
         await p.click('.hot-layer .look-target');
         await p.waitForTimeout(300);
+        continue;
+      }
+      if (await p.$('.narr.findtext')) {
+        // 8~10세: 아래 단추 대신 글 속의 말을 찾아 누른다.
+        await p.waitForTimeout(1200);
+        await shot(label + '-find');
+        await passFindWords(p);
         continue;
       }
       const btn = await p.$('.sheet-foot .btn.onpaper');

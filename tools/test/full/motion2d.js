@@ -10,6 +10,8 @@ if (!outputFolder) {
 }
 
 const { chromium } = require('playwright');
+const { playBrickField } = require('../bondage-field');
+const { passFindWords } = require('../find-words2d');
 let url;
 const viewport = { width: 390, height: 664 };
 
@@ -92,9 +94,24 @@ async function checkReduced(browser, folder) {
       const { art, beats, alt } = scenes[id];
       await page.locator('.warp').waitFor();
       await capture(id + '-warp');
+      if (id === 'EX-00') {
+        await page.locator('.by-picture').waitFor();
+        await capture(id + '-00-arrive');
+        await playBrickField(page);
+        await capture(id + '-question');
+        await click('시간표로 돌아가기');
+        viewed.add(id);
+        return;
+      }
       await page.locator('.stage .art > svg').waitFor();
       let state = beats[0].state;
       async function checkArtwork() {
+        const still = page.locator('.horeb-picture img');
+        if (await still.isVisible()) {
+          await still.evaluate(image => image.decode());
+          assert.equal(await still.getAttribute('data-view'), state === 'hideface' ? 'covered' : 'standing');
+          return;
+        }
         const visible = await page.locator('.stage .art > svg').evaluate(async (svg, { art, state }) => {
           const states = BO.artMeta[art]?.states || [];
           const groups = [...svg.querySelectorAll(`g[id^="${art}-state-"]`)]
@@ -121,6 +138,7 @@ async function checkReduced(browser, folder) {
         state = beat.state || state;
         await checkArtwork();
         await capture(id + '-' + String(index + 1).padStart(2, '0') + '-beat');
+        if (await passFindWords(page)) await capture(id + '-' + String(index + 1).padStart(2, '0') + '-found');
         if (beats[index + 1]?.look) await page.locator('.hot-layer .look-target').click();
         else await next.click();
       }
@@ -158,9 +176,9 @@ async function checkNormal(browser) {
     page.setDefaultTimeout(8000);
     await start(page);
     await page.locator('.node.play').first().click();
-    await page.locator('.stage .art > svg').waitFor();
+    await page.locator('.by-picture > img').waitFor();
     await page.waitForFunction(() => document.getAnimations().some((animation) =>
-      animation.animationName && animation.playState === 'running' && animation.effect?.target?.closest?.('.art')));
+      animation.animationName && animation.playState === 'running' && animation.effect?.target?.closest?.('.by-picture')));
   } finally {
     await context.close();
   }

@@ -57,6 +57,7 @@ if (full) {
     fs.rmSync(out, { recursive: true, force: true });
     const walks = [
       ['2D 시범판', ['tools/test/walk2d.js', '1', '모세', path.join(out, '2d')]],
+      ['2D 호렙 현장·말씀 인장', ['tools/test/full/horeb-witness2d.js', path.join(out, 'horeb2d')]],
       ['홍해 본편', ['tools/test/red-sea.js', path.join(out, 'red-sea')]],
       ['광야·시내산 본편', ['tools/test/wilderness.js', path.join(out, 'wilderness')]],
       ['출애굽기 수첩', ['tools/test/exodus-trail.js', path.join(out, 'exodus-trail')]],

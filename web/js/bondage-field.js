@@ -19,18 +19,22 @@
   function button(text,click,cls){
     return el('button',{type:'button',class:cls||'by-secondary',on:{click}},text);
   }
-  function scroll(ref,onClose){
+  function openFieldScroll(range,verses,ref,onClose){
     const previous=document.activeElement;
     const close=button('닫기',()=>dialog.close());
     const dialog=el('dialog',{class:'wf-dialog by-scroll','aria-label':'말씀 두루마리'},
       el('header',{},el('h2',{},'말씀 두루마리'),close));
-    const content=el('div',{class:'wf-dialog-body'},el('p',{class:'wf-edition'},BO.wildScripture.edition+' · 출애굽기 1:8–14, 2:23–25'));
-    for(const [verse,text] of Object.entries(BO.bondageVerses)){
+    const content=el('div',{class:'wf-dialog-body'},el('p',{class:'wf-edition'},BO.wildScripture.edition+' · 출애굽기 '+range));
+    for(const [verse,text] of Object.entries(verses)){
       content.append(el('p',{class:'wf-verse',tabindex:'-1','data-verse':verse},el('b',{},verse),el('span',{},text)));
     }
     dialog.append(content);document.body.append(dialog);dialog.showModal();
     content.querySelector('[data-verse="'+ref+'"]').focus();
     dialog.addEventListener('close',()=>{dialog.remove();onClose?.();if(previous?.isConnected)previous.focus({preventScroll:true});},{once:true});
+  }
+  app.openFieldScroll=openFieldScroll;
+  function scroll(ref,onClose){
+    openFieldScroll('1:8–14, 2:23–25',BO.bondageVerses,ref,onClose);
   }
   function create(sc,actions){
     const music=BO.sceneMusic.create(),sound=BO.wildFeel.audio();

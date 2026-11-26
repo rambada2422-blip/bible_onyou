@@ -51,7 +51,7 @@
   };
   function openPalace(from) {
     if (location.hash === '#passover') { from = 'room'; markScene('#palace'); }
-    else if (location.hash === '#home' || location.hash === '#pillar') markScene('#palace');
+    else if (['#home','#pillar','#horeb'].includes(location.hash)) markScene('#palace');
     app.palace.open(from, function () {
       if (from === 'room') { markScene('#passover'); app.passover.open(entrance, '탐험 입구'); }
       else if (from === 'passover') openPassoverFromHub();
@@ -107,6 +107,7 @@
       }
       app.state.tier = tier; app.state.char = ch; save();
       if (location.hash === '#brickfield') depart('EX-00');
+      else if (location.hash === '#horeb') openHoreb();
       else if (location.hash === '#pillar') depart('EX-09'); else renderHub();
     } } }, '출발 준비 완료');
     var tierBtns = C.tiers.map(function (t) {
@@ -137,7 +138,7 @@
 
   /* ════════════ 시간표 ════════════ */
   function renderHub() {
-    if (location.hash === '#pillar' || location.hash === '#brickfield') markScene('#home');
+    if (['#pillar','#brickfield','#horeb'].includes(location.hash)) markScene('#home');
     var nextId = null;
     var detours = C.route.options.filter(function (option) {
       return C.scenes[option.to].alt && app.savedJourney(option.to);
@@ -196,6 +197,7 @@
   }
   function runScene(id, journey) {
     if (id === 'EX-00' && location.hash === '#home') markScene('#brickfield');
+    if (id === 'EX-01' && location.hash === '#home') markScene('#horeb');
     app.runScene(id, renderHub, renderRoute, journey, openClueJournal);
   }
   function openClueJournal(id) {
@@ -208,6 +210,12 @@
   function travelTo(id, title, description) {
     var journey = app.rememberArrival(id);
     warp('시간 이동', title, description, function () { runScene(id, journey); });
+  }
+  function openHoreb() {
+    if (!app.state.tier || !app.state.char) { renderSetup(); return; }
+    var journey = app.savedJourney('EX-01');
+    if (journey) runScene('EX-01', journey);
+    else travelTo('EX-01', C.scenes['EX-01'].place, C.scenes['EX-01'].ref);
   }
   function depart(id) {
     var journey = app.savedJourney(id);
@@ -321,12 +329,13 @@
 
   // 외부의 같은 페이지 링크도 새 입구로 진입한다. 내부 이동은 replaceState라 이 이벤트를 보내지 않는다.
   window.addEventListener('hashchange', function () {
-    if (['#home','#brickfield','#pillar','#palace','#passover','#redsea','#redsea-coast','#redsea-walk','#redsea-drum','#wilderness','#marah','#elim','#manna','#manna-rest','#rock','#sinai','#sinai-camp','#calf','#exodus','#nile',''].includes(location.hash)) location.reload();
+    if (['#home','#brickfield','#horeb','#pillar','#palace','#passover','#redsea','#redsea-coast','#redsea-walk','#redsea-drum','#wilderness','#marah','#elim','#manna','#manna-rest','#rock','#sinai','#sinai-camp','#calf','#exodus','#nile',''].includes(location.hash)) location.reload();
   });
   if (location.hash === '#nile' || (!location.hash && document.body.dataset.start === 'nile')) app.openNile();
   else if (location.hash === '#brickfield') {
     if (app.state.tier && app.state.char) depart('EX-00'); else renderSetup();
   }
+  else if (location.hash === '#horeb') openHoreb();
   else if (location.hash === '#pillar') app.openPillars();
   else if (location.hash === '#calf') openField(true,false,'calf');
   else if (location.hash === '#sinai-camp') openField(true,false,'sinai');

@@ -212,12 +212,35 @@ h1, h2, h3 { text-wrap: balance; }
 .look-target:focus-visible { outline: 3px solid var(--paper); box-shadow: 0 0 0 5px var(--ink); }
 .sheet-body.arrive .look-prompt { color: var(--ink-2); font-family: var(--f-display); }
 /* 이야기 중에 그림을 눌러 다음 대목을 여는 자리. 못 찾으면 찾을 곳에 고리가 뜬다. */
-.app .sheet-foot .btn.look-help {
+.app .sheet-foot :is(.btn.look-help, .btn.find-help) {
   display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 8px 14px;
   background: var(--warm-bg); color: var(--ink-2); box-shadow: inset 0 0 0 2px var(--brass);
   font-family: var(--f-display); font-size: 16px; line-height: 1.35; text-align: left; white-space: normal;
 }
-.sheet-foot .btn.look-help svg { flex: none; width: 22px; height: 22px; }
+.sheet-foot :is(.btn.look-help, .btn.find-help) svg { flex: none; width: 22px; height: 22px; }
+/* 글에서 찾기: 대목 글 속의 말을 눌러 찾는다. 찾을 말과 나머지 말은 겉모습이 같다. */
+.narr.findtext { line-height: 1.9; }
+/* 밑줄은 글자에만 긋는다. 찾을 말 단추는 안쪽 여백을 같은 크기의 음수 바깥 여백으로 되돌려, 글 배치는 그대로 두고 누르는 영역만 44px 넘게 넓힌다. */
+.narr.findtext .w { text-decoration: underline dotted rgba(14, 23, 48, .38); text-decoration-thickness: 2px; text-underline-offset: 7px; cursor: pointer; }
+.narr.findtext span.w { display: inline-block; line-height: 1.9; vertical-align: baseline; }
+.narr.findtext .find-word {
+  position: relative; z-index: 1; display: inline-block; min-width: 44px; margin: -4px -4px; padding: 4px; border: 0; border-radius: 8px;
+  background: none; color: inherit; font: inherit; line-height: 1.9; vertical-align: baseline; -webkit-tap-highlight-color: transparent;
+}
+.narr.findtext .find-word:focus-visible { outline: 3px solid var(--ink); outline-offset: -2px; }
+.narr .find-word.found { background: linear-gradient(transparent 40%, #FFE07A 40%, #FFE07A 76%, transparent 76%) content-box; text-decoration-color: transparent; }
+.narr mark.found-word { background: linear-gradient(transparent 52%, #FFE07A 52%); color: inherit; }
+.narr mark.found-word { padding: 0 1px; border-radius: 3px; }
+.narr .find-word.nudge { box-shadow: 0 0 0 3px var(--brass); animation: word-nudge 1.1s ease-out 3; }
+@keyframes word-nudge {
+  from { box-shadow: 0 0 0 3px var(--brass), 0 0 0 0 rgba(233, 180, 76, .8); }
+  to { box-shadow: 0 0 0 3px var(--brass), 0 0 0 14px rgba(233, 180, 76, 0); }
+}
+/* 낮은 화면에서는 글에서 찾는 대목 (찾은 뒤 포함) 동안 그림 칸을 조금 줄여 대목 글 전체가 보이게 한다. */
+@media (max-height: 700px) and (orientation: portrait) {
+  .scene:has(.narr.findtext, .narr mark.found-word) > .stage { height: min(133.4vw, 640px, 47%); }
+}
+.find-note { min-height: 1.5em; margin-top: -4px; font-size: 15.5px; color: var(--ink-2); font-family: var(--f-display); }
 .look-target.nudge { box-shadow: 0 0 0 3px var(--brass), 0 0 0 6px rgba(14, 23, 48, .45); animation: look-nudge 1.1s ease-out 3; }
 @keyframes look-nudge {
   from { box-shadow: 0 0 0 3px var(--brass), 0 0 0 6px rgba(14, 23, 48, .45), 0 0 0 0 rgba(233, 180, 76, .8); }
@@ -398,7 +421,7 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 
 @media (prefers-reduced-motion: reduce) {
   .stage .art > svg, .stage { transition: none; }
-  .node.next .dot::after, .hot::after, .warp img, .vcard.pop, .fadein, .look-target.nudge { animation: none; }
+  .node.next .dot::after, .hot::after, .warp img, .vcard.pop, .fadein, .look-target.nudge, .narr .find-word.nudge { animation: none; }
   .app:not(.g3) .btn { transition: none; }
   .app:not(.g3) .btn:active { transform: none; }
 }
@@ -582,3 +605,34 @@ th { font-family: var(--f-display); font-weight: 400; color: var(--ink-2); backg
 }
 
 .palace-retelling { margin-inline-start:10px; color:#685e50; font:13px/1.4 var(--f-body); }
+
+/* 호렙에서는 양 떼, 떨기나무, 얼굴을 가린 모세 순서로 시선이 옮겨 간다. */
+.stage.horeb-pasture #ex01-bush { visibility:hidden; }
+.stage .hud .rs-music { min-height:44px; padding:4px 10px; background:#203447; color:#fff2dd; border-radius:12px; }
+.stage.horeb-witness { background:#1b272e; display:flex; flex-direction:column; }
+.stage.horeb-witness + .sheet { margin-top:0; }
+.stage.horeb-witness .hud { position:relative; flex:none; background:#17232b; padding-bottom:5px; }
+.stage.horeb-witness > :is(.art,.hot-layer,.dots) { display:none; }
+.horeb-picture { position:relative; display:block; min-height:0; flex:1; width:100%; padding:0; border:0; background:#1b272e; cursor:zoom-in; }
+.horeb-picture[hidden], .hud .rs-music[hidden] { display:none; }
+.horeb-print { display:block; height:100%; }
+.horeb-picture img { display:block; width:100%; height:100%; object-fit:contain; }
+.horeb-expand-label { position:absolute; bottom:6px; right:8px; padding:4px 8px; border-radius:5px; font:600 .88rem/1.4 var(--f-body); color:white; background:#1b272eeb; }
+.horeb-enlarged { width:100vw; height:100dvh; max-width:none; max-height:none; margin:0; box-sizing:border-box; border:0; padding:8px; background:#152026; color:white; }
+.horeb-enlarged[open] { display:flex; flex-direction:column; align-items:center; }
+.horeb-enlarged button { align-self:flex-end; min-height:44px; padding:0 14px; font:inherit; color:white; background:#324853; border-radius:8px; }
+.horeb-enlarged img { flex:1; min-height:0; width:100%; object-fit:contain; }
+button.horeb-verse,button.openbible { text-align:start; cursor:pointer; min-height:44px; }
+button.horeb-verse { padding:.3em .65em; }
+button.openbible { font:inherit; }
+
+.horeb-companion small { display:block; margin-top:2px; color:var(--ink-2); font-size:.75rem; line-height:1.3; text-align:center; }
+
+/* 확정한 1024×1536 원본에서 처음에는 x=0~703, 불과 잎 전체(y=353~1009)를 담는다. */
+@supports (container-type:size) {
+  @media (orientation:portrait) and (prefers-reduced-motion:no-preference) {
+    .horeb-picture.horeb-near { container-type:size; display:grid; place-items:center; }
+    .horeb-near .horeb-print { position:relative; overflow:hidden; width:min(100cqw,calc(100cqh * 703 / 800)); height:auto; aspect-ratio:703/800; }
+    .horeb-near .horeb-print img { position:absolute; left:0; top:-35.125%; width:145.6615%; height:auto; max-width:none; }
+  }
+}
