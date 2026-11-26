@@ -63,7 +63,8 @@ if (full) {
       ['출애굽기 수첩', ['tools/test/exodus-trail.js', path.join(out, 'exodus-trail')]],
       ['사진형 배경', ['tools/test/bgraster.js', path.join(out, 'bgraster')]],
       ['3D 호렙 산', ['tools/test/walk3d.js', '1', path.join(out, 'horeb')]],
-      ['3D 요단 강', ['tools/test/walkJ.js', '1', path.join(out, 'jordan')]]
+      ['3D 요단 강', ['tools/test/walkJ.js', '1', path.join(out, 'jordan')]],
+      ['첫 왕궁과 나일 강가', ['tools/test/full/palace-first.js', path.join(out, 'palace-first')]]
     ];
     for (const [name, args] of walks) {
       const t0 = Date.now();

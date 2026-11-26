@@ -9,11 +9,11 @@
     return el('span', {class:'watch-team'}, ...Object.keys(people).map(id =>
       el('span', {}, app.pic(id + '-avatar', '', ''), people[id].name)));
   }
-  function attach(chapterNo, pause, listenButton) {
+  function attach(chapterNo, pause, listenButton, openBook, state) {
     const chapter = BO.palaceChapters[chapterNo], scene = scenes[chapterNo];
-    const state = app.state.palace;
-    if (!Array.isArray(state.watchNotes)) state.watchNotes = [];
-    const notes = state.watchNotes;
+    const main = app.state.palace;
+    if (!Array.isArray(main.watchNotes)) main.watchNotes = [];
+    const notes = main.watchNotes;
     const note = notes[chapterNo] || {};
     function save() { notes[chapterNo] = note; app.save(); }
     function startStep() {
@@ -69,8 +69,8 @@
       app.save(); render(); title.focus({preventScroll:true}); dialog.scrollTop = 0;
     }
     function open(view) {
-      pause();
       if (!dialog.open) dialog.showModal();
+      pause();
       change(view === 'scene' ? startStep() : view);
     }
     function picture(key, description) {
@@ -101,7 +101,8 @@
       title.textContent = step === 'journal' ? '우리 탐험 일지' : scene.place;
       if (step === 'journal') {
         const entries = scenes.flatMap((_, i) => selected(notes[i]?.pick) ? [entry(i)] : []);
-        body.append(entries.length ? el('div', {class:'watch-pages'}, ...entries) :
+        const firstEntry=app.palaceFirst.journal(notes,openBook);
+        body.append(entries.length || firstEntry ? el('div', {class:'watch-pages'}, firstEntry, ...entries) :
           speech('hyu', '현장에서 눈에 띄는 흔적을 하나 골라 줘. 우리 첫 장에 남겨 둘게.'),
           button('이 장면 살펴보기', () => change(startStep()), 'watch-primary'));
         return;

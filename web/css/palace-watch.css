@@ -54,3 +54,27 @@
 .palace-cinema-foot .btn,.palace-cinema-foot .palace-film-play { min-width:0; padding-inline:7px; }
 .palace-cinema-foot .palace-film-play { flex:1; margin:0; }
 .palace-cinema-foot:has(.palace-film-play:not([hidden])) .onpaper { flex:0 1 auto; background:transparent; color:#435548; text-decoration:underline; }
+
+.palace-picture[data-first-view] {position:relative;}
+.pf-pin {position:absolute;transform:translate(-50%,-50%);width:46px;height:46px;border-radius:50%;border:2px solid #fff5d1;box-shadow:inset 0 0 0 2px #40342caa,0 0 0 2px #40342caa;background:#332f2118;cursor:pointer;}
+.pf-pin span {display:block;margin:auto;width:8px;height:8px;border-radius:50%;background:#fff1c2;}
+.pf-pin[aria-pressed=true] {background:#204d4f66;border-color:#a6f0de;}
+.pf-pin:focus-visible {outline:4px solid #ffcf5c;outline-offset:2px;}
+.pf-tools {display:flex;align-items:center;flex-wrap:wrap;gap:.35em .8em;padding:.65rem var(--gutter-r) .6rem var(--gutter-l);color:#2e3e33;background:#eee7d6;}
+.pf-place {font:1.1rem/1.4 var(--f-display);}
+.pf-feedback {flex-basis:100%;font:600 1rem/1.45 var(--f-body);}
+.pf-action,.pf-scroll,.palace-screen .pf-music {min-height:44px;padding:.3rem .65rem;border-radius:8px;font:600 .94rem/1.35 var(--f-body);}
+.pf-action,.pf-scroll {background:#fff9e8;color:#294b43;border:1px solid #9a927a;}
+.palace-screen .pf-music {color:#384c43;background:#efe8d9;}
+.pf-header-tools {display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;}
+.pf-entry li {margin-left:1.3em;}
+@media(orientation:landscape) and (max-height:500px) {
+  .palace-scroll:has(.pf-tools) .pf-tools {grid-column:1;grid-row:3;align-self:start;}
+  .palace-scroll:has(.pf-tools) .palace-panel {grid-column:2;grid-row:2 / span 2;}
+}
+.pf-tools-slot:empty{display:none}
+@media(orientation:landscape) and (max-height:500px){.palace-scroll:has(.pf-tools) .pf-tools-slot{grid-column:1;grid-row:3;}}
+.palace-picture[data-first-view=clay] .pf-pin {touch-action:none;z-index:1}
+.palace-picture[data-first-view=clay].pf-linked::after {content:"";position:absolute;pointer-events:none;left:31%;top:78%;width:48%;border-top:3px dashed #fff0bf;filter:drop-shadow(0 1px 1px #533d27);transform:rotate(-2.7deg);transform-origin:left;}
+
+.pf-entry {padding:.75rem 1rem;margin:.5rem 0;border-left:3px solid #668579;background:#e5eddf;}

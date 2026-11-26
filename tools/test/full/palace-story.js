@@ -31,7 +31,7 @@ async function check(browser, origin, entry, width, height) {
   for (const [number, ch] of chapters.entries()) {
     assert.equal(ch.beats.filter(b => b.film).length, 1);
     for (const [i, b] of ch.beats.entries()) {
-      assert.equal(await page.locator('.palace-headline h1').innerText(), ch.title);
+      assert.equal(await page.locator('.palace-headline h1').innerText(), number===0 ? await page.evaluate(i=>BO.app2d.palaceFirst.titles[i],i) : ch.title);
       if(b.film)await page.locator('.palace-reading summary').click();
       assert.equal(await page.locator('.palace-words').innerText(), b.words);
       assert.equal(await page.locator('.palace-sources .ref').innerText(), b.ref);
@@ -84,7 +84,7 @@ async function check(browser, origin, entry, width, height) {
         } else {
           await playToEnding(page, number + 1, ch.seconds);
           await page.getByRole('button', {name:'세 친구와 현장 살펴보기'}).waitFor();
-          const outcome=await page.evaluate(n=>BO.palaceChapters[n].beats[BO.palaceWatchScenes[n].after.beat].words,number);
+          const outcome=await page.evaluate(n=>n===0 ? BO.palaceChapters[0].beats.find(b=>b.film).words : BO.palaceChapters[n].beats[BO.palaceWatchScenes[n].after.beat].words,number);
           assert.equal(await page.locator('.palace-status p').innerText(),outcome);
         }
       }
