@@ -118,6 +118,9 @@ async function run() {
     await p.locator('[data-action="open-gifts"]').click();
     assert.equal(await p.evaluate(() => BO_DAVID.debug.state().templeGifts.dir), 'reverse');
     assert.equal(await p.evaluate(() => BO_DAVID.debug.state().templeGifts.focus), 2);
+    await p.locator('[data-gifts-pin="rejoice"]').focus();
+    await p.keyboard.press('ArrowRight');
+    assert.equal(await p.locator('[data-gifts-pin]:focus').getAttribute('data-gifts-pin'), 'materials');
     for (let i = 0; i < 3; i++) {
       await p.locator('[data-gifts-action="take"]').click();
       if (i < 2) await p.locator('[data-gifts-action="move"]').click();
@@ -132,9 +135,8 @@ async function run() {
     const ctxChain = await browser.newContext({ viewport: { width: 360, height: 640 } });
     const pChain = await ctxChain.newPage();
     await pChain.goto(baseUrl + '#well-trail');
-    for (let i = 0; i < 3; i++) {
-      await pChain.locator('[data-well-action="take"]').click();
-      if (i < 2) await pChain.locator('[data-well-action="move"]').click();
+    for (const place of ['path', 'well', 'cave']) {
+      await pChain.locator('[data-well-pin="' + place + '"]').click();
     }
     await pChain.locator('[data-choice="well-water"]').click();
     await pChain.locator('[data-action="next-scene"]').click();

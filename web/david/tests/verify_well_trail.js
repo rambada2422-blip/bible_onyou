@@ -55,7 +55,8 @@ async function run() {
     await p.locator('[data-field="D08"]').waitFor();
     await noOverflow(p, 'D08 portrait start');
 
-    // 첫 지점 담기 + 같은 지점 중복 방지
+    // 단추로 첫 지점 담기 + 같은 지점 중복 방지
+    await p.getByText('단추로 지점 고르기', { exact: true }).click();
     await p.locator('[data-well-action="take"]').click();
     assert.deepEqual(await p.evaluate(() => BO_DAVID.debug.state().wellTrail.shots), ['well']);
     await p.locator('[data-well-action="take"]').click();
@@ -73,9 +74,11 @@ async function run() {
     // 키보드 이동 + 핀 탭으로 나머지 2곳 담기
     await p.locator('[data-well-pin="well"]').focus();
     await p.keyboard.press('ArrowRight');
-    await p.locator('[data-well-action="take"]').click();
+    await p.keyboard.press('Enter');
     await p.locator('[data-well-pin="cave"]').click();
-    await p.locator('[data-well-pin="cave"]').click();
+    const line = p.locator('.well-board .trail-ink');
+    const route = await line.getAttribute('d');
+    assert.equal(route.split('Q').length - 1, 2);
     assert.deepEqual(await p.evaluate(() => BO_DAVID.debug.state().wellTrail.shots), ['well', 'path', 'cave']);
     await p.locator('.table-question').waitFor({ state: 'visible' });
     await p.screenshot({ path: path.join(shotDir, '우물_길_세_장면.png') });
@@ -93,12 +96,16 @@ async function run() {
     await p.locator('[data-action="open-journal"]').click();
     await p.locator('.well-keepsake summary').click();
     assert.equal(await p.locator('.well-keepsake .well-crop').count(), 3);
+    assert.equal(await p.locator('.well-keepsake .trail-ink').getAttribute('d'), route);
 
     // 반대 방향 다시 담기 확인
     await p.locator('[data-reopen="D08"]').click();
     await p.locator('[data-action="open-well"]').click();
     assert.equal(await p.evaluate(() => BO_DAVID.debug.state().wellTrail.dir), 'reverse');
     assert.equal(await p.evaluate(() => BO_DAVID.debug.state().wellTrail.focus), 2);
+    await p.locator('[data-well-pin="path"]').focus();
+    await p.keyboard.press('ArrowRight');
+    assert.equal(await p.locator('[data-well-pin]:focus').getAttribute('data-well-pin'), 'cave');
     await ctx.close();
 
     // 2) 해시 진입(#well-trail) 및 오프라인 단일 파일(dist/david.html) 복원 + 영상 로드 확인
@@ -109,7 +116,9 @@ async function run() {
     p2.on('pageerror', e => errs.push('offline pageerror: ' + e.message));
     await p2.goto(fileUrl + '#well-trail');
     await p2.locator('[data-field="D08"]').waitFor();
-    await p2.locator('[data-well-action="take"]').click();
+    await p2.locator('[data-well-pin="cave"]').click();
+    await p2.locator('[data-well-pin="well"]').click();
+    const savedLine = await p2.locator('.well-board .trail-ink').getAttribute('d');
     const savedRaw = await p2.evaluate(() => localStorage.getItem('bibleOnyou.david.v1'));
     await ctx2.close();
 
@@ -119,7 +128,10 @@ async function run() {
     await p3.addInitScript(raw => { localStorage.setItem('bibleOnyou.david.v1', raw); }, savedRaw);
     await p3.goto(fileUrl);
     assert.equal(await p3.evaluate(() => BO_DAVID.debug.state().step), 'well-trail');
-    assert.deepEqual(await p3.evaluate(() => BO_DAVID.debug.state().wellTrail.shots), ['well']);
+    assert.deepEqual(await p3.evaluate(() => BO_DAVID.debug.state().wellTrail.shots), ['cave', 'well']);
+    assert.equal(await p3.locator('.well-board .trail-ink').getAttribute('d'), savedLine);
+    await p3.locator('[data-well-pin="path"]').click();
+    assert.deepEqual(await p3.evaluate(() => BO_DAVID.debug.state().wellTrail.shots), ['cave', 'well', 'path']);
     await p3.locator('.lookout-film summary').click();
     const vInfo = await p3.evaluate(async () => {
       const v = document.querySelector('.lookout-film video');

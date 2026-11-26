@@ -94,19 +94,15 @@
       lights, pins);
 
     board.addEventListener('keydown', event => {
-      if (run.shots.length === stops.length) return;
-      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-        event.preventDefault();
-        stepFocus(1);
-        pins[run.focus].focus();
-      } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-        event.preventDefault();
-        stepFocus(-1);
-        pins[run.focus].focus();
-      }
+      const delta = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+      const index = pins.indexOf(event.target);
+      if (!delta || index < 0 || run.shots.length === stops.length) return;
+      event.preventDefault();
+      moveTo(index + delta);
+      pins[run.focus].focus();
     });
 
-    const move = el('button', { type: 'button', class: 'btn plain', 'data-gifts-action': 'move', on: { click: () => stepFocus(1) } }, '다음 모습 비추기');
+    const move = el('button', { type: 'button', class: 'btn plain', 'data-gifts-action': 'move', on: { click: () => moveTo(run.focus + (run.dir === 'reverse' ? -1 : 1)) } }, '다음 모습 비추기');
     const take = el('button', { type: 'button', class: 'btn brass', 'data-gifts-action': 'take', on: { click: capture } }, '수첩에 담기');
     const controls = el('div', { class: 'table-controls' }, move, take);
     const notebook = el('div', { class: 'table-notebook' });
@@ -114,10 +110,8 @@
     const question = el('section', { class: 'robe-question table-question' },
       el('span', { class: 'ref', text: sc.ref }), title, el('div', { class: 'choices' }, choices));
 
-    function stepFocus(delta) {
-      const order = orderFor(run.dir);
-      const pos = order.indexOf(run.focus);
-      run.focus = order[(pos + delta + order.length) % order.length];
+    function moveTo(index) {
+      run.focus = (index + stops.length) % stops.length;
       ctx.saveState();
       paint();
     }

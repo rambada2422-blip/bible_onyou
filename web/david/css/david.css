@@ -158,17 +158,23 @@ h1, h2, h3, p { margin: 0; }
   gap: 12px;
 }
 .hero {
-  background: var(--ink);
-  color: var(--paper);
-  border-radius: 18px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: flex; flex: none; flex-direction: column;
+  min-height: min(34rem, calc(100svh - 6.5rem));
+  overflow: hidden; border-radius: 18px; background: #fffaf0;
+  border: 1px solid var(--paper-line);
 }
-.hero-kicker { font-family: var(--f-display); font-size: 13px; color: var(--brass); }
-.hero h1 { font-family: var(--f-display); font-size: 22px; line-height: 1.25; }
-.hero p { font-size: 14.5px; color: #E4ECFA; line-height: 1.45; }
+.hero-landscape {
+  display: flex; flex: 1 0 auto; flex-direction: column; justify-content: end;
+  min-height: clamp(8rem, 32svh, 15rem); padding: 20px;
+  color: white;
+  background: linear-gradient(0deg, #192c40ed, #192c404d 50%, transparent 85%),
+    url('../media/pasture-poster.webp') center / cover;
+}
+.hero-kicker { font: 14px var(--f-display); color: #ffdc91; }
+.hero h1 { font: clamp(25px, 6vw, 34px)/1.25 var(--f-display); }
+.home-games { display: grid; flex: none; gap: 12px; }
+.home-games-heading { font: 21px var(--f-display); scroll-margin-top: 8px; }
+.journey-shortcuts { min-height: 44px; color: var(--ink-2); font: 16px var(--f-display); }
 .progress-row {
   display: flex;
   align-items: center;
@@ -182,8 +188,8 @@ h1, h2, h3, p { margin: 0; }
   font-size: 13.5px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(251, 247, 238, .16);
-  color: var(--paper);
+  background: var(--paper-2);
+  color: var(--ink);
 }
 .trial-btn {
   min-height: 44px;
@@ -1270,9 +1276,6 @@ h1, h2, h3, p { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   .lookout-window * { transition: none; }
 }
-.hero {
-  background: linear-gradient(100deg, #192c40f5 5%, #263a46c7 60%, #263a46aa), url('../media/david-hills.webp') center / cover;
-}
 .field-starts { display: flex; flex-wrap: wrap; gap: 6px; }
 .field-starts button { flex: 1 1 110px; background: var(--paper); }
 .lamp-head {
@@ -1650,6 +1653,16 @@ h1, h2, h3, p { margin: 0; }
 .well-pin.collected { background: #DFF1E8; color: #1E6B4F; border-color: #1E6B4F; }
 .well-pin-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
 .well-pin-label { font: 11.5px/1.15 var(--f-display); white-space: nowrap; }
+.well-trail-line, .well-trail-line svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.well-trail-line path { fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.well-trail-line .trail-border { stroke: #fff0c4; stroke-width: 7; }
+.well-trail-line .trail-ink { stroke: #29524d; stroke-width: 3; stroke-dasharray: 6 5; }
+.well-route-number, .well-panel[data-field="D08"] .well-pin.collected .well-pin-dot {
+  display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  background: #29524d; color: #fff; font: 14px var(--f-display);
+}
+.well-route-number { position: absolute; left: var(--well-x); top: var(--well-y); transform: translate(-50%, -50%); border: 2px solid #fff0c4; }
+.well-alt-controls summary { cursor: pointer; min-height: 44px; padding: 10px 0; font: 15px var(--f-display); }
 .well-collection li.collected { align-content: start; }
 .well-crop { display: block; position: relative; width: 100%; aspect-ratio: 2.2; overflow: hidden; }
 .well-crop img {
@@ -1672,9 +1685,9 @@ h1, h2, h3, p { margin: 0; }
 
 /* 아홉 장면 이어하기 (D01~D09) */
 .journey-box {
-  display: flex; flex-direction: column; gap: 7px; padding: 9px 10px;
-  border-radius: 12px; background: #FAF3E2; border: 1.5px solid #D3B474; color: var(--ink);
+  display: grid; gap: 7px; padding: 14px 16px 6px; color: var(--ink);
 }
+.journey-status { font: 16px var(--f-display); }
 .journey-strip {
   display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px;
 }
@@ -1689,6 +1702,8 @@ h1, h2, h3, p { margin: 0; }
 .scene-card.journey-here { border-color: #E9B44C; box-shadow: 0 0 0 2px rgba(233, 180, 76, .35); }
 .scene-card.journey-here .scene-badge { background: #E9B44C; color: #0E1730; }
 .journey-here-tag { background: #FFF2CC; color: #6B4707; border: 1px solid #D3A33A; }
-@media (max-width: 380px) {
-  .journey-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (orientation: landscape) and (max-height: 480px) {
+  .hero { display: grid; grid-template-columns: 1fr 1.1fr; min-height: 0; }
+  .hero-landscape { padding: 14px; }
+  .journey-box { align-content: center; }
 }

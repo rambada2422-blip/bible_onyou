@@ -43,6 +43,22 @@ async function run() {
     const pSkip = await ctxSkip.newPage();
     pSkip.on('pageerror', e => errs.push('skip pageerror: ' + e.message));
     await pSkip.goto(baseUrl);
+    await pSkip.setViewportSize({ width: 480, height: 265 });
+    const firstAction = await pSkip.locator('[data-action="journey-start"]').boundingBox();
+    assert(firstAction && firstAction.y >= 0 && firstAction.y + firstAction.height <= 265);
+    await pSkip.setViewportSize({ width: 360, height: 640 });
+    await pSkip.getByRole('button', { name: /장면별 놀이 고르기/ }).click();
+    assert.equal(await pSkip.locator('h2:focus').textContent(), '장면별 놀이');
+    for (const selector of ['[data-tier="t2"]', '[data-tier="t1"]', '[data-course-pick="D01"]']) {
+      const button = pSkip.locator(selector);
+      await button.scrollIntoViewIfNeeded();
+      const previousScroll = await pSkip.locator('.home-body').evaluate(home => home.scrollTop);
+      await button.press('Enter');
+      assert(previousScroll > 0);
+      assert.equal(await pSkip.locator('.home-body').evaluate(home => home.scrollTop), previousScroll);
+      assert(await button.evaluate(node => node === document.activeElement));
+    }
+    await pSkip.locator('[data-action="course-clear"]').click();
     await pSkip.locator('[data-field-start="D04"]').click();
     for (let s = 0; s < 2; s++) {
       for (let b = 0; b < 3; b++) await pSkip.locator(`[data-rub-band="${b}"]`).click();
@@ -186,9 +202,8 @@ async function run() {
     // D07 완료 -> 다음 장면 -> D08 우물 길 수첩
     await p.locator('[data-action="next-scene"]').click();
     await p.locator('.well-panel[data-field="D08"]').waitFor();
-    for (let i = 0; i < 3; i++) {
-      await p.locator('[data-well-action="take"]').click();
-      if (i < 2) await p.locator('[data-well-action="move"]').click();
+    for (const place of ['path', 'well', 'cave']) {
+      await p.locator('[data-well-pin="' + place + '"]').click();
     }
     await p.locator('[data-choice="well-water"]').click();
     await p.locator('[data-discovery="D08"]').waitFor();

@@ -933,6 +933,15 @@
   }
 
   function renderHome() {
+    function refreshChoice(selector) {
+      var scroll = root.querySelector('.home-body').scrollTop;
+      saveState();
+      render();
+      root.querySelector('.home-body').scrollTop = scroll;
+      var control = root.querySelector(selector);
+      control.focus({ preventScroll: true });
+      control.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
     var doneCount = journalCount();
     var total = DATA.scenes.length;
     var mainScenes = DATA.scenes.filter(function (sc) { return sc.group !== 'extra'; });
@@ -954,8 +963,7 @@
             click: function () {
               state.ageTier = tr.id;
               state.lessClueMode = (tr.id === 't2');
-              saveState();
-              render();
+              refreshChoice('[data-tier="' + tr.id + '"]');
             }
           }
         }, tr.label);
@@ -996,8 +1004,7 @@
                   course.picks.push(sc.id);
                 }
                 state.course = course;
-                saveState();
-                render();
+                refreshChoice('[data-course-pick="' + sc.id + '"]');
               }
             }
           }, (pos !== -1 ? ((pos + 1) + '번 · ') : '') + sc.id);
@@ -1027,8 +1034,7 @@
           on: {
             click: function () {
               state.course = { picks: [], idx: 0, active: false, completed: [] };
-              saveState();
-              render();
+              refreshChoice('[data-course-pick]');
             }
           }
         }, '코스 초기화')
@@ -1119,21 +1125,20 @@
     var jrCurSc = jrCurId ? getScene(jrCurId) : null;
     var jrPosNum = jrCurSc ? (JOURNEY_SCENES.indexOf(jrCurSc.id) + 1) : 1;
 
+    var gamesHeading = el('h2', { class: 'home-games-heading', tabindex: '-1', text: '장면별 놀이' });
     var journeyBox = el('section', {
-      class: 'notebook-map journey-box',
+      class: 'journey-box',
+      'aria-label': '아홉 장면 탐험',
       'data-journey-box': 'true',
       'data-journey-active': String(!!jr.active),
       'data-journey-current': jrCurSc ? jrCurSc.id : 'none',
       'data-journey-completed': jrCompleted.join(',')
     },
-      el('div', { class: 'd01-zoom-head' },
-        el('span', { class: 'tag', text: '『탐험대 이야기』 아홉 장면 이어하기 (D01~D09)' }),
-        el('span', { class: 'ref', 'data-journey-status': 'true', text: jrCurSc
-          ? ('떠난 자리: ' + jrCurSc.id + ' · ' + jrCurSc.title + ' (' + jrPosNum + ' / 9)')
-          : (jrCompleted.length === 9 ? '이번 여정 9 / 9 완주 ✓' : '처음부터 순서대로 출발') })
-      ),
+      el('span', { class: 'journey-status', 'data-journey-status': 'true', text: jrCurSc
+        ? (jrPosNum + '번째 장면 · ' + jrCurSc.title)
+        : (jrCompleted.length === 9 ? '아홉 장면 완주' : '첫 장면 · ' + getScene('D01').title) }),
       el('div', { class: 'journey-strip', role: 'list', 'aria-label': '아홉 장면 연속 여정 현황' },
-        JOURNEY_SCENES.map(function (id) {
+        JOURNEY_SCENES.map(function (id, index) {
           var isCur = !!(jrCurSc && jrCurSc.id === id);
           var isDone = jrCompleted.indexOf(id) !== -1 && !isCur;
           var stName = isCur ? 'current' : (isDone ? 'done' : 'pending');
@@ -1142,29 +1147,25 @@
             role: 'listitem',
             'data-journey-pill': id,
             'data-journey-state': stName,
-            text: id + (isCur ? ' ●' : (isDone ? ' ✓' : ''))
+            'aria-current': isCur ? 'step' : null,
+            'aria-label': getScene(id).title + (isCur ? ' · 이어갈 장면' : (isDone ? ' · 완료' : '')),
+            text: String(index + 1) + (isDone ? ' ✓' : '')
           });
         })
       ),
-      jrCurSc
-        ? el('div', { class: 'd05-wing-place-btns' },
-            el('button', {
-              class: 'btn brass d08-step-btn',
-              'data-action': 'journey-resume',
-              'data-resume-scene': jrCurSc.id,
-              on: { click: resumeJourney }
-            }, '떠난 자리 이어하기 (' + jrPosNum + '/9 · ' + jrCurSc.id + ' ' + jrCurSc.title + ')'),
-            el('button', {
-              class: 'btn plain d08-step-btn',
-              'data-action': 'journey-start',
-              on: { click: startJourney }
-            }, '처음(D01)부터 새 여정 시작')
-          )
-        : el('button', {
-            class: 'btn brass d04-check-btn',
-            'data-action': 'journey-start',
-            on: { click: startJourney }
-          }, '아홉 장면 처음부터 시작하기 (D01 → D09)')
+      el('button', {
+        class: 'btn brass',
+        'data-action': jrCurSc ? 'journey-resume' : 'journey-start',
+        'data-resume-scene': jrCurSc ? jrCurSc.id : null,
+        on: { click: jrCurSc ? resumeJourney : startJourney }
+      }, jrCurSc ? '떠난 자리 이어하기' : '아홉 장면 처음부터 시작하기'),
+      el('button', {
+        type: 'button', class: 'journey-shortcuts',
+        on: { click: function () {
+          gamesHeading.focus({ preventScroll: true });
+          gamesHeading.scrollIntoView({ block: 'start' });
+        } }
+      }, '장면별 놀이 고르기 ↓')
     );
 
     root.replaceChildren(
@@ -1173,10 +1174,14 @@
       ),
       el('main', { class: 'home-body' },
         el('section', { class: 'hero' },
-          el('div', { class: 'hero-kicker', text: tierLabels[state.ageTier] || tierLabels.t1 }),
-          el('h1', { text: '다윗의 발자취를 살펴보자' }),
-          el('p', { text: '장면을 골라 단서를 살펴보고, 성경 장절을 확인해 탐험 일지에 남겨 보세요.' }),
-          journeyBox,
+          el('div', { class: 'hero-landscape' },
+            el('div', { class: 'hero-kicker', text: tierLabels[state.ageTier] || tierLabels.t1 }),
+            el('h1', { text: '다윗의 발자취를 살펴보자' })
+          ),
+          journeyBox
+        ),
+        el('section', { class: 'home-games', 'aria-label': '장면별 놀이와 설정' },
+          gamesHeading,
           el('div', { class: 'picture-starts' },
             el('button', { type: 'button', class: 'meadow-start', 'data-field-start': 'D01', on: { click: startPasture } },
               el('span', { text: '들판 망원경 열기 ›' }), el('img', { src: 'media/sheep-lamb.webp', alt: '' })),
@@ -1199,6 +1204,9 @@
             } } }, '관찰등 켜기')
           ),
           tierRow,
+          jrCurSc ? el('button', {
+            class: 'btn plain', 'data-action': 'journey-start', on: { click: startJourney }
+          }, '첫 장면부터 새 여정 시작') : null,
           el('div', { class: 'progress-row' },
             el('span', { class: 'progress-pill', text: '발견 기록 ' + doneCount + ' / ' + total }),
             el('button', {
@@ -2491,7 +2499,7 @@
       sc.id === 'D09' && saved && saved.giftPictures
         ? el('button', { class: 'journal-open', 'data-action': 'replay-gifts', on: { click: startTempleGifts } }, state.templeGifts.finished ? '반대 순서로 다시 비추기' : '예물 빛수첩 이어 담기') : null,
       sc.id === 'D08' && saved && saved.wellPictures
-        ? el('button', { class: 'journal-open', 'data-action': 'replay-well', on: { click: startWellTrail } }, state.wellTrail.finished ? '반대 방향에서 다시 담기' : '우물 길 이어 담기') : null,
+        ? el('button', { class: 'journal-open', 'data-action': 'replay-well', on: { click: startWellTrail } }, state.wellTrail.finished ? '다른 순서로 지도 잇기' : '우물 길 이어 담기') : null,
       sc.id === 'D07' && saved && saved.tablePictures
         ? el('button', { class: 'journal-open', 'data-action': 'replay-table', on: { click: startTableSearch } }, state.tableSearch.finished ? '식탁 그림 다시 담기' : '식탁 그림 이어 담기') : null,
       sc.id === 'D05' && saved && saved.hebronMatches
