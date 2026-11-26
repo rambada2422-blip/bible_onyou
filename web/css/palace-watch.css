@@ -68,12 +68,8 @@
 .palace-screen .pf-music {color:#384c43;background:#efe8d9;}
 .pf-header-tools {display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;}
 .pf-entry li {margin-left:1.3em;}
-@media(orientation:landscape) and (max-height:500px) {
-  .palace-scroll:has(.pf-tools) .pf-tools {grid-column:1;grid-row:3;align-self:start;}
-  .palace-scroll:has(.pf-tools) .palace-panel {grid-column:2;grid-row:2 / span 2;}
-}
-.pf-tools-slot:empty{display:none}
-@media(orientation:landscape) and (max-height:500px){.palace-scroll:has(.pf-tools) .pf-tools-slot{grid-column:1;grid-row:3;}}
+.pf-scene {min-width:0;align-self:start;}
+.pf-tools-slot:empty {display:none;}
 .palace-picture[data-first-view=clay] .pf-pin {touch-action:none;z-index:1}
 .palace-picture[data-first-view=clay].pf-linked::after {content:"";position:absolute;pointer-events:none;left:31%;top:78%;width:48%;border-top:3px dashed #fff0bf;filter:drop-shadow(0 1px 1px #533d27);transform:rotate(-2.7deg);transform-origin:left;}
 

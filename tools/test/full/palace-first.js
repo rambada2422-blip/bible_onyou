@@ -76,7 +76,15 @@ async function run(browser,url,folder,uninterrupted){
     if(folder)await page.screenshot({path:path.join(folder,'강가_결말.png')});
     await button('바로의 반응 확인하기').tap();await cue(22.5);
     await button('왕좌의 금빛 팔걸이 살펴보기').tap();assert.equal(await scrollRef(),'7:22');
-    await button('닫기').tap();await button('나일 강가 다시 보기').tap();await cue(20);
+    await button('닫기').tap();
+    await page.setViewportSize({width:844,height:390});
+    await page.addStyleTag({content:'html {font-size:150% !important;}'});
+    await button('나일 강가 다시 보기').tap();await cue(20);
+    await button('물을 찾으러 간 자리 보기').tap();
+    await button('강가에 쌓인 흙 살펴보기').tap();assert.equal(await scrollRef(),'7:24');
+    await button('닫기').tap();
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await page.setViewportSize({width:390,height:844});
     await forward();await cue(22.5);
     await button('탐험 일지').tap();await button('말씀 인장 · 출 7:22–24').tap();assert.equal(await scrollRef(),'7:22');
     await button('닫기').tap();await button('왕궁으로').tap();

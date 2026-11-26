@@ -329,7 +329,7 @@
       const section = el('main', {class:'palace-scroll'}, el('div', {class:'palace-headline'},
         el('p', {class:'palace-chapter'}, (s.chapter + 1) + ' / 10 · ' + when), heading,
         first ? el('div',{class:'pf-header-tools'},watch.bar,score.button) : watch.bar,
-        (!first && s.beat === 0 || beat.film) ? el('p', {class:'watch-intro'}, '『탐험대 이야기』 최온 · ' + BO.palaceWatchScenes[s.chapter].call) : null), hero, first?fieldSlot:null, panel);
+        (!first && s.beat === 0 || beat.film) ? el('p', {class:'watch-intro'}, '『탐험대 이야기』 최온 · ' + BO.palaceWatchScenes[s.chapter].call) : null), first ? el('div',{class:'pf-scene'},hero,fieldSlot) : hero, panel);
       const nav = el('div', {class:'palace-nav pad'}, el('button', {class:'pillbtn', on:{click:exit}},
         from === 'passover' ? '← 탐험으로' : '← 돌아가기'), el('span', {}, '모세와 바로의 대화'),
         el('button', {class:'pillbtn palace-river-link', on:{click:function () {
