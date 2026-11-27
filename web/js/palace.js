@@ -3,6 +3,11 @@
   'use strict';
   const app = BO.app2d, el = app.el, chapters = BO.palaceChapters;
   const palaceArt = 'ex04-palace';
+  const photoChapters = {
+    1:{theme:'frog',field:app.palaceFrogs.field,before:'bank',after:'kitchen',place:'부엌',next:'바로의 부탁 듣기'},
+    2:{theme:'dust',field:app.palaceDust.field,before:'ground',after:'pen',place:'우리',next:'왕궁으로 가기'},
+    3:{theme:'flies',field:app.palaceFlies.field,before:'bowl',after:'compare',place:'두 곳',next:'왕궁으로 가기'}
+  };
   function valid(s) {
     return s && Number.isInteger(s.chapter) && chapters[s.chapter] &&
       Number.isInteger(s.beat) && !!chapters[s.chapter].beats[s.beat];
@@ -13,7 +18,7 @@
     const main = s;
     const revisit = entryChapter!==undefined && main.chapter!==entryChapter;
     if (revisit) {
-      const key=['firstVisit','frogVisit','dustVisit'][entryChapter];
+      const key=['firstVisit','frogVisit','dustVisit','fliesVisit'][entryChapter];
       if (!valid(main[key]) || main[key].chapter!==entryChapter) main[key] = {chapter:entryChapter,beat:0};
       s=main[key];
     }
@@ -30,7 +35,8 @@
     }
     function openBook(ref) {
       bookOpen=true; syncScore(); pauseMedia();
-      const source=app.palaceDust.verses[ref] ? app.palaceDust : (ref.startsWith('8:') || ref.startsWith('12:') ? app.palaceFrogs : app.palaceFirst);
+      const source=[app.palaceFlies,app.palaceDust].find(book=>Object.hasOwn(book.verses,ref))
+        || (Object.hasOwn(BO.palaceFrogVerses,ref) ? app.palaceFrogs : app.palaceFirst);
       source.page(ref,()=>{bookOpen=false;syncScore();});
     }
     function stopNarration() {
@@ -92,7 +98,7 @@
     function go(chapter, beat, startFilm=false) {
       stop();
       if (!revisit && entryChapter!==undefined && chapter!==entryChapter &&
-          ['#palace-first','#palace-frogs','#palace-dust'].includes(location.hash)) history.replaceState(null,'','#palace');
+          ['#palace-first','#palace-frogs','#palace-dust','#palace-flies'].includes(location.hash)) history.replaceState(null,'','#palace');
       s.chapter = chapter;
       s.beat = beat;
       delete s.choice;
@@ -118,9 +124,10 @@
       const first = s.chapter === 0;
       const frogs = s.chapter === 1;
       const dust = s.chapter === 2;
-      const photoChapter = frogs || dust;
-      const fieldChapter = first || photoChapter;
-      const theme = dust ? 'dust' : 'frog';
+      const flies = s.chapter === 3;
+      const photoChapter = photoChapters[s.chapter];
+      const fieldChapter = first || !!photoChapter;
+      const theme = photoChapter?.theme;
       if (fieldChapter && !score) score = BO.sceneMusic.create();
       if (!fieldChapter && score) { score.close(); score=null; }
       cue=null;
@@ -150,10 +157,9 @@
         syncScore();
       }
       function showPhoto(view) {
-        const field = dust ? app.palaceDust : app.palaceFrogs;
-        cue=field.field(hero,fieldSlot,view,s,openBook,showPhoto,()=>{
+        cue=photoChapter.field(hero,fieldSlot,view,s,openBook,showPhoto,()=>{
           if (!narration && !bookOpen && !watchDialog.open) camera.play('shutter');
-        });
+        },music=>{cue=music;syncScore();});
         syncScore();
       }
       if(frogs && !beat.film) {
@@ -161,6 +167,10 @@
         showPhoto(compare ? s.frogCompare : app.palaceFrogs.beats[s.beat]);
       }
       if(dust && !beat.film)showPhoto(s.dustCourt==='king' ? 'king' : 'court');
+      if(flies && !beat.film){
+        const visits=['village',null,'audience','brothers',s.fliesEnd==='king'?'king':'court'];
+        showPhoto(visits[s.beat]);
+      }
       if(first && !beat.film) {
         const view=['yard','audience','throne','clay','audience',null,'throne'][s.beat];
         showField(view,s.beat===6);
@@ -234,16 +244,16 @@
           stop();
           s[theme+'AfterFilm']=true;
           app.save();
-          showPhoto(dust ? 'pen' : 'kitchen');
+          showPhoto(photoChapter.after);
           invitation.hidden=true;
           prediction.hidden=true;
-          notice.replaceChildren(el('strong',{},dust ? '목자의 우리 관찰 기록' : '부엌 관찰 기록'),el('p',{},beat.words),app.refChip(beat.ref),
+          notice.replaceChildren(el('strong',{},dust ? '목자의 우리 관찰 기록' : photoChapter.place+' 관찰 기록'),el('p',{},beat.words),app.refChip(beat.ref),
             el('button',{type:'button',class:'watch-after-film',on:{click:watch.open}},'세 친구와 현장 살펴보기'));
           const predicted=[0,1].includes(s.filmGuesses?.[s.chapter]);
           playButton.textContent=predicted ? (s[theme+'FilmSeen']?'영상 다시 보기':watchLabel) : '어떻게 될지 예상하기';
           playButton.hidden=false;
-          if(dust && s.dustFilmSeen)playButton.textContent='다시 보기';
-          next.textContent=dust ? '왕궁으로 가기' : '바로의 부탁 듣기';
+          if(!frogs && s[theme+'FilmSeen'])playButton.textContent='다시 보기';
+          next.textContent=photoChapter.next;
         }
         function shore(view) {
           if(video){const old=video;video=null;old.pause();old.removeAttribute('src');old.load();}
@@ -272,7 +282,7 @@
           video = player;
           syncScore();
           if(fieldChapter && beat.film){
-            invitation.hidden=photoChapter;
+            invitation.hidden=!!photoChapter;
             next.textContent='글로 이어 보기';
             const timeKey=first?'firstFilmAt':theme+'FilmAt';
             const resume=s[timeKey];
@@ -291,7 +301,7 @@
           player.addEventListener('error', function () {
             if (video !== player || !player.hasAttribute('src')) return;
             notice.textContent = '영상을 불러오지 못했어요. 다시 누르거나 글로 계속할 수 있어요.';
-            if(photoChapter && beat.film)notice.append(el('button',{type:'button',class:'pf-action',on:{click:afterFilmPhoto}},dust ? '우리 사진으로 확인하기' : '부엌 사진으로 확인하기'));
+            if(photoChapter && beat.film)notice.append(el('button',{type:'button',class:'pf-action',on:{click:afterFilmPhoto}},photoChapter.place+' 사진으로 확인하기'));
             if(first && beat.film)notice.append(el('button',{type:'button',class:'pf-action',on:{click:()=>shore('jar')}},'강가 사진으로 확인하기'));
             playButton.textContent = '영상 다시 불러오기'; playButton.hidden = false;
           });
@@ -304,7 +314,7 @@
             }
             if(photoChapter && beat.film){
               s[theme+'FilmSeen']=true; delete s[theme+'FilmAt']; afterFilmPhoto();
-              if(dust)hero.querySelector('.pf-pin')?.focus({preventScroll:true});
+              if(!frogs)hero.querySelector('.pf-pin:not([hidden])')?.focus({preventScroll:true});
               hero.scrollIntoView({block:'nearest'});return;
             }
             if(frogs) {stop();showPhoto(s.frogCompare || 'turned');}
@@ -349,7 +359,7 @@
               s.filmGuesses[s.chapter]=i;app.save();sync();playButton.focus();
             }}},label)));
             prediction=el('div',{},el('h2',{class:'palace-question'},scene.question),guesses);
-            if(photoChapter)prediction.append(el('button',{type:'button',class:'pf-action',on:{click:afterFilmPhoto}},dust ? '우리 사진으로 살펴보기' : '부엌 사진으로 살펴보기'));
+            if(photoChapter)prediction.append(el('button',{type:'button',class:'pf-action',on:{click:afterFilmPhoto}},photoChapter.place+' 사진으로 살펴보기'));
             panel.append(prediction);
             sync();
           } else invitation.textContent='강물이 변한 뒤, 사람들과 바로는 어떻게 했을까요?';
@@ -357,7 +367,7 @@
           panel.append(invitation,notice,reading);
           next.textContent='글로 이어 보기';
           if(photoChapter){
-            if(s[theme+'AfterFilm'])afterFilmPhoto();else showPhoto(dust ? 'ground' : 'bank');
+            if(s[theme+'AfterFilm'])afterFilmPhoto();else showPhoto(photoChapter.before);
           }
           if(first && !startFilm && (s.firstShore==='jar'||s.firstShore==='bank'))shore(s.firstShore);
           else if(first)cue='palace-river';

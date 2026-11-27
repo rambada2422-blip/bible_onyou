@@ -101,10 +101,9 @@
       title.textContent = step === 'journal' ? '우리 탐험 일지' : scene.place;
       if (step === 'journal') {
         const entries = scenes.flatMap((_, i) => selected(notes[i]?.pick) ? [entry(i)] : []);
-        const firstEntry=app.palaceFirst.journal(notes,openBook);
-        const frogs=app.palaceFrogs.journal(openBook);
-        const dust=app.palaceDust.journal(openBook);
-        body.append(entries.length || firstEntry || frogs || dust ? el('div', {class:'watch-pages'}, firstEntry, frogs, dust, ...entries) :
+        const fieldEntries=[app.palaceFirst.journal(notes,openBook),app.palaceFrogs.journal(openBook),
+          app.palaceDust.journal(openBook),app.palaceFlies.journal(openBook)].filter(Boolean);
+        body.append(entries.length || fieldEntries.length ? el('div', {class:'watch-pages'}, ...fieldEntries, ...entries) :
           speech('hyu', '현장에서 눈에 띄는 흔적을 하나 골라 줘. 우리 첫 장에 남겨 둘게.'),
           button('이 장면 살펴보기', () => change(startStep()), 'watch-primary'));
         return;

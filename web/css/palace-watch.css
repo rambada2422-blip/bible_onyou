@@ -91,3 +91,17 @@
 .dust-print figcaption {position:relative;padding:.2em .45em;background:#f8f1dfed;color:#382e22;font-weight:600;font-size:.88em;}
 .palace-screen:has([data-dust-view=pen]) .palace-cinema-foot .onpaper {flex:1;background:#182541;color:white;text-decoration:none;}
 .palace-screen:has([data-dust-view=pen]) .palace-cinema-foot .palace-film-play {flex:0 1 auto;background:#efe7d4;color:#35483e;}
+.palace-picture[data-flies-view] {position:relative;}
+.flies-strip {position:absolute;inset:0;overflow:hidden;touch-action:pan-y;user-select:none;cursor:ew-resize;}
+.flies-strip img {position:absolute;inset:0;pointer-events:none;}
+.flies-house {transform:translateX(calc(0% - var(--field-reveal)));}
+.flies-goshen {transform:translateX(calc(100% - var(--field-reveal)));}
+.flies-caption {position:absolute;bottom:.4rem;background:#192722e6;color:#fff8e6;padding:.15em .45em;border-radius:.25rem;font-size:.85rem;pointer-events:none;}
+.flies-caption.house {left:.4rem;}
+.flies-caption.goshen {right:.4rem;}
+.flies-seam {position:absolute;top:0;bottom:0;left:calc(100% - var(--field-reveal));width:2px;background:#fff3c9;box-shadow:0 0 3px #312719;pointer-events:none;}
+.flies-controls {display:grid;grid-template-columns:auto minmax(4rem,1fr) auto;align-items:center;gap:.4rem;width:100%;}
+.flies-controls [aria-pressed=true] {background:#34594c;color:white;}
+.flies-slider {height:44px;min-width:0;width:100%;accent-color:#34594c;}
+.palace-screen:has([data-flies-view=compare]) .palace-cinema-foot .onpaper {flex:1;background:#182541;color:white;text-decoration:none;}
+.palace-screen:has([data-flies-view=compare]) .palace-cinema-foot .palace-film-play {flex:0 1 auto;background:#efe7d4;color:#35483e;}
