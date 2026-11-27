@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  if (location.hash === '#guided') return;
+  if (!['#road', '#road-arrival'].includes(location.hash)) return;
   const root = document.getElementById('road');
   root.hidden = false;
   document.body.classList.add('on-road');
@@ -265,6 +265,7 @@
       case 'frogs':
         return '셔터';
       case 'sea':
+        if (!s.flags.A && !s.flags.H && s.x === sites['@'].x && s.y === sites['@'].y) return '물벽 사이로 들어가기';
         return near('E') ? '건너편 소고' : available('AH').length ? '동료 부르기' : '발자국 살피기';
       case 'desert':
         return near('E') ? '샘에 닿기' : tile(s.x, s.y) === ':' ? '물 보충' : '그늘 살피기';
@@ -858,6 +859,10 @@
         takePhoto();
         break;
       case 'sea': {
+        if (!s.flags.A && !s.flags.H && s.x === sites['@'].x && s.y === sites['@'].y) {
+          location.hash = 'crossing-journey';
+          break;
+        }
         if (near('E') && s.flags.A && s.flags.H) {
           celebrate();
           break;
@@ -1042,6 +1047,7 @@
   function menu() {
     panel('출애굽기', '원정 메뉴', '이 기기에 자동 저장된다.', [
       ['지도 돌아가기', close],
+      ['물벽 사이로', () => { location.hash = map.id === 'sea' ? 'crossing-journey' : 'crossing'; }],
       [
         '소리 ' + (game.sound ? '끄기' : '켜기'),
         () => {
@@ -1243,6 +1249,11 @@
   refresh();
   tune();
   raf = requestAnimationFrame(frame);
-  if (game.finished) journal();
+  if (location.hash === '#road-arrival' && !game.finished && map.id === 'sea') {
+    try {
+      const crossing = JSON.parse(localStorage.getItem('onyou.crossing.v1'));
+      if (crossing?.ended && crossing.traveler) finish('물벽 사이로 · ' + (crossing.light ? '세 사람' : '두 사람') + '이 함께 건넜다.');
+    } catch {}
+  } else if (game.finished) journal();
   else if (map.id === 'desert' && s.water < 0) exhausted();
 })();

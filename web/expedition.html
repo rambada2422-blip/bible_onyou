@@ -6,6 +6,7 @@
 <title>구름을 따라 · 출애굽기 원정</title>
 <link rel="stylesheet" href="expedition/field.css">
 <link rel="stylesheet" href="expedition/road.css">
+<link rel="stylesheet" href="expedition/crossing.css">
 </head>
 <body>
 <header class="mast"><div class="mast-inner">
@@ -23,4 +24,15 @@
 <script src="expedition/road-maps.js"></script>
 <script src="expedition/road-art.js"></script>
 <script src="expedition/road.js"></script>
+<section id="crossing" hidden aria-label="물벽 사이로">
+<canvas id="cx-view" aria-label="홍해 사이를 걷는 1인칭 시야"></canvas>
+<header class="cx-bar"><span class="cx-brand"><i aria-hidden="true"></i> 바이블 온유</span><div><button id="cx-look" hidden aria-pressed="false">물벽 올려보기</button><button id="cx-sound" aria-label="현장음" aria-pressed="false">소리 끔</button><button id="cx-pause" hidden>잠시 멈춤</button></div></header>
+<div id="cx-cover" class="cx-cover"><div class="cx-copy"><p class="cx-kicker">출애굽기 14–15장</p><h1>물벽<br>사이로</h1><p class="cx-lead">새벽이 오기 전, 바다 한가운데서<br>등불 하나가 흔들린다.</p><div class="cx-links"><button class="cx-primary" id="cx-start">길에 들어서기 <span aria-hidden="true">→</span></button><a href="#road" id="cx-road">일곱 현장 원정</a></div></div></div>
+<div id="cx-play" hidden><div class="cx-route"><span id="cx-place"></span><div class="cx-line"><i id="cx-progress"></i></div><span id="cx-metres"></span></div>
+<div id="cx-message" role="status" aria-live="polite"></div>
+<div class="cx-controls"><div class="cx-steer"><button id="cx-left" aria-label="왼쪽으로">‹</button><button id="cx-right" aria-label="오른쪽으로">›</button></div><div class="cx-do"><button id="cx-pace">달리기</button><button id="cx-use">몸 낮추기</button></div></div>
+<div class="cx-keys">A D 방향 · W 달리기 · Space 행동 · Esc 멈춤</div></div>
+<div id="cx-panel" class="cx-panel" hidden><div><p class="cx-kicker" id="cx-eyebrow"></p><h2 id="cx-heading"></h2><p id="cx-detail"></p><div id="cx-choices" class="cx-links"></div></div></div>
+</section>
+<script src="expedition/crossing-art.js"></script><script src="expedition/crossing.js"></script>
 </body></html>

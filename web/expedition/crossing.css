@@ -1,0 +1,381 @@
+body.on-crossing {
+  margin: 0;
+  overflow: hidden;
+  background: #08181c;
+}
+.on-crossing > .mast,
+.on-crossing > #game {
+  display: none;
+}
+#crossing {
+  position: fixed;
+  inset: 0;
+  background: #0b2025;
+  isolation: isolate;
+  color: #fff5e6;
+  font:
+    16px/1.5 Dodum,
+    system-ui,
+    sans-serif;
+}
+#crossing [hidden],
+#crossing[hidden] {
+  display: none !important;
+}
+#cx-view {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+#crossing button,
+#crossing a {
+  font: inherit;
+  touch-action: manipulation;
+  cursor: pointer;
+  color: inherit;
+  line-height: 1.25;
+  user-select: none;
+}
+#crossing button:focus-visible,
+#crossing a:focus-visible {
+  outline: 3px solid #f6d68e;
+  outline-offset: 4px;
+}
+.cx-bar {
+  position: absolute;
+  inset: max(16px, env(safe-area-inset-top)) clamp(16px, 4vw, 72px) auto;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #f6f0df;
+  text-shadow: 0 2px 4px #000;
+}
+.cx-brand {
+  font:
+    700 clamp(15px, 1.8vw, 21px) Gowun,
+    serif;
+  letter-spacing: 0.13em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cx-brand i {
+  width: 14px;
+  height: 20px;
+  border: 1px solid #d7b876;
+  border-radius: 80% 0 80% 0;
+  transform: rotate(20deg);
+  box-shadow: inset -3px -2px #d7b876;
+}
+.cx-bar button,
+.cx-controls button {
+  background: #101e24b8;
+  border: 1px solid #f7f1d967;
+  border-radius: 999px;
+  padding: 8px 14px;
+  min-height: 40px;
+  backdrop-filter: blur(5px);
+}
+.cx-bar > div {
+  display: flex;
+  gap: 8px;
+}
+.cx-bar button {
+  font-size: 13px !important;
+}
+.cx-cover,
+.cx-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 8vh clamp(24px, 7vw, 130px);
+  box-sizing: border-box;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, #041015d9, transparent 67%), linear-gradient(0deg, #041015af, transparent 35%);
+}
+.cx-cover .cx-copy,
+.cx-panel > div {
+  pointer-events: auto;
+}
+.cx-cover h1,
+.cx-panel h2 {
+  font:
+    700 clamp(68px, 8.5vw, 154px) / 1.03 Gowun,
+    serif;
+  letter-spacing: -0.075em;
+  color: #fff1d8;
+  margin: 14px 0 20px;
+  text-shadow: 0 3px 22px #12141566;
+}
+.cx-kicker {
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  color: #f4d397;
+  margin: 0;
+  font-weight: 700;
+}
+.cx-lead,
+.cx-panel #cx-detail {
+  max-width: 35em;
+  font-size: clamp(16px, 1.4vw, 21px);
+  color: #f0ebdd;
+  line-height: 1.65;
+  text-shadow: 0 1px 9px #17120b;
+  margin: 0 0 22px;
+  white-space: pre-line;
+}
+.cx-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+  align-items: center;
+}
+.cx-links button,
+.cx-links a {
+  border: 0;
+  background: none;
+  padding: 10px 0;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+#crossing .cx-links .cx-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 32px;
+  background: #f4d49a;
+  color: #212521;
+  text-shadow: none;
+  padding: 15px 22px;
+  border: 1px solid #ffe8bd;
+  border-radius: 3px;
+  text-decoration: none;
+  font-weight: 700;
+}
+.cx-primary span {
+  font-size: 21px;
+}
+.cx-route {
+  position: absolute;
+  top: calc(max(16px, env(safe-area-inset-top)) + 54px);
+  right: clamp(16px, 4vw, 72px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  background: #07151b9c;
+  border-radius: 2px;
+  font-size: 13px;
+}
+.cx-line {
+  width: clamp(40px, 7vw, 100px);
+  height: 2px;
+  background: #c3c8bc5c;
+}
+.cx-line i {
+  display: block;
+  height: 2px;
+  background: #ffe1a5;
+  width: 0;
+}
+#cx-message {
+  position: absolute;
+  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 98px);
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  max-width: min(620px, 88vw);
+  width: max-content;
+  font-size: clamp(16px, 2vw, 23px);
+  font-weight: 700;
+  color: #fff6df;
+  text-shadow:
+    0 1px 4px #101614,
+    0 2px 9px #111;
+  background: linear-gradient(90deg, transparent, #051216c4 14%, #051216c4 86%, transparent);
+  padding: 5px 25px;
+  pointer-events: none;
+}
+#cx-message:empty {
+  display: none;
+}
+.cx-controls {
+  position: absolute;
+  left: clamp(16px, 4vw, 72px);
+  right: clamp(16px, 4vw, 72px);
+  bottom: max(32px, env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+.cx-controls button {
+  pointer-events: auto;
+  touch-action: none;
+  min-height: 48px;
+  font-size: 16px;
+}
+.cx-steer,
+.cx-do {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.cx-steer button {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  font: 30px/1 system-ui !important;
+}
+#cx-use {
+  border-color: #f3d393;
+  background: #26302ad6;
+  color: #ffe5b4;
+  min-width: 104px;
+}
+#cx-use.near {
+  background: #f4d49a;
+  color: #19231f;
+}
+.cx-keys {
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: #eeebdb;
+  white-space: nowrap;
+  text-shadow: 0 2px 3px #000;
+}
+.cx-panel {
+  z-index: 4;
+  background:
+    linear-gradient(90deg, #06181deb 0%, #10222658 65%, transparent),
+    linear-gradient(0deg, #06181db5, transparent 65%);
+  align-items: center;
+}
+.cx-panel h2 {
+  font-size: clamp(37px, 5vw, 86px);
+  line-height: 1.17;
+  max-width: 9em;
+  white-space: pre-line;
+}
+#crossing[data-mode='end'] .cx-panel {
+  align-items: flex-end;
+  background:
+    linear-gradient(0deg, #111c22f2, transparent 82%), linear-gradient(90deg, #0b23274d, transparent 60%);
+}
+@media (pointer: coarse) {
+  .cx-keys {
+    display: none;
+  }
+  .cx-controls {
+    bottom: max(18px, env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 600px) {
+  .cx-cover {
+    background: linear-gradient(0deg, #07171bef, transparent 77%);
+    padding-bottom: 8vh;
+  }
+  .cx-links {
+    gap: 12px 16px;
+  }
+  .cx-cover h1 {
+    font-size: clamp(62px, 17vw, 85px);
+    margin: 10px 0 15px;
+  }
+  .cx-lead {
+    font-size: 16px;
+  }
+  .cx-route {
+    top: 67px;
+  }
+  .cx-do button {
+    font-size: 14px;
+    padding: 8px 11px;
+  }
+  .cx-panel {
+    padding: 64px 24px 28px;
+    background: linear-gradient(0deg, #07191eea, #07191ea6, transparent);
+  }
+  .cx-panel > div {
+    width: 100%;
+  }
+  #cx-message {
+    bottom: 90px;
+    font-size: 16px;
+  }
+  .cx-controls {
+    left: 12px;
+    right: 12px;
+  }
+  .cx-keys {
+    display: none;
+  }
+}
+@media (max-height: 480px) {
+  .cx-cover,
+  .cx-panel {
+    padding: 45px 5vw 15px;
+  }
+  .cx-cover h1 {
+    font-size: 53px;
+    margin: 2px 0 5px;
+  }
+  .cx-kicker {
+    font-size: 12px;
+  }
+  .cx-lead {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .cx-links button {
+    padding: 7px;
+  }
+  .cx-panel h2 {
+    margin: 4px 0;
+    font-size: 38px;
+  }
+  .cx-panel #cx-detail {
+    margin-bottom: 8px;
+  }
+  .cx-controls {
+    bottom: 14px;
+  }
+  .cx-keys {
+    display: none;
+  }
+  #cx-message {
+    bottom: 65px;
+  }
+}
+@media (max-width: 520px) {
+  .cx-bar {
+    inset-inline: 12px;
+  }
+  .cx-bar > div {
+    gap: 5px;
+  }
+  .cx-bar button {
+    min-height: 34px;
+    padding: 7px 9px;
+  }
+  .cx-brand {
+    gap: 7px;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+  }
+}
+
+.cx-panel > div {
+  max-height: calc(100dvh - 108px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+}

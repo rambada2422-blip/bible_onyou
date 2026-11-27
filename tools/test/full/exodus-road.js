@@ -23,7 +23,7 @@ const { chromium, webkit, firefox } = require('playwright');
       errors = [];
     p.on('pageerror', (e) => errors.push(e.message));
     p.setDefaultTimeout(5000);
-    const url = pathToFileURL(file).href,
+    const url = pathToFileURL(file).href + '#road',
       click = async (name) => {
         const d = p.locator('#rd-dialog');
         return ((await d.isVisible()) ? d : p).getByRole('button', { name, exact: true }).click();
@@ -124,6 +124,12 @@ const { chromium, webkit, firefox } = require('playwright');
     await p.keyboard.press('Escape');
     await act();
     await click('다음 현장으로');
+    await act();
+    await p.locator('#cx-start').waitFor();
+    assert.equal(new URL(p.url()).hash, '#crossing-journey');
+    await p.getByRole('link', { name: '원래 지도 돌아가기' }).click();
+    await p.locator('#rd-world').waitFor();
+    assert.equal((await st()).i, 3);
     for (const id of ['A', 'H']) {
       await go(id);
       await act();
