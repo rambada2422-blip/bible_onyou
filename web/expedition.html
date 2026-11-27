@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c3236"><link rel="icon" href="data:,">
+<title>구름을 따라 · 출애굽기 원정</title>
+<link rel="stylesheet" href="expedition/field.css">
+</head>
+<body>
+<header class="mast"><div class="mast-inner">
+<button class="identity" id="home" aria-label="원정 첫 화면"><span class="compass" aria-hidden="true">✥</span><span>바이블 온유 <small>성경 탐험대</small></span></button>
+<div class="tools"><button id="sound" aria-pressed="false">소리 켜기</button><button id="journal">탐험 수첩 <b id="count">0/9</b></button></div>
+</div></header>
+<main id="game"></main>
+<dialog id="records"><div class="dialog-head"><h2>탐험 수첩</h2><button id="close">닫기</button></div><div id="pages"></div></dialog>
+<script src="expedition/assets.js"></script>
+<script src="expedition/chapters.js"></script>
+<script src="expedition/verses.js"></script>
+<script src="expedition/play.js"></script>
+<script src="expedition/app.js"></script>
+</body></html>

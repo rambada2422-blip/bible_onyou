@@ -206,3 +206,5 @@ const kb = (s) => (Buffer.byteLength(s) / 1024).toFixed(0) + 'KB';
 console.log('그림', Object.keys(art).length + '개:', Object.keys(art).join(', '));
 console.log('위치 정보:', Object.keys(meta).join(', ') || '(없음)');
 console.log('art.js', kb(artJs), '· dist/preview.html', kb(page));
+
+require('./build-expedition')();

@@ -75,6 +75,7 @@
     if (journey) runScene(journey.id, journey);
     else renderHub();
   }
+  function openExpedition() { location.assign('expedition.html'); }
   function renderTitle() {
     show(el('div', { class: 'screen sky title-screen pad' },
       el('div', { class: 'title-top' },
@@ -86,6 +87,7 @@
         el('div', { class: 'trio' },
           pic('choeon-full', '', '최온'), pic('onwoo-full', '', '온우'), pic('hyu-full', '', '휴'))),
       el('div', { class: 'title-actions' },
+        el('button', {class:'btn wide', on:{click:openExpedition}}, '구름을 따라 · 출애굽기 원정'),
         el('button', { class: 'btn wide', on: { click: function () { (app.state.tier && app.state.char) ? continueJourney() : renderSetup(); } } },
           (app.state.tier && app.state.char) ? '이어서 탐험하기' : '탐험 시작'),
         app.wilderness.inMountain() ? el('button', {class:'btn wide quiet', on:{click:app.openSinai}}, '시내산 본편 이어 보기') : null,
@@ -171,6 +173,7 @@
       el('div', { class: 'hub-head pad' },
         pic(app.state.char + '-avatar', 'avatar', ''),
         el('div', { class: 'who' }, el('b', { text: c.name + ' 탐험대원' }), el('span', { text: t.label + ' · ' + t.name })),
+        el('button', {class:'pillbtn', on:{click:openExpedition}}, '출애굽기 원정'),
         el('button', { class: 'pillbtn', on: { click: function () { renderJournal(renderHub); } } }, icon('journal'), '일지 ' + entryCount),
         el('button', { class: 'pillbtn', on: { click: renderSetup } }, '단계')),
       el('div', { class: 'hub-body pad' },
