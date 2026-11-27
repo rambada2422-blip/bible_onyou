@@ -176,9 +176,20 @@
     }
     if (music.paused) music.play().catch(() => {});
   }
+  function sunSide() {
+    return Math.floor(s.turn / 4) % 2 ? 1 : -1;
+  }
+  function sunTurnsLeft() {
+    return 4 - (s.turn % 4);
+  }
   function cellShade(x, y) {
     if (tile(x, y) === ':' || ['X', 'Y'].includes(tile(x, y))) return true;
-    const side = Math.floor(s.turn / 4) % 2 ? 1 : -1;
+    const side = sunSide();
+    return ['^', 'P'].includes(tile(x + side, y)) && x + side >= 0 && x + side < map.rows[0].length;
+  }
+  function nextCellShade(x, y) {
+    if (map.id !== 'desert' || !charCan(x, y) || tile(x, y) === ':') return false;
+    const side = -sunSide();
     return ['^', 'P'].includes(tile(x + side, y)) && x + side >= 0 && x + side < map.rows[0].length;
   }
   function cloudUp() {
@@ -211,6 +222,9 @@
           bump,
           ghost: game.practice && game.bestKiln?.trail,
           shade: cellShade,
+          nextShade: nextCellShade,
+          sunSide: sunSide(),
+          sunLeft: sunTurnsLeft(),
           frogs: frogPositions(),
           cloud: cloudUp(),
           paused: dialog.open
@@ -281,6 +295,7 @@
   }
   function refresh() {
     frameButton.hidden = map.id !== 'frogs' || game.finished;
+    waitButton.hidden = map.id !== 'desert' || game.finished;
     const num = String(game.i + 1).padStart(2, '0');
     $('rd-place').textContent = map.place + '  /  ' + map.ref;
     $('rd-title').textContent = map.title;
@@ -288,9 +303,12 @@
     $('rd-task').textContent = objective();
     $('rd-act').textContent = active();
     $('rd-undo').disabled = !game.undo.length || game.finished;
+    const nextDir = sunSide() === -1 ? '서쪽' : '동쪽';
+    const left = sunTurnsLeft();
+    const shiftText = left === 1 ? '다음 턴 ' + nextDir + ' 그늘' : left + '턴 뒤 ' + nextDir + ' 그늘';
     $('rd-env').textContent =
       map.id === 'desert'
-        ? '물 ' + s.water + '  ·  ' + (cellShade(s.x, s.y) ? '그늘' : '직사광선')
+        ? '물 ' + s.water + ' · ' + (cellShade(s.x, s.y) ? '그늘' : '볕 ' + s.heat + '/3') + ' · ' + shiftText
         : map.id === 'frogs'
           ? '포착 ' + s.shots.length + '/2'
           : map.id === 'sea'
@@ -317,6 +335,39 @@
       'aria-label',
       map.title + ' 지도. ' + (s.x + 1) + '열 ' + (s.y + 1) + '행. ' + objective()
     );
+  }
+  function applyDesertTurn(x, y) {
+    if (!cellShade(x, y)) {
+      s.heat++;
+      if (s.heat >= 3) {
+        s.heat = 0;
+        s.water--;
+      }
+    } else s.heat = Math.max(0, s.heat - 1);
+  }
+  function waitInPlace() {
+    if (game.finished || dialog.open || map.id !== 'desert') return false;
+    stop();
+    snapshot();
+    motion = null;
+    const prevSide = sunSide();
+    applyDesertTurn(s.x, s.y);
+    spendTurn();
+    save();
+    refresh();
+    if (s.water < 0) {
+      exhausted();
+      return false;
+    }
+    const flipped = sunSide() !== prevSide;
+    say(
+      flipped
+        ? '해가 기울어 바위 그늘이 ' + (sunSide() === -1 ? '동쪽' : '서쪽') + '으로 옮겨졌다.'
+        : cellShade(s.x, s.y)
+          ? '그늘 아래서 해가 기울기를 기다렸다.'
+          : '볕 아래서 한 턴을 기다렸다.'
+    );
+    return true;
   }
   function spendTurn() {
     s.turn++;
@@ -361,15 +412,7 @@
         say('벽돌이 말림터에 도착했다. 장비 하나를 챙길 수 있다.');
       }
     }
-    if (map.id === 'desert') {
-      if (!cellShade(x, y)) {
-        s.heat++;
-        if (s.heat >= 3) {
-          s.heat = 0;
-          s.water--;
-        }
-      } else s.heat = Math.max(0, s.heat - 1);
-    }
+    if (map.id === 'desert') applyDesertTurn(x, y);
     spendTurn();
     save();
     refresh();
@@ -1156,7 +1199,7 @@
         box.insertBefore(
           newEl(
             'p',
-            '지면을 누르면 빈 길을 따라 걷는다. 수레 바로 옆에서 수레를 누르거나 방향키로 밀 수 있다. 키보드의 Space는 상호작용, Z는 한 수 되돌리기다.',
+            '지면을 누르면 빈 길을 따라 걷는다. 수레 바로 옆에서 수레를 누르거나 방향키로 밀 수 있다. 키보드의 Space는 상호작용, Z는 한 수 되돌리기, 광야에서 T는 그늘 기다리기다.',
             'rd-helptext'
           ),
           ops
@@ -1173,7 +1216,8 @@
     );
   }
   const frameButton = btn('한 동작', tickFrog, 'rd-freeze');
-  $('rd-act').after(frameButton);
+  const waitButton = btn('그늘 기다리기', waitInPlace, 'rd-wait');
+  $('rd-act').after(frameButton, waitButton);
   $('rd-menu').onclick = menu;
   $('rd-book').onclick = journal;
   $('rd-help').onclick = help;
@@ -1228,6 +1272,9 @@
     } else if (k === 'f' && map.id === 'frogs') {
       e.preventDefault();
       tickFrog();
+    } else if ((k === 't' || k === '.') && map.id === 'desert') {
+      e.preventDefault();
+      waitInPlace();
     }
   });
   addEventListener('hashchange', () => location.reload());

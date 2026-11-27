@@ -138,8 +138,8 @@ function makeRoadArt(canvas) {
     }
     ctx.restore();
   }
-  function rock(seed) {
-    shadow(0, 0);
+  function rock(seed, sunSide) {
+    shadow(sunSide ? -sunSide * 4 : 0, 0);
     const h = 10 + seed * 9;
     poly(
       [
@@ -159,7 +159,7 @@ function makeRoadArt(canvas) {
         [-2, -h + 2],
         [3, 4]
       ],
-      '#b6a28b'
+      sunSide === 1 ? '#8b8072' : '#c6b092'
     );
     poly(
       [
@@ -177,8 +177,29 @@ function makeRoadArt(canvas) {
         [17, -2],
         [4, 5]
       ],
-      '#756e62'
+      sunSide === 1 ? '#bba485' : '#65625a'
     );
+    if (sunSide === -1) {
+      line(
+        [
+          [-16, 1],
+          [-12, -h + 3],
+          [-1, -h - 2]
+        ],
+        '#ffe6a8',
+        1.7
+      );
+    } else if (sunSide === 1) {
+      line(
+        [
+          [1, -h - 2],
+          [11, -h],
+          [16, -2]
+        ],
+        '#ffe6a8',
+        1.7
+      );
+    }
     line(
       [
         [-10, -h + 5],
@@ -549,10 +570,10 @@ function makeRoadArt(canvas) {
     oval(4, -5, 1, 1, '#38452e');
     ctx.restore();
   }
-  function landmark(ch, map, state, seed, time) {
+  function landmark(ch, map, state, seed, time, sunSide) {
     if (ch === 'P') palm(seed, time);
     else if (ch === '#') building(seed);
-    else if (ch === '^') rock(seed);
+    else if (ch === '^') rock(seed, map.id === 'desert' ? sunSide : 0);
     else if (ch === 'r') reeds(seed, time);
     else if (ch === ':' || ch === 'X' || ch === 'Y') tent();
     else if (ch === 'B') {
@@ -590,14 +611,14 @@ function makeRoadArt(canvas) {
       reeds(seed, time);
     } else if (ch === 'F') reeds(seed, time);
   }
-  function vista(w, h, pal, time, night) {
+  function vista(w, h, pal, time, night, sunSide) {
     const bg = ctx.createLinearGradient(0, 0, 0, h);
     bg.addColorStop(0, pal[0]);
     bg.addColorStop(0.42, pal[1]);
     bg.addColorStop(1, night ? '#252f3a' : pal[2]);
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
-    const sunX = w * 0.76,
+    const sunX = w * (sunSide === -1 ? 0.24 : 0.76),
       sunY = h * 0.19;
     const glow = ctx.createRadialGradient(sunX, sunY, 2, sunX, sunY, w * 0.35);
     glow.addColorStop(0, night ? '#b8d2ca42' : '#ffe4a575');
@@ -692,7 +713,7 @@ function makeRoadArt(canvas) {
       landscape.src = assets[vistas[map.id]];
     }
     layout = transform(w, h, map, hero, ui.overview);
-    vista(w, h, pal, time, night);
+    vista(w, h, pal, time, night, map.id === 'desert' ? ui.sunSide : 0);
     const tiles = [];
     map.rows.forEach((row, y) => Array.from(row).forEach((ch, x) => tiles.push({ x, y, ch, depth: x + y })));
     tiles.sort((a, b) => a.depth - b.depth);
@@ -707,7 +728,8 @@ function makeRoadArt(canvas) {
     tiles.forEach(({ x, y, ch }) =>
       place(x, y, () => {
         ground(x, y, ch, pal, time, map);
-        if (ui.shade(x, y) && ['desert', 'years'].includes(map.id))
+        const shaded = ui.shade(x, y);
+        if (shaded && ['desert', 'years'].includes(map.id))
           poly(
             [
               [-22, 0],
@@ -715,8 +737,31 @@ function makeRoadArt(canvas) {
               [22, 0],
               [0, 11]
             ],
-            '#50747b62'
+            map.id === 'desert' ? '#365b6588' : '#50747b62'
           );
+        else if (map.id === 'desert' && ui.nextShade?.(x, y)) {
+          const soon = ui.sunLeft === 1;
+          poly(
+            [
+              [-19, 0],
+              [0, -9.5],
+              [19, 0],
+              [0, 9.5]
+            ],
+            soon ? '#38616c3a' : '#38616c1c'
+          );
+          ctx.strokeStyle = soon ? '#244e59e0' : '#4369729c';
+          ctx.lineWidth = soon ? 1.5 : 1;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.moveTo(-19, 0);
+          ctx.lineTo(0, -9.5);
+          ctx.lineTo(19, 0);
+          ctx.lineTo(0, 9.5);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
         if (ui.route.some((p) => p.x === x && p.y === y)) oval(0, 0, 2, 1.1, '#fff1be');
         if (map.signs[ch]) {
           ctx.strokeStyle = s.flags[ch] ? '#8aa98d' : '#f5d995';
@@ -739,7 +784,7 @@ function makeRoadArt(canvas) {
       ctx.setLineDash([]);
     }
     const actors = [
-      ...tiles.map((t) => ({ ...t, paint: () => landmark(t.ch, map, s, noise(t.x, t.y), time) }))
+      ...tiles.map((t) => ({ ...t, paint: () => landmark(t.ch, map, s, noise(t.x, t.y), time, ui.sunSide) }))
     ];
     if (map.id === 'kiln') {
       const c = { ...s.cart };

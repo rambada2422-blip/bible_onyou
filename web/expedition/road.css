@@ -121,6 +121,8 @@ body.on-road {
   bottom: 12px;
   left: 12px;
   padding: 4px 10px;
+  max-width: calc(100% - 24px);
+  line-height: 1.35;
   pointer-events: none;
 }
 .rd-dashboard {
@@ -201,7 +203,8 @@ body.on-road {
 .rd-actions button:disabled {
   opacity: 0.43;
 }
-.rd-actions button.rd-freeze {
+.rd-actions button.rd-freeze,
+.rd-actions button.rd-wait {
   grid-row: 2;
 }
 .rd-foot {
@@ -354,15 +357,18 @@ body.on-road {
     grid-template-columns: minmax(108px, 1fr);
     min-width: 130px;
   }
-  .rd-actions:has(.rd-freeze:not([hidden])) {
+  .rd-actions:has(.rd-freeze:not([hidden]), .rd-wait:not([hidden])) {
     grid-template-columns: 1fr 1fr;
     width: 60%;
   }
-  .rd-actions:has(.rd-freeze:not([hidden])) #rd-undo {
+  .rd-actions:has(.rd-freeze:not([hidden]), .rd-wait:not([hidden])) #rd-undo {
     grid-column: span 2;
   }
-  .rd-actions button.rd-freeze {
+  .rd-actions button.rd-freeze,
+  .rd-actions button.rd-wait {
     grid-row: auto;
+    font-size: 13px;
+    padding: 0 6px;
   }
   .rd-objective p {
     font-size: 17px;
@@ -384,6 +390,9 @@ body.on-road {
   .rd-env {
     left: 8px;
     bottom: 8px;
+    max-width: calc(100% - 16px);
+    font-size: 12.5px;
+    padding: 4px 8px;
   }
   .rd-word {
     font-size: 17px;
