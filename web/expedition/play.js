@@ -772,13 +772,15 @@ const mountainStops = [
     y: 54
   },
   {
+    // 출 32:15–19. 진영이 보이기 전에 들은 소리, 그 소리를 두고 두 사람이 한 말, 가까이 가서 본 모습을 나누어 둔다.
     name: '산을 내려오는 길',
     art: 'tablets',
-    ref: '출 32:17–19',
-    text: '여호수아가 싸우는 소리라고 하자, 모세는 노래하는 소리로 들린다고 답했다. 진영에 가까이 가서야 송아지와 춤을 보았다. 모세는 크게 노해 돌판을 깨뜨렸다.',
     target: '진영을 내려다보기',
     x: 71,
-    y: 49
+    y: 49,
+    caption: '산 아래 진영 쪽에서 백성이 떠드는 소리가 들린다.',
+    said: '여호수아는 백성이 떠드는 소리를 듣고 진영에서 싸우는 소리가 난다고 했다. 모세는 이긴 자의 노래도 진 자의 부르짖음도 아니고, 자기가 듣기에는 노래하는 소리라고 답했다.',
+    seen: '모세는 진영에 가까이 이르러 송아지와 춤추는 것을 보았다. 크게 노하여 손에 든 판들을 산 아래로 던져 깨뜨렸다.'
   },
   {
     name: '이튿날',
@@ -790,55 +792,48 @@ const mountainStops = [
     y: 58
   }
 ];
+// 소리만 듣고 남기는 추측의 보기. 고른 문구를 그대로 저장한다.
+const campGuesses = ['싸움 소리 같다', '노랫소리 같다'];
 function mountain(g) {
-  const { p, art, task, pin, action, tell, step, finish, meter } = g;
+  const { p, art, task, pin, action, step, finish, meter } = g;
   const n = p.step,
-    v = mountainStops[n];
+    v = mountainStops[n],
+    listening = n === 2 && p.heardCamp && !p.open;
   art(n === 2 && !p.open ? 'sinai' : v.art);
-  meter(v.name + '   ' + (n + 1) + ' / 4');
-  task(
-    n === 2 ? '들린 소리와 본 모습 구별하기' : '산길의 증언 듣기',
-    n === 2
-      ? '먼저 들리는 소리만으로는 진영에서 무슨 일이 생겼는지 다 알 수 없다. 시야를 열어 확인하자.'
-      : '산길의 표식을 눌러 그곳에서 누가 무엇을 말했는지 듣자.'
-  );
-  if (n === 2 && !p.heardCamp) {
-    pin('먼 진영 소리 듣기', 44, 48, () => {
-      p.heardCamp = true;
-      g.tone('distant');
+  // 소리를 쓰지 않는 사람도 상황을 읽도록 진행 표시 아래에 자막을 붙인다.
+  meter(v.name + '   ' + (n + 1) + ' / 4' + (listening ? '\n자막 · ' + v.caption : ''));
+  const next = () => {
+    p.open = false;
+    if (n === 3) finish();
+    else step();
+  };
+  if (n === 2) {
+    ridgeWitness(g, v, next);
+    return;
+  }
+  task('산길의 증언 듣기', '산길의 표식을 눌러 그곳에서 누가 무엇을 말했는지 듣자.');
+  if (!p.open) {
+    pin(v.target, v.x, v.y, () => {
+      p.open = true;
       g.save();
-      g.render('여호수아는 싸우는 소리, 모세는 노래하는 소리로 들린다고 했다.');
+      g.render();
     });
     return;
   }
-  if (n === 2 && !p.open)
-    g.evidence(
-      '출 32:17–18',
-      '여호수아와 모세가 같은 진영의 소리를 다르게 들었다. 산길을 가로질러 손가락으로 밀거나 진영을 눌러, 모세의 눈앞에 보인 모습을 찾아보자.'
+  g.evidence(v.ref, v.text);
+  action(['모세가 한 말 듣기', '산 아래로 내려가기', '', '다시 올라간 이유 기록'][n], next);
+}
+// 출 32:15–19. 능선을 열기 전에는 들은 소리와 내 추측만 보이고, 연 뒤에 두 사람의 말과 본 모습이 함께 보인다.
+function ridgeWitness(g, v, next) {
+  const { p, stage, task, pin, action, tell } = g;
+  const guess = typeof p.guess === 'string' ? p.guess : '';
+  const mine = () => g.evidence('내 추측 · 소리만 듣고', guess || '추측을 남기지 않고 진영을 내려다보았다.');
+  if (p.open) {
+    task(
+      '들린 소리와 본 모습 구별하기',
+      '소리만 듣고 남긴 내 추측, 진영이 보이기 전에 두 사람이 한 말, 가까이 가서 본 모습을 나누어 읽자.'
     );
-  const reveal = () => {
-    p.open = true;
-    g.save();
-    g.render();
-  };
-  if (n === 2 && !p.open) {
-    const stage = g.stage;
-    stage.classList.add('ridge');
-    let start = null;
-    stage.addEventListener('pointerdown', (e) => {
-      if (!e.target.closest('button')) start = e.clientX;
-    });
-    stage.addEventListener('pointerup', (e) => {
-      if (start !== null && Math.abs(e.clientX - start) > 48) reveal();
-      start = null;
-    });
-    stage.addEventListener('pointercancel', () => {
-      start = null;
-    });
-  }
-  if (!p.open) pin(v.target, v.x, v.y, reveal);
-  if (n === 2 && p.open) {
-    g.stage.classList.toggle('camp-close', !p.wide);
+    stage.classList.toggle('camp-close', !p.wide);
     action(
       p.wide ? '진영 가까이 보기' : '돌판까지 넓게 보기',
       () => {
@@ -848,15 +843,9 @@ function mountain(g) {
       },
       true
     );
-  }
-  if (!p.open) return;
-  g.evidence(v.ref, v.text);
-  const next = () => {
-    p.open = false;
-    if (n === 3) finish();
-    else step();
-  };
-  if (n === 2) {
+    mine();
+    g.evidence('두 사람이 한 말 · 출 32:17–18', v.said);
+    g.evidence('직접 본 모습 · 출 32:19', v.seen);
     g.status('모세가 돌판을 깨뜨리기 직전에 직접 본 것은?');
     action('송아지와 춤추는 사람들', next);
     action(
@@ -865,7 +854,71 @@ function mountain(g) {
         tell('싸운다는 말은 여호수아가 소리를 듣고 한 말이다. 출 32:19에서 모세가 본 모습을 다시 확인하자.'),
       true
     );
-  } else action(['모세가 한 말 듣기', '산 아래로 내려가기', '', '다시 올라간 이유 기록'][n], next);
+    return;
+  }
+  if (!p.heardCamp) {
+    task(
+      '들린 소리와 본 모습 구별하기',
+      '모세가 두 판을 손에 들고 산에서 내려온다. 여호수아도 함께 있다. 진영은 아직 보이지 않으니 먼저 들려오는 소리에 귀를 기울이자.'
+    );
+    pin('먼 진영 소리 듣기', 44, 48, () => {
+      p.heardCamp = true;
+      g.tone('distant');
+      g.save();
+      g.render('자막 · ' + v.caption);
+    });
+    return;
+  }
+  task(
+    '들린 소리와 본 모습 구별하기',
+    guess
+      ? '소리만 듣고 내 추측을 남겼다. 산길을 손가락으로 밀거나 진영을 눌러 실제 모습을 확인하자.'
+      : '진영이 보이기 전에 소리만 듣고 내 추측을 남겨 보자. 산길을 손가락으로 밀거나 진영을 누르면 실제 모습이 보인다.'
+  );
+  if (guess) mine();
+  const reveal = () => {
+    p.open = true;
+    g.save();
+    g.render();
+  };
+  stage.classList.add('ridge');
+  let start = null;
+  stage.addEventListener('pointerdown', (e) => {
+    if (!e.target.closest('button')) start = e.clientX;
+  });
+  stage.addEventListener('pointerup', (e) => {
+    if (start !== null && Math.abs(e.clientX - start) > 48) reveal();
+    start = null;
+  });
+  stage.addEventListener('pointercancel', () => {
+    start = null;
+  });
+  pin(v.target, v.x, v.y, reveal);
+  // 보기는 누른 자리에서 펼친다. 고르기 전에는 저장하지 않는다.
+  const chooser = action(
+    guess ? '추측 다시 고르기' : '내 추측 남기기',
+    () => {
+      g.status('진영이 보이기 전, 이 소리는 어떻게 들리는가?');
+      const choices = campGuesses.map((label) =>
+        action(label, () => {
+          p.guess = label;
+          g.save();
+          g.render('내 추측을 남겼다 · ' + label);
+        })
+      );
+      chooser.replaceWith(...choices);
+      choices[0].focus({ preventScroll: true });
+    },
+    !!guess
+  );
+  action(
+    '소리 다시 듣기',
+    () => {
+      g.tone('distant');
+      tell('자막 · ' + v.caption);
+    },
+    true
+  );
 }
 fieldGames.mountain = mountain;
 function cloud(g) {
