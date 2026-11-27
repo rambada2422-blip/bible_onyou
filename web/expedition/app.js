@@ -220,6 +220,9 @@
         return '그늘 길 ' + (p.shade || 0) + '번 · 물을 함께 마신 횟수 ' + (p.shared || 0) + '번';
       case 'camp':
         return '내 조사 순서 · ' + p.found.map((i) => campEvidence[i].name).join(' → ');
+      case 'mountain':
+        // 플레이어의 추측이다. 성경 인물의 말과 섞이지 않게 '내 추측'으로 적는다.
+        return typeof p.guess === 'string' && p.guess ? '산길에서 소리만 듣고 남긴 내 추측 · ' + p.guess : '';
       default:
         return '';
     }

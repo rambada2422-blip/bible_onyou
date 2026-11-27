@@ -49,7 +49,11 @@ const before = (progress) => ({
       hidden: async (where) => {
         const words = (await t.panel()) + '\n' + (await t.stage());
         assert.doesNotMatch(words, /송아지|춤/, where + ': 능선 전에 본 장면이 드러남');
-        assert.doesNotMatch(words, /여호수아는|노래하는 소리라고/, where + ': 추측 전에 두 사람의 해석이 드러남');
+        assert.doesNotMatch(
+          words,
+          /여호수아는|노래하는 소리라고/,
+          where + ': 추측 전에 두 사람의 해석이 드러남'
+        );
       },
       resume: async () => {
         await p.reload();
@@ -57,15 +61,35 @@ const before = (progress) => ({
         await by('떠난 현장 이어가기 →').click();
         assert.match(await p.locator('#game h1').innerText(), /산 위의 말, 산 아래의 소리/);
       },
-      finishRest: async () => {
+      // 남은 4/4 지점을 마치고, 결과 화면과 다시 연 수첩에 내 추측이 그대로(또는 없이) 남는지 본다.
+      finishRest: async (guess) => {
         await by('이튿날의 산길').click();
         await by('다시 올라간 이유 기록').click();
         assert.match(await p.locator('#game h1').innerText(), /두 번 백성을 위해 간구한 모세/);
+        const line = '산길에서 소리만 듣고 남긴 내 추측 · ' + guess;
+        const result = await p.locator('.panel').innerText();
+        if (guess) assert.ok(result.includes(line), '결과 화면에 내 추측: ' + guess);
+        else assert.doesNotMatch(result, /내 추측/, '추측이 없으면 결과 화면에 추측 줄이 없다');
+        await p.reload();
+        await p.locator('#journal').click();
+        const entry = await p.locator('.entry').nth(6).innerText();
+        assert.match(entry, /두 번 백성을 위해 간구한 모세/);
+        if (guess) assert.ok(entry.includes(line), '다시 연 수첩에 내 추측: ' + guess);
+        else assert.doesNotMatch(entry, /내 추측/);
+        if (guess === '싸움 소리 같다') {
+          await p.locator('.entry').nth(6).locator('.feedback-row').scrollIntoViewIfNeeded();
+          await t.shot('07-journal-guess');
+        }
+        await by('닫기').click();
       }
     };
     await by('떠난 현장 이어가기 →').click();
     await play(t);
-    assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, name + ' 가로 넘침');
+    assert.equal(
+      await p.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+      false,
+      name + ' 가로 넘침'
+    );
     assert.deepEqual(errors, [], name + ' 오류');
     seen.push(name);
     await ctx.close();
@@ -84,7 +108,10 @@ const before = (progress) => ({
       }
       await t.hidden('듣기 전');
       await click('먼 진영 소리 듣기');
-      assert.match(await p.locator('.meter').innerText(), /자막 · 산 아래 진영 쪽에서 백성이 떠드는 소리가 들린다/);
+      assert.match(
+        await p.locator('.meter').innerText(),
+        /자막 · 산 아래 진영 쪽에서 백성이 떠드는 소리가 들린다/
+      );
       assert.match(await p.locator('.notice').innerText(), /자막/);
       await t.hidden('소리를 들은 뒤');
       await t.shot('01-heard-caption');
@@ -111,15 +138,22 @@ const before = (progress) => ({
       const panel = await t.panel();
       assert.match(panel, /내 추측 · 소리만 듣고\s*싸움 소리 같다/);
       assert.match(panel, /두 사람이 한 말 · 출 32:17–18\s*여호수아는 백성이 떠드는 소리를 듣고/);
-      assert.match(panel, /직접 본 모습 · 출 32:19\s*모세는 진영에 가까이 이르러 송아지와 춤추는 것을 보았다/);
+      assert.match(
+        panel,
+        /직접 본 모습 · 출 32:19\s*모세는 진영에 가까이 이르러 송아지와 춤추는 것을 보았다/
+      );
       assert.doesNotMatch(await p.locator('.meter').innerText(), /자막/);
       await t.shot('04-reveal-fight');
       await t.resume();
-      assert.match(await t.panel(), /싸움 소리 같다[\s\S]*직접 본 모습/, '능선을 연 뒤 다시 열어도 비교가 남는다');
+      assert.match(
+        await t.panel(),
+        /싸움 소리 같다[\s\S]*직접 본 모습/,
+        '능선을 연 뒤 다시 열어도 비교가 남는다'
+      );
       await click('싸우는 군대');
       assert.match(await p.locator('.notice').innerText(), /여호수아/);
       await click('송아지와 춤추는 사람들');
-      await t.finishRest();
+      await t.finishRest('싸움 소리 같다');
     });
     // 2. 처음 고른 추측을 바꿔 '노랫소리 같다'를 남기고, 진영 표식을 눌러 연다.
     await journey('노랫소리 · 눌러서 확인', { step: 2 }, async (t) => {
@@ -142,7 +176,7 @@ const before = (progress) => ({
       assert.match(panel, /송아지와 춤추는 것을 보았다/);
       await t.shot('05-reveal-song');
       await click('송아지와 춤추는 사람들');
-      await t.finishRest();
+      await t.finishRest('노랫소리 같다');
     });
     // 3. 추측 기능 전에 소리만 들은 예전 저장. 추측 없이 바로 능선을 열어도 이어진다.
     await journey('예전 저장 · 추측 생략', { step: 2, heardCamp: true }, async (t) => {
@@ -154,13 +188,13 @@ const before = (progress) => ({
       assert.equal((await t.saved()).guess, undefined);
       await t.shot('06-old-save-skip');
       await click('송아지와 춤추는 사람들');
-      await t.finishRest();
+      await t.finishRest('');
     });
     // 4. 예전 저장에서 이미 능선을 연 상태. 비교 화면이 그대로 열린다.
     await journey('예전 저장 · 능선 연 뒤', { step: 2, heardCamp: true, open: true }, async (t) => {
       assert.match(await t.panel(), /추측을 남기지 않고 진영을 내려다보았다[\s\S]*출 32:19/);
       await t.click('송아지와 춤추는 사람들');
-      await t.finishRest();
+      await t.finishRest('');
     });
     console.log('시내산 소리의 출처 · ' + seen.length + '/4 경로 합격 (' + seen.join(', ') + ') · no errors');
   } finally {
