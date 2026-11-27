@@ -13,7 +13,7 @@ function embedded(file) {
 function build() {
   const html = read('expedition.html')
     .replace(
-      /<link rel="stylesheet" href="([^"]+)">/,
+      /<link rel="stylesheet" href="([^"]+)">/g,
       (_, file) =>
         '<style>' +
         read(file).replace(/url\('\.\.\/(assets\/[^']+)'\)/g, (_, asset) => 'url(' + embedded(asset) + ')') +

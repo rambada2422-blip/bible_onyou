@@ -66,7 +66,8 @@ if (full) {
       ['3D 요단 강', ['tools/test/walkJ.js', '1', path.join(out, 'jordan')]],
       ['첫 왕궁과 나일 강가', ['tools/test/full/palace-first.js', path.join(out, 'palace-first')]],
       ['개구리 재앙의 집과 약속', ['tools/test/full/palace-frogs.js', path.join(out, 'palace-frogs')]],
-      ['출애굽기 원정 아홉 현장', ['tools/test/full/exodus-expedition.js', path.join(out, 'expedition')]]
+      ['출애굽기 원정 아홉 현장', ['tools/test/full/exodus-expedition.js', path.join(out, 'expedition')]],
+      ['출애굽기 직접 탐험', ['tools/test/full/exodus-road.js', path.join(out, 'road')]]
     ];
     for (const [name, args] of walks) {
       const t0 = Date.now();

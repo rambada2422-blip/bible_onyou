@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  if (location.hash !== '#guided') return;
   const key = 'onyou.exodus.expedition.v1',
     root = document.getElementById('game');
   const book = document.getElementById('records'),
@@ -506,5 +507,9 @@
   });
   document.addEventListener('visibilitychange', syncSound);
   document.getElementById('count').textContent = state.records.length + '/9';
+  const roadLink = node('a', 'road-return', '길 위의 탐험으로');
+  roadLink.href = '#road';
+  document.querySelector('.mast-inner').append(roadLink);
+  addEventListener('hashchange', () => location.reload());
   home();
 })();
