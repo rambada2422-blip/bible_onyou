@@ -7,6 +7,18 @@ from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parent
 
+EXODUS_FILES = {
+    'sinai-witness': {
+        'web/expedition/play.js', 'web/expedition/chapters.js',
+        'tools/test/full/exodus-sinai-witness.js', 'docs/인계/시내산_소리_Claude.md'
+    },
+    'desert-shade': {
+        'web/expedition/road.js', 'web/expedition/road-art.js', 'web/expedition/road.css',
+        'tools/test/full/exodus-desert-shade.js', 'docs/인계/광야_그늘_Antigravity.md',
+        'docs/인계/사진/출애굽기원정/광야_태양전환_전.png', 'docs/인계/사진/출애굽기원정/광야_태양전환_후.png'
+    },
+}
+
 
 def run(args, cwd, timeout=300):
     from providers import safe_env
@@ -74,6 +86,20 @@ def pdf_files(cwd):
 
 
 def verify(job, cwd, out):
+    if job in EXODUS_FILES:
+        for name in EXODUS_FILES[job]:
+            if name.startswith(('docs/', 'tools/')) and not (cwd/name).is_file():
+                raise ValueError('제출 대기 · '+name)
+        if job == 'desert-shade':
+            pictures = [(cwd/p).read_bytes() for p in sorted(EXODUS_FILES[job]) if p.endswith('.png')]
+            if pictures[0] == pictures[1] or not all(x.startswith(b'\x89PNG\r\n\x1a\n') for x in pictures):
+                raise ValueError('광야 지도 전환 전후 PNG를 확인하세요')
+        run(['node','tools/build-expedition.js'], cwd)
+        run(['node',str(TOOLS/'exodus-check.cjs'),job,str(cwd/'dist/expedition.html')],cwd)
+        run(['node','tools/test/full/exodus-'+job+'.js',str(out/'feature'),str(cwd/'dist/expedition.html')],cwd)
+        regression = 'exodus-expedition' if job == 'sinai-witness' else 'exodus-road'
+        run(['node','tools/test/full/'+regression+'.js',str(out/'regression'),str(cwd/'dist/expedition.html')],cwd)
+        return '시내산 추측 두 경로·복원·아홉 현장 검사 통과' if job == 'sinai-witness' else '광야 기다림·열기·되돌리기·일곱 현장 검사 통과'
     if job == 'entry':
         run(['node','tools/build-david.js'],cwd)
         run(['node',str(TOOLS/'dot-check.cjs'),job,str(cwd/'dist/david.html')],cwd)

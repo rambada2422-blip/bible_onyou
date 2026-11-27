@@ -114,19 +114,21 @@ class Store:
         self.last_export=last
 
 
-def catalogue(source=None, extension=None):
+def catalogue(source=None, extension=None, exodus=None):
     cards = json.loads(source if source is not None else (HERE/'cards.json').read_text(encoding='utf-8'))
     if source is None:
         extension = (HERE/'cards-dot.json').read_text(encoding='utf-8')
-    if extension is not None:
-        cards.extend(json.loads(extension))
+        exodus = (HERE/'cards-exodus.json').read_text(encoding='utf-8')
+    for extra in (extension, exodus):
+        if extra is not None:
+            cards.extend(json.loads(extra))
     ids = set()
     for c in cards:
         if not re.fullmatch(r'[a-z0-9-]+',c['id']) or c['id'] in ids:
             raise ValueError('중복되거나 유효하지 않은 작업 ID')
         if not set(c.get('after',[])) <= ids or not c['services'] or not set(c['services']) <= set(SERVICES):
             raise ValueError('카드 순서 또는 담당 확인 필요')
-        if c['job'] not in ('index','bundle','pdf','journey','proof','content','masks','routes','entry','pacing') or not re.fullmatch(r'[\w/-]+',c['branch']):
+        if c['job'] not in ('index','bundle','pdf','journey','proof','content','masks','routes','entry','pacing',*jobs.EXODUS_FILES) or not re.fullmatch(r'[\w/-]+',c['branch']):
             raise ValueError('지원하지 않는 카드')
         ids.add(c['id'])
     return cards
@@ -141,6 +143,8 @@ def refresh_backlog(store):
         store.register(catalogue(registry))
         extension = git(ROOT,'show',ref+':tools/onyou_queue/cards-dot.json')
         store.register(catalogue(registry,extension))
+        exodus = git(ROOT,'show',ref+':tools/onyou_queue/cards-exodus.json')
+        store.register(catalogue(registry,extension,exodus))
     except (OSError,ValueError,TypeError, KeyError, subprocess.TimeoutExpired) as exc:
         store.log('catalogue-wait','저장된 목록으로 진행 · '+str(exc)[-240:],'','local')
 
@@ -182,12 +186,14 @@ def checkout(card, out, update=True):
 
 
 def preserve_result(card, out, work):
-    if card['job'] not in ('pdf','journey','content','routes'):
+    if card['job'] not in ('pdf','journey','content','routes',*jobs.EXODUS_FILES):
         return
     base=(out/'base.txt').read_text().strip()
     changed=git(work,'-c','core.quotepath=false','diff','--name-only',base).splitlines()
     changed+=git(work,'-c','core.quotepath=false','ls-files','--others','--exclude-standard').splitlines()
-    if card['job']=='routes':
+    if card['job'] in jobs.EXODUS_FILES:
+        ok=jobs.EXODUS_FILES[card['job']].__contains__
+    elif card['job']=='routes':
         ok=lambda name: name=='docs/창세기/연속/C29_재검증.md'
     elif card['job'] in ('pdf','content'):
         ok=lambda name: name in ('docs/창세기/연속/C29.md','docs/창세기/연속/C29.pdf','docs/창세기/연속/C29_판.pdf','docs/창세기/연속/C29_답지.pdf','docs/창세기/연속/C29_인쇄.json') or bool(re.fullmatch(r'docs/인계/사진/C29_[^/]+\.png',name))

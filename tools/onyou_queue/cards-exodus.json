@@ -1,0 +1,18 @@
+[
+  {
+    "id": "exodus-sinai-witness",
+    "branch": "claude/exodus-sinai-witness",
+    "services": ["claude"],
+    "job": "sinai-witness",
+    "title": "시내산에서 진영 소리에 대한 내 추측과 직접 본 일 대조",
+    "prompt": "docs/일감/시내산_소리의_출처_Claude.md 한 건을 구현하세요. 기존 아홉 현장 산길에 플레이 가능한 추측과 본문 대조를 넣고, 두 선택과 중간 복원을 실제 브라우저로 확인하세요. 기존 마운틴 장면과 별도 내용 검증을 거쳐 인계하세요."
+  },
+  {
+    "id": "exodus-desert-shade",
+    "branch": "antigravity/exodus-desert-shade",
+    "services": ["antigravity"],
+    "job": "desert-shade",
+    "title": "광야에서 바위 그림자를 보고 걸을 때와 기다릴 때 결정",
+    "prompt": "docs/일감/광야_움직이는그늘_Antigravity.md 한 건을 구현하세요. 기존 광야에 그늘 기다리기와 다음 그림자의 방향을 읽는 연출을 넣고 두 실제 경로·저장·되돌리기를 검증하세요. 같은 화면 전후 사진과 실행한 검사를 남기세요."
+  }
+]
