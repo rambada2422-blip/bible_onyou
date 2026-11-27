@@ -19,10 +19,10 @@ const { chromium, webkit, firefox } = require('playwright');
       reducedMotion: 'reduce'
     });
     if (driver !== chromium) await context.route(/^https?:/, (r) => r.abort());
-    const p = await context.newPage(),
-      errors = [];
-    p.on('pageerror', (e) => errors.push(e.message));
-    p.setDefaultTimeout(5000);
+    const errors = [];
+    context.on('weberror', (event) => errors.push(event.error().message));
+    context.setDefaultTimeout(5000);
+    const p = await openOfflineBundle(context, file, '#road');
     const click = async (name) => {
       const d = p.locator('#rd-dialog');
       return ((await d.isVisible()) ? d : p).getByRole('button', { name, exact: true }).click();
@@ -38,7 +38,6 @@ const { chromium, webkit, firefox } = require('playwright');
       await p.waitForTimeout(160);
       await p.screenshot({ path: path.join(out, name + '.jpg'), quality: 84 });
     };
-    await openOfflineBundle(p, file, '#road');
     await p.evaluate(() => document.fonts.ready);
     await shot('01-goshen');
     assert.equal(await p.locator('#rd-title').innerText(), '해 질 무렵의 일터');

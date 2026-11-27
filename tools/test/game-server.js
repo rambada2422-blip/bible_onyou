@@ -81,20 +81,23 @@ const proxy = process.env.HTTPS_PROXY
   : undefined;
 
 // 관리형 Chromium이 file: 이동을 제한하면 같은 HTML 하나만 루프백에서 제공한다.
-async function openOfflineBundle(page, file, fragment = '') {
+async function openOfflineBundle(context, file, fragment = '') {
+  const filePage = await context.newPage();
   try {
-    await page.goto(pathToFileURL(path.resolve(file)).href + fragment);
-    return;
+    await filePage.goto(pathToFileURL(path.resolve(file)).href + fragment);
+    return filePage;
   } catch (error) {
     if (!error.message.includes('ERR_BLOCKED_BY_ADMINISTRATOR')) throw error;
+    // 차단된 탭에서 늦게 열리는 브라우저 오류 페이지가 다음 탐색을 덮지 않게 한다.
+    await filePage.close();
   }
   const html = await fs.readFile(file);
-  const context = page.context();
   const origin = await gameOrigin(context.browser(), (req, res) => {
     if (req.url !== '/expedition.html') return res.writeHead(404).end();
     res.writeHead(200, { 'Content-Type': types['.html'] }).end(html);
   });
   const bundle = origin + '/expedition.html';
+  const page = await context.newPage();
   await context.route(/^https?:/, route => {
     const request = route.request();
     return request.url() === bundle && request.isNavigationRequest() && request.frame() === page.mainFrame()
@@ -102,6 +105,7 @@ async function openOfflineBundle(page, file, fragment = '') {
   });
   await context.setOffline(false);
   await page.goto(bundle + fragment);
+  return page;
 }
 
 module.exports = { gameOrigin, openOfflineBundle, proxy };

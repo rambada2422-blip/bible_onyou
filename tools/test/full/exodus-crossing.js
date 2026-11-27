@@ -21,15 +21,14 @@ const { chromium, firefox, webkit } = require('playwright');
         reducedMotion: 'reduce'
       });
       await context.route(/^https?:/, (route) => route.abort());
-      const p = await context.newPage(),
-        errors = [];
-      p.on('pageerror', (e) => errors.push(e.message));
-      p.setDefaultTimeout(8000);
-      p.setDefaultNavigationTimeout(30000);
+      const errors = [];
+      context.on('weberror', (event) => errors.push(event.error().message));
+      context.setDefaultTimeout(8000);
+      context.setDefaultNavigationTimeout(30000);
+      const p = await openOfflineBundle(context, file);
       const wait = (ms) => p.clock.runFor(ms);
       const state = () => p.evaluate(() => JSON.parse(localStorage.getItem('onyou.crossing.v1')));
       const picture = async (n) => p.screenshot({ path: path.join(out, n + '.jpg'), quality: 85 });
-      await openOfflineBundle(p, file);
       await p.evaluate(() => document.fonts.ready);
       await p.waitForTimeout(300);
       await p.clock.install();

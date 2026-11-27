@@ -19,16 +19,15 @@ const { chromium, firefox, webkit } = require('playwright');
     });
     // 파일 탐색 자체를 제한하는 엔진에서는 외부 요청을 모두 막은 상태로 파일을 연다.
     if (engine !== chromium) await ctx.route(/^https?:/, (route) => route.abort());
-    const p = await ctx.newPage(),
-      errors = [];
-    p.on('pageerror', (e) => errors.push(e.message));
-    p.setDefaultTimeout(5500);
+    const errors = [];
+    ctx.on('weberror', (event) => errors.push(event.error().message));
+    ctx.setDefaultTimeout(5500);
+    const p = await openOfflineBundle(ctx, file, '#guided');
     const by = (name) => p.getByRole('button', { name, exact: true });
     const click = (name) => by(name).click();
     const next = () => p.getByRole('button', { name: /^다음 현장/ }).click();
     const shot = (name) => p.screenshot({ path: path.join(out, name + '.png'), fullPage: true });
     const text = async (selector, pattern) => assert.match(await p.locator(selector).innerText(), pattern);
-    await openOfflineBundle(p, file, '#guided');
     await p.evaluate(() => document.fonts.ready);
     await shot('01-cover');
     await click('애굽 일터로 출발 →');
