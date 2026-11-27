@@ -58,8 +58,11 @@ node tools/test/full/exodus-expedition.js 검사결과폴더 dist/expedition.htm
 전체 점검 `node tools/check.js --full` 마지막 두 줄:
 
 ```
-(점검 후 채움)
+점검 종류: 전체 · 통과 18/19 · 확인 필요 1
+점검 결과: 합격 (확인 필요 1건)
 ```
+
+확인 필요 1건은 `⚠️ 내용 파일이 바뀜 · web/js/content.js`다. 출발 커밋 `d9ed09a`가 이미 main과 411개 파일이 다르고 그 안에 `content.js`가 들어 있다 (`git diff --name-only origin/main...d9ed09a`로 확인). 이번 카드는 `content.js`를 건드리지 않았다. 원정 아홉 현장 단계는 별도 검증 반영 뒤 다시 묶은 최종 코드로 돌았다 (7초 합격).
 
 ⚠️ 브라우저는 Chromium만 있었다. Firefox·WebKit은 이 환경에 없어 돌리지 못했다 (검사기는 셋째 인자로 엔진을 받는다).
 
