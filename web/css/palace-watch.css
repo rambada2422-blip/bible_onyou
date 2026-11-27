@@ -82,3 +82,12 @@
 .frog-records [aria-pressed=true] { background:#34594c;color:white;border-color:#34594c; }
 @media(prefers-reduced-motion:reduce){.palace-picture[data-frog-view] img {transition:none;}}
 .palace-picture .pf-pin[hidden],.pf-tools .pf-action[hidden] {display:none;}
+.palace-picture[data-dust-view] {position:relative;}
+.dust-prints {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem;max-width:24rem;width:100%;}
+.dust-print {position:relative;display:grid;align-content:end;min-height:3.9rem;margin:0;overflow:hidden;border:1px dashed #817862;border-radius:.3rem;background:#e4dcc7;}
+.dust-print img {position:absolute;width:100%;height:100%;object-fit:cover;transform:scale(2.65);transform-origin:var(--dust-origin);}
+.dust-print:first-child {--dust-origin:29% 45%;}
+.dust-print:last-child {--dust-origin:87% 52%;}
+.dust-print figcaption {position:relative;padding:.2em .45em;background:#f8f1dfed;color:#382e22;font-weight:600;font-size:.88em;}
+.palace-screen:has([data-dust-view=pen]) .palace-cinema-foot .onpaper {flex:1;background:#182541;color:white;text-decoration:none;}
+.palace-screen:has([data-dust-view=pen]) .palace-cinema-foot .palace-film-play {flex:0 1 auto;background:#efe7d4;color:#35483e;}

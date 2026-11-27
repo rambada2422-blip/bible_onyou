@@ -84,7 +84,7 @@ async function check(browser, origin, entry, width, height) {
         } else {
           await playToEnding(page, number + 1, ch.seconds);
           await page.getByRole('button', {name:'세 친구와 현장 살펴보기'}).waitFor();
-          const outcome=await page.evaluate(n=>n<2 ? BO.palaceChapters[n].beats.find(b=>b.film).words : BO.palaceChapters[n].beats[BO.palaceWatchScenes[n].after.beat].words,number);
+          const outcome=await page.evaluate(n=>n<3 ? BO.palaceChapters[n].beats.find(b=>b.film).words : BO.palaceChapters[n].beats[BO.palaceWatchScenes[n].after.beat].words,number);
           assert.equal(await page.locator('.palace-status p').innerText(),outcome);
         }
       }
