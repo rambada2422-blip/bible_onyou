@@ -7,19 +7,21 @@
     return s && Number.isInteger(s.chapter) && chapters[s.chapter] &&
       Number.isInteger(s.beat) && !!chapters[s.chapter].beats[s.beat];
   }
-  function open(from, leave, firstEntry) {
+  function open(from, leave, entryChapter) {
     let s = app.state.palace;
-    if (!valid(s)) s = app.state.palace = {chapter:0, beat:0};
+    if (!valid(s)) s = app.state.palace = {chapter:entryChapter ?? 0, beat:0};
     const main = s;
-    const revisit = firstEntry && main.chapter > 0;
+    const revisit = entryChapter!==undefined && main.chapter!==entryChapter;
     if (revisit) {
-      if (!valid(main.firstVisit) || main.firstVisit.chapter !== 0) main.firstVisit = {chapter:0,beat:0};
-      s=main.firstVisit;
+      const key=entryChapter===0 ? 'firstVisit' : 'frogVisit';
+      if (!valid(main[key]) || main[key].chapter!==entryChapter) main[key] = {chapter:entryChapter,beat:0};
+      s=main[key];
     }
     s.active = true;
     s.from = from;
     app.save();
     let video, narration, score, cue, watchDialog, bookOpen=false;
+    const camera=BO.wildFeel.audio();
     function syncScore() {
       if (!score) return;
       const reserved = video && !video.ended && !video.error;
@@ -28,7 +30,7 @@
     }
     function openBook(ref) {
       bookOpen=true; syncScore(); pauseMedia();
-      app.palaceFirst.page(ref,()=>{bookOpen=false;syncScore();});
+      (ref.startsWith('8:') || ref.startsWith('12:') ? app.palaceFrogs : app.palaceFirst).page(ref,()=>{bookOpen=false;syncScore();});
     }
     function stopNarration() {
       if (!narration) return;
@@ -46,6 +48,7 @@
         stopNarration();
         if (wasPlaying) return;
         if (video) video.pause();
+        camera.stop();
         status.hidden = true;
         const url = BO.palaceAudio ? BO.palaceAudio[clip] : 'assets/audio/palace/' + clip + '.mp3';
         const player = new Audio(url);
@@ -68,7 +71,7 @@
       return button;
     }
     function pauseMedia() {
-      stopNarration(); if (video) video.pause();
+      camera.stop(); stopNarration(); if (video) video.pause();
       watchDialog?.querySelector('video')?.pause();
     }
     function hide() { if (document.hidden) pauseMedia(); }
@@ -76,7 +79,7 @@
     window.addEventListener('pagehide', pauseMedia);
     window.addEventListener('blur', pauseMedia);
     function stop() {
-      stopNarration();
+      camera.stop(); stopNarration();
       app.stopReading();
       if (video) {
         video.pause();
@@ -87,6 +90,8 @@
     }
     function go(chapter, beat, startFilm=false) {
       stop();
+      if (!revisit && entryChapter!==undefined && chapter!==entryChapter &&
+          ['#palace-first','#palace-frogs'].includes(location.hash)) history.replaceState(null,'','#palace');
       s.chapter = chapter;
       s.beat = beat;
       delete s.choice;
@@ -110,18 +115,20 @@
     function draw(focus, startFilm=false) {
       const chapter = chapters[s.chapter], beat = chapter.beats[s.beat];
       const first = s.chapter === 0;
-      if (first && !score) score = BO.sceneMusic.create();
-      if (!first && score) { score.close(); score=null; }
+      const frogs = s.chapter === 1;
+      const fieldChapter = first || frogs;
+      if (fieldChapter && !score) score = BO.sceneMusic.create();
+      if (!fieldChapter && score) { score.close(); score=null; }
       cue=null;
       const final = s.chapter === chapters.length - 1 && s.beat === chapter.beats.length - 1;
       // 한밤중의 부름에는 빛이 드는 낮 왕궁 대신 닫힌 문을 보여 준다.
       const showAudience = s.chapter !== 9 && (beat.who || s.chapter === 0 && !beat.film);
       const image = showAudience ? palaceArt : chapter.art;
-      const heading = el('h1', {tabindex:'-1'}, first ? app.palaceFirst.titles[s.beat] : chapter.title);
+      const heading = el('h1', {tabindex:'-1'}, first ? app.palaceFirst.titles[s.beat] : frogs ? app.palaceFrogs.titles[s.beat] : chapter.title);
       const hero = el('div', {class:'palace-picture'}, app.pic(image, '', image === palaceArt ?
         '왕 앞에 선 모세와 아론. 왼쪽의 두 형제와 오른쪽의 바로가 마주 보고 있어요.' : chapter.title));
       const watch = app.palaceWatch.attach(s.chapter, () => {
-        stopNarration(); app.stopReading(); if (video) video.pause(); syncScore();
+        pauseMedia(); app.stopReading(); syncScore();
       }, listenButton, openBook, s);
       watchDialog=watch.dialog;
       watchDialog.addEventListener('close',syncScore);
@@ -138,6 +145,16 @@
         fieldSlot.replaceChildren(app.palaceFirst.field(hero,view,openBook,action));
         syncScore();
       }
+      function showFrogs(view) {
+        cue=app.palaceFrogs.field(hero,fieldSlot,view,s,openBook,showFrogs,()=>{
+          if (!narration && !bookOpen && !watchDialog.open) camera.play('shutter');
+        });
+        syncScore();
+      }
+      if(frogs && !beat.film) {
+        const compare=s.beat>=5 && ['yard','turned','plea'].includes(s.frogCompare);
+        showFrogs(compare ? s.frogCompare : app.palaceFrogs.beats[s.beat]);
+      }
       if(first && !beat.film) {
         const view=['yard','audience','throne','clay','audience',null,'throne'][s.beat];
         showField(view,s.beat===6);
@@ -153,7 +170,7 @@
       const sources = el('div', {class:'palace-sources'}, app.refChip(beat.ref));
       const clip = [s.chapter + 1, s.beat + 1].map(n => String(n).padStart(2, '0')).join('-');
       sources.append(listenButton(clip, '읽어 줘', readStatus));
-      if(first) {
+      if(fieldChapter) {
         const ref=beat.ref.match(/\d+:\d+/)[0];
         sources.append(el('button',{type:'button',class:'pf-scroll',on:{click:()=>openBook(ref)}},'말씀 두루마리'));
       }
@@ -164,7 +181,6 @@
         else if (s.beat + 1 < chapter.beats.length) go(s.chapter, s.beat + 1);
         else if (revisit) { detach(); app.openPalace(main.from || 'hub'); }
         else {
-          if (firstEntry && s.chapter===0) history.replaceState(null,'','#palace');
           go(s.chapter + 1, 0);
         }
       }
@@ -207,7 +223,21 @@
       if (beat.film || beat.options && !quizBeforeFilm) {
         // 동의한 장면 한 편만 요청한다. 영상이 막혀도 위의 글로 계속할 수 있다.
         const notice = el('div', {class:'palace-status', role:'status'});
-        let invitation;
+        let invitation, prediction;
+        function kitchen() {
+          stop();
+          s.frogAfterFilm=true;
+          app.save();
+          showFrogs('kitchen');
+          invitation.hidden=true;
+          prediction.hidden=true;
+          notice.replaceChildren(el('strong',{},'부엌 관찰 기록'),el('p',{},beat.words),app.refChip(beat.ref),
+            el('button',{type:'button',class:'watch-after-film',on:{click:watch.open}},'세 친구와 현장 살펴보기'));
+          const predicted=[0,1].includes(s.filmGuesses?.[1]);
+          playButton.textContent=predicted ? (s.frogFilmSeen?'영상 다시 보기':watchLabel) : '어떻게 될지 예상하기';
+          playButton.hidden=false;
+          next.textContent='바로의 부탁 듣기';
+        }
         function shore(view) {
           if(video){const old=video;video=null;old.pause();old.removeAttribute('src');old.load();}
           s.firstShore=view;
@@ -220,7 +250,11 @@
           next.textContent='바로의 반응 확인하기';
         }
         function play() {
-          stopNarration();
+          stopNarration(); camera.stop();
+          if(frogs){
+            fieldSlot.replaceChildren(); delete hero.dataset.frogView;
+            if(beat.film) {delete s.frogAfterFilm; app.save(); prediction.hidden=true; invitation.hidden=true; next.textContent='글로 이어 보기';}
+          }
           if(first){
             fieldSlot.replaceChildren(); delete hero.dataset.firstView;
             delete s.firstShore; app.save();
@@ -230,17 +264,18 @@
           const player = el('video', {controls:true, playsinline:true, preload:'none', tabindex:'0', 'aria-label':chapter.title + ' 영상'});
           video = player;
           syncScore();
-          if(first && beat.film){
-            invitation.hidden=false;
+          if(fieldChapter && beat.film){
+            invitation.hidden=frogs;
             next.textContent='글로 이어 보기';
-            const resume=s.firstFilmAt;
+            const timeKey=first?'firstFilmAt':'frogFilmAt';
+            const resume=s[timeKey];
             player.addEventListener('loadedmetadata',()=>{
               if(video===player && Number.isFinite(resume) && resume>0 && resume<player.duration-1)player.currentTime=resume;
             },{once:true});
             function rememberTime(){
               if(video!==player || player.ended || !Number.isFinite(player.duration))return;
               const seconds=5*Math.floor(player.currentTime/5);
-              if(seconds!==s.firstFilmAt){s.firstFilmAt=seconds;app.save();}
+              if(seconds!==s[timeKey]){s[timeKey]=seconds;app.save();}
             }
             player.addEventListener('timeupdate',rememberTime);
           }
@@ -249,6 +284,7 @@
           player.addEventListener('error', function () {
             if (video !== player || !player.hasAttribute('src')) return;
             notice.textContent = '영상을 불러오지 못했어요. 다시 누르거나 글로 계속할 수 있어요.';
+            if(frogs && beat.film)notice.append(el('button',{type:'button',class:'pf-action',on:{click:kitchen}},'부엌 사진으로 확인하기'));
             if(first && beat.film)notice.append(el('button',{type:'button',class:'pf-action',on:{click:()=>shore('jar')}},'강가 사진으로 확인하기'));
             playButton.textContent = '영상 다시 불러오기'; playButton.hidden = false;
           });
@@ -259,6 +295,11 @@
               fieldSlot.querySelector('.pf-action')?.focus({preventScroll:true});
               hero.scrollIntoView({block:'nearest'});return;
             }
+            if(frogs && beat.film){
+              s.frogFilmSeen=true; delete s.frogFilmAt; kitchen();
+              hero.scrollIntoView({block:'nearest'});return;
+            }
+            if(frogs) {stop();showFrogs(s.frogCompare || 'turned');}
             const outcome=chapter.beats[scene.after.beat];
             notice.replaceChildren(el('strong', {}, '영상 뒤의 기록'),el('p', {}, outcome.words),app.refChip(outcome.ref),
               el('button', {type:'button', class:'watch-after-film', on:{click:watch.open}}, '세 친구와 현장 살펴보기'));
@@ -276,6 +317,7 @@
         }
         const playButton = el('button', {class:'palace-film-play', on:{click:()=>{
           if(beat.film && !chapter.beats[s.beat-1]?.options && ![0,1].includes(s.filmGuesses?.[s.chapter])){
+            if(frogs){prediction.hidden=false;invitation.hidden=false;}
             panel.querySelector('.palace-option').focus();return;
           }
           play();
@@ -298,12 +340,17 @@
             scene.guesses.forEach((label,i)=>guesses.append(el('button',{class:'palace-option',on:{click:()=>{
               s.filmGuesses[s.chapter]=i;app.save();sync();playButton.focus();
             }}},label)));
-            panel.append(el('h2',{class:'palace-question'},scene.question),guesses);
+            prediction=el('div',{},el('h2',{class:'palace-question'},scene.question),guesses);
+            if(frogs)prediction.append(el('button',{type:'button',class:'pf-action',on:{click:kitchen}},'부엌 사진으로 살펴보기'));
+            panel.append(prediction);
             sync();
           } else invitation.textContent='강물이 변한 뒤, 사람들과 바로는 어떻게 했을까요?';
           filmFooter=playButton;
           panel.append(invitation,notice,reading);
           next.textContent='글로 이어 보기';
+          if(frogs){
+            if(s.frogAfterFilm)kitchen();else showFrogs('bank');
+          }
           if(first && !startFilm && (s.firstShore==='jar'||s.firstShore==='bank'))shore(s.firstShore);
           else if(first)cue='palace-river';
         } else {
@@ -316,7 +363,7 @@
         if (s.beat) go(s.chapter, s.beat - 1);
         else go(s.chapter - 1, chapters[s.chapter - 1].beats.length - 1);
       }}}, '이전');
-      previous.disabled = s.chapter === 0 && s.beat === 0;
+      previous.disabled = (revisit || s.chapter===0) && s.beat===0;
       const footer = el('div', {class:'sheet-foot pad palace-foot'}, previous, next, filmFooter);
       if(filmFooter)footer.classList.add('palace-cinema-foot');
       if (final) {
@@ -328,15 +375,15 @@
       const when = beat.film ? '재앙 장면' : s.beat < filmIndex ? '재앙이 일어나기 전' : '재앙이 일어난 뒤';
       const section = el('main', {class:'palace-scroll'}, el('div', {class:'palace-headline'},
         el('p', {class:'palace-chapter'}, (s.chapter + 1) + ' / 10 · ' + when), heading,
-        first ? el('div',{class:'pf-header-tools'},watch.bar,score.button) : watch.bar,
-        (!first && s.beat === 0 || beat.film) ? el('p', {class:'watch-intro'}, '『탐험대 이야기』 최온 · ' + BO.palaceWatchScenes[s.chapter].call) : null), first ? el('div',{class:'pf-scene'},hero,fieldSlot) : hero, panel);
+        fieldChapter ? el('div',{class:'pf-header-tools'},watch.bar,score.button) : watch.bar,
+        (!fieldChapter && s.beat === 0 || beat.film && !frogs) ? el('p', {class:'watch-intro'}, '『탐험대 이야기』 최온 · ' + BO.palaceWatchScenes[s.chapter].call) : null), fieldChapter ? el('div',{class:'pf-scene'},hero,fieldSlot) : hero, panel);
       const nav = el('div', {class:'palace-nav pad'}, el('button', {class:'pillbtn', on:{click:exit}},
         from === 'passover' ? '← 탐험으로' : '← 돌아가기'), el('span', {}, '모세와 바로의 대화'),
         el('button', {class:'pillbtn palace-river-link', on:{click:function () {
           detach(); app.openNile();
         }}}, '나일강 물길 탐험'));
       const screen=el('div', {class:'screen palace-screen'}, nav, section, footer, watch.dialog);
-      if(first){
+      if(fieldChapter){
         score.button.classList.add('pf-music');
         for(const event of ['pointerdown','keydown','click'])screen.addEventListener(event,score.gesture,true);
         syncScore();

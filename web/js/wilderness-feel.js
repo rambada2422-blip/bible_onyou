@@ -30,7 +30,7 @@
         if(!ctx)ctx=new Type();
         if(ctx.state==='suspended')ctx.resume().catch(()=>{});
         const t=ctx.currentTime;
-        if(!bed){
+        if(!bed && (place || key!=='shutter')){
           const buffer=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate), samples=buffer.getChannelData(0);
           let last=0;
           for(let i=0;i<samples.length;i++){last=.93*last+.07*(Math.random()*2-1);samples[i]=last;}

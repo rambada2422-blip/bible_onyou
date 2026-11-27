@@ -74,3 +74,11 @@
 .palace-picture[data-first-view=clay].pf-linked::after {content:"";position:absolute;pointer-events:none;left:31%;top:78%;width:48%;border-top:3px dashed #fff0bf;filter:drop-shadow(0 1px 1px #533d27);transform:rotate(-2.7deg);transform-origin:left;}
 
 .pf-entry {padding:.75rem 1rem;margin:.5rem 0;border-left:3px solid #668579;background:#e5eddf;}
+
+.palace-picture[data-frog-view] { position:relative; }
+.palace-picture[data-frog-view] img { transition:transform .28s ease-out; }
+.palace-picture .frog-zoom { transform:scale(2.25); }
+.frog-records { display:flex;flex-wrap:wrap;gap:.35rem; }
+.frog-records [aria-pressed=true] { background:#34594c;color:white;border-color:#34594c; }
+@media(prefers-reduced-motion:reduce){.palace-picture[data-frog-view] img {transition:none;}}
+.palace-picture .pf-pin[hidden],.pf-tools .pf-action[hidden] {display:none;}

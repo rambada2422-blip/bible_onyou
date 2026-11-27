@@ -88,7 +88,7 @@ async function run(browser,url,folder,uninterrupted){
     await forward();await cue(22.5);
     await button('탐험 일지').tap();await button('말씀 인장 · 출 7:22–24').tap();assert.equal(await scrollRef(),'7:22');
     await button('닫기').tap();await button('왕궁으로').tap();
-    await forward();assert.equal((await state()).chapter,1);await muted();
+    await forward();assert.equal((await state()).chapter,1);await cue(20);
     const main=await state();
     await page.goto(url+'#palace-first');await page.locator('.palace-picture[data-first-view="yard"]').waitFor();
     await forward();await page.reload();
