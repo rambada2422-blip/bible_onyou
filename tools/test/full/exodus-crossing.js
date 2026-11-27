@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { openOfflineBundle } = require('../game-server');
 const { chromium, firefox, webkit } = require('playwright');
 
 (async () => {
@@ -29,7 +29,7 @@ const { chromium, firefox, webkit } = require('playwright');
       const wait = (ms) => p.clock.runFor(ms);
       const state = () => p.evaluate(() => JSON.parse(localStorage.getItem('onyou.crossing.v1')));
       const picture = async (n) => p.screenshot({ path: path.join(out, n + '.jpg'), quality: 85 });
-      await p.goto(pathToFileURL(path.resolve(file)).href);
+      await openOfflineBundle(p, file);
       await p.evaluate(() => document.fonts.ready);
       await p.waitForTimeout(300);
       await p.clock.install();

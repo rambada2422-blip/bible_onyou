@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
-const { pathToFileURL } = require('node:url');
+const { openOfflineBundle } = require('../game-server');
 const { chromium, firefox, webkit } = require('playwright');
 (async () => {
   const out = process.argv[2] || path.resolve('dist/check/expedition');
@@ -28,7 +28,7 @@ const { chromium, firefox, webkit } = require('playwright');
     const next = () => p.getByRole('button', { name: /^다음 현장/ }).click();
     const shot = (name) => p.screenshot({ path: path.join(out, name + '.png'), fullPage: true });
     const text = async (selector, pattern) => assert.match(await p.locator(selector).innerText(), pattern);
-    await p.goto(pathToFileURL(file).href + '#guided');
+    await openOfflineBundle(p, file, '#guided');
     await p.evaluate(() => document.fonts.ready);
     await shot('01-cover');
     await click('애굽 일터로 출발 →');

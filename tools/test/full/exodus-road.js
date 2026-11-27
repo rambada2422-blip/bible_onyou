@@ -2,7 +2,7 @@
 const fs = require('node:fs'),
   path = require('node:path'),
   assert = require('node:assert/strict');
-const { pathToFileURL } = require('node:url');
+const { openOfflineBundle } = require('../game-server');
 const { chromium, webkit, firefox } = require('playwright');
 (async () => {
   const out = process.argv[2] || path.resolve('dist/check/road'),
@@ -23,12 +23,11 @@ const { chromium, webkit, firefox } = require('playwright');
       errors = [];
     p.on('pageerror', (e) => errors.push(e.message));
     p.setDefaultTimeout(5000);
-    const url = pathToFileURL(file).href + '#road',
-      click = async (name) => {
-        const d = p.locator('#rd-dialog');
-        return ((await d.isVisible()) ? d : p).getByRole('button', { name, exact: true }).click();
-      },
-      act = () => p.locator('#rd-act').click();
+    const click = async (name) => {
+      const d = p.locator('#rd-dialog');
+      return ((await d.isVisible()) ? d : p).getByRole('button', { name, exact: true }).click();
+    };
+    const act = () => p.locator('#rd-act').click();
     const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('onyou.exodus.road.v1')));
     const readPanel = () => p.locator('#rd-dialog-body').innerText();
     const keyDir = { n: 'ArrowUp', e: 'ArrowRight', s: 'ArrowDown', w: 'ArrowLeft' };
@@ -39,7 +38,7 @@ const { chromium, webkit, firefox } = require('playwright');
       await p.waitForTimeout(160);
       await p.screenshot({ path: path.join(out, name + '.jpg'), quality: 84 });
     };
-    await p.goto(url);
+    await openOfflineBundle(p, file, '#road');
     await p.evaluate(() => document.fonts.ready);
     await shot('01-goshen');
     assert.equal(await p.locator('#rd-title').innerText(), '해 질 무렵의 일터');
