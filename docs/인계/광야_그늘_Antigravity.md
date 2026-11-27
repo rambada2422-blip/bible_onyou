@@ -51,4 +51,11 @@ node tools/test/full/exodus-desert-shade.js dist/check/desert-shade dist/expedit
 ```
 
 - `exodus-road.js`: `출애굽기 직접 탐험 7/7 · 수레·되돌리기·장비·복원·도약 사진·열기·증언·후일담 · no errors` (통과)
-- `exodus-desert-shade.js`: 360×640 터치·키보드·모션 축소·무음 기준 전 항목 통과, 콘솔·페이지 오류 0건
+- `exodus-desert-shade.js`: 360×640 터치·키보드·모션 축소·무음 기준 전 항목 통과 (`· no errors`), 콘솔·페이지 오류 0건
+- `exodus-check.cjs desert-shade dist/expedition.html`: `desert-shade · 조작 통과`
+
+## 5. Claude 독립 검증(`44da9a2`) 반영 이력
+
+- `web/expedition/road.js` (`waitInPlace()`): 동쪽 해 전환 문구를 `새 아침, 해가 동쪽에 떠 바위 그늘이 서쪽에 생겼다.`로 수정하고, 그늘 대기 문구를 `그늘 아래서 해가 움직이기를 기다렸다.`로 정리했다.
+- `tools/test/full/exodus-desert-shade.js`: 수정된 전환 문구 검증과 마지막 출력 줄 `· no errors`를 추가했다.
+- `docs/인계/사진/출애굽기원정/광야_태양전환_후.png`: 수정 문구가 반영된 화면으로 다시 촬영해 확인했다.

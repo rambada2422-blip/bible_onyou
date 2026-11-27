@@ -163,6 +163,7 @@ function isShaded(x, y, turn) {
     const afterEnv = await envText();
     assert.match(afterEnv, /그늘/, `전환 직후 그늘 표시 확인: ${afterEnv}`);
     assert.match(afterEnv, /4턴 뒤 동쪽 그늘/, `전환 직후 다음 방향 안내 확인: ${afterEnv}`);
+    assert.match(await toastText(), /새 아침, 해가 동쪽에 떠 바위 그늘이 서쪽에 생겼다\./);
     await p.screenshot({ path: path.join(HANDOFF_SHOT_DIR, '광야_태양전환_후.png') });
     await p.screenshot({ path: path.join(outDir, '광야_태양전환_후.png') });
 
@@ -300,7 +301,7 @@ function isShaded(x, y, turn) {
     assert.deepEqual(errors, []);
 
     fs.writeFileSync(path.join(outDir, 'results.json'), JSON.stringify(results, null, 2));
-    console.log('광야 움직이는 그늘 테스트 통과:', JSON.stringify(results));
+    console.log('광야 움직이는 그늘 테스트 통과:', JSON.stringify(results), '· no errors');
   } finally {
     await browser.close();
   }
