@@ -102,7 +102,7 @@
       if (step === 'journal') {
         const entries = scenes.flatMap((_, i) => selected(notes[i]?.pick) ? [entry(i)] : []);
         const fieldEntries=[app.palaceFirst.journal(notes,openBook),app.palaceFrogs.journal(openBook),
-          app.palaceDust.journal(openBook),app.palaceFlies.journal(openBook)].filter(Boolean);
+          app.palaceDust.journal(openBook),app.palaceFlies.journal(openBook),app.palaceCattle.journal(openBook)].filter(Boolean);
         body.append(entries.length || fieldEntries.length ? el('div', {class:'watch-pages'}, ...fieldEntries, ...entries) :
           speech('hyu', '현장에서 눈에 띄는 흔적을 하나 골라 줘. 우리 첫 장에 남겨 둘게.'),
           button('이 장면 살펴보기', () => change(startStep()), 'watch-primary'));

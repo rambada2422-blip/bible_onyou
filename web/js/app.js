@@ -51,11 +51,11 @@
   };
   function openPalace(from,entryChapter) {
     if (location.hash === '#passover') { from = 'room'; markScene('#palace'); }
-    else if (entryChapter===undefined && ['#home','#pillar','#horeb','#palace-first','#palace-frogs','#palace-dust','#palace-flies'].includes(location.hash)) markScene('#palace');
+    else if (entryChapter===undefined && ['#home','#pillar','#horeb','#palace-first','#palace-frogs','#palace-dust','#palace-flies','#palace-cattle'].includes(location.hash)) markScene('#palace');
     app.palace.open(from, function () {
       if (from === 'room') { markScene('#passover'); app.passover.open(entrance, '탐험 입구'); }
       else if (from === 'passover') openPassoverFromHub();
-      else if (['#palace','#palace-first','#palace-frogs','#palace-dust','#palace-flies'].includes(location.hash)) entrance();
+      else if (['#palace','#palace-first','#palace-frogs','#palace-dust','#palace-flies','#palace-cattle'].includes(location.hash)) entrance();
       else if (app.state.char && app.state.tier) renderHub();
       else renderTitle();
     }, entryChapter);
@@ -332,7 +332,7 @@
 
   // 외부의 같은 페이지 링크도 새 입구로 진입한다. 내부 이동은 replaceState라 이 이벤트를 보내지 않는다.
   window.addEventListener('hashchange', function () {
-    if (['#home','#brickfield','#horeb','#pillar','#palace','#palace-first','#palace-frogs','#palace-dust','#palace-flies','#passover','#redsea','#redsea-coast','#redsea-walk','#redsea-drum','#wilderness','#marah','#elim','#manna','#manna-rest','#rock','#sinai','#sinai-camp','#calf','#exodus','#nile',''].includes(location.hash)) location.reload();
+    if (['#home','#brickfield','#horeb','#pillar','#palace','#palace-first','#palace-frogs','#palace-dust','#palace-flies','#palace-cattle','#passover','#redsea','#redsea-coast','#redsea-walk','#redsea-drum','#wilderness','#marah','#elim','#manna','#manna-rest','#rock','#sinai','#sinai-camp','#calf','#exodus','#nile',''].includes(location.hash)) location.reload();
   });
   if (location.hash === '#nile' || (!location.hash && document.body.dataset.start === 'nile')) app.openNile();
   else if (location.hash === '#brickfield') {
@@ -357,6 +357,7 @@
   else if (location.hash === '#palace-frogs') openPalace('hub',1);
   else if (location.hash === '#palace-dust') openPalace('hub',2);
   else if (location.hash === '#palace-flies') openPalace('hub',3);
+  else if (location.hash === '#palace-cattle') openPalace('hub',4);
   else if (location.hash === '#palace' || document.body.dataset.start === 'palace') {
     openPalace(app.palace.resuming() ? app.state.palace.from : 'hub');
   }
