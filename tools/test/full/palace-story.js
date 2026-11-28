@@ -84,9 +84,10 @@ async function check(browser, origin, entry, width, height) {
         } else {
           await playToEnding(page, number + 1, ch.seconds);
           await page.getByRole('button', {name:'세 친구와 현장 살펴보기'}).waitFor();
-          const outcome=await page.evaluate(n=>n<5 ? BO.palaceChapters[n].beats.find(b=>b.film).words : BO.palaceChapters[n].beats[BO.palaceWatchScenes[n].after.beat].words,number);
+          const outcome=await page.evaluate(n=>n<6 ? BO.palaceChapters[n].beats.find(b=>b.film).words : BO.palaceChapters[n].beats[BO.palaceWatchScenes[n].after.beat].words,number);
           assert.equal(await page.locator('.palace-status p').innerText(),outcome);
           if(number===4)await tap('이스라엘 들로 가기');
+          if(number===5){await tap('작업장으로 감기');await tap('가축 쪽으로 감기');}
         }
       }
       const footer = await forward.boundingBox();

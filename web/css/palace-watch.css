@@ -118,3 +118,11 @@
 .palace-picture[data-cattle-view=king] img {transform:scale(1.32);transform-origin:27% 43%;}
 .palace-screen:has(.cattle-finder) .palace-cinema-foot .onpaper {flex:1;background:#182541;color:white;text-decoration:none;}
 .palace-screen:has(.cattle-finder) .palace-cinema-foot .palace-film-play {flex:0 1 auto;background:#efe7d4;color:#35483e;}
+.palace-picture[data-kiln-view] {position:relative;}
+.kiln-reel {width:100%;display:grid;grid-template-columns:auto minmax(3rem,1fr) auto;align-items:center;gap:.45rem;}
+.kiln-reel input {min-width:0;width:100%;height:44px;accent-color:#6c432a;cursor:ew-resize;}
+.kiln-counter {position:absolute;left:.45rem;top:.4rem;border-radius:.3rem;padding:.16em .45em;color:#fff8e1;background:#29251cee;pointer-events:none;}
+.palace-picture[data-kiln-view=witness] img {transform:scale(1.18);transform-origin:34% 68%;}
+.palace-picture[data-kiln-view=king] img {transform:scale(2.05);transform-origin:2% 2%;}
+.palace-screen:has([data-kiln-view=reel]) .palace-cinema-foot .onpaper {flex:1;background:#182541;color:white;text-decoration:none;}
+.palace-screen:has([data-kiln-view=reel]) .palace-cinema-foot .palace-film-play {flex:0 1 auto;background:#efe7d4;color:#35483e;}

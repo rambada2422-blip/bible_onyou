@@ -7,7 +7,8 @@
     1:{theme:'frog',field:app.palaceFrogs.field,before:'bank',after:'kitchen',place:'부엌',next:'바로의 부탁 듣기'},
     2:{theme:'dust',field:app.palaceDust.field,before:'ground',after:'pen',place:'우리',next:'왕궁으로 가기'},
     3:{theme:'flies',field:app.palaceFlies.field,before:'bowl',after:'compare',place:'두 곳',next:'왕궁으로 가기'},
-    4:{theme:'cattle',field:app.palaceCattle.field,before:'preview',after:'pen',place:'우리와 들',next:'왕궁으로 가기'}
+    4:{theme:'cattle',field:app.palaceCattle.field,before:'preview',after:'pen',place:'우리와 들',next:'왕궁으로 가기'},
+    5:{theme:'kiln',field:app.palaceKiln.field,before:'ash',after:'reel',place:'작업장',next:'왕궁 기록 열기'}
   };
   function valid(s) {
     return s && Number.isInteger(s.chapter) && chapters[s.chapter] &&
@@ -19,7 +20,7 @@
     const main = s;
     const revisit = entryChapter!==undefined && main.chapter!==entryChapter;
     if (revisit) {
-      const key=['firstVisit','frogVisit','dustVisit','fliesVisit','cattleVisit'][entryChapter];
+      const key=['firstVisit','frogVisit','dustVisit','fliesVisit','cattleVisit','kilnVisit'][entryChapter];
       if (!valid(main[key]) || main[key].chapter!==entryChapter) main[key] = {chapter:entryChapter,beat:0};
       s=main[key];
     }
@@ -36,7 +37,7 @@
     }
     function openBook(ref) {
       bookOpen=true; syncScore(); pauseMedia();
-      const source=[app.palaceCattle,app.palaceFlies,app.palaceDust].find(book=>Object.hasOwn(book.verses,ref))
+      const source=[app.palaceKiln,app.palaceCattle,app.palaceFlies,app.palaceDust].find(book=>Object.hasOwn(book.verses,ref))
         || (Object.hasOwn(BO.palaceFrogVerses,ref) ? app.palaceFrogs : app.palaceFirst);
       source.page(ref,()=>{bookOpen=false;syncScore();});
     }
@@ -99,7 +100,7 @@
     function go(chapter, beat, startFilm=false) {
       stop();
       if (!revisit && entryChapter!==undefined && chapter!==entryChapter &&
-          ['#palace-first','#palace-frogs','#palace-dust','#palace-flies','#palace-cattle'].includes(location.hash)) history.replaceState(null,'','#palace');
+          ['#palace-first','#palace-frogs','#palace-dust','#palace-flies','#palace-cattle','#palace-kiln'].includes(location.hash)) history.replaceState(null,'','#palace');
       s.chapter = chapter;
       s.beat = beat;
       delete s.choice;
@@ -158,10 +159,16 @@
         fieldSlot.replaceChildren(app.palaceFirst.field(hero,view,openBook,action));
         syncScore();
       }
+      function reelAction() {
+        if(hero.dataset.kilnView==='reel') {
+          next.textContent=['작업장으로 감기','가축 쪽으로 감기',photoChapter.next][Number(hero.dataset.kilnFrame)];
+        }
+      }
       function showPhoto(view) {
         cue=photoChapter.field(hero,fieldSlot,view,s,openBook,showPhoto,()=>{
           if (!narration && !bookOpen && !watchDialog.open) camera.play('shutter');
-        },music=>{cue=music;syncScore();});
+        },music=>{cue=music;reelAction();syncScore();});
+        reelAction();
         if(cattle && (view==='pen'||view==='herd'))next.textContent=view==='pen'?'이스라엘 들로 가기':photoChapter.next;
         syncScore();
       }
@@ -175,6 +182,7 @@
         showPhoto(visits[s.beat]);
       }
       if(cattle && !beat.film)showPhoto(s.beat===0?'warning':s.cattleEnd==='king'?'king':'report');
+      if(s.chapter===5 && !beat.film)showPhoto(s.kilnCourt==='king'?'king':'witness');
       if(first && !beat.film) {
         const view=['yard','audience','throne','clay','audience',null,'throne'][s.beat];
         showField(view,s.beat===6);
@@ -214,7 +222,9 @@
         upcoming.film ? '현장으로 · ' + scene.place : upcoming.options ? '단서 맞추기' :
         upcoming.who ? upcoming.who + '의 말 읽기' : '그 뒤의 기록 읽기';
       const next = el('button', {class:'btn onpaper', on:{click:() => {
-        if(cattle && beat.film && hero.dataset.cattleView==='pen'){
+        const wind=hero.dataset.kilnView==='reel' && fieldSlot.querySelector('[data-wind-forward]:enabled');
+        if(wind)wind.click();
+        else if(cattle && beat.film && hero.dataset.cattleView==='pen'){
           s.cattlePlace='herd';app.save();showPhoto('herd');fieldSlot.querySelector('[aria-pressed="true"]').focus({preventScroll:true});
         }else if (quizBeforeFilm) go(s.chapter,s.beat+1,true); else advance();
       }}}, quizBeforeFilm ? watchLabel : nextLabel);
@@ -259,7 +269,7 @@
           playButton.textContent=predicted ? (s[theme+'FilmSeen']?'영상 다시 보기':watchLabel) : '어떻게 될지 예상하기';
           playButton.hidden=false;
           if(!frogs && s[theme+'FilmSeen'])playButton.textContent='다시 보기';
-          if(!cattle)next.textContent=photoChapter.next;
+          if(!cattle && theme!=='kiln')next.textContent=photoChapter.next;
         }
         function shore(view) {
           if(video){const old=video;video=null;old.pause();old.removeAttribute('src');old.load();}
@@ -320,7 +330,7 @@
             }
             if(photoChapter && beat.film){
               s[theme+'FilmSeen']=true; delete s[theme+'FilmAt']; afterFilmPhoto();
-              if(!frogs)hero.querySelector('.cattle-finder, .pf-pin:not([hidden])')?.focus({preventScroll:true});
+              if(!frogs)hero.querySelector('.kiln-reel input, .cattle-finder, .pf-pin:not([hidden])')?.focus({preventScroll:true});
               hero.scrollIntoView({block:'nearest'});return;
             }
             if(frogs) {stop();showPhoto(s.frogCompare || 'turned');}

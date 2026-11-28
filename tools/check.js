@@ -69,6 +69,7 @@ if (full) {
       ['셋째 재앙의 우리와 왕궁', ['tools/test/full/palace-dust.js', path.join(out, 'palace-dust')]],
       ['넷째 재앙의 애굽과 고센', ['tools/test/full/palace-flies.js', path.join(out, 'palace-flies')]],
       ['다섯째 재앙의 빈 우리와 가축', ['tools/test/full/palace-cattle.js', path.join(out, 'palace-cattle')]],
+      ['여섯째 재앙의 기록 필름과 왕궁', ['tools/test/full/palace-kiln.js', path.join(out, 'palace-kiln')]],
       ['출애굽기 원정 아홉 현장', ['tools/test/full/exodus-expedition.js', path.join(out, 'expedition')]],
       ['출애굽기 직접 탐험', ['tools/test/full/exodus-road.js', path.join(out, 'road')]],
       ['홍해 물벽 사이로', ['tools/test/full/exodus-crossing.js', path.join(out, 'crossing')]]
